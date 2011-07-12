@@ -27,13 +27,7 @@ LOCAL_SHARED_LIBRARIES := \
     libmedia \
     libhardware_legacy
 
-ifeq ($(TARGET_OS)-$(TARGET_SIMULATOR),linux-true)
-LOCAL_LDLIBS += -ldl
-endif
-
-ifneq ($(TARGET_SIMULATOR),true)
 LOCAL_SHARED_LIBRARIES += libdl
-endif
 
 LOCAL_SRC_FILES += \
     AudioHardwareGeneric.cpp
@@ -45,5 +39,3 @@ LOCAL_WHOLE_STATIC_LIBRARIES := \
     libaudiohw_legacy
 
 include $(BUILD_SHARED_LIBRARY)
-
-
