@@ -30,7 +30,6 @@
 #include <utils/String8.h>
 
 #include "AudioHardwareGeneric.h"
-#include <media/AudioRecord.h>
 
 namespace android_audio_legacy {
 
