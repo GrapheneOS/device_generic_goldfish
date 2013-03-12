@@ -22,17 +22,44 @@
 #define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_JPEG"
 #include <cutils/log.h>
+#include <assert.h>
+#include <dlfcn.h>
 #include "JpegCompressor.h"
 
 namespace android {
 
+void* NV21JpegCompressor::mDl = NULL;
+
+static void* getSymbol(void* dl, const char* signature) {
+    void* res = dlsym(dl, signature);
+    assert (res != NULL);
+
+    return res;
+}
+
+typedef void (*InitFunc)(JpegStub* stub, int* strides);
+typedef void (*CleanupFunc)(JpegStub* stub);
+typedef int (*CompressFunc)(JpegStub* stub, const void* image,
+        int width, int height, int quality);
+typedef void (*GetCompressedImageFunc)(JpegStub* stub, void* buff);
+typedef size_t (*GetCompressedSizeFunc)(JpegStub* stub);
+
 NV21JpegCompressor::NV21JpegCompressor()
-    : Yuv420SpToJpegEncoder(mStrides)
 {
+    const char dlName[] = "/system/lib/hw/camera.goldfish.jpeg.so";
+    if (mDl == NULL) {
+        mDl = dlopen(dlName, RTLD_NOW);
+    }
+    assert(mDl != NULL);
+
+    InitFunc f = (InitFunc)getSymbol(mDl, "JpegStub_init");
+    (*f)(&mStub, mStrides);
 }
 
 NV21JpegCompressor::~NV21JpegCompressor()
 {
+    CleanupFunc f = (CleanupFunc)getSymbol(mDl, "JpegStub_cleanup");
+    (*f)(&mStub);
 }
 
 /****************************************************************************
@@ -44,21 +71,25 @@ status_t NV21JpegCompressor::compressRawImage(const void* image,
                                               int height,
                                               int quality)
 {
-    ALOGV("%s: %p[%dx%d]", __FUNCTION__, image, width, height);
-    void* pY = const_cast<void*>(image);
-    int offsets[2];
-    offsets[0] = 0;
-    offsets[1] = width * height;
     mStrides[0] = width;
     mStrides[1] = width;
-    if (encode(&mStream, pY, width, height, offsets, quality)) {
-        ALOGV("%s: Compressed JPEG: %d[%dx%d] -> %d bytes",
-             __FUNCTION__, (width * height * 12) / 8, width, height, mStream.getOffset());
-        return NO_ERROR;
-    } else {
-        ALOGE("%s: JPEG compression failed", __FUNCTION__);
-        return errno ? errno : EINVAL;
-    }
+    CompressFunc f = (CompressFunc)getSymbol(mDl, "JpegStub_compress");
+    return (status_t)(*f)(&mStub, image, width, height, quality);
+}
+
+
+size_t NV21JpegCompressor::getCompressedSize()
+{
+    GetCompressedSizeFunc f = (GetCompressedSizeFunc)getSymbol(mDl,
+            "JpegStub_getCompressedSize");
+    return (*f)(&mStub);
+}
+
+void NV21JpegCompressor::getCompressedImage(void* buff)
+{
+    GetCompressedImageFunc f = (GetCompressedImageFunc)getSymbol(mDl,
+            "JpegStub_getCompressedImage");
+    (*f)(&mStub, buff);
 }
 
 }; /* namespace android */

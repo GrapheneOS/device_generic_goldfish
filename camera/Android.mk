@@ -25,18 +25,15 @@ LOCAL_SHARED_LIBRARIES:= \
     libcutils \
     libcamera_client \
     libui \
+    libdl
 
 # JPEG conversion libraries and includes.
 LOCAL_SHARED_LIBRARIES += \
 	libjpeg \
-	libskia \
-	libandroid_runtime \
 	libcamera_metadata
 
 LOCAL_C_INCLUDES += external/jpeg \
-	external/skia/include/core/ \
 	frameworks/native/include/media/hardware \
-	frameworks/base/core/jni/android/graphics \
 	$(LOCAL_PATH)/../opengl/system/OpenglSystemCommon \
 	$(call include-path-for, camera)
 
@@ -70,3 +67,28 @@ LOCAL_MODULE := camera.goldfish
 endif
 
 include $(BUILD_SHARED_LIBRARY)
+
+#################################################################
+ifneq ($(TARGET_BUILD_PDK),true)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
+LOCAL_CFLAGS += -fno-short-enums -DQEMU_HARDWARE
+LOCAL_SHARED_LIBRARIES:= \
+    libcutils \
+    libskia \
+    libandroid_runtime
+
+LOCAL_C_INCLUDES += external/jpeg \
+                    external/skia/include/core/ \
+                    frameworks/base/core/jni/android/graphics \
+                    frameworks/native/include
+
+LOCAL_SRC_FILES := JpegStub.cpp
+
+LOCAL_MODULE := camera.goldfish.jpeg
+
+include $(BUILD_SHARED_LIBRARY)
+
+endif # !PDK

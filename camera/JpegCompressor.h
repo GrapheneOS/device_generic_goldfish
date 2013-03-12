@@ -22,14 +22,14 @@
  * converter between YV21, and JPEG formats.
  */
 
-#include <YuvToJpegEncoder.h>
+#include "JpegStub.h"
 #include <utils/threads.h>
 
 namespace android {
 
 /* Encapsulates a converter between YV12, and JPEG formats.
  */
-class NV21JpegCompressor : protected Yuv420SpToJpegEncoder
+class NV21JpegCompressor
 {
 public:
     /* Constructs JpegCompressor instance. */
@@ -65,10 +65,7 @@ public:
      * Return:
      *  Size of the compressed JPEG buffer.
      */
-    size_t getCompressedSize() const
-    {
-        return mStream.getOffset();
-    }
+    size_t getCompressedSize();
 
     /* Copies out compressed JPEG buffer.
      * This method must be called only after a successful completion of
@@ -77,20 +74,20 @@ public:
      *  buff - Buffer where to copy the JPEG. Must be large enough to contain the
      *      entire image.
      */
-    void getCompressedImage(void* buff) const
-    {
-        mStream.copyTo(buff);
-    }
+    void getCompressedImage(void* buff);
 
     /****************************************************************************
      * Class data
      ***************************************************************************/
 
 protected:
-    /* Memory stream where converted JPEG is saved. */
-    SkDynamicMemoryWStream  mStream;
     /* Strides for Y (the first element), and UV (the second one) panes. */
     int                     mStrides[2];
+
+private:
+    // library handle to dlopen
+    static void* mDl;
+    JpegStub mStub;
 };
 
 }; /* namespace android */
