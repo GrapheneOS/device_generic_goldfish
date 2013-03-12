@@ -100,9 +100,8 @@ float sqrtf_approx(float r) {
 
 
 
-Sensor::Sensor(EmulatedFakeCamera2 *parent):
+Sensor::Sensor():
         Thread(false),
-        mParent(parent),
         mGotVSync(false),
         mExposureTime(kFrameDurationRange[0]-kMinVerticalBlank),
         mFrameDuration(kFrameDurationRange[0]),
