@@ -64,6 +64,21 @@ class EmulatedBaseCamera {
      */
     virtual status_t connectCamera(hw_device_t** device) = 0;
 
+
+    /* Plug the connection for the emulated camera. Until it's plugged in
+     * calls to connectCamera should fail with -ENODEV.
+     */
+    virtual status_t plugCamera();
+
+    /* Unplug the connection from underneath the emulated camera.
+     * This is similar to closing the camera, except that
+     * all function calls into the camera device will return
+     * -EPIPE errors until the camera is reopened.
+     */
+    virtual status_t unplugCamera();
+
+    virtual camera_device_status_t getHotplugStatus();
+
     /* Closes connection to the emulated camera.
      * This method is called in response to camera_device::close callback.
      * NOTE: When this method is called the object is locked.
@@ -88,9 +103,10 @@ class EmulatedBaseCamera {
      * mCameraDeviceVersion is >= HARDWARE_DEVICE_API_VERSION(2,0)  */
     camera_metadata_t *mCameraInfo;
 
-  private:
     /* Zero-based ID assigned to this camera. */
     int mCameraID;
+
+  private:
 
     /* Version of the camera device HAL implemented by this camera */
     int mCameraDeviceVersion;

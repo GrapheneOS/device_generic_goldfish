@@ -17,10 +17,13 @@
 #ifndef HW_EMULATOR_CAMERA_EMULATED_CAMERA_FACTORY_H
 #define HW_EMULATOR_CAMERA_EMULATED_CAMERA_FACTORY_H
 
+#include <utils/RefBase.h>
 #include "EmulatedBaseCamera.h"
 #include "QemuClient.h"
 
 namespace android {
+
+struct EmulatedCameraHotplugThread;
 
 /*
  * Contains declaration of a class EmulatedCameraFactory that manages cameras
@@ -72,6 +75,11 @@ public:
      */
     int getCameraInfo(int camera_id, struct camera_info *info);
 
+    /* Sets emulated camera callbacks.
+     * This method is called in response to camera_module_t::set_callbacks callback.
+     */
+    int setCallbacks(const camera_module_callbacks_t *callbacks);
+
     /****************************************************************************
      * Camera HAL API callbacks.
      ***************************************************************************/
@@ -82,6 +90,9 @@ public:
 
     /* camera_module_t::get_camera_info callback entry point. */
     static int get_camera_info(int camera_id, struct camera_info *info);
+
+    /* camera_module_t::set_callbacks callback entry point. */
+    static int set_callbacks(const camera_module_callbacks_t *callbacks);
 
 private:
     /* hw_module_methods_t::open callback entry point. */
@@ -118,6 +129,8 @@ public:
     bool isConstructedOK() const {
         return mConstructedOK;
     }
+
+    void onStatusChanged(int cameraId, int newStatus);
 
     /****************************************************************************
      * Private API
@@ -162,6 +175,12 @@ private:
 
     /* Flags whether or not constructor has succeeded. */
     bool                mConstructedOK;
+
+    /* Camera callbacks (for status changing) */
+    const camera_module_callbacks_t* mCallbacks;
+
+    /* Hotplug thread (to call onStatusChanged) */
+    sp<EmulatedCameraHotplugThread> mHotplugThread;
 
 public:
     /* Contains device open entry point, as required by HAL API. */
