@@ -33,7 +33,8 @@
 
 namespace android {
 
-/* Encapsulates functionality common to all version 3.0 emulated camera devices
+/**
+ * Encapsulates functionality for a v3 HAL camera which produces synthetic data.
  *
  * Note that EmulatedCameraFactory instantiates an object of this class just
  * once, when EmulatedCameraFactory instance gets constructed. Connection to /
@@ -69,7 +70,7 @@ public:
     virtual status_t getCameraInfo(struct camera_info *info);
 
     /****************************************************************************
-     * EmualtedCamera3 abstract API implementation
+     * EmulatedCamera3 abstract API implementation
      ***************************************************************************/
 
 protected:
@@ -98,7 +99,21 @@ protected:
 
 private:
 
+    /**
+     * Build the static info metadata buffer for this device
+     */
     status_t constructStaticInfo();
+
+    /**
+     * Run the fake 3A algorithms as needed. May override/modify settings
+     * values.
+     */
+    status_t process3A(CameraMetadata &settings);
+
+    status_t doFakeAE(CameraMetadata &settings);
+    status_t doFakeAF(CameraMetadata &settings);
+    status_t doFakeAWB(CameraMetadata &settings);
+    void     update3A(CameraMetadata &settings);
 
     /** Signal from readout thread that it doesn't have anything to do */
     void     signalReadoutIdle();
@@ -112,6 +127,10 @@ private:
     static const uint32_t kMaxJpegStreamCount = 1;
     static const uint32_t kMaxReprocessStreamCount = 2;
     static const uint32_t kMaxBufferCount = 4;
+    // We need a positive stream ID to distinguish external buffers from
+    // sensor-generated buffers which use a nonpositive ID. Otherwise, HAL3 has
+    // no concept of a stream id.
+    static const uint32_t kGenericStreamId = 1;
     static const uint32_t kAvailableFormats[];
     static const uint32_t kAvailableRawSizes[];
     static const uint64_t kAvailableRawMinDurations[];
@@ -131,10 +150,10 @@ private:
      ***************************************************************************/
 
     /* HAL interface serialization lock. */
-    Mutex mLock;
+    Mutex              mLock;
 
     /* Facing back (true) or front (false) switch. */
-    bool mFacingBack;
+    bool               mFacingBack;
 
     /**
      * Cache for default templates. Once one is requested, the pointer must be
@@ -151,18 +170,19 @@ private:
     };
 
     // Shortcut to the input stream
-    camera3_stream_t* mInputStream;
+    camera3_stream_t*  mInputStream;
 
-    // All streams, including input stream
-    List<camera3_stream_t*> mStreams;
-
+    typedef List<camera3_stream_t*>           StreamList;
     typedef List<camera3_stream_t*>::iterator StreamIterator;
 
+    // All streams, including input stream
+    StreamList         mStreams;
+
     // Cached settings from latest submitted request
-    CameraMetadata mPrevSettings;
+    CameraMetadata     mPrevSettings;
 
     /** Fake hardware interfaces */
-    sp<Sensor> mSensor;
+    sp<Sensor>         mSensor;
     sp<JpegCompressor> mJpegCompressor;
 
     /** Processing thread for sending out results */
@@ -179,8 +199,18 @@ private:
             Buffers *sensorBuffers;
         };
 
-        void queueCaptureRequest(const Request &r);
-        bool isIdle();
+        /**
+         * Interface to parent class
+         */
+
+        // Place request in the in-flight queue to wait for sensor capture
+        void     queueCaptureRequest(const Request &r);
+
+        // Test if the readout thread is idle (no in-flight requests, not
+        // currently reading out anything
+        bool     isIdle();
+
+        // Wait until isIdle is true
         status_t waitForReadout();
 
       private:
@@ -202,8 +232,47 @@ private:
         Request mCurrentRequest;
 
     };
-
     sp<ReadoutThread> mReadoutThread;
+
+    /** Fake 3A constants */
+
+    static const nsecs_t kNormalExposureTime;
+    static const nsecs_t kFacePriorityExposureTime;
+    static const int     kNormalSensitivity;
+    static const int     kFacePrioritySensitivity;
+    // Rate of converging AE to new target value, as fraction of difference between
+    // current and target value.
+    static const float   kExposureTrackRate;
+    // Minimum duration for precapture state. May be longer if slow to converge
+    // to target exposure
+    static const int     kPrecaptureMinFrames;
+    // How often to restart AE 'scanning'
+    static const int     kStableAeMaxFrames;
+    // Maximum stop below 'normal' exposure time that we'll wander to while
+    // pretending to converge AE. In powers of 2. (-2 == 1/4 as bright)
+    static const float   kExposureWanderMin;
+    // Maximum stop above 'normal' exposure time that we'll wander to while
+    // pretending to converge AE. In powers of 2. (2 == 4x as bright)
+    static const float   kExposureWanderMax;
+
+    /** Fake 3A state */
+
+    uint8_t mControlMode;
+    bool    mFacePriority;
+    uint8_t mAeState;
+    uint8_t mAfState;
+    uint8_t mAwbState;
+    uint8_t mAeMode;
+    uint8_t mAfMode;
+    uint8_t mAwbMode;
+    int     mAfTriggerId;
+    int     mAeTriggerId;
+
+    int     mAeCounter;
+    nsecs_t mAeCurrentExposureTime;
+    nsecs_t mAeTargetExposureTime;
+    int     mAeCurrentSensitivity;
+
 };
 
 } // namespace android

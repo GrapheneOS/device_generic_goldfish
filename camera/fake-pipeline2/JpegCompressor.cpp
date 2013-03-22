@@ -28,6 +28,7 @@ namespace android {
 JpegCompressor::JpegCompressor(EmulatedFakeCamera2 *parent):
         Thread(false),
         mIsBusy(false),
+        mSynchronous(false),
         mParent(parent),
         mBuffers(NULL),
         mCaptureTime(0) {
@@ -49,7 +50,7 @@ status_t JpegCompressor::start(Buffers *buffers,
         }
 
         mIsBusy = true;
-
+        mSynchronous = false;
         mBuffers = buffers;
         mCaptureTime = captureTime;
     }
@@ -60,6 +61,30 @@ status_t JpegCompressor::start(Buffers *buffers,
         ALOGE("%s: Unable to start up compression thread: %s (%d)",
                 __FUNCTION__, strerror(-res), res);
         delete mBuffers;
+    }
+    return res;
+}
+
+status_t JpegCompressor::compressSynchronous(Buffers *buffers) {
+    status_t res;
+
+    Mutex::Autolock lock(mMutex);
+    {
+        Mutex::Autolock busyLock(mBusyMutex);
+
+        if (mIsBusy) {
+            ALOGE("%s: Already processing a buffer!", __FUNCTION__);
+            return INVALID_OPERATION;
+        }
+
+        mIsBusy = true;
+        mSynchronous = true;
+        mBuffers = buffers;
+    }
+
+    res = compress();
+    if (res == OK) {
+        cleanUp();
     }
     return res;
 }
@@ -75,8 +100,34 @@ status_t JpegCompressor::readyToRun() {
 
 bool JpegCompressor::threadLoop() {
     Mutex::Autolock lock(mMutex);
+    status_t res;
     ALOGV("%s: Starting compression thread", __FUNCTION__);
 
+    res = compress();
+
+    if (res == OK) {
+        // Write to JPEG output stream
+
+        ALOGV("%s: Compression complete, pushing to stream %d", __FUNCTION__,
+                mJpegBuffer.streamId);
+
+        GraphicBufferMapper::get().unlock(*(mJpegBuffer.buffer));
+        status_t res;
+        const Stream &s = mParent->getStreamInfo(mJpegBuffer.streamId);
+        res = s.ops->enqueue_buffer(s.ops, mCaptureTime, mJpegBuffer.buffer);
+        if (res != OK) {
+            ALOGE("%s: Error queueing compressed image buffer %p: %s (%d)",
+                    __FUNCTION__, mJpegBuffer.buffer, strerror(-res), res);
+            mParent->signalError();
+        }
+
+        cleanUp();
+    }
+
+    return false;
+}
+
+status_t JpegCompressor::compress() {
     // Find source and target buffers. Assumes only one buffer matches
     // each condition!
 
@@ -96,7 +147,7 @@ bool JpegCompressor::threadLoop() {
         ALOGE("%s: Unable to find buffers for JPEG source/destination",
                 __FUNCTION__);
         cleanUp();
-        return false;
+        return BAD_VALUE;
     }
 
     // Set up error management
@@ -109,7 +160,7 @@ bool JpegCompressor::threadLoop() {
     mCInfo.err->error_exit = jpegErrorHandler;
 
     jpeg_create_compress(&mCInfo);
-    if (checkError("Error initializing compression")) return false;
+    if (checkError("Error initializing compression")) return NO_INIT;
 
     // Route compressed data straight to output stream buffer
 
@@ -129,12 +180,12 @@ bool JpegCompressor::threadLoop() {
     mCInfo.in_color_space = JCS_RGB;
 
     jpeg_set_defaults(&mCInfo);
-    if (checkError("Error configuring defaults")) return false;
+    if (checkError("Error configuring defaults")) return NO_INIT;
 
     // Do compression
 
     jpeg_start_compress(&mCInfo, TRUE);
-    if (checkError("Error starting compression")) return false;
+    if (checkError("Error starting compression")) return NO_INIT;
 
     size_t rowStride = mAuxBuffer.stride * 3;
     const size_t kChunkSize = 32;
@@ -145,37 +196,20 @@ bool JpegCompressor::threadLoop() {
                     (mAuxBuffer.img + (i + mCInfo.next_scanline) * rowStride);
         }
         jpeg_write_scanlines(&mCInfo, chunk, kChunkSize);
-        if (checkError("Error while compressing")) return false;
+        if (checkError("Error while compressing")) return NO_INIT;
         if (exitPending()) {
             ALOGV("%s: Cancel called, exiting early", __FUNCTION__);
             cleanUp();
-            return false;
+            return TIMED_OUT;
         }
     }
 
     jpeg_finish_compress(&mCInfo);
-    if (checkError("Error while finishing compression")) return false;
-
-    // Write to JPEG output stream
-
-    ALOGV("%s: Compression complete, pushing to stream %d", __FUNCTION__,
-          mJpegBuffer.streamId);
-
-    GraphicBufferMapper::get().unlock(*(mJpegBuffer.buffer));
-    status_t res;
-    const Stream &s = mParent->getStreamInfo(mJpegBuffer.streamId);
-    res = s.ops->enqueue_buffer(s.ops, mCaptureTime, mJpegBuffer.buffer);
-    if (res != OK) {
-        ALOGE("%s: Error queueing compressed image buffer %p: %s (%d)",
-                __FUNCTION__, mJpegBuffer.buffer, strerror(-res), res);
-        mParent->signalError();
-    }
+    if (checkError("Error while finishing compression")) return NO_INIT;
 
     // All done
 
-    cleanUp();
-
-    return false;
+    return OK;
 }
 
 bool JpegCompressor::isBusy() {
@@ -224,7 +258,7 @@ void JpegCompressor::cleanUp() {
     if (mFoundAux) {
         if (mAuxBuffer.streamId == 0) {
             delete[] mAuxBuffer.img;
-        } else {
+        } else if (!mSynchronous) {
             GraphicBufferMapper::get().unlock(*(mAuxBuffer.buffer));
             const ReprocessStream &s =
                     mParent->getReprocessStreamInfo(-mAuxBuffer.streamId);
@@ -236,7 +270,10 @@ void JpegCompressor::cleanUp() {
             }
         }
     }
-    delete mBuffers;
+    if (!mSynchronous) {
+        delete mBuffers;
+    }
+
     mBuffers = NULL;
 
     mIsBusy = false;

@@ -51,6 +51,9 @@ class JpegCompressor: private Thread, public virtual RefBase {
     status_t start(Buffers *buffers,
             nsecs_t captureTime);
 
+    // Compress and block until buffer is complete.
+    status_t compressSynchronous(Buffers *buffers);
+
     status_t cancel();
 
     bool isBusy();
@@ -65,6 +68,7 @@ class JpegCompressor: private Thread, public virtual RefBase {
     Mutex mBusyMutex;
     bool mIsBusy;
     Condition mDone;
+    bool mSynchronous;
 
     Mutex mMutex;
 
@@ -94,6 +98,8 @@ class JpegCompressor: private Thread, public virtual RefBase {
     static void jpegTermDestination(j_compress_ptr cinfo);
 
     bool checkError(const char *msg);
+    status_t compress();
+
     void cleanUp();
 
     /**
