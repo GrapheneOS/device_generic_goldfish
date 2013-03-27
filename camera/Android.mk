@@ -53,6 +53,7 @@ LOCAL_SRC_FILES := \
 	QemuClient.cpp \
 	JpegCompressor.cpp \
     EmulatedCamera2.cpp \
+    EmulatedCameraHotplugThread.cpp \
 	EmulatedFakeCamera2.cpp \
 	EmulatedQemuCamera2.cpp \
 	fake-pipeline2/Scene.cpp \

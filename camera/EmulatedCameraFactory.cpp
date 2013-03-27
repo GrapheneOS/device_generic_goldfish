@@ -26,6 +26,7 @@
 #include "EmulatedQemuCamera.h"
 #include "EmulatedFakeCamera.h"
 #include "EmulatedFakeCamera2.h"
+#include "EmulatedCameraHotplugThread.h"
 #include "EmulatedCameraFactory.h"
 
 extern camera_module_t HAL_MODULE_INFO_SYM;
@@ -42,7 +43,8 @@ EmulatedCameraFactory::EmulatedCameraFactory()
           mEmulatedCameras(NULL),
           mEmulatedCameraNum(0),
           mFakeCameraNum(0),
-          mConstructedOK(false)
+          mConstructedOK(false),
+          mCallbacks(NULL)
 {
     status_t res;
     /* Connect to the factory service in the emulator, and create Qemu cameras. */
@@ -159,6 +161,17 @@ EmulatedCameraFactory::EmulatedCameraFactory()
     ALOGV("%d cameras are being emulated. %d of them are fake cameras.",
           mEmulatedCameraNum, mFakeCameraNum);
 
+    /* Create hotplug thread */
+    {
+        Vector<int> cameraIdVector;
+        for (int i = 0; i < mEmulatedCameraNum; ++i) {
+            cameraIdVector.push_back(i);
+        }
+        mHotplugThread = new EmulatedCameraHotplugThread(&cameraIdVector[0],
+                                                         mEmulatedCameraNum);
+        mHotplugThread->run();
+    }
+
     mConstructedOK = true;
 }
 
@@ -171,6 +184,11 @@ EmulatedCameraFactory::~EmulatedCameraFactory()
             }
         }
         delete[] mEmulatedCameras;
+    }
+
+    if (mHotplugThread != NULL) {
+        mHotplugThread->requestExit();
+        mHotplugThread->join();
     }
 }
 
@@ -220,6 +238,16 @@ int EmulatedCameraFactory::getCameraInfo(int camera_id, struct camera_info* info
     return mEmulatedCameras[camera_id]->getCameraInfo(info);
 }
 
+int EmulatedCameraFactory::setCallbacks(
+        const camera_module_callbacks_t *callbacks)
+{
+    ALOGV("%s: callbacks = %p", __FUNCTION__, callbacks);
+
+    mCallbacks = callbacks;
+
+    return OK;
+}
+
 /****************************************************************************
  * Camera HAL API callbacks.
  ***************************************************************************/
@@ -255,6 +283,12 @@ int EmulatedCameraFactory::get_camera_info(int camera_id,
                                            struct camera_info* info)
 {
     return gEmulatedCameraFactory.getCameraInfo(camera_id, info);
+}
+
+int EmulatedCameraFactory::set_callbacks(
+        const camera_module_callbacks_t *callbacks)
+{
+    return gEmulatedCameraFactory.setCallbacks(callbacks);
 }
 
 /********************************************************************************
@@ -435,6 +469,37 @@ int EmulatedCameraFactory::getFrontCameraHalVersion()
         ALOGE("qemu.sf.front_camera_hal is not a number: %s", prop);
     }
     return 1;
+}
+
+void EmulatedCameraFactory::onStatusChanged(int cameraId, int newStatus) {
+
+    EmulatedBaseCamera *cam = mEmulatedCameras[cameraId];
+    if (!cam) {
+        ALOGE("%s: Invalid camera ID %d", __FUNCTION__, cameraId);
+        return;
+    }
+
+    /**
+     * (Order is important)
+     * Send the callback first to framework, THEN close the camera.
+     */
+
+    if (newStatus == cam->getHotplugStatus()) {
+        ALOGW("%s: Ignoring transition to the same status", __FUNCTION__);
+        return;
+    }
+
+    const camera_module_callbacks_t* cb = mCallbacks;
+    if (cb != NULL && cb->camera_device_status_change != NULL) {
+        cb->camera_device_status_change(cb, cameraId, newStatus);
+    }
+
+    if (newStatus == CAMERA_DEVICE_STATUS_NOT_PRESENT) {
+        cam->unplugCamera();
+    } else if (newStatus == CAMERA_DEVICE_STATUS_PRESENT) {
+        cam->plugCamera();
+    }
+
 }
 
 /********************************************************************************
