@@ -131,6 +131,17 @@ class Scene {
      * Constants for scene definition. These are various degrees of approximate.
      */
 
+    // Fake handshake parameters. Two shake frequencies per axis, plus magnitude
+    // as a fraction of a scene tile, and relative magnitudes for the frequencies
+    static const float kHorizShakeFreq1;
+    static const float kHorizShakeFreq2;
+    static const float kVertShakeFreq1;
+    static const float kVertShakeFreq2;
+    static const float kFreq1Magnitude;
+    static const float kFreq2Magnitude;
+
+    static const float kShakeFraction;
+
     // RGB->YUV conversion
     static const float kRgb2Yuv[12];
 
