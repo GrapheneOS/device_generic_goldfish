@@ -69,5 +69,21 @@ status_t EmulatedBaseCamera::getCameraInfo(struct camera_info* info)
     return NO_ERROR;
 }
 
+status_t EmulatedBaseCamera::plugCamera() {
+    ALOGE("%s: not supported", __FUNCTION__);
+    return INVALID_OPERATION;
+}
+
+status_t EmulatedBaseCamera::unplugCamera() {
+    ALOGE("%s: not supported", __FUNCTION__);
+    return INVALID_OPERATION;
+}
+
+camera_device_status_t EmulatedBaseCamera::getHotplugStatus() {
+    return CAMERA_DEVICE_STATUS_PRESENT;
+}
+
+
+
 
 } /* namespace android */

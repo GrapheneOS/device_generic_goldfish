@@ -29,6 +29,10 @@
 #include <ui/GraphicBufferMapper.h>
 #include "gralloc_cb.h"
 
+#define ERROR_CAMERA_NOT_PRESENT -EPIPE
+
+#define CAMERA2_EXT_TRIGGER_TESTING_DISCONNECT 0xFFFFFFFF
+
 namespace android {
 
 const int64_t USEC = 1000LL;
@@ -86,7 +90,8 @@ EmulatedFakeCamera2::EmulatedFakeCamera2(int cameraId,
         bool facingBack,
         struct hw_module_t* module)
         : EmulatedCamera2(cameraId,module),
-          mFacingBack(facingBack)
+          mFacingBack(facingBack),
+          mIsConnected(false)
 {
     ALOGD("Constructing emulated fake camera 2 facing %s",
             facingBack ? "back" : "front");
@@ -140,6 +145,15 @@ status_t EmulatedFakeCamera2::connectCamera(hw_device_t** device) {
     status_t res;
     ALOGV("%s", __FUNCTION__);
 
+    {
+        Mutex::Autolock l(mMutex);
+        if (!mStatusPresent) {
+            ALOGE("%s: Camera ID %d is unplugged", __FUNCTION__,
+                  mCameraID);
+            return -ENODEV;
+        }
+    }
+
     mConfigureThread = new ConfigureThread(this);
     mReadoutThread = new ReadoutThread(this);
     mControlThread = new ControlThread(this);
@@ -161,8 +175,49 @@ status_t EmulatedFakeCamera2::connectCamera(hw_device_t** device) {
     res = mControlThread->run("EmulatedFakeCamera2::controlThread");
     if (res != NO_ERROR) return res;
 
-    return EmulatedCamera2::connectCamera(device);
+    status_t ret = EmulatedCamera2::connectCamera(device);
+
+    if (ret >= 0) {
+        mIsConnected = true;
+    }
+
+    return ret;
 }
+
+status_t EmulatedFakeCamera2::plugCamera() {
+    {
+        Mutex::Autolock l(mMutex);
+
+        if (!mStatusPresent) {
+            ALOGI("%s: Plugged back in", __FUNCTION__);
+            mStatusPresent = true;
+        }
+    }
+
+    return NO_ERROR;
+}
+
+status_t EmulatedFakeCamera2::unplugCamera() {
+    {
+        Mutex::Autolock l(mMutex);
+
+        if (mStatusPresent) {
+            ALOGI("%s: Unplugged camera", __FUNCTION__);
+            mStatusPresent = false;
+        }
+    }
+
+    return closeCamera();
+}
+
+camera_device_status_t EmulatedFakeCamera2::getHotplugStatus() {
+    Mutex::Autolock l(mMutex);
+    return mStatusPresent ?
+        CAMERA_DEVICE_STATUS_PRESENT :
+        CAMERA_DEVICE_STATUS_NOT_PRESENT;
+}
+
+
 
 status_t EmulatedFakeCamera2::closeCamera() {
     {
@@ -170,6 +225,10 @@ status_t EmulatedFakeCamera2::closeCamera() {
 
         status_t res;
         ALOGV("%s", __FUNCTION__);
+
+        if (!mIsConnected) {
+            return NO_ERROR;
+        }
 
         res = mSensor->shutDown();
         if (res != NO_ERROR) {
@@ -190,6 +249,12 @@ status_t EmulatedFakeCamera2::closeCamera() {
     mControlThread->join();
 
     ALOGV("%s exit", __FUNCTION__);
+
+    {
+        Mutex::Autolock l(mMutex);
+        mIsConnected = false;
+    }
+
     return NO_ERROR;
 }
 
@@ -223,6 +288,11 @@ int EmulatedFakeCamera2::requestQueueNotify() {
 int EmulatedFakeCamera2::getInProgressCount() {
     Mutex::Autolock l(mMutex);
 
+    if (!mStatusPresent) {
+        ALOGW("%s: Camera was physically disconnected", __FUNCTION__);
+        return ERROR_CAMERA_NOT_PRESENT;
+    }
+
     int requestCount = 0;
     requestCount += mConfigureThread->getInProgressCount();
     requestCount += mReadoutThread->getInProgressCount();
@@ -239,6 +309,15 @@ int EmulatedFakeCamera2::constructDefaultRequest(
     if (request_template < 0 || request_template >= CAMERA2_TEMPLATE_COUNT) {
         return BAD_VALUE;
     }
+
+    {
+        Mutex::Autolock l(mMutex);
+        if (!mStatusPresent) {
+            ALOGW("%s: Camera was physically disconnected", __FUNCTION__);
+            return ERROR_CAMERA_NOT_PRESENT;
+        }
+    }
+
     status_t res;
     // Pass 1, calculate size and allocate
     res = constructDefaultRequest(request_template,
@@ -269,6 +348,11 @@ int EmulatedFakeCamera2::allocateStream(
         uint32_t *usage,
         uint32_t *max_buffers) {
     Mutex::Autolock l(mMutex);
+
+    if (!mStatusPresent) {
+        ALOGW("%s: Camera was physically disconnected", __FUNCTION__);
+        return ERROR_CAMERA_NOT_PRESENT;
+    }
 
     // Temporary shim until FORMAT_ZSL is removed
     if (format == CAMERA2_HAL_PIXEL_FORMAT_ZSL) {
@@ -382,6 +466,11 @@ int EmulatedFakeCamera2::registerStreamBuffers(
             buffer_handle_t *buffers) {
     Mutex::Autolock l(mMutex);
 
+    if (!mStatusPresent) {
+        ALOGW("%s: Camera was physically disconnected", __FUNCTION__);
+        return ERROR_CAMERA_NOT_PRESENT;
+    }
+
     ALOGV("%s: Stream %d registering %d buffers", __FUNCTION__,
             stream_id, num_buffers);
     // Need to find out what the final concrete pixel format for our stream is
@@ -457,6 +546,11 @@ int EmulatedFakeCamera2::allocateReprocessStreamFromStream(
         uint32_t *stream_id) {
     Mutex::Autolock l(mMutex);
 
+    if (!mStatusPresent) {
+        ALOGW("%s: Camera was physically disconnected", __FUNCTION__);
+        return ERROR_CAMERA_NOT_PRESENT;
+    }
+
     ssize_t baseStreamIndex = mStreams.indexOfKey(output_stream_id);
     if (baseStreamIndex < 0) {
         ALOGE("%s: Unknown output stream id %d!", __FUNCTION__, output_stream_id);
@@ -518,6 +612,21 @@ int EmulatedFakeCamera2::triggerAction(uint32_t trigger_id,
         int32_t ext1,
         int32_t ext2) {
     Mutex::Autolock l(mMutex);
+
+    if (trigger_id == CAMERA2_EXT_TRIGGER_TESTING_DISCONNECT) {
+        ALOGI("%s: Disconnect trigger - camera must be closed", __FUNCTION__);
+        mStatusPresent = false;
+
+        gEmulatedCameraFactory.onStatusChanged(
+                mCameraID,
+                CAMERA_DEVICE_STATUS_NOT_PRESENT);
+    }
+
+    if (!mStatusPresent) {
+        ALOGW("%s: Camera was physically disconnected", __FUNCTION__);
+        return ERROR_CAMERA_NOT_PRESENT;
+    }
+
     return mControlThread->triggerAction(trigger_id,
             ext1, ext2);
 }
@@ -701,6 +810,7 @@ bool EmulatedFakeCamera2::ConfigureThread::threadLoop() {
         }
         // Active
     }
+
     if (mRequest == NULL) {
         Mutex::Autolock il(mInternalsMutex);
 
@@ -1961,7 +2071,7 @@ int EmulatedFakeCamera2::ControlThread::maybeStartAeScan(uint8_t aeMode,
                 mAeScanDuration = ((double)rand() / RAND_MAX) *
                 (kMaxAeDuration - kMinAeDuration) + kMinAeDuration;
                 aeState = ANDROID_CONTROL_AE_STATE_SEARCHING;
-                ALOGD("%s: AE scan start, duration %lld ms",
+                ALOGV("%s: AE scan start, duration %lld ms",
                         __FUNCTION__, mAeScanDuration / 1000000);
             }
         }
@@ -1978,7 +2088,7 @@ int EmulatedFakeCamera2::ControlThread::updateAeScan(uint8_t aeMode,
     } else if ((aeState == ANDROID_CONTROL_AE_STATE_SEARCHING) ||
             (aeState == ANDROID_CONTROL_AE_STATE_PRECAPTURE ) ) {
         if (mAeScanDuration <= 0) {
-            ALOGD("%s: AE scan done", __FUNCTION__);
+            ALOGV("%s: AE scan done", __FUNCTION__);
             aeState = aeLock ?
                     ANDROID_CONTROL_AE_STATE_LOCKED :ANDROID_CONTROL_AE_STATE_CONVERGED;
 
@@ -2006,7 +2116,7 @@ void EmulatedFakeCamera2::ControlThread::updateAeState(uint8_t newState,
         int32_t triggerId) {
     Mutex::Autolock lock(mInputMutex);
     if (mAeState != newState) {
-        ALOGD("%s: Autoexposure state now %d, id %d", __FUNCTION__,
+        ALOGV("%s: Autoexposure state now %d, id %d", __FUNCTION__,
                 newState, triggerId);
         mAeState = newState;
         mParent->sendNotification(CAMERA2_MSG_AUTOEXPOSURE,

@@ -247,6 +247,8 @@ private:
     /** Mutex for calls through camera2 device interface */
     Mutex mMutex;
 
+    bool mStatusPresent;
+
     const camera2_request_queue_src_ops *mRequestQueueSrc;
     const camera2_frame_queue_dst_ops *mFrameQueueDst;
 

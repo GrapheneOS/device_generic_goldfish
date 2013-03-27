@@ -60,6 +60,8 @@ EmulatedCamera2::EmulatedCamera2(int cameraId,
     mVendorTagOps.get_camera_vendor_tag_type =
             EmulatedCamera2::get_camera_vendor_tag_type;
     mVendorTagOps.parent = this;
+
+    mStatusPresent = true;
 }
 
 /* Destructs EmulatedCamera2 instance. */
