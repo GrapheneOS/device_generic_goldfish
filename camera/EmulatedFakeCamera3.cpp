@@ -20,6 +20,7 @@
  */
 
 //#define LOG_NDEBUG 0
+//#define LOG_NNDEBUG 0
 #define LOG_TAG "EmulatedCamera_FakeCamera3"
 #include <utils/Log.h>
 
@@ -29,9 +30,16 @@
 #include <ui/Rect.h>
 #include <ui/GraphicBufferMapper.h>
 #include "gralloc_cb.h"
+
 #include "fake-pipeline2/Sensor.h"
 #include "fake-pipeline2/JpegCompressor.h"
 #include <cmath>
+
+#if defined(LOG_NNDEBUG) && LOG_NNDEBUG == 0
+#define ALOGVV ALOGV
+#else
+#define ALOGVV(...) ((void)0)
+#endif
 
 namespace android {
 
@@ -1461,11 +1469,13 @@ status_t EmulatedFakeCamera3::doFakeAF(CameraMetadata &settings) {
         }
 
         mAfTriggerId = e.data.i32[0];
+
+        ALOGV("%s: AF trigger set to 0x%x", __FUNCTION__, afTrigger);
+        ALOGV("%s: AF trigger ID set to 0x%x", __FUNCTION__, mAfTriggerId);
+        ALOGV("%s: AF mode is 0x%x", __FUNCTION__, afMode);
     } else {
         afTrigger = ANDROID_CONTROL_AF_TRIGGER_IDLE;
     }
-
-    // TODO: implement AF triggering semantic
 
     switch (afMode) {
         case ANDROID_CONTROL_AF_MODE_OFF:
@@ -1480,12 +1490,174 @@ status_t EmulatedFakeCamera3::doFakeAF(CameraMetadata &settings) {
                         __FUNCTION__, afMode);
                 return BAD_VALUE;
             }
-            // OK
+            // OK, handle transitions lower on
             break;
         default:
             ALOGE("%s: Emulator doesn't support AF mode %d",
                     __FUNCTION__, afMode);
             return BAD_VALUE;
+    }
+
+    bool afModeChanged = mAfMode != afMode;
+    mAfMode = afMode;
+
+    /**
+     * Simulate AF triggers. Transition at most 1 state per frame.
+     * - Focusing always succeeds (goes into locked, or PASSIVE_SCAN).
+     */
+
+    bool afTriggerStart = false;
+    bool afTriggerCancel = false;
+    switch (afTrigger) {
+        case ANDROID_CONTROL_AF_TRIGGER_IDLE:
+            break;
+        case ANDROID_CONTROL_AF_TRIGGER_START:
+            afTriggerStart = true;
+            break;
+        case ANDROID_CONTROL_AF_TRIGGER_CANCEL:
+            afTriggerCancel = true;
+            // Cancel trigger always transitions into INACTIVE
+            mAfState = ANDROID_CONTROL_AF_STATE_INACTIVE;
+
+            ALOGV("%s: AF State transition to STATE_INACTIVE", __FUNCTION__);
+
+            // Stay in 'inactive' until at least next frame
+            return OK;
+        default:
+            ALOGE("%s: Unknown af trigger value %d", __FUNCTION__, afTrigger);
+            return BAD_VALUE;
+    }
+
+    // If we get down here, we're either in an autofocus mode
+    //  or in a continuous focus mode (and no other modes)
+
+    int oldAfState = mAfState;
+    switch (mAfState) {
+        case ANDROID_CONTROL_AF_STATE_INACTIVE:
+            if (afTriggerStart) {
+                switch (afMode) {
+                    case ANDROID_CONTROL_AF_MODE_AUTO:
+                        // fall-through
+                    case ANDROID_CONTROL_AF_MODE_MACRO:
+                        mAfState = ANDROID_CONTROL_AF_STATE_ACTIVE_SCAN;
+                        break;
+                    case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
+                        // fall-through
+                    case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
+                        mAfState = ANDROID_CONTROL_AF_STATE_NOT_FOCUSED_LOCKED;
+                        break;
+                }
+            } else {
+                // At least one frame stays in INACTIVE
+                if (!afModeChanged) {
+                    switch (afMode) {
+                        case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
+                            // fall-through
+                        case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
+                            mAfState = ANDROID_CONTROL_AF_STATE_PASSIVE_SCAN;
+                            break;
+                    }
+                }
+            }
+            break;
+        case ANDROID_CONTROL_AF_STATE_PASSIVE_SCAN:
+            /**
+             * When the AF trigger is activated, the algorithm should finish
+             * its PASSIVE_SCAN if active, and then transition into AF_FOCUSED
+             * or AF_NOT_FOCUSED as appropriate
+             */
+            if (afTriggerStart) {
+                // Randomly transition to focused or not focused
+                if (rand() % 3) {
+                    mAfState = ANDROID_CONTROL_AF_STATE_FOCUSED_LOCKED;
+                } else {
+                    mAfState = ANDROID_CONTROL_AF_STATE_NOT_FOCUSED_LOCKED;
+                }
+            }
+            /**
+             * When the AF trigger is not involved, the AF algorithm should
+             * start in INACTIVE state, and then transition into PASSIVE_SCAN
+             * and PASSIVE_FOCUSED states
+             */
+            else if (!afTriggerCancel) {
+               // Randomly transition to passive focus
+                if (rand() % 3 == 0) {
+                    mAfState = ANDROID_CONTROL_AF_STATE_PASSIVE_FOCUSED;
+                }
+            }
+
+            break;
+        case ANDROID_CONTROL_AF_STATE_PASSIVE_FOCUSED:
+            if (afTriggerStart) {
+                // Randomly transition to focused or not focused
+                if (rand() % 3) {
+                    mAfState = ANDROID_CONTROL_AF_STATE_FOCUSED_LOCKED;
+                } else {
+                    mAfState = ANDROID_CONTROL_AF_STATE_NOT_FOCUSED_LOCKED;
+                }
+            }
+            // TODO: initiate passive scan (PASSIVE_SCAN)
+            break;
+        case ANDROID_CONTROL_AF_STATE_ACTIVE_SCAN:
+            // Simulate AF sweep completing instantaneously
+
+            // Randomly transition to focused or not focused
+            if (rand() % 3) {
+                mAfState = ANDROID_CONTROL_AF_STATE_FOCUSED_LOCKED;
+            } else {
+                mAfState = ANDROID_CONTROL_AF_STATE_NOT_FOCUSED_LOCKED;
+            }
+            break;
+        case ANDROID_CONTROL_AF_STATE_FOCUSED_LOCKED:
+            if (afTriggerStart) {
+                switch (afMode) {
+                    case ANDROID_CONTROL_AF_MODE_AUTO:
+                        // fall-through
+                    case ANDROID_CONTROL_AF_MODE_MACRO:
+                        mAfState = ANDROID_CONTROL_AF_STATE_ACTIVE_SCAN;
+                        break;
+                    case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
+                        // fall-through
+                    case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
+                        // continuous autofocus => trigger start has no effect
+                        break;
+                }
+            }
+            break;
+        case ANDROID_CONTROL_AF_STATE_NOT_FOCUSED_LOCKED:
+            if (afTriggerStart) {
+                switch (afMode) {
+                    case ANDROID_CONTROL_AF_MODE_AUTO:
+                        // fall-through
+                    case ANDROID_CONTROL_AF_MODE_MACRO:
+                        mAfState = ANDROID_CONTROL_AF_STATE_ACTIVE_SCAN;
+                        break;
+                    case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
+                        // fall-through
+                    case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
+                        // continuous autofocus => trigger start has no effect
+                        break;
+                }
+            }
+            break;
+        default:
+            ALOGE("%s: Bad af state %d", __FUNCTION__, mAfState);
+    }
+
+    {
+        char afStateString[100] = {0,};
+        camera_metadata_enum_snprint(ANDROID_CONTROL_AF_STATE,
+                oldAfState,
+                afStateString,
+                sizeof(afStateString));
+
+        char afNewStateString[100] = {0,};
+        camera_metadata_enum_snprint(ANDROID_CONTROL_AF_STATE,
+                mAfState,
+                afNewStateString,
+                sizeof(afNewStateString));
+        ALOGVV("%s: AF state transitioned from %s to %s",
+              __FUNCTION__, afStateString, afNewStateString);
     }
 
 
