@@ -87,7 +87,7 @@ class EmulatedFakeCamera2;
 class Sensor: private Thread, public virtual RefBase {
   public:
 
-    Sensor(EmulatedFakeCamera2 *parent);
+    Sensor();
     ~Sensor();
 
     /*
@@ -172,8 +172,6 @@ class Sensor: private Thread, public virtual RefBase {
     static const uint32_t kDefaultSensitivity;
 
   private:
-    EmulatedFakeCamera2 *mParent;
-
     Mutex mControlMutex; // Lock before accessing control parameters
     // Start of control parameters
     Condition mVSync;
