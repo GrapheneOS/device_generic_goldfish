@@ -18,7 +18,7 @@
 #define LOG_TAG "EmulatedCamera_Scene"
 #include <utils/Log.h>
 #include <stdlib.h>
-
+#include <cmath>
 #include "Scene.h"
 
 // TODO: This should probably be done host-side in OpenGL for speed and better
@@ -320,9 +320,18 @@ void Scene::calculateScene(nsecs_t time) {
                 mCurrentColors[i*NUM_CHANNELS + 2],
                 mCurrentColors[i*NUM_CHANNELS + 3]);
     }
-    // Shake viewpoint
-    mHandshakeX = rand() % mMapDiv/4 - mMapDiv/8;
-    mHandshakeY = rand() % mMapDiv/4 - mMapDiv/8;
+    // Shake viewpoint; horizontal and vertical sinusoids at roughly
+    // human handshake frequencies
+    mHandshakeX =
+            ( kFreq1Magnitude * std::sin(kHorizShakeFreq1 * timeSinceIdx) +
+              kFreq2Magnitude * std::sin(kHorizShakeFreq2 * timeSinceIdx) ) *
+            mMapDiv * kShakeFraction;
+
+    mHandshakeY =
+            ( kFreq1Magnitude * std::sin(kVertShakeFreq1 * timeSinceIdx) +
+              kFreq2Magnitude * std::sin(kVertShakeFreq2 * timeSinceIdx) ) *
+            mMapDiv * kShakeFraction;
+
     // Set starting pixel
     setReadoutPixel(0,0);
 }
@@ -355,6 +364,16 @@ const uint32_t* Scene::getPixelElectrons() {
     }
     return pixel;
 }
+
+// Handshake model constants.
+// Frequencies measured in a nanosecond timebase
+const float Scene::kHorizShakeFreq1 = 2 * M_PI * 2  / 1e9; // 2 Hz
+const float Scene::kHorizShakeFreq2 = 2 * M_PI * 13 / 1e9; // 13 Hz
+const float Scene::kVertShakeFreq1  = 2 * M_PI * 3  / 1e9; // 3 Hz
+const float Scene::kVertShakeFreq2  = 2 * M_PI * 11 / 1e9; // 1 Hz
+const float Scene::kFreq1Magnitude  = 5;
+const float Scene::kFreq2Magnitude  = 1;
+const float Scene::kShakeFraction   = 0.03; // As a fraction of a scene tile
 
 // RGB->YUV, Jpeg standard
 const float Scene::kRgb2Yuv[12] = {
