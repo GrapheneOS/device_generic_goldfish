@@ -350,7 +350,9 @@ status_t EmulatedFakeCamera3::registerStreamBuffers(
      * Sanity checks
      */
 
-    if (mStatus != STATUS_READY) {
+    // OK: register streams at any time during configure
+    // (but only once per stream)
+    if (mStatus != STATUS_READY && mStatus != STATUS_ACTIVE) {
         ALOGE("%s: Cannot register buffers in state %d",
                 __FUNCTION__, mStatus);
         return NO_INIT;
@@ -378,6 +380,12 @@ status_t EmulatedFakeCamera3::registerStreamBuffers(
 
     PrivateStreamInfo *privStream =
             static_cast<PrivateStreamInfo*>((*s)->priv);
+
+    if (privStream->registered) {
+        ALOGE("%s: Illegal to register buffer more than once", __FUNCTION__);
+        return BAD_VALUE;
+    }
+
     privStream->registered = true;
 
     return OK;
