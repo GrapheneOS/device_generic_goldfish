@@ -31,6 +31,7 @@
 #include "gralloc_cb.h"
 #include "fake-pipeline2/Sensor.h"
 #include "fake-pipeline2/JpegCompressor.h"
+#include <cmath>
 
 namespace android {
 
@@ -87,6 +88,21 @@ const uint32_t EmulatedFakeCamera3::kAvailableJpegSizesFront[2] = {
 const uint64_t EmulatedFakeCamera3::kAvailableJpegMinDurations[1] = {
     (const uint64_t)Sensor::kFrameDurationRange[0]
 };
+
+/**
+ * 3A constants
+ */
+
+// Default exposure and gain targets for different scenarios
+const nsecs_t EmulatedFakeCamera3::kNormalExposureTime       = 10 * MSEC;
+const nsecs_t EmulatedFakeCamera3::kFacePriorityExposureTime = 30 * MSEC;
+const int     EmulatedFakeCamera3::kNormalSensitivity        = 100;
+const int     EmulatedFakeCamera3::kFacePrioritySensitivity  = 400;
+const float   EmulatedFakeCamera3::kExposureTrackRate        = 0.1;
+const int     EmulatedFakeCamera3::kPrecaptureMinFrames      = 10;
+const int     EmulatedFakeCamera3::kStableAeMaxFrames        = 100;
+const float   EmulatedFakeCamera3::kExposureWanderMin        = -2;
+const float   EmulatedFakeCamera3::kExposureWanderMax        = 1;
 
 /**
  * Camera device lifecycle methods
@@ -147,9 +163,25 @@ status_t EmulatedFakeCamera3::connectCamera(hw_device_t** device) {
     if (res != NO_ERROR) return res;
 
     mReadoutThread = new ReadoutThread(this);
+    mJpegCompressor = new JpegCompressor(NULL);
 
     res = mReadoutThread->run("EmuCam3::readoutThread");
     if (res != NO_ERROR) return res;
+
+    // Initialize fake 3A
+
+    mControlMode  = ANDROID_CONTROL_MODE_AUTO;
+    mFacePriority = false;
+    mAeMode       = ANDROID_CONTROL_AE_MODE_ON_AUTO_FLASH;
+    mAfMode       = ANDROID_CONTROL_AF_MODE_AUTO;
+    mAwbMode      = ANDROID_CONTROL_AWB_MODE_AUTO;
+    mAeState      = ANDROID_CONTROL_AE_STATE_INACTIVE;
+    mAfState      = ANDROID_CONTROL_AF_STATE_INACTIVE;
+    mAwbState     = ANDROID_CONTROL_AWB_STATE_INACTIVE;
+    mAfTriggerId  = 0;
+    mAeTriggerId  = 0;
+    mAeCurrentExposureTime = kNormalExposureTime;
+    mAeCurrentSensitivity  = kNormalSensitivity;
 
     return EmulatedCamera3::connectCamera(device);
 }
@@ -754,7 +786,10 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         settings = request->settings;
     }
 
-    // TODO: Apply 3A overrides
+    res = process3A(settings);
+    if (res != OK) {
+        return res;
+    }
 
     // TODO: Handle reprocessing
 
@@ -783,12 +818,12 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         const cb_handle_t *privBuffer =
                 static_cast<const cb_handle_t*>(*srcBuf.buffer);
         StreamBuffer destBuf;
-        destBuf.streamId = 0;
-        destBuf.width  = srcBuf.stream->width;
-        destBuf.height = srcBuf.stream->height;
-        destBuf.format = privBuffer->format; // Use real private format
-        destBuf.stride = srcBuf.stream->width; // TODO: query from gralloc
-        destBuf.buffer = srcBuf.buffer;
+        destBuf.streamId = kGenericStreamId;
+        destBuf.width    = srcBuf.stream->width;
+        destBuf.height   = srcBuf.stream->height;
+        destBuf.format   = privBuffer->format; // Use real private format
+        destBuf.stride   = srcBuf.stream->width; // TODO: query from gralloc
+        destBuf.buffer   = srcBuf.buffer;
 
         // Wait on fence
         sp<Fence> bufferAcquireFence = new Fence(srcBuf.acquire_fence);
@@ -1198,6 +1233,268 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     return OK;
 }
 
+status_t EmulatedFakeCamera3::process3A(CameraMetadata &settings) {
+    /**
+     * Extract top-level 3A controls
+     */
+    status_t res;
+
+    bool facePriority = false;
+
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_MODE);
+    if (e.count == 0) {
+        ALOGE("%s: No control mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t controlMode = e.data.u8[0];
+
+    e = settings.find(ANDROID_CONTROL_SCENE_MODE);
+    if (e.count == 0) {
+        ALOGE("%s: No scene mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t sceneMode = e.data.u8[0];
+
+    if (controlMode == ANDROID_CONTROL_MODE_OFF) {
+        mAeState  = ANDROID_CONTROL_AE_STATE_INACTIVE;
+        mAfState  = ANDROID_CONTROL_AF_STATE_INACTIVE;
+        mAwbState = ANDROID_CONTROL_AWB_STATE_INACTIVE;
+        update3A(settings);
+        return OK;
+    } else if (controlMode == ANDROID_CONTROL_MODE_USE_SCENE_MODE) {
+        switch(sceneMode) {
+            case ANDROID_CONTROL_SCENE_MODE_FACE_PRIORITY:
+                mFacePriority = true;
+                break;
+            default:
+                ALOGE("%s: Emulator doesn't support scene mode %d",
+                        __FUNCTION__, sceneMode);
+                return BAD_VALUE;
+        }
+    } else {
+        mFacePriority = false;
+    }
+
+    // controlMode == AUTO or sceneMode = FACE_PRIORITY
+    // Process individual 3A controls
+
+    res = doFakeAE(settings);
+    if (res != OK) return res;
+
+    res = doFakeAF(settings);
+    if (res != OK) return res;
+
+    res = doFakeAWB(settings);
+    if (res != OK) return res;
+
+    update3A(settings);
+    return OK;
+}
+
+status_t EmulatedFakeCamera3::doFakeAE(CameraMetadata &settings) {
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_AE_MODE);
+    if (e.count == 0) {
+        ALOGE("%s: No AE mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t aeMode = e.data.u8[0];
+
+    switch (aeMode) {
+        case ANDROID_CONTROL_AE_MODE_OFF:
+            // AE is OFF
+            mAeState = ANDROID_CONTROL_AE_STATE_INACTIVE;
+            return OK;
+        case ANDROID_CONTROL_AE_MODE_ON:
+            // OK for AUTO modes
+            break;
+        default:
+            ALOGE("%s: Emulator doesn't support AE mode %d",
+                    __FUNCTION__, aeMode);
+            return BAD_VALUE;
+    }
+
+    e = settings.find(ANDROID_CONTROL_AE_LOCK);
+    if (e.count == 0) {
+        ALOGE("%s: No AE lock entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    bool aeLocked = (e.data.u8[0] == ANDROID_CONTROL_AE_LOCK_ON);
+
+    e = settings.find(ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER);
+    bool precaptureTrigger = false;
+    if (e.count != 0) {
+        precaptureTrigger =
+                (e.data.u8[0] == ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER_START);
+    }
+
+    if (precaptureTrigger || mAeState == ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
+        // Run precapture sequence
+        if (mAeState != ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
+            mAeCounter = 0;
+            mAeTriggerId++;
+        }
+
+        if (mFacePriority) {
+            mAeTargetExposureTime = kFacePriorityExposureTime;
+        } else {
+            mAeTargetExposureTime = kNormalExposureTime;
+        }
+
+        if (mAeCounter > kPrecaptureMinFrames &&
+                (mAeTargetExposureTime - mAeCurrentExposureTime) <
+                mAeTargetExposureTime / 10) {
+            // Done with precapture
+            mAeCounter = 0;
+            mAeState = aeLocked ? ANDROID_CONTROL_AE_STATE_LOCKED :
+                    ANDROID_CONTROL_AE_STATE_CONVERGED;
+        } else {
+            // Converge some more
+            mAeCurrentExposureTime +=
+                    (mAeTargetExposureTime - mAeCurrentExposureTime) *
+                    kExposureTrackRate;
+            mAeCounter++;
+            mAeState = ANDROID_CONTROL_AE_STATE_PRECAPTURE;
+        }
+
+    } else if (!aeLocked) {
+        // Run standard occasional AE scan
+        switch (mAeState) {
+            case ANDROID_CONTROL_AE_STATE_CONVERGED:
+            case ANDROID_CONTROL_AE_STATE_INACTIVE:
+                mAeCounter++;
+                if (mAeCounter > kStableAeMaxFrames) {
+                    mAeTargetExposureTime =
+                            mFacePriority ? kFacePriorityExposureTime :
+                            kNormalExposureTime;
+                    float exposureStep = ((double)rand() / RAND_MAX) *
+                            (kExposureWanderMax - kExposureWanderMin) +
+                            kExposureWanderMin;
+                    mAeTargetExposureTime *= std::pow(2, exposureStep);
+                    mAeState = ANDROID_CONTROL_AE_STATE_SEARCHING;
+                }
+                break;
+            case ANDROID_CONTROL_AE_STATE_SEARCHING:
+                mAeCurrentExposureTime +=
+                        (mAeTargetExposureTime - mAeCurrentExposureTime) *
+                        kExposureTrackRate;
+                if (abs(mAeTargetExposureTime - mAeCurrentExposureTime) <
+                        mAeTargetExposureTime / 10) {
+                    // Close enough
+                    mAeState = ANDROID_CONTROL_AE_STATE_CONVERGED;
+                    mAeCounter = 0;
+                }
+                break;
+            case ANDROID_CONTROL_AE_STATE_LOCKED:
+                mAeState = ANDROID_CONTROL_AE_STATE_CONVERGED;
+                mAeCounter = 0;
+                break;
+            default:
+                ALOGE("%s: Emulator in unexpected AE state %d",
+                        __FUNCTION__, mAeState);
+                return INVALID_OPERATION;
+        }
+    } else {
+        // AE is locked
+        mAeState = ANDROID_CONTROL_AE_STATE_LOCKED;
+    }
+
+    return OK;
+}
+
+status_t EmulatedFakeCamera3::doFakeAF(CameraMetadata &settings) {
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_AF_MODE);
+    if (e.count == 0) {
+        ALOGE("%s: No AF mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t afMode = e.data.u8[0];
+
+    switch (afMode) {
+        case ANDROID_CONTROL_AF_MODE_OFF:
+            mAfState = ANDROID_CONTROL_AF_STATE_INACTIVE;
+            return OK;
+        case ANDROID_CONTROL_AF_MODE_AUTO:
+        case ANDROID_CONTROL_AF_MODE_MACRO:
+        case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
+        case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
+            if (!mFacingBack) {
+                ALOGE("%s: Front camera doesn't support AF mode %d",
+                        __FUNCTION__, afMode);
+                return BAD_VALUE;
+            }
+            // OK
+            break;
+        default:
+            ALOGE("%s: Emulator doesn't support AF mode %d",
+                    __FUNCTION__, afMode);
+            return BAD_VALUE;
+    }
+
+    return OK;
+}
+
+status_t EmulatedFakeCamera3::doFakeAWB(CameraMetadata &settings) {
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_AWB_MODE);
+    if (e.count == 0) {
+        ALOGE("%s: No AWB mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t awbMode = e.data.u8[0];
+
+    // TODO: Add white balance simulation
+
+    switch (awbMode) {
+        case ANDROID_CONTROL_AWB_MODE_OFF:
+            mAwbState = ANDROID_CONTROL_AWB_STATE_INACTIVE;
+            return OK;
+        case ANDROID_CONTROL_AWB_MODE_AUTO:
+        case ANDROID_CONTROL_AWB_MODE_INCANDESCENT:
+        case ANDROID_CONTROL_AWB_MODE_FLUORESCENT:
+        case ANDROID_CONTROL_AWB_MODE_DAYLIGHT:
+        case ANDROID_CONTROL_AWB_MODE_SHADE:
+            // OK
+            break;
+        default:
+            ALOGE("%s: Emulator doesn't support AWB mode %d",
+                    __FUNCTION__, awbMode);
+            return BAD_VALUE;
+    }
+
+    return OK;
+}
+
+
+void EmulatedFakeCamera3::update3A(CameraMetadata &settings) {
+    if (mAeState != ANDROID_CONTROL_AE_STATE_INACTIVE) {
+        settings.update(ANDROID_SENSOR_EXPOSURE_TIME,
+                &mAeCurrentExposureTime, 1);
+        settings.update(ANDROID_SENSOR_SENSITIVITY,
+                &mAeCurrentSensitivity, 1);
+    }
+
+    settings.update(ANDROID_CONTROL_AE_STATE,
+            &mAeState, 1);
+    settings.update(ANDROID_CONTROL_AF_STATE,
+            &mAfState, 1);
+    settings.update(ANDROID_CONTROL_AWB_STATE,
+            &mAwbState, 1);
+    /**
+     * TODO: Trigger IDs need a think-through
+     */
+    settings.update(ANDROID_CONTROL_AE_PRECAPTURE_ID,
+            &mAeTriggerId, 1);
+    settings.update(ANDROID_CONTROL_AF_TRIGGER_ID,
+            &mAfTriggerId, 1);
+}
+
 void EmulatedFakeCamera3::signalReadoutIdle() {
     Mutex::Autolock l(mLock);
     // Need to chek isIdle again because waiting on mLock may have allowed
@@ -1285,6 +1582,20 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
     bool gotFrame =
             mParent->mSensor->waitForNewFrame(kWaitPerLoop, &captureTime);
     if (!gotFrame) return true;
+
+    // Check if we need to JPEG encode a buffer
+
+    for (size_t i = 0; i < mCurrentRequest.buffers->size(); i++) {
+        if ((*mCurrentRequest.buffers)[i].stream->format ==
+                HAL_PIXEL_FORMAT_BLOB) {
+            res = mParent->mJpegCompressor->
+                compressSynchronous(mCurrentRequest.sensorBuffers);
+            if (res != OK) {
+                ALOGE("%s: Error compressing output buffer: %s (%d)",
+                        __FUNCTION__, strerror(-res), res);
+            }
+        }
+    }
 
     // Got everything, construct result
 
