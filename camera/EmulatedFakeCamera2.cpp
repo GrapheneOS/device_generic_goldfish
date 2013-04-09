@@ -157,7 +157,7 @@ status_t EmulatedFakeCamera2::connectCamera(hw_device_t** device) {
     mConfigureThread = new ConfigureThread(this);
     mReadoutThread = new ReadoutThread(this);
     mControlThread = new ControlThread(this);
-    mSensor = new Sensor(this);
+    mSensor = new Sensor();
     mJpegCompressor = new JpegCompressor(this);
 
     mNextStreamId = 1;

@@ -26,6 +26,7 @@
 #include "EmulatedQemuCamera.h"
 #include "EmulatedFakeCamera.h"
 #include "EmulatedFakeCamera2.h"
+#include "EmulatedFakeCamera3.h"
 #include "EmulatedCameraHotplugThread.h"
 #include "EmulatedCameraFactory.h"
 
@@ -86,6 +87,11 @@ EmulatedCameraFactory::EmulatedCameraFactory()
                         new EmulatedFakeCamera2(camera_id, true,
                                 &HAL_MODULE_INFO_SYM.common);
                 break;
+            case 3:
+                mEmulatedCameras[camera_id] =
+                        new EmulatedFakeCamera3(camera_id, true,
+                                &HAL_MODULE_INFO_SYM.common);
+                break;
             default:
                 ALOGE("%s: Unknown back camera hal version requested: %d", __FUNCTION__,
                         getBackCameraHalVersion());
@@ -135,6 +141,11 @@ EmulatedCameraFactory::EmulatedCameraFactory()
             case 2:
                 mEmulatedCameras[camera_id] =
                         new EmulatedFakeCamera2(camera_id, false,
+                                &HAL_MODULE_INFO_SYM.common);
+                break;
+            case 3:
+                mEmulatedCameras[camera_id] =
+                        new EmulatedFakeCamera3(camera_id, false,
                                 &HAL_MODULE_INFO_SYM.common);
                 break;
             default:
