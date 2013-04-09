@@ -1331,11 +1331,32 @@ status_t EmulatedFakeCamera3::doFakeAE(CameraMetadata &settings) {
                 (e.data.u8[0] == ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER_START);
     }
 
+    if (precaptureTrigger) {
+        ALOGV("%s: Pre capture trigger = %d", __FUNCTION__, precaptureTrigger);
+    } else if (e.count > 0) {
+        ALOGV("%s: Pre capture trigger was present? %d",
+              __FUNCTION__,
+              e.count);
+    }
+
+    // If we have an aePrecaptureTrigger, aePrecaptureId should be set too
+    if (e.count != 0) {
+        e = settings.find(ANDROID_CONTROL_AE_PRECAPTURE_ID);
+
+        if (e.count == 0) {
+            ALOGE("%s: When android.control.aePrecaptureTrigger is set "
+                  " in the request, aePrecaptureId needs to be set as well",
+                  __FUNCTION__);
+            return BAD_VALUE;
+        }
+
+        mAeTriggerId = e.data.i32[0];
+    }
+
     if (precaptureTrigger || mAeState == ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
         // Run precapture sequence
         if (mAeState != ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
             mAeCounter = 0;
-            mAeTriggerId++;
         }
 
         if (mFacePriority) {
@@ -1415,6 +1436,29 @@ status_t EmulatedFakeCamera3::doFakeAF(CameraMetadata &settings) {
     }
     uint8_t afMode = e.data.u8[0];
 
+    e = settings.find(ANDROID_CONTROL_AF_TRIGGER);
+    typedef camera_metadata_enum_android_control_af_trigger af_trigger_t;
+    af_trigger_t afTrigger;
+    // If we have an afTrigger, afTriggerId should be set too
+    if (e.count != 0) {
+        afTrigger = static_cast<af_trigger_t>(e.data.u8[0]);
+
+        e = settings.find(ANDROID_CONTROL_AF_TRIGGER_ID);
+
+        if (e.count == 0) {
+            ALOGE("%s: When android.control.afTrigger is set "
+                  " in the request, afTriggerId needs to be set as well",
+                  __FUNCTION__);
+            return BAD_VALUE;
+        }
+
+        mAfTriggerId = e.data.i32[0];
+    } else {
+        afTrigger = ANDROID_CONTROL_AF_TRIGGER_IDLE;
+    }
+
+    // TODO: implement AF triggering semantic
+
     switch (afMode) {
         case ANDROID_CONTROL_AF_MODE_OFF:
             mAfState = ANDROID_CONTROL_AF_STATE_INACTIVE;
@@ -1435,6 +1479,7 @@ status_t EmulatedFakeCamera3::doFakeAF(CameraMetadata &settings) {
                     __FUNCTION__, afMode);
             return BAD_VALUE;
     }
+
 
     return OK;
 }
