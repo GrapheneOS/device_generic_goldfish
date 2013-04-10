@@ -42,7 +42,8 @@ namespace android {
  * connectDevice(), and closeCamera() methods of this class that are invoked in
  * response to hw_module_methods_t::open, and camera_device::close callbacks.
  */
-class EmulatedFakeCamera3 : public EmulatedCamera3 {
+class EmulatedFakeCamera3 : public EmulatedCamera3,
+        private Sensor::SensorListener {
 public:
 
     EmulatedFakeCamera3(int cameraId, bool facingBack,
@@ -117,6 +118,9 @@ private:
 
     /** Signal from readout thread that it doesn't have anything to do */
     void     signalReadoutIdle();
+
+    /** Handle interrupt events from the sensor */
+    void     onSensorEvent(uint32_t frameNumber, Event e, nsecs_t timestamp);
 
     /****************************************************************************
      * Static configuration information
