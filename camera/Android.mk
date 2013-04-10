@@ -21,6 +21,7 @@ LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_CFLAGS += -fno-short-enums -DQEMU_HARDWARE
 LOCAL_SHARED_LIBRARIES:= \
     libbinder \
+    liblog \
     libutils \
     libcutils \
     libcamera_client \
@@ -79,6 +80,7 @@ LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_CFLAGS += -fno-short-enums -DQEMU_HARDWARE
 LOCAL_SHARED_LIBRARIES:= \
     libcutils \
+    liblog \
     libskia \
     libandroid_runtime
 
