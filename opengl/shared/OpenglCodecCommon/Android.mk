@@ -18,6 +18,6 @@ LOCAL_SRC_FILES := $(commonSources)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"eglCodecCommon\"
 
-$(call emugl-export,SHARED_LIBRARIES,libcutils libutils)
+$(call emugl-export,SHARED_LIBRARIES,libcutils libutils liblog)
 $(call emugl-export,C_INCLUDES,$(LOCAL_PATH))
 $(call emugl-end-module)

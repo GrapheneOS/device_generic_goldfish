@@ -24,5 +24,5 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_MODULE    := qemu-props
 LOCAL_SRC_FILES := qemu-props.c
-LOCAL_SHARED_LIBRARIES := libcutils
+LOCAL_SHARED_LIBRARIES := libcutils liblog
 include $(BUILD_EXECUTABLE)
