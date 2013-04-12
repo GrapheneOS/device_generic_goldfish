@@ -38,18 +38,25 @@ extern "C" {
 
 namespace android {
 
-class EmulatedFakeCamera2;
-
 class JpegCompressor: private Thread, public virtual RefBase {
   public:
 
-    JpegCompressor(EmulatedFakeCamera2 *parent);
+    JpegCompressor();
     ~JpegCompressor();
+
+    struct JpegListener {
+        // Called when JPEG compression has finished, or encountered an error
+        virtual void onJpegDone(const StreamBuffer &jpegBuffer,
+                bool success) = 0;
+        // Called when the input buffer for JPEG is not needed any more,
+        // if the buffer came from the framework.
+        virtual void onJpegInputDone(const StreamBuffer &inputBuffer) = 0;
+        virtual ~JpegListener();
+    };
 
     // Start compressing COMPRESSED format buffers; JpegCompressor takes
     // ownership of the Buffers vector.
-    status_t start(Buffers *buffers,
-            nsecs_t captureTime);
+    status_t start(Buffers *buffers, JpegListener *listener);
 
     // Compress and block until buffer is complete.
     status_t compressSynchronous(Buffers *buffers);
@@ -72,10 +79,8 @@ class JpegCompressor: private Thread, public virtual RefBase {
 
     Mutex mMutex;
 
-    EmulatedFakeCamera2 *mParent;
-
     Buffers *mBuffers;
-    nsecs_t mCaptureTime;
+    JpegListener *mListener;
 
     StreamBuffer mJpegBuffer, mAuxBuffer;
     bool mFoundJpeg, mFoundAux;
