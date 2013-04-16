@@ -107,7 +107,9 @@ Sensor::Sensor():
         mFrameDuration(kFrameDurationRange[0]),
         mGainFactor(kDefaultSensitivity),
         mNextBuffers(NULL),
+        mFrameNumber(0),
         mCapturedBuffers(NULL),
+        mListener(NULL),
         mScene(kResolution[0], kResolution[1], kElectronsPerLuxSecond)
 {
 
@@ -169,6 +171,11 @@ void Sensor::setDestinationBuffers(Buffers *buffers) {
     mNextBuffers = buffers;
 }
 
+void Sensor::setFrameNumber(uint32_t frameNumber) {
+    Mutex::Autolock lock(mControlMutex);
+    mFrameNumber = frameNumber;
+}
+
 bool Sensor::waitForVSync(nsecs_t reltime) {
     int res;
     Mutex::Autolock lock(mControlMutex);
@@ -204,6 +211,14 @@ bool Sensor::waitForNewFrame(nsecs_t reltime,
     return true;
 }
 
+Sensor::SensorListener::~SensorListener() {
+}
+
+void Sensor::setSensorListener(SensorListener *listener) {
+    Mutex::Autolock lock(mControlMutex);
+    mListener = listener;
+}
+
 status_t Sensor::readyToRun() {
     ALOGV("Starting up sensor thread");
     mStartupTime = systemTime();
@@ -227,12 +242,16 @@ bool Sensor::threadLoop() {
     uint64_t frameDuration;
     uint32_t gain;
     Buffers *nextBuffers;
+    uint32_t frameNumber;
+    SensorListener *listener = NULL;
     {
         Mutex::Autolock lock(mControlMutex);
         exposureDuration = mExposureTime;
         frameDuration    = mFrameDuration;
         gain             = mGainFactor;
         nextBuffers      = mNextBuffers;
+        frameNumber      = mFrameNumber;
+        listener         = mListener;
         // Don't reuse a buffer set
         mNextBuffers = NULL;
 
@@ -284,11 +303,14 @@ bool Sensor::threadLoop() {
     /**
      * Stage 2: Capture new image
      */
-
     mNextCaptureTime = simulatedTime;
     mNextCapturedBuffers = nextBuffers;
 
     if (mNextCapturedBuffers != NULL) {
+        if (listener != NULL) {
+            listener->onSensorEvent(frameNumber, SensorListener::EXPOSURE_START,
+                    mNextCaptureTime);
+        }
         ALOGVV("Starting next capture: Exposure: %f ms, gain: %d",
                 (float)exposureDuration/1e6, gain);
         mScene.setExposureDuration((float)exposureDuration/1e9);

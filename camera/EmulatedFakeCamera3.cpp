@@ -120,7 +120,7 @@ EmulatedFakeCamera3::EmulatedFakeCamera3(int cameraId, bool facingBack,
         struct hw_module_t* module) :
         EmulatedCamera3(cameraId, module),
         mFacingBack(facingBack) {
-    ALOGD("Constructing emulated fake camera 3 facing %s",
+    ALOGI("Constructing emulated fake camera 3 facing %s",
             facingBack ? "back" : "front");
 
     for (size_t i = 0; i < CAMERA3_TEMPLATE_COUNT; i++) {
@@ -166,6 +166,7 @@ status_t EmulatedFakeCamera3::connectCamera(hw_device_t** device) {
     }
 
     mSensor = new Sensor();
+    mSensor->setSensorListener(this);
 
     res = mSensor->startUp();
     if (res != NO_ERROR) return res;
@@ -906,6 +907,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
     mSensor->setFrameDuration(frameDuration);
     mSensor->setSensitivity(sensitivity);
     mSensor->setDestinationBuffers(sensorBuffers);
+    mSensor->setFrameNumber(request->frame_number);
 
     ReadoutThread::Request r;
     r.frameNumber = request->frame_number;
@@ -914,6 +916,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
     r.buffers = buffers;
 
     mReadoutThread->queueCaptureRequest(r);
+    ALOGVV("%s: Queued frame %d", __FUNCTION__, request->frame_number);
 
     // Cache the settings for next time
     mPrevSettings.acquire(settings);
@@ -1730,6 +1733,27 @@ void EmulatedFakeCamera3::signalReadoutIdle() {
     }
 }
 
+void EmulatedFakeCamera3::onSensorEvent(uint32_t frameNumber, Event e,
+        nsecs_t timestamp) {
+    switch(e) {
+        case Sensor::SensorListener::EXPOSURE_START: {
+            ALOGVV("%s: Frame %d: Sensor started exposure at %lld",
+                    __FUNCTION__, frameNumber, timestamp);
+            // Trigger shutter notify to framework
+            camera3_notify_msg_t msg;
+            msg.type = CAMERA3_MSG_SHUTTER;
+            msg.message.shutter.frame_number = frameNumber;
+            msg.message.shutter.timestamp = timestamp;
+            sendNotify(&msg);
+            break;
+        }
+        default:
+            ALOGW("%s: Unexpected sensor event %d at %lld", __FUNCTION__,
+                    e, timestamp);
+            break;
+    }
+}
+
 EmulatedFakeCamera3::ReadoutThread::ReadoutThread(EmulatedFakeCamera3 *parent) :
         mParent(parent) {
 }
@@ -1799,6 +1823,8 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
         mInFlightQueue.erase(mInFlightQueue.begin());
         mInFlightSignal.signal();
         mThreadActive = true;
+        ALOGVV("Beginning readout of frame %d", __FUNCTION__,
+                mCurrentRequest.frameNumber);
     }
 
     // Then wait for it to be delivered from the sensor
@@ -1808,6 +1834,8 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
             mParent->mSensor->waitForNewFrame(kWaitPerLoop, &captureTime);
     if (!gotFrame) return true;
 
+    ALOGVV("Sensor done with readout for frame %d, captured at %lld ",
+            mCurrentRequest.frameNumber, captureTime);
     // Check if we need to JPEG encode a buffer
 
     for (size_t i = 0; i < mCurrentRequest.buffers->size(); i++) {
