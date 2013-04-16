@@ -111,6 +111,8 @@ class Sensor: private Thread, public virtual RefBase {
     void setSensitivity(uint32_t gain);
     // Buffer must be at least stride*height*2 bytes in size
     void setDestinationBuffers(Buffers *buffers);
+    // To simplify tracking sensor's current frame
+    void setFrameNumber(uint32_t frameNumber);
 
     /*
      * Controls that cause reconfiguration delay
@@ -133,6 +135,22 @@ class Sensor: private Thread, public virtual RefBase {
     // returned, false if timed out.
     bool waitForNewFrame(nsecs_t reltime,
             nsecs_t *captureTime);
+
+    /*
+     * Interrupt event servicing from the sensor. Only triggers for sensor
+     * cycles that have valid buffers to write to.
+     */
+    struct SensorListener {
+        enum Event {
+            EXPOSURE_START, // Start of exposure
+        };
+
+        virtual void onSensorEvent(uint32_t frameNumber, Event e,
+                nsecs_t timestamp) = 0;
+        virtual ~SensorListener();
+    };
+
+    void setSensorListener(SensorListener *listener);
 
     /**
      * Static sensor characteristics
@@ -180,6 +198,7 @@ class Sensor: private Thread, public virtual RefBase {
     uint64_t  mFrameDuration;
     uint32_t  mGainFactor;
     Buffers  *mNextBuffers;
+    uint32_t  mFrameNumber;
 
     // End of control parameters
 
@@ -189,6 +208,7 @@ class Sensor: private Thread, public virtual RefBase {
     Condition mReadoutComplete;
     Buffers  *mCapturedBuffers;
     nsecs_t   mCaptureTime;
+    SensorListener *mListener;
     // End of readout variables
 
     // Time of sensor startup, used for simulation zero-time point
