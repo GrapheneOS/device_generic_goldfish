@@ -226,7 +226,7 @@ private:
         Buffers *mNextBuffers;
     };
 
-    class ReadoutThread: public Thread {
+    class ReadoutThread: public Thread, private JpegCompressor::JpegListener {
       public:
         ReadoutThread(EmulatedFakeCamera2 *parent);
         ~ReadoutThread();
@@ -276,6 +276,10 @@ private:
         camera_metadata_t *mRequest;
         Buffers *mBuffers;
 
+        // Jpeg completion listeners
+        void onJpegDone(const StreamBuffer &jpegBuffer, bool success);
+        void onJpegInputDone(const StreamBuffer &inputBuffer);
+        nsecs_t mJpegTimestamp;
     };
 
     // 3A management thread (auto-exposure, focus, white balance)

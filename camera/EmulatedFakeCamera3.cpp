@@ -172,7 +172,7 @@ status_t EmulatedFakeCamera3::connectCamera(hw_device_t** device) {
     if (res != NO_ERROR) return res;
 
     mReadoutThread = new ReadoutThread(this);
-    mJpegCompressor = new JpegCompressor(NULL);
+    mJpegCompressor = new JpegCompressor();
 
     res = mReadoutThread->run("EmuCam3::readoutThread");
     if (res != NO_ERROR) return res;
@@ -817,13 +817,14 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
     nsecs_t  exposureTime;
     nsecs_t  frameDuration;
     uint32_t sensitivity;
+    bool     needJpeg = false;
 
     exposureTime = settings.find(ANDROID_SENSOR_EXPOSURE_TIME).data.i64[0];
     frameDuration = settings.find(ANDROID_SENSOR_FRAME_DURATION).data.i64[0];
     sensitivity = settings.find(ANDROID_SENSOR_SENSITIVITY).data.i32[0];
 
     Buffers *sensorBuffers = new Buffers();
-    Vector<camera3_stream_buffer> *buffers = new Vector<camera3_stream_buffer>();
+    HalBufferVector *buffers = new HalBufferVector();
 
     sensorBuffers->setCapacity(request->num_output_buffers);
     buffers->setCapacity(request->num_output_buffers);
@@ -841,6 +842,10 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         destBuf.format   = privBuffer->format; // Use real private format
         destBuf.stride   = srcBuf.stream->width; // TODO: query from gralloc
         destBuf.buffer   = srcBuf.buffer;
+
+        if (destBuf.format == HAL_PIXEL_FORMAT_BLOB) {
+            needJpeg = true;
+        }
 
         // Wait on fence
         sp<Fence> bufferAcquireFence = new Fence(srcBuf.acquire_fence);
@@ -874,10 +879,24 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
     }
 
     /**
+     * Wait for JPEG compressor to not be busy, if needed
+     */
+    if (needJpeg) {
+        bool ready = mJpegCompressor->waitForDone(kFenceTimeoutMs);
+        if (!ready) {
+            ALOGE("%s: Timeout waiting for JPEG compression to complete!",
+                    __FUNCTION__);
+            return NO_INIT;
+        }
+    }
+
+    /**
      * Wait until the in-flight queue has room
      */
     res = mReadoutThread->waitForReadout();
     if (res != OK) {
+        ALOGE("%s: Timeout waiting for previous requests to complete!",
+                __FUNCTION__);
         return NO_INIT;
     }
 
@@ -1755,7 +1774,7 @@ void EmulatedFakeCamera3::onSensorEvent(uint32_t frameNumber, Event e,
 }
 
 EmulatedFakeCamera3::ReadoutThread::ReadoutThread(EmulatedFakeCamera3 *parent) :
-        mParent(parent) {
+        mParent(parent), mJpegWaiting(false) {
 }
 
 EmulatedFakeCamera3::ReadoutThread::~ReadoutThread() {
@@ -1823,7 +1842,7 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
         mInFlightQueue.erase(mInFlightQueue.begin());
         mInFlightSignal.signal();
         mThreadActive = true;
-        ALOGVV("Beginning readout of frame %d", __FUNCTION__,
+        ALOGVV("%s: Beginning readout of frame %d", __FUNCTION__,
                 mCurrentRequest.frameNumber);
     }
 
@@ -1836,36 +1855,60 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
 
     ALOGVV("Sensor done with readout for frame %d, captured at %lld ",
             mCurrentRequest.frameNumber, captureTime);
-    // Check if we need to JPEG encode a buffer
 
-    for (size_t i = 0; i < mCurrentRequest.buffers->size(); i++) {
-        if ((*mCurrentRequest.buffers)[i].stream->format ==
+    // Check if we need to JPEG encode a buffer, and send it for async
+    // compression if so. Otherwise prepare the buffer for return.
+    bool needJpeg = false;
+    HalBufferVector::iterator buf = mCurrentRequest.buffers->begin();
+    while(buf != mCurrentRequest.buffers->end()) {
+        bool goodBuffer = true;
+        if ( buf->stream->format ==
                 HAL_PIXEL_FORMAT_BLOB) {
-            res = mParent->mJpegCompressor->
-                compressSynchronous(mCurrentRequest.sensorBuffers);
-            if (res != OK) {
-                ALOGE("%s: Error compressing output buffer: %s (%d)",
-                        __FUNCTION__, strerror(-res), res);
+            Mutex::Autolock jl(mJpegLock);
+            if (mJpegWaiting) {
+                // This shouldn't happen, because processCaptureRequest should
+                // be stalling until JPEG compressor is free.
+                ALOGE("%s: Already processing a JPEG!", __FUNCTION__);
+                goodBuffer = false;
             }
-        }
-    }
+            if (goodBuffer) {
+                // Compressor takes ownership of sensorBuffers here
+                res = mParent->mJpegCompressor->start(mCurrentRequest.sensorBuffers,
+                        this);
+                goodBuffer = (res == OK);
+            }
+            if (goodBuffer) {
+                needJpeg = true;
 
-    // Got everything, construct result
+                mJpegHalBuffer = *buf;
+                mJpegFrameNumber = mCurrentRequest.frameNumber;
+                mJpegWaiting = true;
+
+                mCurrentRequest.sensorBuffers = NULL;
+                buf = mCurrentRequest.buffers->erase(buf);
+
+                continue;
+            }
+            ALOGE("%s: Error compressing output buffer: %s (%d)",
+                        __FUNCTION__, strerror(-res), res);
+            // fallthrough for cleanup
+        }
+        GraphicBufferMapper::get().unlock(*(buf->buffer));
+
+        buf->status = goodBuffer ? CAMERA3_BUFFER_STATUS_OK :
+                CAMERA3_BUFFER_STATUS_ERROR;
+        buf->acquire_fence = -1;
+        buf->release_fence = -1;
+
+        ++buf;
+    } // end while
+
+    // Construct result for all completed buffers and results
 
     camera3_capture_result result;
 
     mCurrentRequest.settings.update(ANDROID_SENSOR_TIMESTAMP,
             &captureTime, 1);
-
-    for (size_t i = 0; i < mCurrentRequest.buffers->size(); i++) {
-        camera3_stream_buffer &buf = mCurrentRequest.buffers->editItemAt(i);
-
-        GraphicBufferMapper::get().unlock(*buf.buffer);
-
-        buf.status = CAMERA3_BUFFER_STATUS_OK;
-        buf.acquire_fence = -1;
-        buf.release_fence = -1;
-    }
 
     result.frame_number = mCurrentRequest.frameNumber;
     result.result = mCurrentRequest.settings.getAndLock();
@@ -1892,11 +1935,49 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
 
     delete mCurrentRequest.buffers;
     mCurrentRequest.buffers = NULL;
-    delete mCurrentRequest.sensorBuffers;
-    mCurrentRequest.sensorBuffers = NULL;
+    if (!needJpeg) {
+        delete mCurrentRequest.sensorBuffers;
+        mCurrentRequest.sensorBuffers = NULL;
+    }
     mCurrentRequest.settings.clear();
 
     return true;
+}
+
+void EmulatedFakeCamera3::ReadoutThread::onJpegDone(
+        const StreamBuffer &jpegBuffer, bool success) {
+    Mutex::Autolock jl(mJpegLock);
+
+    GraphicBufferMapper::get().unlock(*(jpegBuffer.buffer));
+
+    mJpegHalBuffer.status = success ?
+            CAMERA3_BUFFER_STATUS_OK : CAMERA3_BUFFER_STATUS_ERROR;
+    mJpegHalBuffer.acquire_fence = -1;
+    mJpegHalBuffer.release_fence = -1;
+    mJpegWaiting = false;
+
+    camera3_capture_result result;
+    result.frame_number = mJpegFrameNumber;
+    result.result = NULL;
+    result.num_output_buffers = 1;
+    result.output_buffers = &mJpegHalBuffer;
+
+    if (!success) {
+        ALOGE("%s: Compression failure, returning error state buffer to"
+                " framework", __FUNCTION__);
+    } else {
+        ALOGV("%s: Compression complete, returning buffer to framework",
+                __FUNCTION__);
+    }
+
+    mParent->sendCaptureResult(&result);
+}
+
+void EmulatedFakeCamera3::ReadoutThread::onJpegInputDone(
+        const StreamBuffer &inputBuffer) {
+    // Should never get here, since the input buffer has to be returned
+    // by end of processCaptureRequest
+    ALOGE("%s: Unexpected input buffer from JPEG compressor!", __FUNCTION__);
 }
 
 

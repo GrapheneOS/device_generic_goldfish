@@ -158,7 +158,7 @@ status_t EmulatedFakeCamera2::connectCamera(hw_device_t** device) {
     mReadoutThread = new ReadoutThread(this);
     mControlThread = new ControlThread(this);
     mSensor = new Sensor();
-    mJpegCompressor = new JpegCompressor(this);
+    mJpegCompressor = new JpegCompressor();
 
     mNextStreamId = 1;
     mNextReprocessStreamId = 1;
@@ -1481,19 +1481,53 @@ bool EmulatedFakeCamera2::ReadoutThread::threadLoop() {
 
     if (compressedBufferIndex == -1) {
         delete mBuffers;
-        mBuffers = NULL;
     } else {
         ALOGV("Readout:  Starting JPEG compression for buffer %d, stream %d",
                 compressedBufferIndex,
                 (*mBuffers)[compressedBufferIndex].streamId);
-        mParent->mJpegCompressor->start(mBuffers, captureTime);
-        mBuffers = NULL;
+        mJpegTimestamp = captureTime;
+        // Takes ownership of mBuffers
+        mParent->mJpegCompressor->start(mBuffers, this);
     }
+    mBuffers = NULL;
 
     Mutex::Autolock l(mInputMutex);
     mRequestCount--;
     ALOGV("Readout: Done with request %d", frameNumber);
     return true;
+}
+
+void EmulatedFakeCamera2::ReadoutThread::onJpegDone(
+        const StreamBuffer &jpegBuffer, bool success) {
+    status_t res;
+    if (!success) {
+        ALOGE("%s: Error queueing compressed image buffer %p",
+                __FUNCTION__, jpegBuffer.buffer);
+        mParent->signalError();
+        return;
+    }
+
+    // Write to JPEG output stream
+    ALOGV("%s: Compression complete, pushing to stream %d", __FUNCTION__,
+            jpegBuffer.streamId);
+
+    GraphicBufferMapper::get().unlock(*(jpegBuffer.buffer));
+    const Stream &s = mParent->getStreamInfo(jpegBuffer.streamId);
+    res = s.ops->enqueue_buffer(s.ops, mJpegTimestamp, jpegBuffer.buffer);
+}
+
+void EmulatedFakeCamera2::ReadoutThread::onJpegInputDone(
+        const StreamBuffer &inputBuffer) {
+    status_t res;
+    GraphicBufferMapper::get().unlock(*(inputBuffer.buffer));
+    const ReprocessStream &s =
+            mParent->getReprocessStreamInfo(-inputBuffer.streamId);
+    res = s.ops->release_buffer(s.ops, inputBuffer.buffer);
+    if (res != OK) {
+        ALOGE("Error releasing reprocess buffer %p: %s (%d)",
+                inputBuffer.buffer, strerror(-res), res);
+        mParent->signalError();
+    }
 }
 
 status_t EmulatedFakeCamera2::ReadoutThread::collectStatisticsMetadata(

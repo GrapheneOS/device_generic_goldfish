@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera2_JpegCompressor"
 
 #include <utils/Log.h>
@@ -22,24 +22,27 @@
 
 #include "JpegCompressor.h"
 #include "../EmulatedFakeCamera2.h"
+#include "../EmulatedFakeCamera3.h"
 
 namespace android {
 
-JpegCompressor::JpegCompressor(EmulatedFakeCamera2 *parent):
+JpegCompressor::JpegCompressor():
         Thread(false),
         mIsBusy(false),
         mSynchronous(false),
-        mParent(parent),
         mBuffers(NULL),
-        mCaptureTime(0) {
+        mListener(NULL) {
 }
 
 JpegCompressor::~JpegCompressor() {
     Mutex::Autolock lock(mMutex);
 }
 
-status_t JpegCompressor::start(Buffers *buffers,
-        nsecs_t captureTime) {
+status_t JpegCompressor::start(Buffers *buffers, JpegListener *listener) {
+    if (listener == NULL) {
+        ALOGE("%s: NULL listener not allowed!", __FUNCTION__);
+        return BAD_VALUE;
+    }
     Mutex::Autolock lock(mMutex);
     {
         Mutex::Autolock busyLock(mBusyMutex);
@@ -52,7 +55,7 @@ status_t JpegCompressor::start(Buffers *buffers,
         mIsBusy = true;
         mSynchronous = false;
         mBuffers = buffers;
-        mCaptureTime = captureTime;
+        mListener = listener;
     }
 
     status_t res;
@@ -83,9 +86,9 @@ status_t JpegCompressor::compressSynchronous(Buffers *buffers) {
     }
 
     res = compress();
-    if (res == OK) {
-        cleanUp();
-    }
+
+    cleanUp();
+
     return res;
 }
 
@@ -99,30 +102,14 @@ status_t JpegCompressor::readyToRun() {
 }
 
 bool JpegCompressor::threadLoop() {
-    Mutex::Autolock lock(mMutex);
     status_t res;
     ALOGV("%s: Starting compression thread", __FUNCTION__);
 
     res = compress();
 
-    if (res == OK) {
-        // Write to JPEG output stream
+    mListener->onJpegDone(mJpegBuffer, res == OK);
 
-        ALOGV("%s: Compression complete, pushing to stream %d", __FUNCTION__,
-                mJpegBuffer.streamId);
-
-        GraphicBufferMapper::get().unlock(*(mJpegBuffer.buffer));
-        status_t res;
-        const Stream &s = mParent->getStreamInfo(mJpegBuffer.streamId);
-        res = s.ops->enqueue_buffer(s.ops, mCaptureTime, mJpegBuffer.buffer);
-        if (res != OK) {
-            ALOGE("%s: Error queueing compressed image buffer %p: %s (%d)",
-                    __FUNCTION__, mJpegBuffer.buffer, strerror(-res), res);
-            mParent->signalError();
-        }
-
-        cleanUp();
-    }
+    cleanUp();
 
     return false;
 }
@@ -146,7 +133,6 @@ status_t JpegCompressor::compress() {
     if (!mFoundJpeg || !mFoundAux) {
         ALOGE("%s: Unable to find buffers for JPEG source/destination",
                 __FUNCTION__);
-        cleanUp();
         return BAD_VALUE;
     }
 
@@ -199,7 +185,6 @@ status_t JpegCompressor::compress() {
         if (checkError("Error while compressing")) return NO_INIT;
         if (exitPending()) {
             ALOGV("%s: Cancel called, exiting early", __FUNCTION__);
-            cleanUp();
             return TIMED_OUT;
         }
     }
@@ -243,7 +228,6 @@ bool JpegCompressor::checkError(const char *msg) {
         mJpegErrorInfo->err->format_message(mJpegErrorInfo, errBuffer);
         ALOGE("%s: %s: %s",
                 __FUNCTION__, msg, errBuffer);
-        cleanUp();
         mJpegErrorInfo = NULL;
         return true;
     }
@@ -259,15 +243,7 @@ void JpegCompressor::cleanUp() {
         if (mAuxBuffer.streamId == 0) {
             delete[] mAuxBuffer.img;
         } else if (!mSynchronous) {
-            GraphicBufferMapper::get().unlock(*(mAuxBuffer.buffer));
-            const ReprocessStream &s =
-                    mParent->getReprocessStreamInfo(-mAuxBuffer.streamId);
-            res = s.ops->release_buffer(s.ops, mAuxBuffer.buffer);
-            if (res != OK) {
-                ALOGE("Error releasing reprocess buffer %p: %s (%d)",
-                        mAuxBuffer.buffer, strerror(-res), res);
-                mParent->signalError();
-            }
+            mListener->onJpegInputDone(mAuxBuffer);
         }
     }
     if (!mSynchronous) {
@@ -302,6 +278,9 @@ boolean JpegCompressor::jpegEmptyOutputBuffer(j_compress_ptr cinfo) {
 void JpegCompressor::jpegTermDestination(j_compress_ptr cinfo) {
     ALOGV("%s: Done writing JPEG data. %d bytes left in buffer",
             __FUNCTION__, cinfo->dest->free_in_buffer);
+}
+
+JpegCompressor::JpegListener::~JpegListener() {
 }
 
 } // namespace android

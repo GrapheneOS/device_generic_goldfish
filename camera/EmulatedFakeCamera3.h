@@ -178,6 +178,7 @@ private:
 
     typedef List<camera3_stream_t*>           StreamList;
     typedef List<camera3_stream_t*>::iterator StreamIterator;
+    typedef Vector<camera3_stream_buffer>     HalBufferVector;
 
     // All streams, including input stream
     StreamList         mStreams;
@@ -188,19 +189,20 @@ private:
     /** Fake hardware interfaces */
     sp<Sensor>         mSensor;
     sp<JpegCompressor> mJpegCompressor;
+    friend class       JpegCompressor;
 
     /** Processing thread for sending out results */
 
-    class ReadoutThread : public Thread {
+    class ReadoutThread : public Thread, private JpegCompressor::JpegListener {
       public:
         ReadoutThread(EmulatedFakeCamera3 *parent);
         ~ReadoutThread();
 
         struct Request {
-            uint32_t frameNumber;
-            CameraMetadata settings;
-            Vector<camera3_stream_buffer> *buffers;
-            Buffers *sensorBuffers;
+            uint32_t         frameNumber;
+            CameraMetadata   settings;
+            HalBufferVector *buffers;
+            Buffers         *sensorBuffers;
         };
 
         /**
@@ -235,7 +237,16 @@ private:
 
         Request mCurrentRequest;
 
+        // Jpeg completion callbacks
+
+        Mutex                 mJpegLock;
+        bool                  mJpegWaiting;
+        camera3_stream_buffer mJpegHalBuffer;
+        uint32_t              mJpegFrameNumber;
+        virtual void onJpegDone(const StreamBuffer &jpegBuffer, bool success);
+        virtual void onJpegInputDone(const StreamBuffer &inputBuffer);
     };
+
     sp<ReadoutThread> mReadoutThread;
 
     /** Fake 3A constants */
