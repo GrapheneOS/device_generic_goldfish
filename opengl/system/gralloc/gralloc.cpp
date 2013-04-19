@@ -894,8 +894,7 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
         unregisterBuffer: gralloc_unregister_buffer,
         lock: gralloc_lock,
         unlock: gralloc_unlock,
-        perform: NULL,
-        reserved_proc : {NULL, }
+        perform: NULL
     }
 };
 
