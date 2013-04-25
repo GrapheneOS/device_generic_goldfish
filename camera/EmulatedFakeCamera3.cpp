@@ -273,7 +273,20 @@ status_t EmulatedFakeCamera3::configureStreams(
     camera3_stream_t *inputStream = NULL;
     for (size_t i = 0; i < streamList->num_streams; i++) {
         camera3_stream_t *newStream = streamList->streams[i];
-        if (newStream->stream_type == CAMERA3_STREAM_INPUT) {
+
+        if (newStream == NULL) {
+            ALOGE("%s: Stream index %d was NULL",
+                  __FUNCTION__, i);
+            return BAD_VALUE;
+        }
+
+        ALOGV("%s: Stream %p (id %d), type %d, usage 0x%x, format 0x%x",
+                __FUNCTION__, newStream, i, newStream->stream_type,
+                newStream->usage,
+                newStream->format);
+
+        if (newStream->stream_type == CAMERA3_STREAM_INPUT ||
+            newStream->stream_type == CAMERA3_STREAM_BIDIRECTIONAL) {
             if (inputStream != NULL) {
 
                 ALOGE("%s: Multiple input streams requested!", __FUNCTION__);
@@ -735,6 +748,13 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
             request->input_buffer->stream != mInputStream) {
         ALOGE("%s: Request %d: Input buffer not from input stream!",
                 __FUNCTION__, frameNumber);
+        ALOGV("%s: Bad stream %p, expected: %p",
+              __FUNCTION__, request->input_buffer->stream,
+              mInputStream);
+        ALOGV("%s: Bad stream type %d, expected stream type %d",
+              __FUNCTION__, request->input_buffer->stream->stream_type,
+              mInputStream ? mInputStream->stream_type : -1);
+
         return BAD_VALUE;
     }
 
@@ -1821,6 +1841,8 @@ status_t EmulatedFakeCamera3::ReadoutThread::waitForReadout() {
 bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
     status_t res;
 
+    ALOGVV("%s: ReadoutThread waiting for request", __FUNCTION__);
+
     // First wait for a request from the in-flight queue
 
     if (mCurrentRequest.settings.isEmpty()) {
@@ -1828,6 +1850,8 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
         if (mInFlightQueue.empty()) {
             res = mInFlightSignal.waitRelative(mLock, kWaitPerLoop);
             if (res == TIMED_OUT) {
+                ALOGVV("%s: ReadoutThread: Timed out waiting for request",
+                        __FUNCTION__);
                 return true;
             } else if (res != NO_ERROR) {
                 ALOGE("%s: Error waiting for capture requests: %d",
@@ -1847,11 +1871,17 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
     }
 
     // Then wait for it to be delivered from the sensor
+    ALOGVV("%s: ReadoutThread: Wait for frame to be delivered from sensor",
+            __FUNCTION__);
 
     nsecs_t captureTime;
     bool gotFrame =
             mParent->mSensor->waitForNewFrame(kWaitPerLoop, &captureTime);
-    if (!gotFrame) return true;
+    if (!gotFrame) {
+        ALOGVV("%s: ReadoutThread: Timed out waiting for sensor frame",
+                __FUNCTION__);
+        return true;
+    }
 
     ALOGVV("Sensor done with readout for frame %d, captured at %lld ",
             mCurrentRequest.frameNumber, captureTime);
@@ -1927,7 +1957,8 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
     if (signalIdle) mParent->signalReadoutIdle();
 
     // Send it off to the framework
-
+    ALOGVV("%s: ReadoutThread: Send result to framework",
+            __FUNCTION__);
     mParent->sendCaptureResult(&result);
 
     // Clean up
