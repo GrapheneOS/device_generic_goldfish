@@ -51,12 +51,15 @@ const int64_t USEC = 1000LL;
 const int64_t MSEC = USEC * 1000LL;
 const int64_t SEC = MSEC * 1000LL;
 
-const uint32_t EmulatedFakeCamera3::kAvailableFormats[4] = {
+const int32_t EmulatedFakeCamera3::kAvailableFormats[5] = {
         HAL_PIXEL_FORMAT_RAW_SENSOR,
         HAL_PIXEL_FORMAT_BLOB,
         HAL_PIXEL_FORMAT_RGBA_8888,
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED,
+        // These are handled by YCbCr_420_888
         //        HAL_PIXEL_FORMAT_YV12,
-        HAL_PIXEL_FORMAT_YCrCb_420_SP
+        //        HAL_PIXEL_FORMAT_YCrCb_420_SP,
+        HAL_PIXEL_FORMAT_YCbCr_420_888
 };
 
 const uint32_t EmulatedFakeCamera3::kAvailableRawSizes[2] = {
@@ -293,6 +296,21 @@ status_t EmulatedFakeCamera3::configureStreams(
                 return BAD_VALUE;
             }
             inputStream = newStream;
+        }
+
+        bool validFormat = false;
+        for (size_t f = 0;
+             f < sizeof(kAvailableFormats)/sizeof(kAvailableFormats[0]);
+             f++) {
+            if (newStream->format == kAvailableFormats[f]) {
+                validFormat = true;
+                break;
+            }
+        }
+        if (!validFormat) {
+            ALOGE("%s: Unsupported stream format 0x%x requested",
+                    __FUNCTION__, newStream->format);
+            return BAD_VALUE;
         }
     }
     mInputStream = inputStream;
@@ -877,8 +895,26 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         if (res == OK) {
             // Lock buffer for writing
             const Rect rect(destBuf.width, destBuf.height);
-            res = GraphicBufferMapper::get().lock(*(destBuf.buffer),
-                    GRALLOC_USAGE_HW_CAMERA_WRITE, rect, (void**)&(destBuf.img));
+            if (srcBuf.stream->format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+                if (privBuffer->format == HAL_PIXEL_FORMAT_YCrCb_420_SP) {
+                    android_ycbcr ycbcr = android_ycbcr();
+                    res = GraphicBufferMapper::get().lockYCbCr(
+                        *(destBuf.buffer),
+                        GRALLOC_USAGE_HW_CAMERA_WRITE, rect,
+                        &ycbcr);
+                    // This is only valid because we know that emulator's
+                    // YCbCr_420_888 is really contiguous NV21 under the hood
+                    destBuf.img = static_cast<uint8_t*>(ycbcr.y);
+                } else {
+                    ALOGE("Unexpected private format for flexible YUV: 0x%x",
+                            privBuffer->format);
+                    res = INVALID_OPERATION;
+                }
+            } else {
+                res = GraphicBufferMapper::get().lock(*(destBuf.buffer),
+                        GRALLOC_USAGE_HW_CAMERA_WRITE, rect,
+                        (void**)&(destBuf.img));
+            }
             if (res != OK) {
                 ALOGE("%s: Request %d: Buffer %d: Unable to lock buffer",
                         __FUNCTION__, frameNumber, i);
@@ -886,7 +922,8 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         }
 
         if (res != OK) {
-            // Either waiting or locking failed. Unlock locked buffers and bail out.
+            // Either waiting or locking failed. Unlock locked buffers and bail
+            // out.
             for (size_t j = 0; j < i; j++) {
                 GraphicBufferMapper::get().unlock(
                         *(request->output_buffers[i].buffer));
@@ -1111,8 +1148,8 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.scaler
 
     info.update(ANDROID_SCALER_AVAILABLE_FORMATS,
-            (int32_t*)kAvailableFormats,
-            sizeof(kAvailableFormats)/sizeof(uint32_t));
+            kAvailableFormats,
+            sizeof(kAvailableFormats)/sizeof(int32_t));
 
     info.update(ANDROID_SCALER_AVAILABLE_RAW_SIZES,
             (int32_t*)kAvailableRawSizes,
