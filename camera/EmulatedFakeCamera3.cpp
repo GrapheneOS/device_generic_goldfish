@@ -1150,7 +1150,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
             (int64_t*)kAvailableJpegMinDurations,
             sizeof(kAvailableJpegMinDurations)/sizeof(uint64_t));
 
-    static const int32_t maxZoom = 10;
+    static const float maxZoom = 10;
     info.update(ANDROID_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM,
             &maxZoom, 1);
 
