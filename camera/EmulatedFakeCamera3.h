@@ -135,7 +135,7 @@ private:
     // sensor-generated buffers which use a nonpositive ID. Otherwise, HAL3 has
     // no concept of a stream id.
     static const uint32_t kGenericStreamId = 1;
-    static const uint32_t kAvailableFormats[];
+    static const int32_t  kAvailableFormats[];
     static const uint32_t kAvailableRawSizes[];
     static const uint64_t kAvailableRawMinDurations[];
     static const uint32_t kAvailableProcessedSizesBack[];
