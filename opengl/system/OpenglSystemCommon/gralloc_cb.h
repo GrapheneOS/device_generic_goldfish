@@ -30,13 +30,14 @@
 struct cb_handle_t : public native_handle {
 
     cb_handle_t(int p_fd, int p_ashmemSize, int p_usage,
-                int p_width, int p_height, int p_format,
-                int p_glFormat, int p_glType) :
+                int p_width, int p_height, int p_frameworkFormat,
+                int p_format, int p_glFormat, int p_glType) :
         fd(p_fd),
         magic(BUFFER_HANDLE_MAGIC),
         usage(p_usage),
         width(p_width),
         height(p_height),
+        frameworkFormat(p_frameworkFormat),
         format(p_format),
         glFormat(p_glFormat),
         glType(p_glType),
@@ -89,6 +90,7 @@ struct cb_handle_t : public native_handle {
     int usage;              // usage bits the buffer was created with
     int width;              // buffer width
     int height;             // buffer height
+    int frameworkFormat;    // format requested by the Android framework
     int format;             // real internal pixel format format
     int glFormat;           // OpenGL format enum used for host h/w color buffer
     int glType;             // OpenGL type enum used when uploading to host

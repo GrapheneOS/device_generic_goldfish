@@ -154,6 +154,8 @@ static int gralloc_alloc(alloc_device_t* dev,
     bool hw_cam_read = usage & GRALLOC_USAGE_HW_CAMERA_READ;
     bool hw_vid_enc_read = usage & GRALLOC_USAGE_HW_VIDEO_ENCODER;
 
+    // Keep around original requested format for later validation
+    int frameworkFormat = format;
     // Pick the right concrete pixel format given the endpoints as encoded in
     // the usage bits.  Every end-point pair needs explicit listing here.
     if (format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
@@ -178,8 +180,17 @@ static int gralloc_alloc(alloc_device_t* dev,
                     w, h, usage);
             return -EINVAL;
         }
+    } else if (format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+        // Flexible framework-accessible YUV format; map to NV21 for now
+        if (usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
+            format = HAL_PIXEL_FORMAT_YCrCb_420_SP;
+        }
+        if (format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+            ALOGE("gralloc_alloc: Requested YCbCr_420_888, but no known "
+                    "specific format for this usage: %d x %d, usage %x",
+                    w, h, usage);
+        }
     }
-
     bool yuv_format = false;
 
     int ashmem_size = 0;
@@ -297,7 +308,8 @@ static int gralloc_alloc(alloc_device_t* dev,
     }
 
     cb_handle_t *cb = new cb_handle_t(fd, ashmem_size, usage,
-                                      w, h, format, glFormat, glType);
+                                      w, h, frameworkFormat, format,
+                                      glFormat, glType);
 
     if (ashmem_size > 0) {
         //
@@ -350,7 +362,11 @@ static int gralloc_alloc(alloc_device_t* dev,
     pthread_mutex_unlock(&grdev->lock);
 
     *pHandle = cb;
-    *pStride = stride;
+    if (frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+        *pStride = 0;
+    } else {
+        *pStride = stride;
+    }
     return 0;
 }
 
@@ -580,7 +596,7 @@ static int gralloc_unregister_buffer(gralloc_module_t const* module,
             ERR("gralloc_unregister_buffer(%p): unmap failed", cb);
             return -EINVAL;
         }
-        cb->ashmemBase = NULL;
+        cb->ashmemBase = 0;
         cb->mappedPid = 0;
     }
 
@@ -602,6 +618,12 @@ static int gralloc_lock(gralloc_module_t const* module,
     cb_handle_t *cb = (cb_handle_t *)handle;
     if (!gr || !cb_handle_t::validate(cb)) {
         ALOGE("gralloc_lock bad handle\n");
+        return -EINVAL;
+    }
+
+    // validate format
+    if (cb->frameworkFormat == HAL_PIXEL_FORMAT_YCbCr_420_888) {
+        ALOGE("gralloc_lock can't be used with YCbCr_420_888 format");
         return -EINVAL;
     }
 
@@ -759,6 +781,109 @@ static int gralloc_unlock(gralloc_module_t const* module,
     return 0;
 }
 
+static int gralloc_lock_ycbcr(gralloc_module_t const* module,
+                        buffer_handle_t handle, int usage,
+                        int l, int t, int w, int h,
+                        android_ycbcr *ycbcr)
+{
+    // Not supporting fallback module for YCbCr
+    if (sFallback != NULL) {
+        return -EINVAL;
+    }
+
+    if (!ycbcr) {
+        ALOGE("gralloc_lock_ycbcr got NULL ycbcr struct");
+        return -EINVAL;
+    }
+
+    private_module_t *gr = (private_module_t *)module;
+    cb_handle_t *cb = (cb_handle_t *)handle;
+    if (!gr || !cb_handle_t::validate(cb)) {
+        ALOGE("gralloc_lock_ycbcr bad handle\n");
+        return -EINVAL;
+    }
+
+    if (cb->frameworkFormat != HAL_PIXEL_FORMAT_YCbCr_420_888) {
+        ALOGE("gralloc_lock_ycbcr can only be used with "
+                "HAL_PIXEL_FORMAT_YCbCr_420_888, got %x instead",
+                cb->frameworkFormat);
+        return -EINVAL;
+    }
+
+    // Validate usage
+    // For now, only allow camera write, software read.
+    bool sw_read = (0 != (usage & GRALLOC_USAGE_SW_READ_MASK));
+    bool hw_cam_write = (usage & GRALLOC_USAGE_HW_CAMERA_WRITE);
+    bool sw_read_allowed = (0 != (cb->usage & GRALLOC_USAGE_SW_READ_MASK));
+
+    if ( (!hw_cam_write && !sw_read) ||
+            (sw_read && !sw_read_allowed) ) {
+        ALOGE("gralloc_lock_ycbcr usage mismatch usage:0x%x cb->usage:0x%x\n",
+                usage, cb->usage);
+        return -EINVAL;
+    }
+
+    // Make sure memory is mapped, get address
+    if (cb->ashmemBasePid != getpid() || !cb->ashmemBase) {
+        return -EACCES;
+    }
+
+    uint8_t *cpu_addr = NULL;
+
+    if (cb->canBePosted()) {
+        cpu_addr = (uint8_t *)(cb->ashmemBase + sizeof(int));
+    }
+    else {
+        cpu_addr = (uint8_t *)(cb->ashmemBase);
+    }
+
+    // Calculate offsets to underlying YUV data
+    size_t yStride;
+    size_t cStride;
+    size_t yOffset;
+    size_t uOffset;
+    size_t vOffset;
+    size_t cStep;
+    switch (cb->format) {
+        case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+            yStride = cb->width;
+            cStride = cb->width;
+            yOffset = 0;
+            vOffset = yStride * cb->height;
+            uOffset = vOffset + 1;
+            cStep = 2;
+            break;
+        default:
+            ALOGE("gralloc_lock_ycbcr unexpected internal format %x",
+                    cb->format);
+            return -EINVAL;
+    }
+
+    ycbcr->y = cpu_addr + yOffset;
+    ycbcr->cb = cpu_addr + uOffset;
+    ycbcr->cr = cpu_addr + vOffset;
+    ycbcr->ystride = yStride;
+    ycbcr->cstride = cStride;
+    ycbcr->chroma_step = cStep;
+
+    // Zero out reserved fields
+    memset(ycbcr->reserved, 0, sizeof(ycbcr->reserved));
+
+    //
+    // Keep locked region if locked for s/w write access.
+    //
+    cb->lockedLeft = l;
+    cb->lockedTop = t;
+    cb->lockedWidth = w;
+    cb->lockedHeight = h;
+
+    DD("gralloc_lock_ycbcr success. usage: %x, ycbcr.y: %p, .cb: %p, .cr: %p, "
+            ".ystride: %d , .cstride: %d, .chroma_step: %d", usage,
+            ycbcr->y, ycbcr->cb, ycbcr->cr, ycbcr->ystride, ycbcr->cstride,
+            ycbcr->chroma_step);
+
+    return 0;
+}
 
 static int gralloc_device_open(const hw_module_t* module,
                                const char* name,
@@ -881,8 +1006,8 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
     base: {
         common: {
             tag: HARDWARE_MODULE_TAG,
-            version_major: 1,
-            version_minor: 0,
+            module_api_version: GRALLOC_MODULE_API_VERSION_0_2,
+            hal_api_version: 0,
             id: GRALLOC_HARDWARE_MODULE_ID,
             name: "Graphics Memory Allocator Module",
             author: "The Android Open Source Project",
@@ -894,7 +1019,9 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
         unregisterBuffer: gralloc_unregister_buffer,
         lock: gralloc_lock,
         unlock: gralloc_unlock,
-        perform: NULL
+        perform: NULL,
+        lock_ycbcr: gralloc_lock_ycbcr,
+        reserved_proc: {0, }
     }
 };
 
