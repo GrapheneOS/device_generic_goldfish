@@ -18,6 +18,8 @@
  * This class is a simple simulation of a typical CMOS cellphone imager chip,
  * which outputs 12-bit Bayer-mosaic raw images.
  *
+ * Unlike most real image sensors, this one's native color space is linear sRGB.
+ *
  * The sensor is abstracted as operating as a pipeline 3 stages deep;
  * conceptually, each frame to be captured goes through these three stages. The
  * processing step for the sensor is marked off by vertical sync signals, which
