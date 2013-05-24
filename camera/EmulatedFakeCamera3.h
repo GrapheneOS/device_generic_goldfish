@@ -159,6 +159,9 @@ private:
     /* Facing back (true) or front (false) switch. */
     bool               mFacingBack;
 
+    /* Full mode (true) or limited mode (false) switch */
+    bool               mFullMode;
+
     /**
      * Cache for default templates. Once one is requested, the pointer must be
      * valid at least until close() is called on the device

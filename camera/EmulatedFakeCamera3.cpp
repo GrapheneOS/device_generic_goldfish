@@ -129,6 +129,12 @@ EmulatedFakeCamera3::EmulatedFakeCamera3(int cameraId, bool facingBack,
     for (size_t i = 0; i < CAMERA3_TEMPLATE_COUNT; i++) {
         mDefaultTemplates[i] = NULL;
     }
+
+    /**
+     * Front cameras = limited mode
+     * Back cameras = full mode
+     */
+    mFullMode = facingBack;
 }
 
 EmulatedFakeCamera3::~EmulatedFakeCamera3() {
@@ -1322,6 +1328,14 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     };
     info.update(ANDROID_CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES,
             availableVstabModes, sizeof(availableVstabModes));
+
+    // android.info
+    const uint8_t supportedHardwareLevel =
+        mFullMode ? ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_FULL :
+                    ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED;
+    info.update(ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL,
+                &supportedHardwareLevel,
+                /*count*/1);
 
     mCameraInfo = info.release();
 
