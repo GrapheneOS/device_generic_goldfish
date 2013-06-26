@@ -190,7 +190,7 @@ status_t EmulatedFakeCamera3::connectCamera(hw_device_t** device) {
 
     mControlMode  = ANDROID_CONTROL_MODE_AUTO;
     mFacePriority = false;
-    mAeMode       = ANDROID_CONTROL_AE_MODE_ON_AUTO_FLASH;
+    mAeMode       = ANDROID_CONTROL_AE_MODE_ON;
     mAfMode       = ANDROID_CONTROL_AF_MODE_AUTO;
     mAwbMode      = ANDROID_CONTROL_AWB_MODE_AUTO;
     mAeState      = ANDROID_CONTROL_AE_STATE_INACTIVE;
@@ -672,7 +672,7 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
     static const uint8_t sceneMode = ANDROID_CONTROL_SCENE_MODE_FACE_PRIORITY;
     settings.update(ANDROID_CONTROL_SCENE_MODE, &sceneMode, 1);
 
-    static const uint8_t aeMode = ANDROID_CONTROL_AE_MODE_ON_AUTO_FLASH;
+    static const uint8_t aeMode = ANDROID_CONTROL_AE_MODE_ON;
     settings.update(ANDROID_CONTROL_AE_MODE, &aeMode, 1);
 
     static const uint8_t aeLock = ANDROID_CONTROL_AE_LOCK_OFF;
