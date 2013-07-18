@@ -77,8 +77,7 @@ const float Sensor::kReadNoiseVarAfterGain =
 const nsecs_t Sensor::kRowReadoutTime =
             Sensor::kFrameDurationRange[0] / Sensor::kResolution[1];
 
-const uint32_t Sensor::kAvailableSensitivities[5] =
-    {100, 200, 400, 800, 1600};
+const int32_t Sensor::kSensitivityRange[2] = {100, 1600};
 const uint32_t Sensor::kDefaultSensitivity = 100;
 
 /** A few utility functions for math, normal distributions */

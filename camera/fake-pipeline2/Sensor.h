@@ -186,7 +186,7 @@ class Sensor: private Thread, public virtual RefBase {
     // if there's a reasonable number of rows.
     static const nsecs_t kRowReadoutTime;
 
-    static const uint32_t kAvailableSensitivities[5];
+    static const int32_t kSensitivityRange[2];
     static const uint32_t kDefaultSensitivity;
 
   private:
