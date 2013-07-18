@@ -2201,11 +2201,6 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     ADD_OR_SIZE(ANDROID_LENS_INFO_SHADING_MAP_SIZE, lensShadingMapSize,
             sizeof(lensShadingMapSize)/sizeof(int32_t));
 
-    static const float lensShadingMap[3 * 1 * 1 ] =
-            { 1.f, 1.f, 1.f };
-    ADD_OR_SIZE(ANDROID_LENS_INFO_SHADING_MAP, lensShadingMap,
-            sizeof(lensShadingMap)/sizeof(float));
-
     // Identity transform
     static const int32_t geometricCorrectionMapSize[] = {2, 2};
     ADD_OR_SIZE(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP_SIZE,
@@ -2248,10 +2243,10 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     ADD_OR_SIZE(ANDROID_SENSOR_INFO_MAX_FRAME_DURATION,
             &Sensor::kFrameDurationRange[1], 1);
 
-    ADD_OR_SIZE(ANDROID_SENSOR_INFO_AVAILABLE_SENSITIVITIES,
-            Sensor::kAvailableSensitivities,
-            sizeof(Sensor::kAvailableSensitivities)
-            /sizeof(uint32_t));
+    ADD_OR_SIZE(ANDROID_SENSOR_INFO_SENSITIVITY_RANGE,
+            Sensor::kSensitivityRange,
+            sizeof(Sensor::kSensitivityRange)
+            /sizeof(int32_t));
 
     ADD_OR_SIZE(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,
             &Sensor::kColorFilterArrangement, 1);
