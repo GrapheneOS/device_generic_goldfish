@@ -219,16 +219,6 @@ static int gralloc_alloc(alloc_device_t* dev,
             glFormat = GL_RGB;
             glType = GL_UNSIGNED_SHORT_5_6_5;
             break;
-        case HAL_PIXEL_FORMAT_RGBA_5551:
-            bpp = 2;
-            glFormat = GL_RGB5_A1_OES;
-            glType = GL_UNSIGNED_SHORT_5_5_5_1;
-            break;
-        case HAL_PIXEL_FORMAT_RGBA_4444:
-            bpp = 2;
-            glFormat = GL_RGBA4_OES;
-            glType = GL_UNSIGNED_SHORT_4_4_4_4;
-            break;
         case HAL_PIXEL_FORMAT_RAW_SENSOR:
             bpp = 2;
             align = 16*bpp;
