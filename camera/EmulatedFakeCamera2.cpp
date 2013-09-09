@@ -911,7 +911,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupCapture() {
     mNextNeedsJpeg = false;
     ALOGV("Configure: Setting up buffers for capture");
     for (size_t i = 0; i < streams.count; i++) {
-        int streamId = streams.data.u8[i];
+        int streamId = streams.data.i32[i];
         const Stream &s = mParent->getStreamInfo(streamId);
         if (s.format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
             ALOGE("%s: Stream %d does not have a concrete pixel format, but "
@@ -1041,7 +1041,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupReprocess() {
 
     ALOGV("Configure: Setting up input buffers for reprocess");
     for (size_t i = 0; i < reprocessStreams.count; i++) {
-        int streamId = reprocessStreams.data.u8[i];
+        int streamId = reprocessStreams.data.i32[i];
         const ReprocessStream &s = mParent->getReprocessStreamInfo(streamId);
         if (s.format != HAL_PIXEL_FORMAT_RGB_888) {
             ALOGE("%s: Only ZSL reprocessing supported!",
@@ -1070,7 +1070,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupReprocess() {
 
     ALOGV("Configure: Setting up output buffers for reprocess");
     for (size_t i = 0; i < streams.count; i++) {
-        int streamId = streams.data.u8[i];
+        int streamId = streams.data.i32[i];
         const Stream &s = mParent->getStreamInfo(streamId);
         if (s.format != HAL_PIXEL_FORMAT_BLOB) {
             // TODO: Support reprocess to YUV
