@@ -4,7 +4,8 @@ on early-init
 
 on init
     # See storage config details at http://source.android.com/tech/storage/
-    mkdir /storage/sdcard 0555 root root
+    mkdir /mnt/media_rw/sdcard 0700 media_rw media_rw
+    mkdir /storage/sdcard 0700 root root
 
     export EXTERNAL_STORAGE /storage/sdcard
 
@@ -92,3 +93,8 @@ service qemud /system/bin/qemud
 
 service goldfish-logcat /system/bin/logcat -Q
     oneshot
+
+# fusewrapped external sdcard daemon running as media_rw (1023)
+service fuse_sdcard /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard /storage/sdcard
+    class late_start
+    disabled
