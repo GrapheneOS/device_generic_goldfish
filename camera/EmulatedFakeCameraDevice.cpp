@@ -243,6 +243,13 @@ void EmulatedFakeCameraDevice::drawCheckerboard()
     const int size = mFrameWidth / 10;
     bool black = true;
 
+    if (size == 0) {
+        // When this happens, it happens at a very high rate,
+        //     so don't log any messages and just return.
+        return;
+    }
+
+
     if((mCheckX / size) & 1)
         black = false;
     if((mCheckY / size) & 1)
