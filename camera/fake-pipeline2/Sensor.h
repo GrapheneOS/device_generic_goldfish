@@ -18,6 +18,8 @@
  * This class is a simple simulation of a typical CMOS cellphone imager chip,
  * which outputs 12-bit Bayer-mosaic raw images.
  *
+ * Unlike most real image sensors, this one's native color space is linear sRGB.
+ *
  * The sensor is abstracted as operating as a pipeline 3 stages deep;
  * conceptually, each frame to be captured goes through these three stages. The
  * processing step for the sensor is marked off by vertical sync signals, which
@@ -186,7 +188,7 @@ class Sensor: private Thread, public virtual RefBase {
     // if there's a reasonable number of rows.
     static const nsecs_t kRowReadoutTime;
 
-    static const uint32_t kAvailableSensitivities[5];
+    static const int32_t kSensitivityRange[2];
     static const uint32_t kDefaultSensitivity;
 
   private:

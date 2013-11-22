@@ -77,8 +77,7 @@ const float Sensor::kReadNoiseVarAfterGain =
 const nsecs_t Sensor::kRowReadoutTime =
             Sensor::kFrameDurationRange[0] / Sensor::kResolution[1];
 
-const uint32_t Sensor::kAvailableSensitivities[5] =
-    {100, 200, 400, 800, 1600};
+const int32_t Sensor::kSensitivityRange[2] = {100, 1600};
 const uint32_t Sensor::kDefaultSensitivity = 100;
 
 /** A few utility functions for math, normal distributions */
@@ -485,35 +484,54 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t stride) {
 
 void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t stride) {
     float totalGain = gain/100.0 * kBaseGainFactor;
+    // Using fixed-point math with 6 bits of fractional precision.
     // In fixed-point math, calculate total scaling from electrons to 8bpp
-    int scale64x = 64 * totalGain * 255 / kMaxRawValue;
+    const int scale64x = 64 * totalGain * 255 / kMaxRawValue;
+    // In fixed-point math, saturation point of sensor after gain
+    const int saturationPoint = 64 * 255;
+    // Fixed-point coefficients for RGB-YUV transform
+    // Based on JFIF RGB->YUV transform.
+    // Cb/Cr offset scaled by 64x twice since they're applied post-multiply
+    const int rgbToY[]  = {19, 37, 7};
+    const int rgbToCb[] = {-10,-21, 32, 524288};
+    const int rgbToCr[] = {32,-26, -5, 524288};
+    // Scale back to 8bpp non-fixed-point
+    const int scaleOut = 64;
+    const int scaleOutSq = scaleOut * scaleOut; // after multiplies
 
-    // TODO: Make full-color
     uint32_t inc = kResolution[0] / stride;
     uint32_t outH = kResolution[1] / inc;
-    for (unsigned int y = 0, outY = 0, outUV = outH;
-         y < kResolution[1]; y+=inc, outY++, outUV ) {
+    for (unsigned int y = 0, outY = 0;
+         y < kResolution[1]; y+=inc, outY++) {
         uint8_t *pxY = img + outY * stride;
+        uint8_t *pxVU = img + (outH + outY / 2) * stride;
         mScene.setReadoutPixel(0,y);
-        for (unsigned int x = 0; x < kResolution[0]; x+=inc) {
-            uint32_t rCount, gCount, bCount;
+        for (unsigned int outX = 0; outX < stride; outX++) {
+            int32_t rCount, gCount, bCount;
             // TODO: Perfect demosaicing is a cheat
             const uint32_t *pixel = mScene.getPixelElectrons();
             rCount = pixel[Scene::R]  * scale64x;
+            rCount = rCount < saturationPoint ? rCount : saturationPoint;
             gCount = pixel[Scene::Gr] * scale64x;
+            gCount = gCount < saturationPoint ? gCount : saturationPoint;
             bCount = pixel[Scene::B]  * scale64x;
-            uint32_t avg = (rCount + gCount + bCount) / 3;
-            *pxY++ = avg < 255*64 ? avg / 64 : 255;
+            bCount = bCount < saturationPoint ? bCount : saturationPoint;
+
+            *pxY++ = (rgbToY[0] * rCount +
+                    rgbToY[1] * gCount +
+                    rgbToY[2] * bCount) / scaleOutSq;
+            if (outY % 2 == 0 && outX % 2 == 0) {
+                *pxVU++ = (rgbToCr[0] * rCount +
+                        rgbToCr[1] * gCount +
+                        rgbToCr[2] * bCount +
+                        rgbToCr[3]) / scaleOutSq;
+                *pxVU++ = (rgbToCb[0] * rCount +
+                        rgbToCb[1] * gCount +
+                        rgbToCb[2] * bCount +
+                        rgbToCb[3]) / scaleOutSq;
+            }
             for (unsigned int j = 1; j < inc; j++)
                 mScene.getPixelElectrons();
-        }
-    }
-    for (unsigned int y = 0, outY = outH; y < kResolution[1]/2; y+=inc, outY++) {
-        uint8_t *px = img + outY * stride;
-        for (unsigned int x = 0; x < kResolution[0]; x+=inc) {
-            // UV to neutral
-            *px++ = 128;
-            *px++ = 128;
         }
     }
     ALOGVV("NV21 sensor image captured");

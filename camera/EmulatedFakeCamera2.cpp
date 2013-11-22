@@ -911,7 +911,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupCapture() {
     mNextNeedsJpeg = false;
     ALOGV("Configure: Setting up buffers for capture");
     for (size_t i = 0; i < streams.count; i++) {
-        int streamId = streams.data.u8[i];
+        int streamId = streams.data.i32[i];
         const Stream &s = mParent->getStreamInfo(streamId);
         if (s.format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
             ALOGE("%s: Stream %d does not have a concrete pixel format, but "
@@ -1041,7 +1041,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupReprocess() {
 
     ALOGV("Configure: Setting up input buffers for reprocess");
     for (size_t i = 0; i < reprocessStreams.count; i++) {
-        int streamId = reprocessStreams.data.u8[i];
+        int streamId = reprocessStreams.data.i32[i];
         const ReprocessStream &s = mParent->getReprocessStreamInfo(streamId);
         if (s.format != HAL_PIXEL_FORMAT_RGB_888) {
             ALOGE("%s: Only ZSL reprocessing supported!",
@@ -1070,7 +1070,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupReprocess() {
 
     ALOGV("Configure: Setting up output buffers for reprocess");
     for (size_t i = 0; i < streams.count; i++) {
-        int streamId = streams.data.u8[i];
+        int streamId = streams.data.i32[i];
         const Stream &s = mParent->getStreamInfo(streamId);
         if (s.format != HAL_PIXEL_FORMAT_BLOB) {
             // TODO: Support reprocess to YUV
@@ -2201,11 +2201,6 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     ADD_OR_SIZE(ANDROID_LENS_INFO_SHADING_MAP_SIZE, lensShadingMapSize,
             sizeof(lensShadingMapSize)/sizeof(int32_t));
 
-    static const float lensShadingMap[3 * 1 * 1 ] =
-            { 1.f, 1.f, 1.f };
-    ADD_OR_SIZE(ANDROID_LENS_INFO_SHADING_MAP, lensShadingMap,
-            sizeof(lensShadingMap)/sizeof(float));
-
     // Identity transform
     static const int32_t geometricCorrectionMapSize[] = {2, 2};
     ADD_OR_SIZE(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP_SIZE,
@@ -2248,10 +2243,10 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     ADD_OR_SIZE(ANDROID_SENSOR_INFO_MAX_FRAME_DURATION,
             &Sensor::kFrameDurationRange[1], 1);
 
-    ADD_OR_SIZE(ANDROID_SENSOR_INFO_AVAILABLE_SENSITIVITIES,
-            Sensor::kAvailableSensitivities,
-            sizeof(Sensor::kAvailableSensitivities)
-            /sizeof(uint32_t));
+    ADD_OR_SIZE(ANDROID_SENSOR_INFO_SENSITIVITY_RANGE,
+            Sensor::kSensitivityRange,
+            sizeof(Sensor::kSensitivityRange)
+            /sizeof(int32_t));
 
     ADD_OR_SIZE(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,
             &Sensor::kColorFilterArrangement, 1);
