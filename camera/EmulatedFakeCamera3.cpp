@@ -1240,7 +1240,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.control
 
     static const uint8_t availableSceneModes[] = {
-            ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED
+            ANDROID_CONTROL_SCENE_MODE_DISABLED
     };
     info.update(ANDROID_CONTROL_AVAILABLE_SCENE_MODES,
             availableSceneModes, sizeof(availableSceneModes));

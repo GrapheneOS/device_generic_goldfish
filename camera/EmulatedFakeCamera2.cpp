@@ -1708,7 +1708,7 @@ status_t EmulatedFakeCamera2::ControlThread::processRequest(camera_metadata_t *r
     // disable all 3A
     if (mControlMode == ANDROID_CONTROL_MODE_OFF) {
         mEffectMode =   ANDROID_CONTROL_EFFECT_MODE_OFF;
-        mSceneMode =    ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED;
+        mSceneMode =    ANDROID_CONTROL_SCENE_MODE_DISABLED;
         mAfMode =       ANDROID_CONTROL_AF_MODE_OFF;
         mAeLock =       ANDROID_CONTROL_AE_LOCK_ON;
         mAeMode =       ANDROID_CONTROL_AE_MODE_OFF;
@@ -1730,7 +1730,7 @@ status_t EmulatedFakeCamera2::ControlThread::processRequest(camera_metadata_t *r
             ANDROID_CONTROL_SCENE_MODE,
             &mode);
     mSceneMode = READ_IF_OK(res, mode.data.u8[0],
-                             ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED);
+                             ANDROID_CONTROL_SCENE_MODE_DISABLED);
 
     res = find_camera_metadata_entry(request,
             ANDROID_CONTROL_AF_MODE,
@@ -2379,7 +2379,7 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     // android.control
 
     static const uint8_t availableSceneModes[] = {
-            ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED
+            ANDROID_CONTROL_SCENE_MODE_DISABLED
     };
     ADD_OR_SIZE(ANDROID_CONTROL_AVAILABLE_SCENE_MODES,
             availableSceneModes, sizeof(availableSceneModes));
