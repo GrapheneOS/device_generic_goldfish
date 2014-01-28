@@ -234,7 +234,5 @@ endef
 # $1: library sub-path,relative to /system/lib
 # For example: $(call emugl-set-shared-library-subpath,egl)
 emugl-set-shared-library-subpath = \
-    $(eval LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/$1)\
-    $(eval LOCAL_UNSTRIPPED_PATH := $(TARGET_OUT_SHARED_LIBRARIES_UNSTRIPPED)/$1)\
-    $(eval _emugl.$(LOCAL_MODULE).moved := true)\
-    $(call emugl-export-outer,ADDITIONAL_DEPENDENCIES,$(LOCAL_MODULE_PATH)/$(LOCAL_MODULE)$(TARGET_SHLIB_SUFFIX))
+    $(eval LOCAL_MODULE_RELATIVE_PATH := $1)\
+    $(eval _emugl.$(LOCAL_MODULE).moved := true)
