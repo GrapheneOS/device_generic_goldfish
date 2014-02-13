@@ -2201,21 +2201,6 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     ADD_OR_SIZE(ANDROID_LENS_INFO_SHADING_MAP_SIZE, lensShadingMapSize,
             sizeof(lensShadingMapSize)/sizeof(int32_t));
 
-    // Identity transform
-    static const int32_t geometricCorrectionMapSize[] = {2, 2};
-    ADD_OR_SIZE(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP_SIZE,
-            geometricCorrectionMapSize,
-            sizeof(geometricCorrectionMapSize)/sizeof(int32_t));
-
-    static const float geometricCorrectionMap[2 * 3 * 2 * 2] = {
-            0.f, 0.f,  0.f, 0.f,  0.f, 0.f,
-            1.f, 0.f,  1.f, 0.f,  1.f, 0.f,
-            0.f, 1.f,  0.f, 1.f,  0.f, 1.f,
-            1.f, 1.f,  1.f, 1.f,  1.f, 1.f};
-    ADD_OR_SIZE(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP,
-            geometricCorrectionMap,
-            sizeof(geometricCorrectionMap)/sizeof(float));
-
     int32_t lensFacing = mFacingBack ?
             ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT;
     ADD_OR_SIZE(ANDROID_LENS_FACING, &lensFacing, 1);
@@ -2561,7 +2546,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
     uint8_t demosaicMode = 0;
     uint8_t noiseMode = 0;
     uint8_t shadingMode = 0;
-    uint8_t geometricMode = 0;
     uint8_t colorMode = 0;
     uint8_t tonemapMode = 0;
     uint8_t edgeMode = 0;
@@ -2575,7 +2559,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
         demosaicMode = ANDROID_DEMOSAIC_MODE_HIGH_QUALITY;
         noiseMode = ANDROID_NOISE_REDUCTION_MODE_HIGH_QUALITY;
         shadingMode = ANDROID_SHADING_MODE_HIGH_QUALITY;
-        geometricMode = ANDROID_GEOMETRIC_MODE_HIGH_QUALITY;
         colorMode = ANDROID_COLOR_CORRECTION_MODE_HIGH_QUALITY;
         tonemapMode = ANDROID_TONEMAP_MODE_HIGH_QUALITY;
         edgeMode = ANDROID_EDGE_MODE_HIGH_QUALITY;
@@ -2589,7 +2572,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
         demosaicMode = ANDROID_DEMOSAIC_MODE_FAST;
         noiseMode = ANDROID_NOISE_REDUCTION_MODE_FAST;
         shadingMode = ANDROID_SHADING_MODE_FAST;
-        geometricMode = ANDROID_GEOMETRIC_MODE_FAST;
         colorMode = ANDROID_COLOR_CORRECTION_MODE_FAST;
         tonemapMode = ANDROID_TONEMAP_MODE_FAST;
         edgeMode = ANDROID_EDGE_MODE_FAST;
@@ -2599,7 +2581,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
     ADD_OR_SIZE(ANDROID_DEMOSAIC_MODE, &demosaicMode, 1);
     ADD_OR_SIZE(ANDROID_NOISE_REDUCTION_MODE, &noiseMode, 1);
     ADD_OR_SIZE(ANDROID_SHADING_MODE, &shadingMode, 1);
-    ADD_OR_SIZE(ANDROID_GEOMETRIC_MODE, &geometricMode, 1);
     ADD_OR_SIZE(ANDROID_COLOR_CORRECTION_MODE, &colorMode, 1);
     ADD_OR_SIZE(ANDROID_TONEMAP_MODE, &tonemapMode, 1);
     ADD_OR_SIZE(ANDROID_EDGE_MODE, &edgeMode, 1);
