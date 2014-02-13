@@ -82,8 +82,7 @@ LOCAL_SHARED_LIBRARIES:= \
     libcutils \
     liblog \
     libskia \
-    libandroid_runtime \
-    libandroid_runtime_derived
+    libandroid_runtime
 
 LOCAL_C_INCLUDES += external/jpeg \
                     external/skia/include/core/ \
