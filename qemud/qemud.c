@@ -1629,7 +1629,7 @@ multiplexer_init( Multiplexer*  m, const char*  serial_dev )
                strerror(errno) );
     }
     // disable echo on serial lines
-    if ( !memcmp( serial_dev, "/dev/ttyS", 9 ) ) {
+    if ( !memcmp( serial_dev, "/dev/tty", 8 ) ) {
         struct termios  ios;
         tcgetattr( fd, &ios );
         ios.c_lflag = 0;  /* disable ECHO, ICANON, etc... */
