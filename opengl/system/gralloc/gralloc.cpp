@@ -15,11 +15,7 @@
 */
 #include <string.h>
 #include <pthread.h>
-#ifdef HAVE_ANDROID_OS      // just want PAGE_SIZE define
-# include <asm/page.h>
-#else
-# include <sys/user.h>
-#endif
+#include <limits.h>
 #include <cutils/ashmem.h>
 #include <unistd.h>
 #include <errno.h>
