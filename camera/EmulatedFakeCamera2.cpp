@@ -110,9 +110,6 @@ EmulatedFakeCamera2::~EmulatedFakeCamera2() {
 status_t EmulatedFakeCamera2::Initialize() {
     status_t res;
 
-    set_camera_metadata_vendor_tag_ops(
-            static_cast<vendor_tag_query_ops_t*>(&mVendorTagOps));
-
     res = constructStaticInfo(&mCameraInfo, true);
     if (res != OK) {
         ALOGE("%s: Unable to allocate static info: %s (%d)",
@@ -631,80 +628,6 @@ int EmulatedFakeCamera2::triggerAction(uint32_t trigger_id,
             ext1, ext2);
 }
 
-/** Custom tag definitions */
-
-// Emulator camera metadata sections
-enum {
-    EMULATOR_SCENE = VENDOR_SECTION,
-    END_EMULATOR_SECTIONS
-};
-
-enum {
-    EMULATOR_SCENE_START = EMULATOR_SCENE << 16,
-};
-
-// Emulator camera metadata tags
-enum {
-    // Hour of day to use for lighting calculations (0-23). Default: 12
-    EMULATOR_SCENE_HOUROFDAY = EMULATOR_SCENE_START,
-    EMULATOR_SCENE_END
-};
-
-unsigned int emulator_metadata_section_bounds[END_EMULATOR_SECTIONS -
-        VENDOR_SECTION][2] = {
-    { EMULATOR_SCENE_START, EMULATOR_SCENE_END }
-};
-
-const char *emulator_metadata_section_names[END_EMULATOR_SECTIONS -
-        VENDOR_SECTION] = {
-    "com.android.emulator.scene"
-};
-
-typedef struct emulator_tag_info {
-    const char *tag_name;
-    uint8_t     tag_type;
-} emulator_tag_info_t;
-
-emulator_tag_info_t emulator_scene[EMULATOR_SCENE_END - EMULATOR_SCENE_START] = {
-    { "hourOfDay", TYPE_INT32 }
-};
-
-emulator_tag_info_t *tag_info[END_EMULATOR_SECTIONS -
-        VENDOR_SECTION] = {
-    emulator_scene
-};
-
-const char* EmulatedFakeCamera2::getVendorSectionName(uint32_t tag) {
-    ALOGV("%s", __FUNCTION__);
-    uint32_t section = tag >> 16;
-    if (section < VENDOR_SECTION || section > END_EMULATOR_SECTIONS) return NULL;
-    return emulator_metadata_section_names[section - VENDOR_SECTION];
-}
-
-const char* EmulatedFakeCamera2::getVendorTagName(uint32_t tag) {
-    ALOGV("%s", __FUNCTION__);
-    uint32_t section = tag >> 16;
-    if (section < VENDOR_SECTION || section > END_EMULATOR_SECTIONS) return NULL;
-    uint32_t section_index = section - VENDOR_SECTION;
-    if (tag >= emulator_metadata_section_bounds[section_index][1]) {
-        return NULL;
-    }
-    uint32_t tag_index = tag & 0xFFFF;
-    return tag_info[section_index][tag_index].tag_name;
-}
-
-int EmulatedFakeCamera2::getVendorTagType(uint32_t tag) {
-    ALOGV("%s", __FUNCTION__);
-    uint32_t section = tag >> 16;
-    if (section < VENDOR_SECTION || section > END_EMULATOR_SECTIONS) return -1;
-    uint32_t section_index = section - VENDOR_SECTION;
-    if (tag >= emulator_metadata_section_bounds[section_index][1]) {
-        return -1;
-    }
-    uint32_t tag_index = tag & 0xFFFF;
-    return tag_info[section_index][tag_index].tag_type;
-}
-
 /** Shutdown and debug methods */
 
 int EmulatedFakeCamera2::dump(int fd) {
@@ -980,14 +903,6 @@ bool EmulatedFakeCamera2::ConfigureThread::setupCapture() {
         return false;
     }
     mNextSensitivity = *e.data.i32;
-
-    res = find_camera_metadata_entry(mRequest,
-            EMULATOR_SCENE_HOUROFDAY,
-            &e);
-    if (res == NO_ERROR) {
-        ALOGV("Setting hour: %d", *e.data.i32);
-        mParent->mSensor->getScene().setHour(*e.data.i32);
-    }
 
     // Start waiting on readout thread
     mWaitingForReadout = true;
@@ -1417,24 +1332,6 @@ bool EmulatedFakeCamera2::ReadoutThread::threadLoop() {
                     ANDROID_SENSOR_TIMESTAMP,
                     &captureTime,
                     1);
-
-            int32_t hourOfDay = (int32_t)mParent->mSensor->getScene().getHour();
-            camera_metadata_entry_t requestedHour;
-            res = find_camera_metadata_entry(frame,
-                    EMULATOR_SCENE_HOUROFDAY,
-                    &requestedHour);
-            if (res == NAME_NOT_FOUND) {
-                res = add_camera_metadata_entry(frame,
-                        EMULATOR_SCENE_HOUROFDAY,
-                        &hourOfDay, 1);
-                if (res != NO_ERROR) {
-                    ALOGE("Unable to add vendor tag");
-                }
-            } else if (res == OK) {
-                *requestedHour.data.i32 = hourOfDay;
-            } else {
-                ALOGE("%s: Error looking up vendor tag", __FUNCTION__);
-            }
 
             collectStatisticsMetadata(frame);
             // TODO: Collect all final values used from sensor in addition to timestamp
