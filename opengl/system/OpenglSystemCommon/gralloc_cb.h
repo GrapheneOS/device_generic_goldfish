@@ -96,7 +96,7 @@ struct cb_handle_t : public native_handle {
     int glType;             // OpenGL type enum used when uploading to host
     int ashmemSize;         // ashmem region size for the buffer (0 unless is HW_FB buffer or
                             //                                    s/w access is needed)
-    int ashmemBase;         // CPU address of the mapped ashmem region
+    intptr_t ashmemBase;         // CPU address of the mapped ashmem region
     int ashmemBasePid;      // process id which mapped the ashmem region
     int mappedPid;          // process id which succeeded gralloc_register call
     int lockedLeft;         // region of buffer locked for s/w write

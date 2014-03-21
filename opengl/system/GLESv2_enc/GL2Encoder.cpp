@@ -430,7 +430,7 @@ void GL2Encoder::sendVertexAttributes(GLint first, GLsizei count)
             } else {
                 this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, state->bufferObject);
                 this->glVertexAttribPointerOffset(this, i, state->size, state->type, state->normalized, state->stride,
-                                                  (GLuint) state->data + firstIndex);
+                                                  (uintptr_t) state->data + firstIndex);
                 this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, m_state->currentArrayVbo());
             }
         } else {
@@ -479,7 +479,7 @@ void GL2Encoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum
         if (!has_immediate_arrays) {
             ctx->sendVertexAttributes(0, count);
             ctx->m_glBindBuffer_enc(self, GL_ELEMENT_ARRAY_BUFFER, ctx->m_state->currentIndexVbo());
-            ctx->glDrawElementsOffset(ctx, mode, count, type, (GLuint)indices);
+            ctx->glDrawElementsOffset(ctx, mode, count, type, (uintptr_t)indices);
             adjustIndices = false;
         } else {
             BufferData * buf = ctx->m_shared->getBufferData(ctx->m_state->currentIndexVbo());

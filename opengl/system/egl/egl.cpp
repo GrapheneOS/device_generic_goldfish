@@ -86,7 +86,7 @@ const char *  eglStrError(EGLint err)
 #endif //LOG_EGL_ERRORS
 
 #define VALIDATE_CONFIG(cfg,ret) \
-    if(((int)cfg<0)||((int)cfg>s_display.getNumConfigs())) { \
+    if(((intptr_t)cfg<0)||((intptr_t)cfg>s_display.getNumConfigs())) { \
         RETURN_ERROR(ret,EGL_BAD_CONFIG); \
     }
 
@@ -268,7 +268,7 @@ EGLBoolean egl_window_surface_t::init()
     }
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uint32_t)config,
+    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)config,
             getWidth(), getHeight());
     if (!rcSurface) {
         ALOGE("rcCreateWindowSurface returned 0");
@@ -371,7 +371,7 @@ EGLBoolean egl_pbuffer_surface_t::init(GLenum pixelFormat)
 {
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
 
-    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uint32_t)config,
+    rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)config,
             getWidth(), getHeight());
     if (!rcSurface) {
         ALOGE("rcCreateWindowSurface returned 0");
@@ -563,7 +563,7 @@ EGLBoolean eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size,
         return EGL_TRUE;
     }
 
-    int i=0;
+    uintptr_t i=0;
     for (i=0 ; i<numConfigs && i<config_size ; i++) {
         *configs++ = (EGLConfig)i;
     }
@@ -585,8 +585,15 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
         attribs_size++; //for the terminating EGL_NONE
     }
 
+    uint32_t* tempConfigs[config_size];
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
-    *num_config = rcEnc->rcChooseConfig(rcEnc, (EGLint*)attrib_list, attribs_size * sizeof(EGLint), (uint32_t*)configs, config_size);
+    *num_config = rcEnc->rcChooseConfig(rcEnc, (EGLint*)attrib_list, attribs_size * sizeof(EGLint), (uint32_t*)tempConfigs, config_size);
+    if (configs!=NULL) {
+        EGLint i=0;
+        for (i=0;i<(*num_config);i++) {
+             *((uintptr_t*)configs+i) = *((uint32_t*)tempConfigs+i);
+        }
+    }
 
     if (*num_config <= 0)
         return EGL_FALSE;
@@ -875,7 +882,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     }
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_NO_CONTEXT);
-    uint32_t rcContext = rcEnc->rcCreateContext(rcEnc, (uint32_t)config, rcShareCtx, version);
+    uint32_t rcContext = rcEnc->rcCreateContext(rcEnc, (uintptr_t)config, rcShareCtx, version);
     if (!rcContext) {
         ALOGE("rcCreateContext returned 0");
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_CONTEXT);
