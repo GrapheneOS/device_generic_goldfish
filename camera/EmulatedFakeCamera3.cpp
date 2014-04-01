@@ -1113,6 +1113,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     info.update(ANDROID_SENSOR_BLACK_LEVEL_PATTERN,
             blackLevelPattern, sizeof(blackLevelPattern)/sizeof(int32_t));
 
+    static const int32_t orientation = 0; // unrotated (0 degrees)
+    info.update(ANDROID_SENSOR_ORIENTATION, &orientation, 1);
+
     //TODO: sensor color calibration fields
 
     // android.flash
