@@ -446,7 +446,7 @@ static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
 
     // increment the post count of the buffer
-    uint32_t *postCountPtr = (uint32_t *)cb->ashmemBase;
+    intptr_t *postCountPtr = (intptr_t *)cb->ashmemBase;
     if (!postCountPtr) {
         // This should not happen
         return -EINVAL;
@@ -638,7 +638,7 @@ static int gralloc_lock(gralloc_module_t const* module,
         return -EINVAL;
     }
 
-    EGLint postCount = 0;
+    intptr_t postCount = 0;
     void *cpu_addr = NULL;
 
     //
@@ -652,8 +652,8 @@ static int gralloc_lock(gralloc_module_t const* module,
         }
 
         if (cb->canBePosted()) {
-            postCount = *((int *)cb->ashmemBase);
-            cpu_addr = (void *)(cb->ashmemBase + sizeof(int));
+            postCount = *((intptr_t *)cb->ashmemBase);
+            cpu_addr = (void *)(cb->ashmemBase + sizeof(intptr_t));
         }
         else {
             cpu_addr = (void *)(cb->ashmemBase);
