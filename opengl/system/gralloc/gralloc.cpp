@@ -1028,7 +1028,11 @@ fallback_init(void)
         return;
     }
     ALOGD("Emulator without GPU emulation detected.");
+#if __LP64__
+    module = dlopen("/system/lib64/hw/gralloc.default.so", RTLD_LAZY|RTLD_LOCAL);
+#else
     module = dlopen("/system/lib/hw/gralloc.default.so", RTLD_LAZY|RTLD_LOCAL);
+#endif
     if (module != NULL) {
         sFallback = reinterpret_cast<gralloc_module_t*>(dlsym(module, HAL_MODULE_INFO_SYM_AS_STR));
         if (sFallback == NULL) {
