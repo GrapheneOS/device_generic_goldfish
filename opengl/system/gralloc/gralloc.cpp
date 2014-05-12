@@ -1007,7 +1007,6 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
         unlock: gralloc_unlock,
         perform: NULL,
         lock_ycbcr: gralloc_lock_ycbcr,
-        reserved_proc: {0, }
     }
 };
 

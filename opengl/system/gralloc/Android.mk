@@ -7,6 +7,7 @@ $(call emugl-import,libGLESv1_enc lib_renderControl_enc libOpenglSystemCommon)
 $(call emugl-set-shared-library-subpath,hw)
 
 LOCAL_CFLAGS += -DLOG_TAG=\"gralloc_goldfish\"
+LOCAL_CFLAGS += -Wno-missing-field-initializers
 
 LOCAL_SRC_FILES := gralloc.cpp
 
