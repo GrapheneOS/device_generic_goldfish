@@ -181,8 +181,8 @@ extern "C" {
 	void glGenVertexArraysOES_enc(void *self , GLsizei n, GLuint* arrays);
 	GLboolean glIsVertexArrayOES_enc(void *self , GLuint array);
 	void glDiscardFramebufferEXT_enc(void *self , GLenum target, GLsizei numAttachments, const GLenum* attachments);
-	void glMultiDrawArraysEXT_enc(void *self , GLenum mode, GLint* first, GLsizei* count, GLsizei primcount);
-	void glMultiDrawElementsEXT_enc(void *self , GLenum mode, const GLsizei* count, GLenum type, const GLvoid** indices, GLsizei primcount);
+	void glMultiDrawArraysEXT_enc(void *self , GLenum mode, const GLint* first, const GLsizei* count, GLsizei primcount);
+	void glMultiDrawElementsEXT_enc(void *self , GLenum mode, const GLsizei* count, GLenum type, const GLvoid* const* indices, GLsizei primcount);
 	void glGetPerfMonitorGroupsAMD_enc(void *self , GLint* numGroups, GLsizei groupsSize, GLuint* groups);
 	void glGetPerfMonitorCountersAMD_enc(void *self , GLuint group, GLint* numCounters, GLint* maxActiveCounters, GLsizei counterSize, GLuint* counters);
 	void glGetPerfMonitorGroupStringAMD_enc(void *self , GLuint group, GLsizei bufSize, GLsizei* length, GLchar* groupString);

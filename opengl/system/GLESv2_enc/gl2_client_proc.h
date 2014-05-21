@@ -168,8 +168,8 @@ typedef void (gl2_APIENTRY *glDeleteVertexArraysOES_client_proc_t) (void * ctx, 
 typedef void (gl2_APIENTRY *glGenVertexArraysOES_client_proc_t) (void * ctx, GLsizei, GLuint*);
 typedef GLboolean (gl2_APIENTRY *glIsVertexArrayOES_client_proc_t) (void * ctx, GLuint);
 typedef void (gl2_APIENTRY *glDiscardFramebufferEXT_client_proc_t) (void * ctx, GLenum, GLsizei, const GLenum*);
-typedef void (gl2_APIENTRY *glMultiDrawArraysEXT_client_proc_t) (void * ctx, GLenum, GLint*, GLsizei*, GLsizei);
-typedef void (gl2_APIENTRY *glMultiDrawElementsEXT_client_proc_t) (void * ctx, GLenum, const GLsizei*, GLenum, const GLvoid**, GLsizei);
+typedef void (gl2_APIENTRY *glMultiDrawArraysEXT_client_proc_t) (void * ctx, GLenum, const GLint*, const GLsizei*, GLsizei);
+typedef void (gl2_APIENTRY *glMultiDrawElementsEXT_client_proc_t) (void * ctx, GLenum, const GLsizei*, GLenum, const GLvoid* const*, GLsizei);
 typedef void (gl2_APIENTRY *glGetPerfMonitorGroupsAMD_client_proc_t) (void * ctx, GLint*, GLsizei, GLuint*);
 typedef void (gl2_APIENTRY *glGetPerfMonitorCountersAMD_client_proc_t) (void * ctx, GLuint, GLint*, GLint*, GLsizei, GLuint*);
 typedef void (gl2_APIENTRY *glGetPerfMonitorGroupStringAMD_client_proc_t) (void * ctx, GLuint, GLsizei, GLsizei*, GLchar*);
