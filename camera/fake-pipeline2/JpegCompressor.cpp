@@ -263,7 +263,7 @@ void JpegCompressor::jpegErrorHandler(j_common_ptr cinfo) {
 
 void JpegCompressor::jpegInitDestination(j_compress_ptr cinfo) {
     JpegDestination *dest= static_cast<JpegDestination*>(cinfo->dest);
-    ALOGV("%s: Setting destination to %p, size %d",
+    ALOGV("%s: Setting destination to %p, size %zu",
             __FUNCTION__, dest->parent->mJpegBuffer.img, kMaxJpegSize);
     dest->next_output_byte = (JOCTET*)(dest->parent->mJpegBuffer.img);
     dest->free_in_buffer = kMaxJpegSize;
@@ -276,7 +276,7 @@ boolean JpegCompressor::jpegEmptyOutputBuffer(j_compress_ptr cinfo) {
 }
 
 void JpegCompressor::jpegTermDestination(j_compress_ptr cinfo) {
-    ALOGV("%s: Done writing JPEG data. %d bytes left in buffer",
+    ALOGV("%s: Done writing JPEG data. %zu bytes left in buffer",
             __FUNCTION__, cinfo->dest->free_in_buffer);
 }
 

@@ -19,6 +19,8 @@
  * functionality of an advanced fake camera.
  */
 
+#include <inttypes.h>
+
 //#define LOG_NDEBUG 0
 //#define LOG_NNDEBUG 0
 #define LOG_TAG "EmulatedCamera_FakeCamera3"
@@ -284,12 +286,12 @@ status_t EmulatedFakeCamera3::configureStreams(
         camera3_stream_t *newStream = streamList->streams[i];
 
         if (newStream == NULL) {
-            ALOGE("%s: Stream index %d was NULL",
+            ALOGE("%s: Stream index %zu was NULL",
                   __FUNCTION__, i);
             return BAD_VALUE;
         }
 
-        ALOGV("%s: Stream %p (id %d), type %d, usage 0x%x, format 0x%x",
+        ALOGV("%s: Stream %p (id %zu), type %d, usage 0x%x, format 0x%x",
                 __FUNCTION__, newStream, i, newStream->stream_type,
                 newStream->usage,
                 newStream->format);
@@ -803,27 +805,27 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         PrivateStreamInfo *priv =
                 static_cast<PrivateStreamInfo*>(b->stream->priv);
         if (priv == NULL) {
-            ALOGE("%s: Request %d: Buffer %d: Unconfigured stream!",
+            ALOGE("%s: Request %d: Buffer %zu: Unconfigured stream!",
                     __FUNCTION__, frameNumber, idx);
             return BAD_VALUE;
         }
         if (!priv->alive || !priv->registered) {
-            ALOGE("%s: Request %d: Buffer %d: Unregistered or dead stream!",
+            ALOGE("%s: Request %d: Buffer %zu: Unregistered or dead stream!",
                     __FUNCTION__, frameNumber, idx);
             return BAD_VALUE;
         }
         if (b->status != CAMERA3_BUFFER_STATUS_OK) {
-            ALOGE("%s: Request %d: Buffer %d: Status not OK!",
+            ALOGE("%s: Request %d: Buffer %zu: Status not OK!",
                     __FUNCTION__, frameNumber, idx);
             return BAD_VALUE;
         }
         if (b->release_fence != -1) {
-            ALOGE("%s: Request %d: Buffer %d: Has a release fence!",
+            ALOGE("%s: Request %d: Buffer %zu: Has a release fence!",
                     __FUNCTION__, frameNumber, idx);
             return BAD_VALUE;
         }
         if (b->buffer == NULL) {
-            ALOGE("%s: Request %d: Buffer %d: NULL buffer handle!",
+            ALOGE("%s: Request %d: Buffer %zu: NULL buffer handle!",
                     __FUNCTION__, frameNumber, idx);
             return BAD_VALUE;
         }
@@ -895,7 +897,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         sp<Fence> bufferAcquireFence = new Fence(srcBuf.acquire_fence);
         res = bufferAcquireFence->wait(kFenceTimeoutMs);
         if (res == TIMED_OUT) {
-            ALOGE("%s: Request %d: Buffer %d: Fence timed out after %d ms",
+            ALOGE("%s: Request %d: Buffer %zu: Fence timed out after %d ms",
                     __FUNCTION__, frameNumber, i, kFenceTimeoutMs);
         }
         if (res == OK) {
@@ -922,7 +924,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
                         (void**)&(destBuf.img));
             }
             if (res != OK) {
-                ALOGE("%s: Request %d: Buffer %d: Unable to lock buffer",
+                ALOGE("%s: Request %d: Buffer %zu: Unable to lock buffer",
                         __FUNCTION__, frameNumber, i);
             }
         }
@@ -974,7 +976,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
             return NO_INIT;
         }
         if (syncTimeoutCount == kMaxSyncTimeoutCount) {
-            ALOGE("%s: Request %d: Sensor sync timed out after %lld ms",
+            ALOGE("%s: Request %d: Sensor sync timed out after %" PRId64 " ms",
                     __FUNCTION__, frameNumber,
                     kSyncWaitTimeout * kMaxSyncTimeoutCount / 1000000);
             return NO_INIT;
@@ -1438,7 +1440,7 @@ status_t EmulatedFakeCamera3::doFakeAE(CameraMetadata &settings) {
     if (precaptureTrigger) {
         ALOGV("%s: Pre capture trigger = %d", __FUNCTION__, precaptureTrigger);
     } else if (e.count > 0) {
-        ALOGV("%s: Pre capture trigger was present? %d",
+        ALOGV("%s: Pre capture trigger was present? %zu",
               __FUNCTION__,
               e.count);
     }
@@ -1833,7 +1835,7 @@ void EmulatedFakeCamera3::onSensorEvent(uint32_t frameNumber, Event e,
             break;
         }
         default:
-            ALOGW("%s: Unexpected sensor event %d at %lld", __FUNCTION__,
+            ALOGW("%s: Unexpected sensor event %d at %" PRId64, __FUNCTION__,
                     e, timestamp);
             break;
     }

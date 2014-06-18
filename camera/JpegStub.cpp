@@ -46,7 +46,7 @@ extern "C" int JpegStub_compress(JpegStub* stub, const void* image,
     SkDynamicMemoryWStream* stream =
         (SkDynamicMemoryWStream*)stub->mInternalStream;
     if (encoder->encode(stream, pY, width, height, offsets, quality)) {
-        ALOGV("%s: Compressed JPEG: %d[%dx%d] -> %d bytes",
+        ALOGV("%s: Compressed JPEG: %d[%dx%d] -> %zu bytes",
               __FUNCTION__, (width * height * 12) / 8,
               width, height, stream->getOffset());
         return 0;

@@ -1016,7 +1016,7 @@ static void PrintParamDiff(const CameraParameters& current,
     /* Divided with ';' */
     const char* next = strchr(wrk, ';');
     while (next != NULL) {
-        snprintf(tmp, sizeof(tmp), "%.*s", next-wrk, wrk);
+        snprintf(tmp, sizeof(tmp), "%.*s", (int)(intptr_t)(next-wrk), wrk);
         /* in the form key=value */
         char* val = strchr(tmp, '=');
         if (val != NULL) {
