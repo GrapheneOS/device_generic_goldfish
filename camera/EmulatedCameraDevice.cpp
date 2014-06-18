@@ -51,7 +51,7 @@ EmulatedCameraDevice::~EmulatedCameraDevice()
     if (mCurrentFrame != NULL) {
         delete[] mCurrentFrame;
     }
-    for (int i = 0; i < mSupportedWhiteBalanceScale.size(); ++i) {
+    for (size_t i = 0; i < mSupportedWhiteBalanceScale.size(); ++i) {
         if (mSupportedWhiteBalanceScale.valueAt(i) != NULL) {
             delete[] mSupportedWhiteBalanceScale.valueAt(i);
         }
@@ -223,7 +223,7 @@ status_t EmulatedCameraDevice::commonStartDevice(int width,
         ALOGE("%s: Unable to allocate framebuffer", __FUNCTION__);
         return ENOMEM;
     }
-    ALOGV("%s: Allocated %p %d bytes for %d pixels in %.4s[%dx%d] frame",
+    ALOGV("%s: Allocated %p %zu bytes for %d pixels in %.4s[%dx%d] frame",
          __FUNCTION__, mCurrentFrame, mFrameBufferSize, mTotalPixels,
          reinterpret_cast<const char*>(&mPixelFormat), mFrameWidth, mFrameHeight);
     return NO_ERROR;
