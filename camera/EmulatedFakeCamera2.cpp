@@ -19,6 +19,8 @@
  * functionality of an advanced fake camera.
  */
 
+#include <inttypes.h>
+
 //#define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_FakeCamera2"
 #include <utils/Log.h>
@@ -849,7 +851,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupCapture() {
         b.format = s.format;
         b.stride = s.stride;
         mNextBuffers->push_back(b);
-        ALOGV("Configure:    Buffer %d: Stream %d, %d x %d, format 0x%x, "
+        ALOGV("Configure:    Buffer %zu: Stream %d, %d x %d, format 0x%x, "
                 "stride %d",
                 i, b.streamId, b.width, b.height, b.format, b.stride);
         if (b.format == HAL_PIXEL_FORMAT_BLOB) {
@@ -1001,7 +1003,7 @@ bool EmulatedFakeCamera2::ConfigureThread::setupReprocess() {
         b.format = s.format;
         b.stride = s.stride;
         mNextBuffers->push_back(b);
-        ALOGV("Configure:    Buffer %d: Stream %d, %d x %d, format 0x%x, "
+        ALOGV("Configure:    Buffer %zu: Stream %d, %d x %d, format 0x%x, "
                 "stride %d",
                 i, b.streamId, b.width, b.height, b.format, b.stride);
     }
@@ -1242,7 +1244,7 @@ bool EmulatedFakeCamera2::ReadoutThread::threadLoop() {
                 mInFlightQueue[mInFlightHead].request = NULL;
                 mInFlightQueue[mInFlightHead].buffers = NULL;
                 mInFlightHead = (mInFlightHead + 1) % kInFlightQueueSize;
-                ALOGV("Ready to read out request %p, %d buffers",
+                ALOGV("Ready to read out request %p, %zu buffers",
                         mRequest, mBuffers->size());
             }
         }
@@ -1352,17 +1354,17 @@ bool EmulatedFakeCamera2::ReadoutThread::threadLoop() {
     mRequest = NULL;
 
     int compressedBufferIndex = -1;
-    ALOGV("Readout: Processing %d buffers", mBuffers->size());
+    ALOGV("Readout: Processing %zu buffers", mBuffers->size());
     for (size_t i = 0; i < mBuffers->size(); i++) {
         const StreamBuffer &b = (*mBuffers)[i];
-        ALOGV("Readout:    Buffer %d: Stream %d, %d x %d, format 0x%x, stride %d",
+        ALOGV("Readout:    Buffer %zu: Stream %d, %d x %d, format 0x%x, stride %d",
                 i, b.streamId, b.width, b.height, b.format, b.stride);
         if (b.streamId > 0) {
             if (b.format == HAL_PIXEL_FORMAT_BLOB) {
                 // Assumes only one BLOB buffer type per capture
                 compressedBufferIndex = i;
             } else {
-                ALOGV("Readout:    Sending image buffer %d (%p) to output stream %d",
+                ALOGV("Readout:    Sending image buffer %zu (%p) to output stream %d",
                         i, (void*)*(b.buffer), b.streamId);
                 GraphicBufferMapper::get().unlock(*(b.buffer));
                 const Stream &s = mParent->getStreamInfo(b.streamId);
@@ -1830,7 +1832,7 @@ int EmulatedFakeCamera2::ControlThread::processAfTrigger(uint8_t afMode,
                     mAfScanDuration =  ((double)rand() / RAND_MAX) *
                         (kMaxAfDuration - kMinAfDuration) + kMinAfDuration;
                     afState = ANDROID_CONTROL_AF_STATE_ACTIVE_SCAN;
-                    ALOGV("%s: AF scan start, duration %lld ms",
+                    ALOGV("%s: AF scan start, duration %" PRId64 " ms",
                           __FUNCTION__, mAfScanDuration / 1000000);
                     break;
                 case ANDROID_CONTROL_AF_STATE_ACTIVE_SCAN:
@@ -1900,7 +1902,7 @@ int EmulatedFakeCamera2::ControlThread::maybeStartAfScan(uint8_t afMode,
             mAfScanDuration =  ((double)rand() / RAND_MAX) *
                 (kMaxAfDuration - kMinAfDuration) + kMinAfDuration;
             afState = ANDROID_CONTROL_AF_STATE_PASSIVE_SCAN;
-            ALOGV("%s: AF passive scan start, duration %lld ms",
+            ALOGV("%s: AF passive scan start, duration %" PRId64 " ms",
                 __FUNCTION__, mAfScanDuration / 1000000);
         }
     }
@@ -1976,7 +1978,7 @@ int EmulatedFakeCamera2::ControlThread::processPrecaptureTrigger(uint8_t aeMode,
             mAeScanDuration = ((double)rand() / RAND_MAX) *
                     (kMaxPrecaptureAeDuration - kMinPrecaptureAeDuration) +
                     kMinPrecaptureAeDuration;
-            ALOGD("%s: AE precapture scan start, duration %lld ms",
+            ALOGD("%s: AE precapture scan start, duration %" PRId64 " ms",
                     __FUNCTION__, mAeScanDuration / 1000000);
 
     }
@@ -2002,7 +2004,7 @@ int EmulatedFakeCamera2::ControlThread::maybeStartAeScan(uint8_t aeMode,
                 mAeScanDuration = ((double)rand() / RAND_MAX) *
                 (kMaxAeDuration - kMinAeDuration) + kMinAeDuration;
                 aeState = ANDROID_CONTROL_AE_STATE_SEARCHING;
-                ALOGV("%s: AE scan start, duration %lld ms",
+                ALOGV("%s: AE scan start, duration %" PRId64 " ms",
                         __FUNCTION__, mAeScanDuration / 1000000);
             }
         }
@@ -2348,13 +2350,13 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
 #undef ADD_OR_SIZE
     /** Allocate metadata if sizing */
     if (sizeRequest) {
-        ALOGV("Allocating %d entries, %d extra bytes for "
+        ALOGV("Allocating %zu entries, %zu extra bytes for "
                 "static camera info",
                 entryCount, dataCount);
         *info = allocate_camera_metadata(entryCount, dataCount);
         if (*info == NULL) {
             ALOGE("Unable to allocate camera static info"
-                    "(%d entries, %d bytes extra data)",
+                    "(%zu entries, %zu bytes extra data)",
                     entryCount, dataCount);
             return NO_MEMORY;
         }
@@ -2654,13 +2656,13 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
 
     /** Allocate metadata if sizing */
     if (sizeRequest) {
-        ALOGV("Allocating %d entries, %d extra bytes for "
+        ALOGV("Allocating %zu entries, %zu extra bytes for "
                 "request template type %d",
                 entryCount, dataCount, request_template);
         *request = allocate_camera_metadata(entryCount, dataCount);
         if (*request == NULL) {
             ALOGE("Unable to allocate new request template type %d "
-                    "(%d entries, %d bytes extra data)", request_template,
+                    "(%zu entries, %zu bytes extra data)", request_template,
                     entryCount, dataCount);
             return NO_MEMORY;
         }
