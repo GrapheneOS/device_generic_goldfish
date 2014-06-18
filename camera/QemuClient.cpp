@@ -100,7 +100,7 @@ status_t QemuQuery::createQuery(const char* name, const char* param)
         /* Preallocated buffer was too small. Allocate a bigger query buffer. */
         mQuery = new char[required];
         if (mQuery == NULL) {
-            ALOGE("%s: Unable to allocate %d bytes for query buffer",
+            ALOGE("%s: Unable to allocate %zu bytes for query buffer",
                  __FUNCTION__, required);
             mQueryDeliveryStatus = ENOMEM;
             return ENOMEM;
@@ -311,7 +311,7 @@ status_t QemuClient::receiveMessage(void** data, size_t* data_size)
     /* Allocate payload data buffer, and read the payload there. */
     *data = malloc(payload_size);
     if (*data == NULL) {
-        ALOGE("%s: Unable to allocate %d bytes payload buffer",
+        ALOGE("%s: Unable to allocate %zu bytes payload buffer",
              __FUNCTION__, payload_size);
         return ENOMEM;
     }
@@ -320,7 +320,7 @@ status_t QemuClient::receiveMessage(void** data, size_t* data_size)
         *data_size = payload_size;
         return NO_ERROR;
     } else {
-        ALOGE("%s: Read size %d doesnt match expected payload size %d: %s",
+        ALOGE("%s: Read size %d doesnt match expected payload size %zu: %s",
              __FUNCTION__, rd_res, payload_size, strerror(errno));
         free(*data);
         *data = NULL;
@@ -408,7 +408,7 @@ status_t FactoryQemuClient::listCameras(char** list)
         ALOGD("Emulated camera list: %s", *list);
         return NO_ERROR;
     } else {
-        ALOGE("%s: Unable to allocate %d bytes",
+        ALOGE("%s: Unable to allocate %zu bytes",
              __FUNCTION__, query.mReplyDataSize);
         return ENOMEM;
     }
@@ -512,7 +512,7 @@ status_t CameraQemuClient::queryFrame(void* vframe,
     ALOGV("%s", __FUNCTION__);
 
     char query_str[256];
-    snprintf(query_str, sizeof(query_str), "%s video=%d preview=%d whiteb=%g,%g,%g expcomp=%g",
+    snprintf(query_str, sizeof(query_str), "%s video=%zu preview=%zu whiteb=%g,%g,%g expcomp=%g",
              mQueryFrame, (vframe && vframe_size) ? vframe_size : 0,
              (pframe && pframe_size) ? pframe_size : 0, r_scale, g_scale, b_scale,
              exposure_comp);
@@ -536,7 +536,7 @@ status_t CameraQemuClient::queryFrame(void* vframe,
             memcpy(vframe, frame, vframe_size);
             cur_offset += vframe_size;
         } else {
-            ALOGE("%s: Reply %d bytes is to small to contain %d bytes video frame",
+            ALOGE("%s: Reply %zu bytes is to small to contain %zu bytes video frame",
                  __FUNCTION__, query.mReplyDataSize - cur_offset, vframe_size);
             return EINVAL;
         }
@@ -547,7 +547,7 @@ status_t CameraQemuClient::queryFrame(void* vframe,
             memcpy(pframe, frame + cur_offset, pframe_size);
             cur_offset += pframe_size;
         } else {
-            ALOGE("%s: Reply %d bytes is to small to contain %d bytes preview frame",
+            ALOGE("%s: Reply %zu bytes is to small to contain %zu bytes preview frame",
                  __FUNCTION__, query.mReplyDataSize - cur_offset, pframe_size);
             return EINVAL;
         }
