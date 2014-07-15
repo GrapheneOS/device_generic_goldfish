@@ -26,5 +26,6 @@ LOCAL_SHARED_LIBRARIES := libcutils liblog
 LOCAL_SRC_FILES := audio_hw.c
 
 LOCAL_SHARED_LIBRARIES += libdl
+LOCAL_CFLAGS := -Wno-unused-parameter
 
 include $(BUILD_SHARED_LIBRARY)
