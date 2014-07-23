@@ -526,15 +526,6 @@ __eglMustCastToProperFunctionPointerType eglGetProcAddress(const char *procname)
         }
     }
 
-    //
-    // Make sure display is initialized before searching in client APIs
-    //
-    if (!s_display.initialized()) {
-        if (!s_display.initialize(&s_eglIface)) {
-            return NULL;
-        }
-    }
-
     // look in gles client api's extensions table
     return (__eglMustCastToProperFunctionPointerType)ClientAPIExts::getProcAddress(procname);
 
