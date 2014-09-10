@@ -119,7 +119,7 @@ _sensorIdFromName( const char*  name )
  **/
 
 typedef struct SensorPoll {
-    struct sensors_poll_device_t  device;
+    struct sensors_poll_device_1  device;
     sensors_event_t               sensors[MAX_NUM_SENSORS];
     int                           events_fd;
     uint32_t                      pendingSensors;
@@ -133,7 +133,7 @@ typedef struct SensorPoll {
  * the sensors data (it is passed to data__data_open() below
  */
 static native_handle_t*
-control__open_data_source(struct sensors_poll_device_t *dev)
+control__open_data_source(struct sensors_poll_device_1 *dev)
 {
     SensorPoll*  ctl = (void*)dev;
     native_handle_t* handle;
@@ -148,7 +148,7 @@ control__open_data_source(struct sensors_poll_device_t *dev)
 }
 
 static int
-control__activate(struct sensors_poll_device_t *dev,
+control__activate(struct sensors_poll_device_1 *dev,
                   int handle,
                   int enabled)
 {
@@ -193,7 +193,7 @@ control__activate(struct sensors_poll_device_t *dev,
 }
 
 static int
-control__set_delay(struct sensors_poll_device_t *dev, int32_t ms)
+control__set_delay(struct sensors_poll_device_1 *dev, int32_t ms)
 {
     SensorPoll*     ctl = (void*)dev;
     char            command[128];
@@ -226,7 +226,7 @@ data__now_ns(void)
 }
 
 static int
-data__data_open(struct sensors_poll_device_t *dev, native_handle_t* handle)
+data__data_open(struct sensors_poll_device_1 *dev, native_handle_t* handle)
 {
     SensorPoll*  data = (void*)dev;
     int i;
@@ -245,7 +245,7 @@ data__data_open(struct sensors_poll_device_t *dev, native_handle_t* handle)
 }
 
 static int
-data__data_close(struct sensors_poll_device_t *dev)
+data__data_close(struct sensors_poll_device_1 *dev)
 {
     SensorPoll*  data = (void*)dev;
     D("%s: dev=%p", __FUNCTION__, dev);
@@ -285,7 +285,7 @@ pick_sensor(SensorPoll*       data,
 }
 
 static int
-data__poll(struct sensors_poll_device_t *dev, sensors_event_t* values)
+data__poll(struct sensors_poll_device_1 *dev, sensors_event_t* values)
 {
     SensorPoll*  data = (void*)dev;
     int fd = data->events_fd;
@@ -325,6 +325,7 @@ data__poll(struct sensors_poll_device_t *dev, sensors_event_t* values)
             data->sensors[ID_ACCELERATION].acceleration.x = params[0];
             data->sensors[ID_ACCELERATION].acceleration.y = params[1];
             data->sensors[ID_ACCELERATION].acceleration.z = params[2];
+            data->sensors[ID_ACCELERATION].type = SENSOR_TYPE_ACCELEROMETER;
             continue;
         }
 
@@ -335,6 +336,7 @@ data__poll(struct sensors_poll_device_t *dev, sensors_event_t* values)
             data->sensors[ID_ORIENTATION].orientation.pitch   = params[1];
             data->sensors[ID_ORIENTATION].orientation.roll    = params[2];
             data->sensors[ID_ORIENTATION].orientation.status  = SENSOR_STATUS_ACCURACY_HIGH;
+            data->sensors[ID_ACCELERATION].type = SENSOR_TYPE_ORIENTATION;
             continue;
         }
 
@@ -345,6 +347,7 @@ data__poll(struct sensors_poll_device_t *dev, sensors_event_t* values)
             data->sensors[ID_MAGNETIC_FIELD].magnetic.y = params[1];
             data->sensors[ID_MAGNETIC_FIELD].magnetic.z = params[2];
             data->sensors[ID_MAGNETIC_FIELD].magnetic.status = SENSOR_STATUS_ACCURACY_HIGH;
+            data->sensors[ID_ACCELERATION].type = SENSOR_TYPE_MAGNETIC_FIELD;
             continue;
         }
 
@@ -352,6 +355,7 @@ data__poll(struct sensors_poll_device_t *dev, sensors_event_t* values)
         if (sscanf(buff, "temperature:%g", params+0) == 1) {
             new_sensors |= SENSORS_TEMPERATURE;
             data->sensors[ID_TEMPERATURE].temperature = params[0];
+            data->sensors[ID_ACCELERATION].type = SENSOR_TYPE_TEMPERATURE;
             continue;
         }
 
@@ -359,6 +363,7 @@ data__poll(struct sensors_poll_device_t *dev, sensors_event_t* values)
         if (sscanf(buff, "proximity:%g", params+0) == 1) {
             new_sensors |= SENSORS_PROXIMITY;
             data->sensors[ID_PROXIMITY].distance = params[0];
+            data->sensors[ID_ACCELERATION].type = SENSOR_TYPE_PROXIMITY;
             continue;
         }
 
@@ -425,7 +430,7 @@ static int poll__close(struct hw_device_t* dev)
     return 0;
 }
 
-static int poll__poll(struct sensors_poll_device_t *dev,
+static int poll__poll(struct sensors_poll_device_1 *dev,
             sensors_event_t* data, int count)
 {
     SensorPoll*  datadev = (void*)dev;
@@ -446,7 +451,7 @@ static int poll__poll(struct sensors_poll_device_t *dev,
     return count;
 }
 
-static int poll__activate(struct sensors_poll_device_t *dev,
+static int poll__activate(struct sensors_poll_device_1 *dev,
             int handle, int enabled)
 {
     int ret;
@@ -462,7 +467,7 @@ static int poll__activate(struct sensors_poll_device_t *dev,
     return ret;
 }
 
-static int poll__setDelay(struct sensors_poll_device_t *dev,
+static int poll__setDelay(struct sensors_poll_device_1 *dev,
             int handle, int64_t ns)
 {
     // TODO
@@ -602,7 +607,7 @@ open_sensors(const struct hw_module_t* module,
         memset(dev, 0, sizeof(*dev));
 
         dev->device.common.tag     = HARDWARE_DEVICE_TAG;
-        dev->device.common.version = 0;
+        dev->device.common.version = SENSORS_DEVICE_API_VERSION_1_0;
         dev->device.common.module  = (struct hw_module_t*) module;
         dev->device.common.close   = poll__close;
         dev->device.poll           = poll__poll;
