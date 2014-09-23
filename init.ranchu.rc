@@ -14,8 +14,8 @@ on init
     #symlink /storage/sdcard /sdcard
     #symlink /storage/sdcard /mnt/sdcard
 
-    symlink /dev/android_pipe /dev/goldfish_pipe
-    symlink /dev/android_pipe /dev/qemu_pipe
+    symlink /dev/goldfish_pipe /dev/android_pipe
+    symlink /dev/goldfish_pipe /dev/qemu_pipe
 
 on boot
     setprop net.eth0.gw 10.0.2.2
