@@ -71,8 +71,8 @@ struct cb_handle_t : public native_handle {
         numInts = CB_HANDLE_NUM_INTS(numFds);
     }
 
-    static bool validate(cb_handle_t * hnd) {
-        return (hnd && 
+    static bool validate(const cb_handle_t* hnd) {
+        return (hnd &&
                 hnd->version == sizeof(native_handle) &&
                 hnd->magic == BUFFER_HANDLE_MAGIC &&
                 hnd->numInts == CB_HANDLE_NUM_INTS(hnd->numFds));
