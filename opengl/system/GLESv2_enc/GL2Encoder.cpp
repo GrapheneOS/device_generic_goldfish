@@ -424,15 +424,15 @@ void GL2Encoder::sendVertexAttributes(GLint first, GLsizei count)
             int stride = state->stride == 0 ? state->elementSize : state->stride;
             int firstIndex = stride * first;
 
+            this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, state->bufferObject);
             if (state->bufferObject == 0) {
                 this->glVertexAttribPointerData(this, i, state->size, state->type, state->normalized, state->stride,
                                                 (unsigned char *)state->data + firstIndex, datalen);
             } else {
-                this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, state->bufferObject);
                 this->glVertexAttribPointerOffset(this, i, state->size, state->type, state->normalized, state->stride,
                                                   (uintptr_t) state->data + firstIndex);
-                this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, m_state->currentArrayVbo());
             }
+            this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, m_state->currentArrayVbo());
         } else {
             this->m_glDisableVertexAttribArray_enc(this, i);
         }
