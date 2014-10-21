@@ -1923,7 +1923,7 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_pixels =  pixelDataSize(self, width, height, format, type, 0);
+	const unsigned int __size_pixels = ((pixels != NULL) ?  pixelDataSize(self, width, height, format, type, 0) : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	ptr = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
@@ -1940,7 +1940,7 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 		memcpy(ptr, &type, 4); ptr += 4;
 	stream->flush();
 	stream->writeFully(&__size_pixels,4);
-	stream->writeFully(pixels, __size_pixels);
+	if (pixels != NULL) stream->writeFully(pixels, __size_pixels);
 }
 
 void glUniform1f_enc(void *self , GLint location, GLfloat x)
