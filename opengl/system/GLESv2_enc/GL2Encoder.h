@@ -148,6 +148,22 @@ private:
     glDetachShader_client_proc_t m_glDetachShader_enc;
     static void s_glDetachShader(void *self, GLuint program, GLuint shader);
 
+    glGetAttachedShaders_client_proc_t m_glGetAttachedShaders_enc;
+    static void s_glGetAttachedShaders(void *self, GLuint program, GLsizei maxCount,
+            GLsizei* count, GLuint* shaders);
+
+    glGetShaderSource_client_proc_t m_glGetShaderSource_enc;
+    static void s_glGetShaderSource(void *self, GLuint shader, GLsizei bufsize,
+            GLsizei* length, GLchar* source);
+
+    glGetShaderInfoLog_client_proc_t m_glGetShaderInfoLog_enc;
+    static void s_glGetShaderInfoLog(void *self,GLuint shader,
+            GLsizei bufsize, GLsizei* length, GLchar* infolog);
+
+    glGetProgramInfoLog_client_proc_t m_glGetProgramInfoLog_enc;
+    static void s_glGetProgramInfoLog(void *self,GLuint program,
+            GLsizei bufsize, GLsizei* length, GLchar* infolog);
+
     glGetUniformLocation_client_proc_t m_glGetUniformLocation_enc;
     static int s_glGetUniformLocation(void *self, GLuint program, const GLchar *name);
     glUseProgram_client_proc_t m_glUseProgram_enc;

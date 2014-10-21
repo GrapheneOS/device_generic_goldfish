@@ -79,6 +79,11 @@ GL2Encoder::GL2Encoder(IOStream *stream) : gl2_encoder_context_t(stream)
     m_glDeleteShader_enc = set_glDeleteShader(s_glDeleteShader);
     m_glAttachShader_enc = set_glAttachShader(s_glAttachShader);
     m_glDetachShader_enc = set_glDetachShader(s_glDetachShader);
+    m_glGetAttachedShaders_enc = set_glGetAttachedShaders(s_glGetAttachedShaders);
+    m_glGetShaderSource_enc = set_glGetShaderSource(s_glGetShaderSource);
+    m_glGetShaderInfoLog_enc = set_glGetShaderInfoLog(s_glGetShaderInfoLog);
+    m_glGetProgramInfoLog_enc = set_glGetProgramInfoLog(s_glGetProgramInfoLog);
+
     m_glGetUniformLocation_enc = set_glGetUniformLocation(s_glGetUniformLocation);
     m_glUseProgram_enc = set_glUseProgram(s_glUseProgram);
 
@@ -424,15 +429,15 @@ void GL2Encoder::sendVertexAttributes(GLint first, GLsizei count)
             int stride = state->stride == 0 ? state->elementSize : state->stride;
             int firstIndex = stride * first;
 
+            this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, state->bufferObject);
             if (state->bufferObject == 0) {
                 this->glVertexAttribPointerData(this, i, state->size, state->type, state->normalized, state->stride,
                                                 (unsigned char *)state->data + firstIndex, datalen);
             } else {
-                this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, state->bufferObject);
                 this->glVertexAttribPointerOffset(this, i, state->size, state->type, state->normalized, state->stride,
                                                   (uintptr_t) state->data + firstIndex);
-                this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, m_state->currentArrayVbo());
             }
+            this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, m_state->currentArrayVbo());
         } else {
             this->m_glDisableVertexAttribArray_enc(this, i);
         }
@@ -744,6 +749,38 @@ GLuint GL2Encoder::s_glCreateShader(void *self, GLenum shaderType)
         }
     }
     return shader;
+}
+
+void GL2Encoder::s_glGetAttachedShaders(void *self, GLuint program, GLsizei maxCount,
+        GLsizei* count, GLuint* shaders)
+{
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(maxCount < 0, GL_INVALID_VALUE);
+    ctx->m_glGetAttachedShaders_enc(self, program, maxCount, count, shaders);
+}
+
+void GL2Encoder::s_glGetShaderSource(void *self, GLuint shader, GLsizei bufsize,
+            GLsizei* length, GLchar* source)
+{
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(bufsize < 0, GL_INVALID_VALUE);
+    ctx->m_glGetShaderSource_enc(self, shader, bufsize, length, source);
+}
+
+void GL2Encoder::s_glGetShaderInfoLog(void *self, GLuint shader, GLsizei bufsize,
+        GLsizei* length, GLchar* infolog)
+{
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(bufsize < 0, GL_INVALID_VALUE);
+    ctx->m_glGetShaderInfoLog_enc(self, shader, bufsize, length, infolog);
+}
+
+void GL2Encoder::s_glGetProgramInfoLog(void *self, GLuint program, GLsizei bufsize,
+        GLsizei* length, GLchar* infolog)
+{
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    SET_ERROR_IF(bufsize < 0, GL_INVALID_VALUE);
+    ctx->m_glGetProgramInfoLog_enc(self, program, bufsize, length, infolog);
 }
 
 void GL2Encoder::s_glDeleteShader(void *self, GLenum shader)
