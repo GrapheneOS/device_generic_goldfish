@@ -1162,7 +1162,7 @@ void glGetProgramInfoLog_enc(void *self , GLuint program, GLsizei bufsize, GLsiz
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_length =  sizeof(GLsizei);
+	const unsigned int __size_length = ((length != NULL) ?  (sizeof(GLsizei)) : 0);
 	const unsigned int __size_infolog =  bufsize;
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + __size_length + __size_infolog + 2*4;
@@ -1174,7 +1174,7 @@ void glGetProgramInfoLog_enc(void *self , GLuint program, GLsizei bufsize, GLsiz
 		memcpy(ptr, &bufsize, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_length; ptr += 4;
 	*(unsigned int *)(ptr) = __size_infolog; ptr += 4;
-	stream->readback(length, __size_length);
+	if (length != NULL) stream->readback(length, __size_length);
 	stream->readback(infolog, __size_infolog);
 }
 
