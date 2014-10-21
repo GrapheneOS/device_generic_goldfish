@@ -224,6 +224,8 @@ int GLClientState::setPixelStore(GLenum param, GLint value)
 
 size_t GLClientState::pixelDataSize(GLsizei width, GLsizei height, GLenum format, GLenum type, int pack) const
 {
+    if (width <= 0 || height <= 0) return 0;
+
     int pixelsize = glUtilsPixelBitSize(format, type) >> 3;
 
     int alignment = pack ? m_pixelStore.pack_alignment : m_pixelStore.unpack_alignment;
