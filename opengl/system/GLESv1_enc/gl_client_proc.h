@@ -269,8 +269,8 @@ typedef void (gl_APIENTRY *glDeleteVertexArraysOES_client_proc_t) (void * ctx, G
 typedef void (gl_APIENTRY *glGenVertexArraysOES_client_proc_t) (void * ctx, GLsizei, GLuint*);
 typedef GLboolean (gl_APIENTRY *glIsVertexArrayOES_client_proc_t) (void * ctx, GLuint);
 typedef void (gl_APIENTRY *glDiscardFramebufferEXT_client_proc_t) (void * ctx, GLenum, GLsizei, const GLenum*);
-typedef void (gl_APIENTRY *glMultiDrawArraysEXT_client_proc_t) (void * ctx, GLenum, GLint*, GLsizei*, GLsizei);
-typedef void (gl_APIENTRY *glMultiDrawElementsEXT_client_proc_t) (void * ctx, GLenum, const GLsizei*, GLenum, const GLvoid**, GLsizei);
+typedef void (gl_APIENTRY *glMultiDrawArraysEXT_client_proc_t) (void * ctx, GLenum, const GLint*, const GLsizei*, GLsizei);
+typedef void (gl_APIENTRY *glMultiDrawElementsEXT_client_proc_t) (void * ctx, GLenum, const GLsizei*, GLenum, const GLvoid* const*, GLsizei);
 typedef void (gl_APIENTRY *glMultiDrawArraysSUN_client_proc_t) (void * ctx, GLenum, GLint*, GLsizei*, GLsizei);
 typedef void (gl_APIENTRY *glMultiDrawElementsSUN_client_proc_t) (void * ctx, GLenum, const GLsizei*, GLenum, const GLvoid**, GLsizei);
 typedef void (gl_APIENTRY *glRenderbufferStorageMultisampleIMG_client_proc_t) (void * ctx, GLenum, GLsizei, GLenum, GLsizei, GLsizei);

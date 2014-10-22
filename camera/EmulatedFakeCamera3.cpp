@@ -524,7 +524,6 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
     uint8_t demosaicMode = 0;
     uint8_t noiseMode = 0;
     uint8_t shadingMode = 0;
-    uint8_t geometricMode = 0;
     uint8_t colorMode = 0;
     uint8_t tonemapMode = 0;
     uint8_t edgeMode = 0;
@@ -538,7 +537,6 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
         demosaicMode = ANDROID_DEMOSAIC_MODE_HIGH_QUALITY;
         noiseMode = ANDROID_NOISE_REDUCTION_MODE_HIGH_QUALITY;
         shadingMode = ANDROID_SHADING_MODE_HIGH_QUALITY;
-        geometricMode = ANDROID_GEOMETRIC_MODE_HIGH_QUALITY;
         colorMode = ANDROID_COLOR_CORRECTION_MODE_HIGH_QUALITY;
         tonemapMode = ANDROID_TONEMAP_MODE_HIGH_QUALITY;
         edgeMode = ANDROID_EDGE_MODE_HIGH_QUALITY;
@@ -552,7 +550,6 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
         demosaicMode = ANDROID_DEMOSAIC_MODE_FAST;
         noiseMode = ANDROID_NOISE_REDUCTION_MODE_FAST;
         shadingMode = ANDROID_SHADING_MODE_FAST;
-        geometricMode = ANDROID_GEOMETRIC_MODE_FAST;
         colorMode = ANDROID_COLOR_CORRECTION_MODE_FAST;
         tonemapMode = ANDROID_TONEMAP_MODE_FAST;
         edgeMode = ANDROID_EDGE_MODE_FAST;
@@ -562,7 +559,6 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
     settings.update(ANDROID_DEMOSAIC_MODE, &demosaicMode, 1);
     settings.update(ANDROID_NOISE_REDUCTION_MODE, &noiseMode, 1);
     settings.update(ANDROID_SHADING_MODE, &shadingMode, 1);
-    settings.update(ANDROID_GEOMETRIC_MODE, &geometricMode, 1);
     settings.update(ANDROID_COLOR_CORRECTION_MODE, &colorMode, 1);
     settings.update(ANDROID_TONEMAP_MODE, &tonemapMode, 1);
     settings.update(ANDROID_EDGE_MODE, &edgeMode, 1);
@@ -1064,21 +1060,6 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     info.update(ANDROID_LENS_INFO_SHADING_MAP_SIZE, lensShadingMapSize,
             sizeof(lensShadingMapSize)/sizeof(int32_t));
 
-    // Identity transform
-    static const int32_t geometricCorrectionMapSize[] = {2, 2};
-    info.update(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP_SIZE,
-            geometricCorrectionMapSize,
-            sizeof(geometricCorrectionMapSize)/sizeof(int32_t));
-
-    static const float geometricCorrectionMap[2 * 3 * 2 * 2] = {
-            0.f, 0.f,  0.f, 0.f,  0.f, 0.f,
-            1.f, 0.f,  1.f, 0.f,  1.f, 0.f,
-            0.f, 1.f,  0.f, 1.f,  0.f, 1.f,
-            1.f, 1.f,  1.f, 1.f,  1.f, 1.f};
-    info.update(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP,
-            geometricCorrectionMap,
-            sizeof(geometricCorrectionMap)/sizeof(float));
-
     uint8_t lensFacing = mFacingBack ?
             ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT;
     info.update(ANDROID_LENS_FACING, &lensFacing, 1);
@@ -1133,6 +1114,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     };
     info.update(ANDROID_SENSOR_BLACK_LEVEL_PATTERN,
             blackLevelPattern, sizeof(blackLevelPattern)/sizeof(int32_t));
+
+    static const int32_t orientation = 0; // unrotated (0 degrees)
+    info.update(ANDROID_SENSOR_ORIENTATION, &orientation, 1);
 
     //TODO: sensor color calibration fields
 
@@ -1242,7 +1226,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.control
 
     static const uint8_t availableSceneModes[] = {
-            ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED
+            ANDROID_CONTROL_SCENE_MODE_DISABLED
     };
     info.update(ANDROID_CONTROL_AVAILABLE_SCENE_MODES,
             availableSceneModes, sizeof(availableSceneModes));
@@ -1253,9 +1237,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     info.update(ANDROID_CONTROL_AVAILABLE_EFFECTS,
             availableEffects, sizeof(availableEffects));
 
-    int32_t max3aRegions = 0;
+    static const int32_t max3aRegions[] = {/*AE*/ 0,/*AWB*/ 0,/*AF*/ 0};
     info.update(ANDROID_CONTROL_MAX_REGIONS,
-            &max3aRegions, 1);
+            max3aRegions, sizeof(max3aRegions)/sizeof(max3aRegions[0]));
 
     static const uint8_t availableAeModes[] = {
             ANDROID_CONTROL_AE_MODE_OFF,

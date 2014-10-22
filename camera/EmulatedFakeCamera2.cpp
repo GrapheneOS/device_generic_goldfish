@@ -112,9 +112,6 @@ EmulatedFakeCamera2::~EmulatedFakeCamera2() {
 status_t EmulatedFakeCamera2::Initialize() {
     status_t res;
 
-    set_camera_metadata_vendor_tag_ops(
-            static_cast<vendor_tag_query_ops_t*>(&mVendorTagOps));
-
     res = constructStaticInfo(&mCameraInfo, true);
     if (res != OK) {
         ALOGE("%s: Unable to allocate static info: %s (%d)",
@@ -633,80 +630,6 @@ int EmulatedFakeCamera2::triggerAction(uint32_t trigger_id,
             ext1, ext2);
 }
 
-/** Custom tag definitions */
-
-// Emulator camera metadata sections
-enum {
-    EMULATOR_SCENE = VENDOR_SECTION,
-    END_EMULATOR_SECTIONS
-};
-
-enum {
-    EMULATOR_SCENE_START = EMULATOR_SCENE << 16,
-};
-
-// Emulator camera metadata tags
-enum {
-    // Hour of day to use for lighting calculations (0-23). Default: 12
-    EMULATOR_SCENE_HOUROFDAY = EMULATOR_SCENE_START,
-    EMULATOR_SCENE_END
-};
-
-unsigned int emulator_metadata_section_bounds[END_EMULATOR_SECTIONS -
-        VENDOR_SECTION][2] = {
-    { EMULATOR_SCENE_START, EMULATOR_SCENE_END }
-};
-
-const char *emulator_metadata_section_names[END_EMULATOR_SECTIONS -
-        VENDOR_SECTION] = {
-    "com.android.emulator.scene"
-};
-
-typedef struct emulator_tag_info {
-    const char *tag_name;
-    uint8_t     tag_type;
-} emulator_tag_info_t;
-
-emulator_tag_info_t emulator_scene[EMULATOR_SCENE_END - EMULATOR_SCENE_START] = {
-    { "hourOfDay", TYPE_INT32 }
-};
-
-emulator_tag_info_t *tag_info[END_EMULATOR_SECTIONS -
-        VENDOR_SECTION] = {
-    emulator_scene
-};
-
-const char* EmulatedFakeCamera2::getVendorSectionName(uint32_t tag) {
-    ALOGV("%s", __FUNCTION__);
-    uint32_t section = tag >> 16;
-    if (section < VENDOR_SECTION || section > END_EMULATOR_SECTIONS) return NULL;
-    return emulator_metadata_section_names[section - VENDOR_SECTION];
-}
-
-const char* EmulatedFakeCamera2::getVendorTagName(uint32_t tag) {
-    ALOGV("%s", __FUNCTION__);
-    uint32_t section = tag >> 16;
-    if (section < VENDOR_SECTION || section > END_EMULATOR_SECTIONS) return NULL;
-    uint32_t section_index = section - VENDOR_SECTION;
-    if (tag >= emulator_metadata_section_bounds[section_index][1]) {
-        return NULL;
-    }
-    uint32_t tag_index = tag & 0xFFFF;
-    return tag_info[section_index][tag_index].tag_name;
-}
-
-int EmulatedFakeCamera2::getVendorTagType(uint32_t tag) {
-    ALOGV("%s", __FUNCTION__);
-    uint32_t section = tag >> 16;
-    if (section < VENDOR_SECTION || section > END_EMULATOR_SECTIONS) return -1;
-    uint32_t section_index = section - VENDOR_SECTION;
-    if (tag >= emulator_metadata_section_bounds[section_index][1]) {
-        return -1;
-    }
-    uint32_t tag_index = tag & 0xFFFF;
-    return tag_info[section_index][tag_index].tag_type;
-}
-
 /** Shutdown and debug methods */
 
 int EmulatedFakeCamera2::dump(int fd) {
@@ -982,14 +905,6 @@ bool EmulatedFakeCamera2::ConfigureThread::setupCapture() {
         return false;
     }
     mNextSensitivity = *e.data.i32;
-
-    res = find_camera_metadata_entry(mRequest,
-            EMULATOR_SCENE_HOUROFDAY,
-            &e);
-    if (res == NO_ERROR) {
-        ALOGV("Setting hour: %d", *e.data.i32);
-        mParent->mSensor->getScene().setHour(*e.data.i32);
-    }
 
     // Start waiting on readout thread
     mWaitingForReadout = true;
@@ -1420,24 +1335,6 @@ bool EmulatedFakeCamera2::ReadoutThread::threadLoop() {
                     &captureTime,
                     1);
 
-            int32_t hourOfDay = (int32_t)mParent->mSensor->getScene().getHour();
-            camera_metadata_entry_t requestedHour;
-            res = find_camera_metadata_entry(frame,
-                    EMULATOR_SCENE_HOUROFDAY,
-                    &requestedHour);
-            if (res == NAME_NOT_FOUND) {
-                res = add_camera_metadata_entry(frame,
-                        EMULATOR_SCENE_HOUROFDAY,
-                        &hourOfDay, 1);
-                if (res != NO_ERROR) {
-                    ALOGE("Unable to add vendor tag");
-                }
-            } else if (res == OK) {
-                *requestedHour.data.i32 = hourOfDay;
-            } else {
-                ALOGE("%s: Error looking up vendor tag", __FUNCTION__);
-            }
-
             collectStatisticsMetadata(frame);
             // TODO: Collect all final values used from sensor in addition to timestamp
         }
@@ -1710,7 +1607,7 @@ status_t EmulatedFakeCamera2::ControlThread::processRequest(camera_metadata_t *r
     // disable all 3A
     if (mControlMode == ANDROID_CONTROL_MODE_OFF) {
         mEffectMode =   ANDROID_CONTROL_EFFECT_MODE_OFF;
-        mSceneMode =    ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED;
+        mSceneMode =    ANDROID_CONTROL_SCENE_MODE_DISABLED;
         mAfMode =       ANDROID_CONTROL_AF_MODE_OFF;
         mAeLock =       ANDROID_CONTROL_AE_LOCK_ON;
         mAeMode =       ANDROID_CONTROL_AE_MODE_OFF;
@@ -1732,7 +1629,7 @@ status_t EmulatedFakeCamera2::ControlThread::processRequest(camera_metadata_t *r
             ANDROID_CONTROL_SCENE_MODE,
             &mode);
     mSceneMode = READ_IF_OK(res, mode.data.u8[0],
-                             ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED);
+                             ANDROID_CONTROL_SCENE_MODE_DISABLED);
 
     res = find_camera_metadata_entry(request,
             ANDROID_CONTROL_AF_MODE,
@@ -2203,21 +2100,6 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     ADD_OR_SIZE(ANDROID_LENS_INFO_SHADING_MAP_SIZE, lensShadingMapSize,
             sizeof(lensShadingMapSize)/sizeof(int32_t));
 
-    // Identity transform
-    static const int32_t geometricCorrectionMapSize[] = {2, 2};
-    ADD_OR_SIZE(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP_SIZE,
-            geometricCorrectionMapSize,
-            sizeof(geometricCorrectionMapSize)/sizeof(int32_t));
-
-    static const float geometricCorrectionMap[2 * 3 * 2 * 2] = {
-            0.f, 0.f,  0.f, 0.f,  0.f, 0.f,
-            1.f, 0.f,  1.f, 0.f,  1.f, 0.f,
-            0.f, 1.f,  0.f, 1.f,  0.f, 1.f,
-            1.f, 1.f,  1.f, 1.f,  1.f, 1.f};
-    ADD_OR_SIZE(ANDROID_LENS_INFO_GEOMETRIC_CORRECTION_MAP,
-            geometricCorrectionMap,
-            sizeof(geometricCorrectionMap)/sizeof(float));
-
     int32_t lensFacing = mFacingBack ?
             ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT;
     ADD_OR_SIZE(ANDROID_LENS_FACING, &lensFacing, 1);
@@ -2381,7 +2263,7 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     // android.control
 
     static const uint8_t availableSceneModes[] = {
-            ANDROID_CONTROL_SCENE_MODE_UNSUPPORTED
+            ANDROID_CONTROL_SCENE_MODE_DISABLED
     };
     ADD_OR_SIZE(ANDROID_CONTROL_AVAILABLE_SCENE_MODES,
             availableSceneModes, sizeof(availableSceneModes));
@@ -2392,9 +2274,9 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
     ADD_OR_SIZE(ANDROID_CONTROL_AVAILABLE_EFFECTS,
             availableEffects, sizeof(availableEffects));
 
-    int32_t max3aRegions = 0;
+    static const int32_t max3aRegions[] = {/*AE*/ 0,/*AWB*/ 0,/*AF*/ 0};
     ADD_OR_SIZE(ANDROID_CONTROL_MAX_REGIONS,
-            &max3aRegions, 1);
+            max3aRegions, sizeof(max3aRegions)/sizeof(max3aRegions[0]));
 
     static const uint8_t availableAeModes[] = {
             ANDROID_CONTROL_AE_MODE_OFF,
@@ -2563,7 +2445,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
     uint8_t demosaicMode = 0;
     uint8_t noiseMode = 0;
     uint8_t shadingMode = 0;
-    uint8_t geometricMode = 0;
     uint8_t colorMode = 0;
     uint8_t tonemapMode = 0;
     uint8_t edgeMode = 0;
@@ -2577,7 +2458,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
         demosaicMode = ANDROID_DEMOSAIC_MODE_HIGH_QUALITY;
         noiseMode = ANDROID_NOISE_REDUCTION_MODE_HIGH_QUALITY;
         shadingMode = ANDROID_SHADING_MODE_HIGH_QUALITY;
-        geometricMode = ANDROID_GEOMETRIC_MODE_HIGH_QUALITY;
         colorMode = ANDROID_COLOR_CORRECTION_MODE_HIGH_QUALITY;
         tonemapMode = ANDROID_TONEMAP_MODE_HIGH_QUALITY;
         edgeMode = ANDROID_EDGE_MODE_HIGH_QUALITY;
@@ -2591,7 +2471,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
         demosaicMode = ANDROID_DEMOSAIC_MODE_FAST;
         noiseMode = ANDROID_NOISE_REDUCTION_MODE_FAST;
         shadingMode = ANDROID_SHADING_MODE_FAST;
-        geometricMode = ANDROID_GEOMETRIC_MODE_FAST;
         colorMode = ANDROID_COLOR_CORRECTION_MODE_FAST;
         tonemapMode = ANDROID_TONEMAP_MODE_FAST;
         edgeMode = ANDROID_EDGE_MODE_FAST;
@@ -2601,7 +2480,6 @@ status_t EmulatedFakeCamera2::constructDefaultRequest(
     ADD_OR_SIZE(ANDROID_DEMOSAIC_MODE, &demosaicMode, 1);
     ADD_OR_SIZE(ANDROID_NOISE_REDUCTION_MODE, &noiseMode, 1);
     ADD_OR_SIZE(ANDROID_SHADING_MODE, &shadingMode, 1);
-    ADD_OR_SIZE(ANDROID_GEOMETRIC_MODE, &geometricMode, 1);
     ADD_OR_SIZE(ANDROID_COLOR_CORRECTION_MODE, &colorMode, 1);
     ADD_OR_SIZE(ANDROID_TONEMAP_MODE, &tonemapMode, 1);
     ADD_OR_SIZE(ANDROID_EDGE_MODE, &edgeMode, 1);

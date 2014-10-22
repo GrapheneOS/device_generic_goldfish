@@ -125,11 +125,6 @@ protected:
             int32_t ext1,
             int32_t ext2);
 
-    /** Custom tag definitions */
-    virtual const char* getVendorSectionName(uint32_t tag);
-    virtual const char* getVendorTagName(uint32_t tag);
-    virtual int         getVendorTagType(uint32_t tag);
-
     /** Debug methods */
 
     virtual int dump(int fd);

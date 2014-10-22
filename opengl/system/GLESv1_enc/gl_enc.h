@@ -281,8 +281,8 @@ extern "C" {
 	void glGenVertexArraysOES_enc(void *self , GLsizei n, GLuint* arrays);
 	GLboolean glIsVertexArrayOES_enc(void *self , GLuint array);
 	void glDiscardFramebufferEXT_enc(void *self , GLenum target, GLsizei numAttachments, const GLenum* attachments);
-	void glMultiDrawArraysEXT_enc(void *self , GLenum mode, GLint* first, GLsizei* count, GLsizei primcount);
-	void glMultiDrawElementsEXT_enc(void *self , GLenum mode, const GLsizei* count, GLenum type, const GLvoid** indices, GLsizei primcount);
+	void glMultiDrawArraysEXT_enc(void *self , GLenum mode, const GLint* first, const GLsizei* count, GLsizei primcount);
+	void glMultiDrawElementsEXT_enc(void *self , GLenum mode, const GLsizei* count, GLenum type, const GLvoid* const* indices, GLsizei primcount);
 	void glMultiDrawArraysSUN_enc(void *self , GLenum mode, GLint* first, GLsizei* count, GLsizei primcount);
 	void glMultiDrawElementsSUN_enc(void *self , GLenum mode, const GLsizei* count, GLenum type, const GLvoid** indices, GLsizei primcount);
 	void glRenderbufferStorageMultisampleIMG_enc(void *self , GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
