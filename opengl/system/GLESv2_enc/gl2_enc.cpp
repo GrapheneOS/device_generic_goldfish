@@ -9,6 +9,9 @@
 
 
 #include <stdio.h>
+
+namespace glesv2_enc {
+
 static void enc_unsupported()
 {
 	ALOGE("Function is unsupported\n");
@@ -2913,6 +2916,10 @@ int glFinishRoundTrip_enc(void *self )
 	stream->readback(&retval, 4);
 	return retval;
 }
+
+}  // namespace glesv2_enc
+
+using namespace glesv2_enc;
 
 gl2_encoder_context_t::gl2_encoder_context_t(IOStream *stream)
 {
