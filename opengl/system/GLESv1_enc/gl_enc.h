@@ -20,6 +20,7 @@ struct gl_encoder_context_t : public gl_client_context_t {
 
 };
 
+#if 0
 extern "C" {
 	void glAlphaFunc_enc(void *self , GLenum func, GLclampf ref);
 	void glClearColor_enc(void *self , GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
@@ -313,4 +314,6 @@ extern "C" {
 	void glStartTilingQCOM_enc(void *self , GLuint x, GLuint y, GLuint width, GLuint height, GLbitfield preserveMask);
 	void glEndTilingQCOM_enc(void *self , GLbitfield preserveMask);
 };
+#endif  // 0
+
 #endif
