@@ -119,9 +119,9 @@ const GLubyte *my_glGetString (void *self, GLenum name)
 void init()
 {
     GET_CONTEXT;
-    ctx->set_glEGLImageTargetTexture2DOES(glEGLImageTargetTexture2DOES);
-    ctx->set_glEGLImageTargetRenderbufferStorageOES(glEGLImageTargetRenderbufferStorageOES);
-    ctx->set_glGetString(my_glGetString);
+    ctx->glEGLImageTargetTexture2DOES = &glEGLImageTargetTexture2DOES;
+    ctx->glEGLImageTargetRenderbufferStorageOES = &glEGLImageTargetRenderbufferStorageOES;
+    ctx->glGetString = &my_glGetString;
 }
 
 extern "C" {
