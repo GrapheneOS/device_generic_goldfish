@@ -21,6 +21,7 @@ struct gl2_encoder_context_t : public gl2_client_context_t {
 
 };
 
+#if 0
 extern "C" {
 	void glActiveTexture_enc(void *self , GLenum texture);
 	void glAttachShader_enc(void *self , GLuint program, GLuint shader);
@@ -231,4 +232,6 @@ extern "C" {
 	void glShaderString_enc(void *self , GLuint shader, const GLchar* string, GLsizei len);
 	int glFinishRoundTrip_enc(void *self );
 };
+#endif  // 0
+
 #endif
