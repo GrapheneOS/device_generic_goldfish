@@ -150,6 +150,8 @@ void GL2Encoder::s_glFlush(void *self)
 
 const GLubyte *GL2Encoder::s_glGetString(void *self, GLenum name)
 {
+    (void)self;
+
     GLubyte *retval =  (GLubyte *) "";
     switch(name) {
     case GL_VENDOR:
@@ -402,6 +404,8 @@ void GL2Encoder::s_glGetVertexAttribPointerv(void *self, GLuint index, GLenum pn
 {
     GL2Encoder *ctx = (GL2Encoder *)self;
     if (ctx->m_state == NULL) return;
+
+    (void)pname;
 
     const GLClientState::VertexAttribState *va_state = ctx->m_state->getState(index);
     if (va_state != NULL) {

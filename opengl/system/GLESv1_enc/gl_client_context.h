@@ -304,7 +304,7 @@ struct gl_client_context_t {
 	typedef gl_client_context_t *CONTEXT_ACCESSOR_TYPE(void);
 	static void setContextAccessor(CONTEXT_ACCESSOR_TYPE *f);
 	int initDispatchByName( void *(*getProc)(const char *name, void *userData), void *userData);
-	virtual void setError(unsigned int  error){};
+	virtual void setError(unsigned int  error){ (void)error; };
 	virtual unsigned int getError(){ return 0; };
 };
 

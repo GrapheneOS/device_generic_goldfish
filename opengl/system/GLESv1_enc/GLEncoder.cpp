@@ -235,6 +235,8 @@ void GLEncoder::s_glFlush(void *self)
 
 const GLubyte *GLEncoder::s_glGetString(void *self, GLenum name)
 {
+    (void)self;
+
     GLubyte *retval =  (GLubyte *) "";
     switch(name) {
     case GL_VENDOR:
