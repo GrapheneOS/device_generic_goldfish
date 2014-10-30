@@ -282,7 +282,7 @@ void GLEncoder::s_glColorPointer(void *self, int size, GLenum type, GLsizei stri
     ctx->m_state->setState(GLClientState::COLOR_LOCATION, size, type, false, stride, data);
 }
 
-void GLEncoder::s_glPointsizePointer(void *self, GLenum type, GLsizei stride, const void *data)
+void GLEncoder::s_glPointSizePointerOES(void *self, GLenum type, GLsizei stride, const void *data)
 {
     GLEncoder *ctx = (GLEncoder *)self;
     assert(ctx->m_state != NULL);
@@ -296,7 +296,7 @@ void GLEncoder::s_glClientActiveTexture(void *self, GLenum texture)
     ctx->m_state->setActiveTexture(texture - GL_TEXTURE0);
 }
 
-void GLEncoder::s_glTexcoordPointer(void *self, int size, GLenum type, GLsizei stride, const void *data)
+void GLEncoder::s_glTexCoordPointer(void *self, int size, GLenum type, GLsizei stride, const void *data)
 {
     GLEncoder *ctx = (GLEncoder *)self;
     assert(ctx->m_state != NULL);
@@ -929,9 +929,9 @@ GLEncoder::GLEncoder(IOStream *stream) : gl_encoder_context_t(stream)
     m_glVertexPointer_enc = set_glVertexPointer(s_glVertexPointer);
     m_glNormalPointer_enc = set_glNormalPointer(s_glNormalPointer);
     m_glColorPointer_enc = set_glColorPointer(s_glColorPointer);
-    m_glPointSizePointerOES_enc = set_glPointSizePointerOES(s_glPointsizePointer);
+    m_glPointSizePointerOES_enc = set_glPointSizePointerOES(s_glPointSizePointerOES);
     m_glClientActiveTexture_enc = set_glClientActiveTexture(s_glClientActiveTexture);
-    m_glTexCoordPointer_enc = set_glTexCoordPointer(s_glTexcoordPointer);
+    m_glTexCoordPointer_enc = set_glTexCoordPointer(s_glTexCoordPointer);
     m_glMatrixIndexPointerOES_enc = set_glMatrixIndexPointerOES(s_glMatrixIndexPointerOES);
     m_glWeightPointerOES_enc = set_glWeightPointerOES(s_glWeightPointerOES);
 

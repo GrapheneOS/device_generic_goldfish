@@ -61,12 +61,12 @@ GL2Encoder::GL2Encoder(IOStream *stream) : gl2_encoder_context_t(stream)
     m_glGetIntegerv_enc = set_glGetIntegerv(s_glGetIntegerv);
     m_glGetFloatv_enc = set_glGetFloatv(s_glGetFloatv);
     m_glGetBooleanv_enc = set_glGetBooleanv(s_glGetBooleanv);
-    m_glVertexAttribPointer_enc = set_glVertexAttribPointer(s_glVertexAtrribPointer);
+    m_glVertexAttribPointer_enc = set_glVertexAttribPointer(s_glVertexAttribPointer);
     m_glEnableVertexAttribArray_enc = set_glEnableVertexAttribArray(s_glEnableVertexAttribArray);
     m_glDisableVertexAttribArray_enc = set_glDisableVertexAttribArray(s_glDisableVertexAttribArray);
     m_glGetVertexAttribiv_enc = set_glGetVertexAttribiv(s_glGetVertexAttribiv);
     m_glGetVertexAttribfv_enc = set_glGetVertexAttribfv(s_glGetVertexAttribfv);
-    m_glGetVertexAttribPointerv = set_glGetVertexAttribPointerv(s_glGetVertexAttribPointerv);
+    m_glGetVertexAttribPointerv_enc = set_glGetVertexAttribPointerv(s_glGetVertexAttribPointerv);
     set_glShaderSource(s_glShaderSource);
     set_glFinish(s_glFinish);
     m_glGetError_enc = set_glGetError(s_glGetError);
@@ -214,7 +214,7 @@ void GL2Encoder::s_glDeleteBuffers(void * self, GLsizei n, const GLuint * buffer
     }
 }
 
-void GL2Encoder::s_glVertexAtrribPointer(void *self, GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * ptr)
+void GL2Encoder::s_glVertexAttribPointer(void *self, GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * ptr)
 {
     GL2Encoder *ctx = (GL2Encoder *)self;
     assert(ctx->m_state != NULL);
@@ -638,7 +638,7 @@ static bool replaceSamplerExternalWith2D(char* const str, ShaderData* const data
     return true;
 }
 
-void GL2Encoder::s_glShaderSource(void *self, GLuint shader, GLsizei count, const GLchar *const *string, const GLint *length)
+void GL2Encoder::s_glShaderSource(void *self, GLuint shader, GLsizei count, const GLchar * const *string, const GLint *length)
 {
     GL2Encoder* ctx = (GL2Encoder*)self;
     ShaderData* shaderData = ctx->m_shared->getShaderData(shader);
