@@ -336,7 +336,7 @@ struct egl_pbuffer_surface_t : public egl_surface_t {
 
     virtual ~egl_pbuffer_surface_t();
 
-    virtual void       setSwapInterval(int interval) {}
+    virtual void       setSwapInterval(int interval) { (void)interval; }
     virtual EGLBoolean swapBuffers() { return EGL_TRUE; }
 
     uint32_t getRcColorBuffer() { return rcColorBuffer; }
@@ -542,7 +542,7 @@ const char* eglQueryString(EGLDisplay dpy, EGLint name)
 
 EGLBoolean eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size, EGLint *num_config)
 {
-    VALIDATE_DISPLAY_INIT(dpy, NULL);
+    VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
 
     if(!num_config) {
         RETURN_ERROR(EGL_FALSE,EGL_BAD_PARAMETER);
@@ -554,7 +554,7 @@ EGLBoolean eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size,
         return EGL_TRUE;
     }
 
-    uintptr_t i=0;
+    EGLint i=0;
     for (i=0 ; i<numConfigs && i<config_size ; i++) {
         *configs++ = (EGLConfig)i;
     }
@@ -593,7 +593,7 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
 
 EGLBoolean eglGetConfigAttrib(EGLDisplay dpy, EGLConfig config, EGLint attribute, EGLint *value)
 {
-    VALIDATE_DISPLAY_INIT(dpy, NULL);
+    VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
     VALIDATE_CONFIG(config, EGL_FALSE);
 
     if (s_display.getConfigAttrib(config, attribute, value))
@@ -608,6 +608,8 @@ EGLBoolean eglGetConfigAttrib(EGLDisplay dpy, EGLConfig config, EGLint attribute
 
 EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, EGLNativeWindowType win, const EGLint *attrib_list)
 {
+    (void)attrib_list;
+
     VALIDATE_DISPLAY_INIT(dpy, NULL);
     VALIDATE_CONFIG(config, EGL_FALSE);
     if (win == 0) {
@@ -699,6 +701,10 @@ EGLSurface eglCreatePixmapSurface(EGLDisplay dpy, EGLConfig config, EGLNativePix
     //     to s/w rendering -or- let the host render to a buffer that will be
     //     copied back to guest at some sync point. None of those methods not
     //     implemented and pixmaps are not used with OpenGL anyway ...
+    (void)dpy;
+    (void)config;
+    (void)pixmap;
+    (void)attrib_list;
     return EGL_NO_SURFACE;
 }
 
@@ -783,6 +789,11 @@ EGLBoolean eglReleaseThread()
 EGLSurface eglCreatePbufferFromClientBuffer(EGLDisplay dpy, EGLenum buftype, EGLClientBuffer buffer, EGLConfig config, const EGLint *attrib_list)
 {
     //TODO
+    (void)dpy;
+    (void)buftype;
+    (void)buffer;
+    (void)config;
+    (void)attrib_list;
     ALOGW("%s not implemented", __FUNCTION__);
     return 0;
 }
@@ -790,6 +801,10 @@ EGLSurface eglCreatePbufferFromClientBuffer(EGLDisplay dpy, EGLenum buftype, EGL
 EGLBoolean eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint value)
 {
     //TODO
+    (void)dpy;
+    (void)surface;
+    (void)attribute;
+    (void)value;
     ALOGW("%s not implemented", __FUNCTION__);
     return 0;
 }
@@ -828,6 +843,9 @@ EGLBoolean eglBindTexImage(EGLDisplay dpy, EGLSurface eglSurface, EGLint buffer)
 EGLBoolean eglReleaseTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer)
 {
     //TODO
+    (void)dpy;
+    (void)surface;
+    (void)buffer;
     ALOGW("%s not implemented", __FUNCTION__);
     return 0;
 }
@@ -1088,6 +1106,7 @@ EGLBoolean eglWaitGL()
 
 EGLBoolean eglWaitNative(EGLint engine)
 {
+    (void)engine;
     return EGL_TRUE;
 }
 
@@ -1113,23 +1132,33 @@ EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface eglSurface)
 EGLBoolean eglCopyBuffers(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target)
 {
     //TODO :later
+    (void)dpy;
+    (void)surface;
+    (void)target;
     return 0;
 }
 
 EGLBoolean eglLockSurfaceKHR(EGLDisplay display, EGLSurface surface, const EGLint *attrib_list)
 {
     //TODO later
+    (void)display;
+    (void)surface;
+    (void)attrib_list;
     return 0;
 }
 
 EGLBoolean eglUnlockSurfaceKHR(EGLDisplay display, EGLSurface surface)
 {
     //TODO later
+    (void)display;
+    (void)surface;
     return 0;
 }
 
 EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list)
 {
+    (void)attrib_list;
+
     VALIDATE_DISPLAY_INIT(dpy, EGL_NO_IMAGE_KHR);
     if (ctx != EGL_NO_CONTEXT) {
         setErrorReturn(EGL_BAD_CONTEXT, EGL_NO_IMAGE_KHR);
@@ -1212,6 +1241,8 @@ EGLSyncKHR eglCreateSyncKHR(EGLDisplay dpy, EGLenum type,
 
 EGLBoolean eglDestroySyncKHR(EGLDisplay dpy, EGLSyncKHR sync)
 {
+    (void)dpy;
+
     if (sync != FENCE_SYNC_HANDLE) {
         setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
@@ -1222,6 +1253,10 @@ EGLBoolean eglDestroySyncKHR(EGLDisplay dpy, EGLSyncKHR sync)
 EGLint eglClientWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR sync, EGLint flags,
         EGLTimeKHR timeout)
 {
+    (void)dpy;
+    (void)flags;
+    (void)timeout;
+
     if (sync != FENCE_SYNC_HANDLE) {
         setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
@@ -1232,6 +1267,8 @@ EGLint eglClientWaitSyncKHR(EGLDisplay dpy, EGLSyncKHR sync, EGLint flags,
 EGLBoolean eglGetSyncAttribKHR(EGLDisplay dpy, EGLSyncKHR sync,
         EGLint attribute, EGLint *value)
 {
+    (void)dpy;
+
     if (sync != FENCE_SYNC_HANDLE) {
         setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
     }
