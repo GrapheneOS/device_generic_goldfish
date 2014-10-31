@@ -554,9 +554,9 @@ EGLBoolean eglGetConfigs(EGLDisplay dpy, EGLConfig *configs, EGLint config_size,
         return EGL_TRUE;
     }
 
-    EGLint i=0;
-    for (i=0 ; i<numConfigs && i<config_size ; i++) {
-        *configs++ = (EGLConfig)i;
+    EGLint i;
+    for (i = 0 ; i < numConfigs && i < config_size ; i++) {
+        *configs++ = (EGLConfig)(uintptr_t)i;
     }
     *num_config = i;
     return EGL_TRUE;
