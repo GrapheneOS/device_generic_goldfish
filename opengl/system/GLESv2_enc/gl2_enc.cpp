@@ -10,9 +10,9 @@
 
 #include <stdio.h>
 
-namespace glesv2_enc {
+namespace {
 
-static void enc_unsupported()
+void enc_unsupported()
 {
 	ALOGE("Function is unsupported\n");
 }
@@ -1165,7 +1165,7 @@ void glGetProgramInfoLog_enc(void *self , GLuint program, GLsizei bufsize, GLsiz
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_length = ((length != NULL) ?  (sizeof(GLsizei)) : 0);
+	const unsigned int __size_length = ((length != NULL) ?  sizeof(GLsizei) : 0);
 	const unsigned int __size_infolog =  bufsize;
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + __size_length + __size_infolog + 2*4;
@@ -2917,9 +2917,7 @@ int glFinishRoundTrip_enc(void *self )
 	return retval;
 }
 
-}  // namespace glesv2_enc
-
-using namespace glesv2_enc;
+}  // namespace
 
 gl2_encoder_context_t::gl2_encoder_context_t(IOStream *stream)
 {

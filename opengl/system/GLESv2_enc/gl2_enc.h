@@ -19,4 +19,4 @@ struct gl2_encoder_context_t : public gl2_client_context_t {
 	gl2_encoder_context_t(IOStream *stream);
 };
 
-#endif
+#endif  // GUARD_gl2_encoder_context_t

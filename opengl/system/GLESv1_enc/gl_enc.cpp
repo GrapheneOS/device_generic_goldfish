@@ -7,10 +7,12 @@
 
 #include "gl_enc.h"
 
-namespace glesv1_enc {
 
 #include <stdio.h>
-static void enc_unsupported()
+
+namespace {
+
+void enc_unsupported()
 {
 	ALOGE("Function is unsupported\n");
 }
@@ -4886,9 +4888,7 @@ void glEndTilingQCOM_enc(void *self , GLbitfield preserveMask)
 		memcpy(ptr, &preserveMask, 4); ptr += 4;
 }
 
-}  // namespace glesv1_enc
-
-using namespace glesv1_enc;
+}  // namespace
 
 gl_encoder_context_t::gl_encoder_context_t(IOStream *stream)
 {

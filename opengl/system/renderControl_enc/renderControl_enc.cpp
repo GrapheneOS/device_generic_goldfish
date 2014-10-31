@@ -9,7 +9,10 @@
 
 
 #include <stdio.h>
-static void enc_unsupported()
+
+namespace {
+
+void enc_unsupported()
 {
 	ALOGE("Function is unsupported\n");
 }
@@ -311,7 +314,6 @@ void rcCloseColorBuffer_enc(void *self , uint32_t colorbuffer)
 	memcpy(ptr, &packetSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorbuffer, 4); ptr += 4;
-
 	stream->flush();
 }
 
@@ -523,6 +525,8 @@ int rcOpenColorBuffer2_enc(void *self , uint32_t colorbuffer)
 	stream->readback(&retval, 4);
 	return retval;
 }
+
+}  // namespace
 
 renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *stream)
 {

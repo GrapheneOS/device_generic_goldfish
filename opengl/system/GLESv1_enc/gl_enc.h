@@ -16,8 +16,6 @@ struct gl_encoder_context_t : public gl_client_context_t {
 	IOStream *m_stream;
 
 	gl_encoder_context_t(IOStream *stream);
-
-
 };
 
-#endif
+#endif  // GUARD_gl_encoder_context_t
