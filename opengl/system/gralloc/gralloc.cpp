@@ -427,6 +427,8 @@ static int gralloc_device_close(struct hw_device_t *dev)
 
 static int fb_compositionComplete(struct framebuffer_device_t* dev)
 {
+    (void)dev;
+
     return 0;
 }
 
@@ -464,6 +466,11 @@ static int fb_setUpdateRect(struct framebuffer_device_t* dev,
         int l, int t, int w, int h)
 {
     fb_device_t *fbdev = (fb_device_t *)dev;
+
+    (void)l;
+    (void)t;
+    (void)w;
+    (void)h;
 
     if (!fbdev) {
         return -EINVAL;
