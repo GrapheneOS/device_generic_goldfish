@@ -191,6 +191,7 @@ void GL2Encoder::s_glBindBuffer(void *self, GLenum target, GLuint id)
 void GL2Encoder::s_glBufferData(void * self, GLenum target, GLsizeiptr size, const GLvoid * data, GLenum usage)
 {
     GL2Encoder *ctx = (GL2Encoder *) self;
+    SET_ERROR_IF(!(target == GL_ARRAY_BUFFER || target == GL_ELEMENT_ARRAY_BUFFER), GL_INVALID_ENUM);
     GLuint bufferId = ctx->m_state->getBuffer(target);
     SET_ERROR_IF(bufferId==0, GL_INVALID_OPERATION);
     SET_ERROR_IF(size<0, GL_INVALID_VALUE);
@@ -202,6 +203,7 @@ void GL2Encoder::s_glBufferData(void * self, GLenum target, GLsizeiptr size, con
 void GL2Encoder::s_glBufferSubData(void * self, GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid * data)
 {
     GL2Encoder *ctx = (GL2Encoder *) self;
+    SET_ERROR_IF(!(target == GL_ARRAY_BUFFER || target == GL_ELEMENT_ARRAY_BUFFER), GL_INVALID_ENUM);
     GLuint bufferId = ctx->m_state->getBuffer(target);
     SET_ERROR_IF(bufferId==0, GL_INVALID_OPERATION);
 
@@ -217,6 +219,7 @@ void GL2Encoder::s_glDeleteBuffers(void * self, GLsizei n, const GLuint * buffer
     SET_ERROR_IF(n<0, GL_INVALID_VALUE);
     for (int i=0; i<n; i++) {
         ctx->m_shared->deleteBufferData(buffers[i]);
+        ctx->m_state->unBindBuffer(buffers[i]);
         ctx->m_glDeleteBuffers_enc(self,1,&buffers[i]);
     }
 }
