@@ -363,6 +363,7 @@ void GL2Encoder::s_glGetBooleanv(void *self, GLenum param, GLboolean *ptr)
         if (!ctx->m_state->getClientStateParameter<GLboolean>(param, ptr)) {
             ctx->m_glGetBooleanv_enc(self, param, ptr);
         }
+        *ptr = (*ptr != 0) ? GL_TRUE : GL_FALSE;
         break;
     }
 }
