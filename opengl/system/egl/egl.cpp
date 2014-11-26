@@ -140,7 +140,8 @@ EGLContext_t::EGLContext_t(EGLDisplay dpy, EGLConfig config, EGLContext_t* share
     versionString(NULL),
     vendorString(NULL),
     rendererString(NULL),
-    extensionString(NULL)
+    extensionString(NULL),
+    deletePending(0)
 {
     flags = 0;
     version = 1;
@@ -915,9 +916,11 @@ EGLBoolean eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 
     EGLContext_t * context = static_cast<EGLContext_t*>(ctx);
 
-    if (getEGLThreadInfo()->currentContext == context)
-    {
-        eglMakeCurrent(dpy, EGL_NO_CONTEXT, EGL_NO_SURFACE, EGL_NO_SURFACE);
+    if (!context) return EGL_TRUE;
+
+    if (getEGLThreadInfo()->currentContext == context) {
+        getEGLThreadInfo()->currentContext->deletePending = 1;
+        return EGL_TRUE;
     }
 
     if (context->rcContext) {
@@ -952,10 +955,19 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
     // Nothing to do if no binding change has made
     //
     EGLThreadInfo *tInfo = getEGLThreadInfo();
+
     if (tInfo->currentContext == context &&
         (context == NULL ||
         (context && context->draw == draw && context->read == read))) {
         return EGL_TRUE;
+    }
+
+    if (tInfo->currentContext && tInfo->currentContext->deletePending) {
+        if (tInfo->currentContext != context) {
+            EGLContext_t * contextToDelete = tInfo->currentContext;
+            tInfo->currentContext = 0;
+            eglDestroyContext(dpy, contextToDelete);
+        }
     }
 
     if (context && (context->flags & EGLContext_t::IS_CURRENT) && (context != tInfo->currentContext)) {
@@ -984,7 +996,7 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
             hostCon->glEncoder()->setSharedGroup(context->getSharedGroup());
         }
     } 
-    else {
+    else if (tInfo->currentContext) {
         //release ClientState & SharedGroup
         if (tInfo->currentContext->version == 2) {
             hostCon->gl2Encoder()->setClientState(NULL);
