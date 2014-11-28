@@ -474,7 +474,7 @@ GLuint glCreateProgram_enc(void *self )
 	IOStream *stream = ctx->m_stream;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 0;
+	 const size_t packetSize = 8;
 	ptr = stream->alloc(packetSize);
 	int tmp = OP_glCreateProgram;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &packetSize, 4);  ptr += 4;
@@ -767,7 +767,7 @@ void glFinish_enc(void *self )
 	IOStream *stream = ctx->m_stream;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 0;
+	 const size_t packetSize = 8;
 	ptr = stream->alloc(packetSize);
 	int tmp = OP_glFinish;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &packetSize, 4);  ptr += 4;
@@ -781,7 +781,7 @@ void glFlush_enc(void *self )
 	IOStream *stream = ctx->m_stream;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 0;
+	 const size_t packetSize = 8;
 	ptr = stream->alloc(packetSize);
 	int tmp = OP_glFlush;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &packetSize, 4);  ptr += 4;
@@ -1073,7 +1073,7 @@ GLenum glGetError_enc(void *self )
 	IOStream *stream = ctx->m_stream;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 0;
+	 const size_t packetSize = 8;
 	ptr = stream->alloc(packetSize);
 	int tmp = OP_glGetError;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &packetSize, 4);  ptr += 4;
@@ -1329,7 +1329,7 @@ void glGetUniformfv_enc(void *self , GLuint program, GLint location, GLfloat* pa
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_params =  glSizeof(uniformType(self, program, location));
+	const unsigned int __size_params =  glSizeof(glesv2_enc::uniformType(self, program, location));
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + __size_params + 1*4;
 	ptr = stream->alloc(packetSize);
@@ -1348,7 +1348,7 @@ void glGetUniformiv_enc(void *self , GLuint program, GLint location, GLint* para
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_params =  glSizeof(uniformType(self, program, location));
+	const unsigned int __size_params =  glSizeof(glesv2_enc::uniformType(self, program, location));
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + __size_params + 1*4;
 	ptr = stream->alloc(packetSize);
@@ -1638,7 +1638,7 @@ void glReadPixels_enc(void *self , GLint x, GLint y, GLsizei width, GLsizei heig
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_pixels =  pixelDataSize(self, width, height, format, type, 1);
+	const unsigned int __size_pixels =  glesv2_enc::pixelDataSize(self, width, height, format, type, 1);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	ptr = stream->alloc(packetSize);
@@ -1662,7 +1662,7 @@ void glReleaseShaderCompiler_enc(void *self )
 	IOStream *stream = ctx->m_stream;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 0;
+	 const size_t packetSize = 8;
 	ptr = stream->alloc(packetSize);
 	int tmp = OP_glReleaseShaderCompiler;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &packetSize, 4);  ptr += 4;
@@ -1828,7 +1828,7 @@ void glTexImage2D_enc(void *self , GLenum target, GLint level, GLint internalfor
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_pixels = ((pixels != NULL) ?  pixelDataSize(self, width, height, format, type, 0) : 0);
+	const unsigned int __size_pixels = ((pixels != NULL) ?  glesv2_enc::pixelDataSize(self, width, height, format, type, 0) : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	ptr = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
@@ -1926,7 +1926,7 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_pixels = ((pixels != NULL) ?  pixelDataSize(self, width, height, format, type, 0) : 0);
+	const unsigned int __size_pixels = ((pixels != NULL) ?  glesv2_enc::pixelDataSize(self, width, height, format, type, 0) : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	ptr = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
@@ -2545,7 +2545,7 @@ void glTexImage3DOES_enc(void *self , GLenum target, GLint level, GLenum interna
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_pixels = ((pixels != NULL) ?  pixelDataSize3D(self, width, height, depth, format, type, 0) : 0);
+	const unsigned int __size_pixels = ((pixels != NULL) ?  glesv2_enc::pixelDataSize3D(self, width, height, depth, format, type, 0) : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	ptr = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
@@ -2572,7 +2572,7 @@ void glTexSubImage3DOES_enc(void *self , GLenum target, GLint level, GLint xoffs
 	gl2_encoder_context_t *ctx = (gl2_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_pixels =  pixelDataSize3D(self, width, height, depth, format, type, 0);
+	const unsigned int __size_pixels =  glesv2_enc::pixelDataSize3D(self, width, height, depth, format, type, 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	ptr = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
@@ -2906,7 +2906,7 @@ int glFinishRoundTrip_enc(void *self )
 	IOStream *stream = ctx->m_stream;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 0;
+	 const size_t packetSize = 8;
 	ptr = stream->alloc(packetSize);
 	int tmp = OP_glFinishRoundTrip;memcpy(ptr, &tmp, 4); ptr += 4;
 	memcpy(ptr, &packetSize, 4);  ptr += 4;

@@ -267,7 +267,7 @@ extern "C" {
 	GLboolean glIsVertexArrayOES(GLuint array);
 	void glDiscardFramebufferEXT(GLenum target, GLsizei numAttachments, const GLenum* attachments);
 	void glMultiDrawArraysEXT(GLenum mode, const GLint* first, const GLsizei* count, GLsizei primcount);
-	void glMultiDrawElementsEXT(GLenum mode, const GLsizei* count, GLenum type, const GLvoid*const* indices, GLsizei primcount);
+	void glMultiDrawElementsEXT(GLenum mode, const GLsizei* count, GLenum type, const GLvoid* const* indices, GLsizei primcount);
 	void glMultiDrawArraysSUN(GLenum mode, GLint* first, GLsizei* count, GLsizei primcount);
 	void glMultiDrawElementsSUN(GLenum mode, const GLsizei* count, GLenum type, const GLvoid** indices, GLsizei primcount);
 	void glRenderbufferStorageMultisampleIMG(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
