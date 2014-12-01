@@ -121,6 +121,7 @@ GL2Encoder::GL2Encoder(IOStream *stream) : gl2_encoder_context_t(stream)
     OVERRIDE(glTexParameterfv);
     OVERRIDE(glTexParameteri);
     OVERRIDE(glTexParameteriv);
+    OVERRIDE(glTexImage2D);
 }
 
 GL2Encoder::~GL2Encoder()
@@ -1210,6 +1211,23 @@ void GL2Encoder::s_glTexParameteri(void* self,
         ctx->m_glTexParameteri_enc(ctx, target, pname, param);
     }
 }
+
+void GL2Encoder::s_glTexImage2D(void* self, GLenum target, GLint level,
+        GLint internalformat, GLsizei width, GLsizei height, GLint border,
+        GLenum format, GLenum type, const GLvoid* pixels)
+{
+    GL2Encoder* ctx = (GL2Encoder*)self;
+    if (target == GL_TEXTURE_2D || target == GL_TEXTURE_EXTERNAL_OES) {
+        ctx->override2DTextureTarget(target);
+        ctx->m_glTexImage2D_enc(ctx, target, level, internalformat, width,
+                height, border, format, type, pixels);
+        ctx->restore2DTextureTarget();
+    } else {
+        ctx->m_glTexImage2D_enc(ctx, target, level, internalformat, width,
+                height, border, format, type, pixels);
+    }
+}
+
 
 void GL2Encoder::s_glTexParameteriv(void* self,
         GLenum target, GLenum pname, const GLint* params)
