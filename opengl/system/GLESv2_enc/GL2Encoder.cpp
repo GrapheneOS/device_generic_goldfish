@@ -656,7 +656,9 @@ void GL2Encoder::s_glShaderSource(void *self, GLuint shader, GLsizei count, cons
 {
     GL2Encoder* ctx = (GL2Encoder*)self;
     ShaderData* shaderData = ctx->m_shared->getShaderData(shader);
-    SET_ERROR_IF(!shaderData, GL_INVALID_VALUE);
+    SET_ERROR_IF(!ctx->m_shared->isObject(shader), GL_INVALID_VALUE);
+    SET_ERROR_IF(!shaderData, GL_INVALID_OPERATION);
+    SET_ERROR_IF((count<0), GL_INVALID_VALUE);
 
     int len = glUtilsCalcShaderSourceLen((char**)string, (GLint*)length, count);
     char *str = new char[len + 1];
