@@ -933,6 +933,7 @@ GLEncoder::GLEncoder(IOStream *stream) : gl_encoder_context_t(stream)
     OVERRIDE(glPixelStorei);
     OVERRIDE(glVertexPointer);
     OVERRIDE(glNormalPointer);
+    OVERRIDE(glColorPointer);
     OVERRIDE(glPointSizePointerOES);
     OVERRIDE(glClientActiveTexture);
     OVERRIDE(glTexCoordPointer);
