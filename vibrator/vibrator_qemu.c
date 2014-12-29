@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <errno.h>
 #include <stdlib.h>
 
 #include <cutils/log.h>
