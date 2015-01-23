@@ -71,6 +71,7 @@ GL2Encoder::GL2Encoder(IOStream *stream) : gl2_encoder_context_t(stream)
     OVERRIDE(glGetVertexAttribfv);
     OVERRIDE(glGetVertexAttribPointerv);
 
+    this->glShaderBinary = &s_glShaderBinary;
     this->glShaderSource = &s_glShaderSource;
     this->glFinish = &s_glFinish;
 
@@ -650,6 +651,13 @@ static bool replaceSamplerExternalWith2D(char* const str, ShaderData* const data
     }
 
     return true;
+}
+
+void GL2Encoder::s_glShaderBinary(void *self, GLsizei n, const GLuint *shaders, GLenum binaryformat, const void* binary, GLsizei length)
+{
+    GL2Encoder* ctx = (GL2Encoder*)self;
+    // Although it is not supported, need to set proper error code.
+    SET_ERROR_IF(1, GL_INVALID_ENUM);
 }
 
 void GL2Encoder::s_glShaderSource(void *self, GLuint shader, GLsizei count, const GLchar * const *string, const GLint *length)
