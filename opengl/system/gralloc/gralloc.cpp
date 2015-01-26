@@ -136,15 +136,11 @@ static int gralloc_alloc(alloc_device_t* dev,
     }
 
     //
-    // Validate usage: buffer cannot be written both by s/w and h/w access.
+    // Note: in screen capture mode, both sw_write and hw_write will be on
+    // and this is a valid usage
     //
     bool sw_write = (0 != (usage & GRALLOC_USAGE_SW_WRITE_MASK));
     bool hw_write = (usage & GRALLOC_USAGE_HW_RENDER);
-    if (hw_write && sw_write) {
-        ALOGE("gralloc_alloc: Mismatched usage flags: %d x %d, usage %x",
-                w, h, usage);
-        return -EINVAL;
-    }
     bool sw_read = (0 != (usage & GRALLOC_USAGE_SW_READ_MASK));
     bool hw_cam_write = usage & GRALLOC_USAGE_HW_CAMERA_WRITE;
     bool hw_cam_read = usage & GRALLOC_USAGE_HW_CAMERA_READ;
@@ -685,6 +681,15 @@ static int gralloc_lock(gralloc_module_t const* module,
             return -EBUSY;
         }
 
+        const bool sw_read = (cb->usage & GRALLOC_USAGE_SW_READ_MASK);
+        const bool hw_write = (cb->usage & GRALLOC_USAGE_HW_RENDER);
+        const bool screen_capture_mode = (sw_read && hw_write);
+        if (screen_capture_mode) {
+            D("gralloc_lock read back color buffer %d %d\n", cb->width, cb->height);
+            DEFINE_AND_VALIDATE_HOST_CONNECTION;
+            rcEnc->rcReadColorBuffer(rcEnc, cb->hostHandle,
+                    0, 0, cb->width, cb->height, GL_RGBA, GL_UNSIGNED_BYTE, cpu_addr);
+        }
     }
 
     //
