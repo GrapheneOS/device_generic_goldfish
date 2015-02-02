@@ -136,17 +136,11 @@ static int gralloc_alloc(alloc_device_t* dev,
     }
 
     //
-    // Validate usage: buffer cannot be written both by s/w and h/w access.
+    // Note: in screen capture mode, both sw_write and hw_write will be on
+    // and this is a valid usage
     //
     bool sw_write = (0 != (usage & GRALLOC_USAGE_SW_WRITE_MASK));
     bool hw_write = (usage & GRALLOC_USAGE_HW_RENDER);
-    if (hw_write && sw_write) {
-        // screen-capture has both hw_write and sw_write enabled, and we
-        // should allow this usage.
-        // ALOGE("gralloc_alloc: Mismatched usage flags: %d x %d, usage %x",
-        //         w, h, usage);
-        // return -EINVAL;
-    }
     bool sw_read = (0 != (usage & GRALLOC_USAGE_SW_READ_MASK));
     bool hw_cam_write = usage & GRALLOC_USAGE_HW_CAMERA_WRITE;
     bool hw_cam_read = usage & GRALLOC_USAGE_HW_CAMERA_READ;
