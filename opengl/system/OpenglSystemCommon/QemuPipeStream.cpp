@@ -87,6 +87,10 @@ int QemuPipeStream::writeFully(const void *buf, size_t len)
 {
     //DBG(">> QemuPipeStream::writeFully %d\n", len);
     if (!valid()) return -1;
+    if (!buf) {
+        if (len>0) ERR("QemuPipeStream::writeFully failed, buf=NULL, len %d", len);
+        return 0;
+    }
 
     size_t res = len;
     int retval = 0;
