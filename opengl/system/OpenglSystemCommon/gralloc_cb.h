@@ -71,8 +71,8 @@ struct cb_handle_t : public native_handle {
         numInts = CB_HANDLE_NUM_INTS(numFds);
     }
 
-    static bool validate(cb_handle_t * hnd) {
-        return (hnd && 
+    static bool validate(const cb_handle_t* hnd) {
+        return (hnd &&
                 hnd->version == sizeof(native_handle) &&
                 hnd->magic == BUFFER_HANDLE_MAGIC &&
                 hnd->numInts == CB_HANDLE_NUM_INTS(hnd->numFds));
@@ -96,7 +96,11 @@ struct cb_handle_t : public native_handle {
     int glType;             // OpenGL type enum used when uploading to host
     int ashmemSize;         // ashmem region size for the buffer (0 unless is HW_FB buffer or
                             //                                    s/w access is needed)
-    int ashmemBase;         // CPU address of the mapped ashmem region
+    union {
+        intptr_t ashmemBase;    // CPU address of the mapped ashmem region
+        uint64_t padding;       // enforce same size on 32-bit/64-bit
+    } __attribute__((aligned(8)));
+
     int ashmemBasePid;      // process id which mapped the ashmem region
     int mappedPid;          // process id which succeeded gralloc_register call
     int lockedLeft;         // region of buffer locked for s/w write
