@@ -15,11 +15,7 @@
 */
 #include <string.h>
 #include <pthread.h>
-#ifdef HAVE_ANDROID_OS      // just want PAGE_SIZE define
-# include <asm/page.h>
-#else
-# include <sys/user.h>
-#endif
+#include <limits.h>
 #include <cutils/ashmem.h>
 #include <unistd.h>
 #include <errno.h>
@@ -140,15 +136,11 @@ static int gralloc_alloc(alloc_device_t* dev,
     }
 
     //
-    // Validate usage: buffer cannot be written both by s/w and h/w access.
+    // Note: in screen capture mode, both sw_write and hw_write will be on
+    // and this is a valid usage
     //
     bool sw_write = (0 != (usage & GRALLOC_USAGE_SW_WRITE_MASK));
     bool hw_write = (usage & GRALLOC_USAGE_HW_RENDER);
-    if (hw_write && sw_write) {
-        ALOGE("gralloc_alloc: Mismatched usage flags: %d x %d, usage %x",
-                w, h, usage);
-        return -EINVAL;
-    }
     bool sw_read = (0 != (usage & GRALLOC_USAGE_SW_READ_MASK));
     bool hw_cam_write = usage & GRALLOC_USAGE_HW_CAMERA_WRITE;
     bool hw_cam_read = usage & GRALLOC_USAGE_HW_CAMERA_READ;
@@ -450,7 +442,7 @@ static int fb_post(struct framebuffer_device_t* dev, buffer_handle_t buffer)
     DEFINE_AND_VALIDATE_HOST_CONNECTION;
 
     // increment the post count of the buffer
-    uint32_t *postCountPtr = (uint32_t *)cb->ashmemBase;
+    intptr_t *postCountPtr = (intptr_t *)cb->ashmemBase;
     if (!postCountPtr) {
         // This should not happen
         return -EINVAL;
@@ -642,7 +634,7 @@ static int gralloc_lock(gralloc_module_t const* module,
         return -EINVAL;
     }
 
-    EGLint postCount = 0;
+    intptr_t postCount = 0;
     void *cpu_addr = NULL;
 
     //
@@ -656,8 +648,8 @@ static int gralloc_lock(gralloc_module_t const* module,
         }
 
         if (cb->canBePosted()) {
-            postCount = *((int *)cb->ashmemBase);
-            cpu_addr = (void *)(cb->ashmemBase + sizeof(int));
+            postCount = *((intptr_t *)cb->ashmemBase);
+            cpu_addr = (void *)(cb->ashmemBase + sizeof(intptr_t));
         }
         else {
             cpu_addr = (void *)(cb->ashmemBase);
@@ -682,6 +674,15 @@ static int gralloc_lock(gralloc_module_t const* module,
             return -EBUSY;
         }
 
+        const bool sw_read = (cb->usage & GRALLOC_USAGE_SW_READ_MASK);
+        const bool hw_write = (cb->usage & GRALLOC_USAGE_HW_RENDER);
+        const bool screen_capture_mode = (sw_read && hw_write);
+        if (screen_capture_mode) {
+            D("gralloc_lock read back color buffer %d %d\n", cb->width, cb->height);
+            DEFINE_AND_VALIDATE_HOST_CONNECTION;
+            rcEnc->rcReadColorBuffer(rcEnc, cb->hostHandle,
+                    0, 0, cb->width, cb->height, GL_RGBA, GL_UNSIGNED_BYTE, cpu_addr);
+        }
     }
 
     //
@@ -1011,7 +1012,6 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
         unlock: gralloc_unlock,
         perform: NULL,
         lock_ycbcr: gralloc_lock_ycbcr,
-        reserved_proc: {0, }
     }
 };
 
@@ -1032,7 +1032,11 @@ fallback_init(void)
         return;
     }
     ALOGD("Emulator without GPU emulation detected.");
+#if __LP64__
+    module = dlopen("/system/lib64/hw/gralloc.default.so", RTLD_LAZY|RTLD_LOCAL);
+#else
     module = dlopen("/system/lib/hw/gralloc.default.so", RTLD_LAZY|RTLD_LOCAL);
+#endif
     if (module != NULL) {
         sFallback = reinterpret_cast<gralloc_module_t*>(dlsym(module, HAL_MODULE_INFO_SYM_AS_STR));
         if (sFallback == NULL) {
