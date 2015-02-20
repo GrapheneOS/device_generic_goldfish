@@ -323,7 +323,7 @@ bool Sensor::threadLoop() {
                     i, b.streamId, b.width, b.height, b.format, b.stride,
                     b.buffer, b.img);
             switch(b.format) {
-                case HAL_PIXEL_FORMAT_RAW_SENSOR:
+                case HAL_PIXEL_FORMAT_RAW16:
                     captureRaw(b.img, gain, b.stride);
                     break;
                 case HAL_PIXEL_FORMAT_RGB_888:
