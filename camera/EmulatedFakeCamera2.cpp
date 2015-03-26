@@ -42,7 +42,7 @@ const int64_t MSEC = USEC * 1000LL;
 const int64_t SEC = MSEC * 1000LL;
 
 const uint32_t EmulatedFakeCamera2::kAvailableFormats[4] = {
-        HAL_PIXEL_FORMAT_RAW_SENSOR,
+        HAL_PIXEL_FORMAT_RAW16,
         HAL_PIXEL_FORMAT_BLOB,
         HAL_PIXEL_FORMAT_RGBA_8888,
         //        HAL_PIXEL_FORMAT_YV12,
@@ -374,7 +374,7 @@ int EmulatedFakeCamera2::allocateStream(
     const uint32_t *availableSizes;
     size_t availableSizeCount;
     switch (format) {
-        case HAL_PIXEL_FORMAT_RAW_SENSOR:
+        case HAL_PIXEL_FORMAT_RAW16:
             availableSizes = kAvailableRawSizes;
             availableSizeCount = sizeof(kAvailableRawSizes)/sizeof(uint32_t);
             break;
@@ -412,7 +412,7 @@ int EmulatedFakeCamera2::allocateStream(
     }
 
     switch (format) {
-        case HAL_PIXEL_FORMAT_RAW_SENSOR:
+        case HAL_PIXEL_FORMAT_RAW16:
             if (mRawStreamCount >= kMaxRawStreamCount) {
                 ALOGE("%s: Cannot allocate another raw stream (%d already allocated)",
                         __FUNCTION__, mRawStreamCount);
@@ -523,7 +523,7 @@ int EmulatedFakeCamera2::releaseStream(uint32_t stream_id) {
     }
 
     switch(mStreams.valueAt(streamIndex).format) {
-        case HAL_PIXEL_FORMAT_RAW_SENSOR:
+        case HAL_PIXEL_FORMAT_RAW16:
             mRawStreamCount--;
             break;
         case HAL_PIXEL_FORMAT_BLOB:
@@ -2116,7 +2116,7 @@ status_t EmulatedFakeCamera2::constructStaticInfo(
         lensPosition[1] = 20;
         lensPosition[2] = 0;
     }
-    ADD_OR_SIZE(ANDROID_LENS_POSITION, lensPosition, sizeof(lensPosition)/
+    ADD_OR_SIZE(ANDROID_LENS_POSE_TRANSLATION, lensPosition, sizeof(lensPosition)/
             sizeof(float));
 
     // android.sensor

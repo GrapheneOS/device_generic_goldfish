@@ -54,7 +54,7 @@ const int64_t MSEC = USEC * 1000LL;
 const int64_t SEC = MSEC * 1000LL;
 
 const int32_t EmulatedFakeCamera3::kAvailableFormats[5] = {
-        HAL_PIXEL_FORMAT_RAW_SENSOR,
+        HAL_PIXEL_FORMAT_RAW16,
         HAL_PIXEL_FORMAT_BLOB,
         HAL_PIXEL_FORMAT_RGBA_8888,
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED,
@@ -1076,7 +1076,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         lensPosition[1] = 20;
         lensPosition[2] = 0;
     }
-    info.update(ANDROID_LENS_POSITION, lensPosition, sizeof(lensPosition)/
+    info.update(ANDROID_LENS_POSE_TRANSLATION, lensPosition, sizeof(lensPosition)/
             sizeof(float));
 
     // android.sensor
