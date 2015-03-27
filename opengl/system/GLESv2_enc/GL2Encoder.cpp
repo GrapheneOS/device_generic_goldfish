@@ -765,6 +765,8 @@ GLuint GL2Encoder::s_glCreateProgram(void * self)
 GLuint GL2Encoder::s_glCreateShader(void *self, GLenum shaderType)
 {
     GL2Encoder *ctx = (GL2Encoder*)self;
+    RET_AND_SET_ERROR_IF(((shaderType != GL_VERTEX_SHADER) && (shaderType != GL_FRAGMENT_SHADER)),
+        GL_INVALID_ENUM, 0);
     GLuint shader = ctx->m_glCreateShader_enc(self, shaderType);
     if (shader != 0) {
         if (!ctx->m_shared->addShaderData(shader)) {
