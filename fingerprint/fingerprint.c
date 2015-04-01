@@ -144,6 +144,16 @@ static void setListenerState(emu_fingerprint_hal_device_t* dev, worker_state_t s
     pthread_mutex_unlock(&dev->listener.mutex);
 }
 
+static int fingerprint_authenticate(struct fingerprint_device __unused *device,
+        uint64_t sessionId, uint32_t gid)
+{
+    ALOGE("fingerprint_authenticate");
+
+    emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
+    setListenerState(dev, STATE_SCAN);
+    return 0;
+}
+
 static int fingerprint_enroll(struct fingerprint_device __unused *device,
                                 uint32_t __unused timeout_sec) {
     ALOGE("fingerpring_enroll");
@@ -196,6 +206,7 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
 
     dev->device.enroll = fingerprint_enroll;
     dev->device.enroll_cancel = fingerprint_enroll_cancel;
+    dev->device.authenticate = fingerprint_authenticate;
     dev->device.remove = fingerprint_remove;
     dev->device.set_notify = set_notify_callback;
     dev->device.notify = NULL;
