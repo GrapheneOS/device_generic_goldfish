@@ -29,7 +29,8 @@
 typedef enum worker_state_t {
     STATE_ENROLL = 1,
     STATE_SCAN = 2,
-    STATE_EXIT = 3
+    STATE_IDLE = 3,
+    STATE_EXIT = 4
 } worker_state_t;
 
 typedef struct worker_thread_t {
@@ -106,7 +107,7 @@ static void* listenerFunction(void* data)
                 ALOGD("send notice finger %d", fingerid);
             } else if (strncmp("off", buffer, 3) == 0) {
                 dev->listener.finger_is_on = 0;
-                ALOGD("finger off", fingerid);
+                ALOGD("finger off %d", fingerid);
             } else {
                 ALOGE("error: '%s'", buffer);
             }
@@ -130,8 +131,8 @@ static void createListenerThread(emu_fingerprint_hal_device_t* dev)
 static int fingerprint_close(hw_device_t *dev)
 {
     if (dev) {
+        destroyListenerThread((emu_fingerprint_hal_device_t*) dev);
         free(dev);
-        destroyListenerThread(dev);
         return 0;
     } else {
         return -1;
@@ -145,7 +146,7 @@ static void setListenerState(emu_fingerprint_hal_device_t* dev, worker_state_t s
 }
 
 static int fingerprint_authenticate(struct fingerprint_device __unused *device,
-        uint64_t sessionId, uint32_t gid)
+    uint64_t __unused operation_id, __unused uint32_t gid)
 {
     ALOGE("fingerprint_authenticate");
 
@@ -155,7 +156,8 @@ static int fingerprint_authenticate(struct fingerprint_device __unused *device,
 }
 
 static int fingerprint_enroll(struct fingerprint_device __unused *device,
-                                uint32_t __unused timeout_sec) {
+        uint32_t __unused gid,
+        uint32_t __unused timeout_sec) {
     ALOGE("fingerpring_enroll");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
     setListenerState(dev, STATE_ENROLL);
@@ -163,16 +165,15 @@ static int fingerprint_enroll(struct fingerprint_device __unused *device,
 
 }
 
-static int fingerprint_enroll_cancel(struct fingerprint_device __unused *device,
-                                uint32_t __unused timeout_sec) {
-    ALOGE("fingerpring_enroll_cancel");
+static int fingerprint_cancel(struct fingerprint_device __unused *device) {
+    ALOGE("fingerpring_cancel");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
-    setListenerState(dev, STATE_SCAN);
+    setListenerState(dev, STATE_IDLE);
     return 0;
 }
 
 static int fingerprint_remove(struct fingerprint_device __unused *dev,
-                                uint32_t __unused fingerprint_id) {
+        fingerprint_finger_id_t __unused fingerprint_id) {
     return FINGERPRINT_ERROR;
 }
 
@@ -205,7 +206,7 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     dev->device.common.close = fingerprint_close;
 
     dev->device.enroll = fingerprint_enroll;
-    dev->device.enroll_cancel = fingerprint_enroll_cancel;
+    dev->device.cancel = fingerprint_cancel;
     dev->device.authenticate = fingerprint_authenticate;
     dev->device.remove = fingerprint_remove;
     dev->device.set_notify = set_notify_callback;
