@@ -65,9 +65,9 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
         message.data.enroll.samples_remaining = 0;
         dev->listener.state = STATE_SCAN;
     } else {
-        message.type = FINGERPRINT_PROCESSED;
-        message.data.processed.finger.gid = 0;
-        message.data.processed.finger.fid = dev->listener.fingerid;
+        message.type = FINGERPRINT_AUTHENTICATED;
+        message.data.authenticated.finger.gid = 0;
+        message.data.authenticated.finger.fid = dev->listener.fingerid;
     }
     pthread_mutex_unlock(&dev->listener.mutex);
 
