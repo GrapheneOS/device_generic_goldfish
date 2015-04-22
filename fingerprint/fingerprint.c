@@ -148,7 +148,7 @@ static void setListenerState(emu_fingerprint_hal_device_t* dev, worker_state_t s
 static int fingerprint_authenticate(struct fingerprint_device __unused *device,
     uint64_t __unused operation_id, __unused uint32_t gid)
 {
-    ALOGE("fingerprint_authenticate");
+    ALOGD("fingerprint_authenticate");
 
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
     setListenerState(dev, STATE_SCAN);
@@ -158,15 +158,21 @@ static int fingerprint_authenticate(struct fingerprint_device __unused *device,
 static int fingerprint_enroll(struct fingerprint_device __unused *device,
         uint32_t __unused gid,
         uint32_t __unused timeout_sec) {
-    ALOGE("fingerpring_enroll");
+    ALOGD("fingerprint_enroll");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
     setListenerState(dev, STATE_ENROLL);
     return 0;
 
 }
 
+static int fingerprint_pre_enroll(struct fingerprint_device __unused *device) {
+    ALOGD("fingerprint_pre_enroll");
+    emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
+    return 0xdeadbeef;
+}
+
 static int fingerprint_cancel(struct fingerprint_device __unused *device) {
-    ALOGE("fingerpring_cancel");
+    ALOGD("fingerprint_cancel");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
     setListenerState(dev, STATE_IDLE);
     return 0;
@@ -194,7 +200,7 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
         ALOGE("NULL device on open");
         return -EINVAL;
     } else {
-        ALOGE("fingerprint open\n");
+        ALOGD("fingerprint open\n");
     }
 
     emu_fingerprint_hal_device_t *dev = malloc(sizeof(emu_fingerprint_hal_device_t));
@@ -206,6 +212,7 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     dev->device.common.close = fingerprint_close;
 
     dev->device.enroll = fingerprint_enroll;
+    dev->device.pre_enroll = fingerprint_pre_enroll;
     dev->device.cancel = fingerprint_cancel;
     dev->device.authenticate = fingerprint_authenticate;
     dev->device.remove = fingerprint_remove;
