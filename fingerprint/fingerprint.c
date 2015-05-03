@@ -22,6 +22,7 @@
 
 #include <errno.h>
 #include <endian.h>
+#include <inttypes.h>
 #include <malloc.h>
 #include <string.h>
 #include <cutils/log.h>
@@ -44,6 +45,8 @@ typedef struct worker_thread_t {
     int fingerid;
     int finger_is_on;
     int all_fingerids[MAX_NUM_FINGERS];
+    uint64_t all_secureids[MAX_NUM_FINGERS];
+    uint64_t all_authenids[MAX_NUM_FINGERS];
     int num_fingers_enrolled;
     FILE *fp_write;;
 } worker_thread_t;
@@ -52,7 +55,9 @@ typedef struct emu_fingerprint_hal_device_t {
     fingerprint_device_t device; //inheritance
     worker_thread_t listener;
     uint64_t op_id;
+    uint64_t challenge;
     uint64_t secure_user_id;
+    uint64_t user_id;
     uint64_t authenticator_id;
     pthread_mutex_t lock;
 } emu_fingerprint_hal_device_t;
@@ -70,16 +75,18 @@ static void destroyListenerThread(emu_fingerprint_hal_device_t* dev)
 bool finger_already_enrolled(emu_fingerprint_hal_device_t* dev) {
     int i;
     for (i = 0; i < dev->listener.num_fingers_enrolled; ++ i) {
-        if (dev->listener.fingerid == dev->listener.all_fingerids[i]) {
+        if (dev->listener.fingerid == dev->listener.all_fingerids[i % MAX_NUM_FINGERS]) {
+            dev->secure_user_id = dev->listener.all_secureids[i % MAX_NUM_FINGERS];
+            dev->authenticator_id = dev->listener.all_authenids[i % MAX_NUM_FINGERS];
             return true;
         }
     }
     return false;
 }
 
-static void save_fingerid(FILE* fp, int fingerid) {
+static void save_fingerid(FILE* fp, int fingerid, uint64_t secureid, uint64_t authenid) {
     if (!fp) return;
-    fprintf(fp, " %d", fingerid);
+    fprintf(fp, " %d %" PRIu64 " %" PRIu64, fingerid, secureid, authenid);
     fflush(fp);
 }
 
@@ -97,25 +104,26 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
         dev->listener.state = STATE_SCAN;
         if (!finger_already_enrolled(dev)) {
             dev->listener.all_fingerids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = dev->listener.fingerid;
+            dev->listener.all_secureids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = dev->secure_user_id;
+            dev->listener.all_authenids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = dev->authenticator_id;
             ++ dev->listener.num_fingers_enrolled;
-            save_fingerid(dev->listener.fp_write, dev->listener.fingerid);
+            save_fingerid(dev->listener.fp_write, dev->listener.fingerid, dev->secure_user_id, dev->authenticator_id);
+            is_valid_finger = true;
         }
     } else {
         is_authentication = true;
         is_valid_finger = finger_already_enrolled(dev);
         if (is_valid_finger) {
             message.type = FINGERPRINT_AUTHENTICATED;
-            message.data.authenticated.hat.authenticator_id = dev->authenticator_id;
             message.data.authenticated.finger.gid = 0;
             message.data.authenticated.finger.fid = dev->listener.fingerid;
             message.data.authenticated.hat.version = HW_AUTH_TOKEN_VERSION;
-            message.data.authenticated.hat.authenticator_type =
-                htobe32(HW_AUTH_FINGERPRINT);
+            message.data.authenticated.hat.authenticator_type = htobe32(HW_AUTH_FINGERPRINT);
             message.data.authenticated.hat.challenge = dev->op_id;
-            message.data.authenticated.hat.user_id = dev->secure_user_id;
             message.data.authenticated.hat.authenticator_id = dev->authenticator_id;
+            message.data.authenticated.hat.user_id = dev->secure_user_id;
             struct timespec ts;
-            clock_gettime(CLOCK_BOOTTIME, &ts);
+            clock_gettime(CLOCK_MONOTONIC, &ts);
             message.data.authenticated.hat.timestamp =
                 htobe64((uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
         }
@@ -128,9 +136,8 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
         acquired_message.type = FINGERPRINT_ACQUIRED;
         message.data.acquired.acquired_info = FINGERPRINT_ACQUIRED_GOOD;
         dev->device.notify(acquired_message);
-        if (is_valid_finger)
-            dev->device.notify(message);
-    } else {
+    }
+    if (is_valid_finger) {
         dev->device.notify(message);
     }
     pthread_mutex_unlock(&dev->lock);
@@ -163,8 +170,12 @@ static void* listenerFunction(void* data)
     if (fp_stored) {
         while (1) {
             int fingerid = 0;
-            if(fscanf(fp_stored, "%d", &fingerid) == 1) {
+            uint64_t secureid = 0;
+            uint64_t authenid = 0;
+            if(fscanf(fp_stored, "%d %" SCNu64 " %" SCNu64, &fingerid, &secureid, &authenid) == 3) {
                 dev->listener.all_fingerids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = fingerid;
+                dev->listener.all_secureids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = secureid;
+                dev->listener.all_authenids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = authenid;
                 ++ dev->listener.num_fingers_enrolled;
             } else {
                 break;
@@ -257,11 +268,20 @@ static int fingerprint_enroll(struct fingerprint_device *device,
         uint32_t __unused timeout_sec) {
     ALOGD("fingerprint_enroll");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
-    if (hat && hat->challenge == 0xdeadbeef) {
+    if (hat && hat->challenge == dev->challenge) {
         dev->secure_user_id = hat->user_id;
     } else {
         ALOGW("%s: invalid or null auth token", __func__);
     }
+
+    if (hat->version != HW_AUTH_TOKEN_VERSION) {
+        return -EPROTONOSUPPORT;
+    }
+    if (hat->challenge != dev->challenge && !(hat->authenticator_type & HW_AUTH_FINGERPRINT)) {
+        return -EPERM;
+    }
+
+    dev->user_id = hat->user_id;
 
     // TODO: store enrolled fingerprints, authenticator id, and secure_user_id
     setListenerState(dev, STATE_ENROLL);
@@ -269,9 +289,11 @@ static int fingerprint_enroll(struct fingerprint_device *device,
 
 }
 
-static uint64_t fingerprint_pre_enroll(struct fingerprint_device __unused *device) {
+static uint64_t fingerprint_pre_enroll(struct fingerprint_device *device) {
     ALOGD("fingerprint_pre_enroll");
-    return 0xdeadbeef;
+    emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
+    dev->challenge = get_64bit_rand();
+    return dev->challenge;
 }
 
 static int fingerprint_cancel(struct fingerprint_device __unused *device) {
@@ -285,6 +307,10 @@ static int fingerprint_remove(struct fingerprint_device __unused *dev,
         fingerprint_finger_id_t __unused fingerprint_id) {
     // TODO: implement enroll and remove, and set dev->authenticator_id = 0 when no FPs enrolled
     return FINGERPRINT_ERROR;
+}
+
+static int fingerprint_set_active_group(struct fingerprint_device __unused *dev, uint32_t __unused gid) {
+    return 0;
 }
 
 static int set_notify_callback(struct fingerprint_device *device,
@@ -321,10 +347,11 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     dev->device.get_authenticator_id = fingerprint_get_auth_id;
     dev->device.authenticate = fingerprint_authenticate;
     dev->device.remove = fingerprint_remove;
+    dev->device.set_active_group = fingerprint_set_active_group;
     dev->device.set_notify = set_notify_callback;
     dev->device.notify = NULL;
 
-    dev->authenticator_id = 0;
+    dev->authenticator_id = 0xdeadbeef;
 
     pthread_mutex_init(&dev->lock, NULL);
     createListenerThread(dev);
