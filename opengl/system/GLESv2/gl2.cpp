@@ -118,8 +118,22 @@ const GLubyte *my_glGetString (void *self, GLenum name)
 {
     (void)self;
 
-    if (s_egl) {
-        return (const GLubyte*)s_egl->getGLString(name);
+    //see ref in https://www.khronos.org/opengles/sdk/docs/man
+    //name in glGetString can be one of the following five values
+    switch (name) {
+        case GL_VERSION:
+        case GL_VENDOR:
+        case GL_RENDERER:
+        case GL_SHADING_LANGUAGE_VERSION:
+        case GL_EXTENSIONS:
+            if (s_egl) {
+                return (const GLubyte*)s_egl->getGLString(name);
+            }
+            break;
+        default:
+            GET_CONTEXT;
+            ctx->setError(GL_INVALID_ENUM);
+            break;
     }
     return NULL;
 }
