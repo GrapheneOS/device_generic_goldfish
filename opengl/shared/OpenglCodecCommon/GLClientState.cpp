@@ -247,7 +247,7 @@ GLenum GLClientState::setActiveTextureUnit(GLenum texture)
 {
     GLuint unit = texture - GL_TEXTURE0;
     if (unit >= MAX_TEXTURE_UNITS) {
-        return GL_INVALID_OPERATION;
+        return GL_INVALID_ENUM;
     }
     m_tex.activeUnit = &m_tex.unit[unit];
     return GL_NO_ERROR;
