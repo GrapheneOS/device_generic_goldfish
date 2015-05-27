@@ -47,6 +47,9 @@ GL2Encoder::GL2Encoder(IOStream *stream) : gl2_encoder_context_t(stream)
     m_state = NULL;
     m_error = GL_NO_ERROR;
     m_num_compressedTextureFormats = 0;
+    m_max_cubeMapTextureSize = 0;
+    m_max_renderBufferSize = 0;
+    m_max_textureSize = 0;
     m_compressedTextureFormats = NULL;
 
     //overrides
@@ -271,6 +274,30 @@ void GL2Encoder::s_glGetIntegerv(void *self, GLenum param, GLint *ptr)
         *ptr = state->getBoundTexture(GL_TEXTURE_EXTERNAL_OES);
         break;
 
+    case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+        if (ctx->m_max_cubeMapTextureSize != 0) {
+            *ptr = ctx->m_max_cubeMapTextureSize;
+        } else {
+            ctx->m_glGetIntegerv_enc(self, param, ptr);
+            ctx->m_max_cubeMapTextureSize = *ptr;
+        }
+        break;
+    case GL_MAX_RENDERBUFFER_SIZE:
+        if (ctx->m_max_renderBufferSize != 0) {
+            *ptr = ctx->m_max_renderBufferSize;
+        } else {
+            ctx->m_glGetIntegerv_enc(self, param, ptr);
+            ctx->m_max_renderBufferSize = *ptr;
+        }
+        break;
+    case GL_MAX_TEXTURE_SIZE:
+        if (ctx->m_max_textureSize != 0) {
+            *ptr = ctx->m_max_textureSize;
+        } else {
+            ctx->m_glGetIntegerv_enc(self, param, ptr);
+            ctx->m_max_textureSize = *ptr;
+        }
+        break;
     default:
         if (!ctx->m_state->getClientStateParameter<GLint>(param, ptr)) {
             ctx->m_glGetIntegerv_enc(self, param, ptr);
