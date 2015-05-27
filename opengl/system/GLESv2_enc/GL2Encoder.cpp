@@ -230,6 +230,15 @@ void GL2Encoder::s_glVertexAttribPointer(void *self, GLuint indx, GLint size, GL
 {
     GL2Encoder *ctx = (GL2Encoder *)self;
     assert(ctx->m_state != NULL);
+    SET_ERROR_IF(!(stride >= 0), GL_INVALID_VALUE);
+    SET_ERROR_IF(!(size > 0 && size < 5), GL_INVALID_VALUE);
+    SET_ERROR_IF(!(type == GL_BYTE || type == GL_UNSIGNED_BYTE ||
+            type == GL_SHORT || type == GL_UNSIGNED_SHORT ||
+            type == GL_FIXED || type == GL_FLOAT), GL_INVALID_ENUM);
+
+    GLint maxIndx;
+    ctx->glGetIntegerv(self, GL_MAX_VERTEX_ATTRIBS, &maxIndx);
+    SET_ERROR_IF(!(indx < maxIndx), GL_INVALID_VALUE);
     ctx->m_state->setState(indx, size, type, normalized, stride, ptr);
 }
 
@@ -375,6 +384,9 @@ void GL2Encoder::s_glEnableVertexAttribArray(void *self, GLuint index)
 {
     GL2Encoder *ctx = (GL2Encoder *)self;
     assert(ctx->m_state);
+    GLint maxIndex;
+    ctx->glGetIntegerv(self, GL_MAX_VERTEX_ATTRIBS, &maxIndex);
+    SET_ERROR_IF(!(index < maxIndex), GL_INVALID_VALUE);
     ctx->m_state->enable(index, 1);
 }
 
@@ -382,6 +394,9 @@ void GL2Encoder::s_glDisableVertexAttribArray(void *self, GLuint index)
 {
     GL2Encoder *ctx = (GL2Encoder *)self;
     assert(ctx->m_state);
+    GLint maxIndex;
+    ctx->glGetIntegerv(self, GL_MAX_VERTEX_ATTRIBS, &maxIndex);
+    SET_ERROR_IF(!(index < maxIndex), GL_INVALID_VALUE);
     ctx->m_state->enable(index, 0);
 }
 
