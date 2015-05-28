@@ -113,20 +113,18 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
     } else {
         is_authentication = true;
         is_valid_finger = finger_already_enrolled(dev);
-        if (is_valid_finger) {
-            message.type = FINGERPRINT_AUTHENTICATED;
-            message.data.authenticated.finger.gid = 0;
-            message.data.authenticated.finger.fid = dev->listener.fingerid;
-            message.data.authenticated.hat.version = HW_AUTH_TOKEN_VERSION;
-            message.data.authenticated.hat.authenticator_type = htobe32(HW_AUTH_FINGERPRINT);
-            message.data.authenticated.hat.challenge = dev->op_id;
-            message.data.authenticated.hat.authenticator_id = dev->authenticator_id;
-            message.data.authenticated.hat.user_id = dev->secure_user_id;
-            struct timespec ts;
-            clock_gettime(CLOCK_MONOTONIC, &ts);
-            message.data.authenticated.hat.timestamp =
-                htobe64((uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
-        }
+        message.type = FINGERPRINT_AUTHENTICATED;
+        message.data.authenticated.finger.gid = 0;
+        message.data.authenticated.finger.fid = is_valid_finger ? dev->listener.fingerid : 0;
+        message.data.authenticated.hat.version = HW_AUTH_TOKEN_VERSION;
+        message.data.authenticated.hat.authenticator_type = htobe32(HW_AUTH_FINGERPRINT);
+        message.data.authenticated.hat.challenge = dev->op_id;
+        message.data.authenticated.hat.authenticator_id = dev->authenticator_id;
+        message.data.authenticated.hat.user_id = dev->secure_user_id;
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        message.data.authenticated.hat.timestamp =
+            htobe64((uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
     }
     pthread_mutex_unlock(&dev->listener.mutex);
 
@@ -137,7 +135,7 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
         message.data.acquired.acquired_info = FINGERPRINT_ACQUIRED_GOOD;
         dev->device.notify(acquired_message);
     }
-    if (is_valid_finger) {
+    if (is_valid_finger || is_authentication) {
         dev->device.notify(message);
     }
     pthread_mutex_unlock(&dev->lock);
@@ -249,6 +247,12 @@ static uint64_t fingerprint_get_auth_id(struct fingerprint_device __unused *devi
     return dev->authenticator_id;
 }
 
+static int fingerprint_set_active_group(struct fingerprint_device __unused *device, uint32_t gid,
+        const char *path) {
+    // TODO: implements me
+    return 0;
+}
+
 static int fingerprint_authenticate(struct fingerprint_device __unused *device,
     uint64_t __unused operation_id, __unused uint32_t gid)
 {
@@ -303,14 +307,16 @@ static int fingerprint_cancel(struct fingerprint_device __unused *device) {
     return 0;
 }
 
+static int fingerprint_enumerate(struct fingerprint_device *device,
+        fingerprint_finger_id_t *results, uint32_t *max_size) {
+    // TODO: implement me
+    return 0;
+}
+
 static int fingerprint_remove(struct fingerprint_device __unused *dev,
         fingerprint_finger_id_t __unused fingerprint_id) {
     // TODO: implement enroll and remove, and set dev->authenticator_id = 0 when no FPs enrolled
     return FINGERPRINT_ERROR;
-}
-
-static int fingerprint_set_active_group(struct fingerprint_device __unused *dev, uint32_t __unused gid) {
-    return 0;
 }
 
 static int set_notify_callback(struct fingerprint_device *device,
@@ -340,14 +346,14 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     dev->device.common.version = HARDWARE_MODULE_API_VERSION(2, 0);
     dev->device.common.module = (struct hw_module_t*) module;
     dev->device.common.close = fingerprint_close;
-
-    dev->device.enroll = fingerprint_enroll;
     dev->device.pre_enroll = fingerprint_pre_enroll;
-    dev->device.cancel = fingerprint_cancel;
+    dev->device.enroll = fingerprint_enroll;
     dev->device.get_authenticator_id = fingerprint_get_auth_id;
-    dev->device.authenticate = fingerprint_authenticate;
-    dev->device.remove = fingerprint_remove;
     dev->device.set_active_group = fingerprint_set_active_group;
+    dev->device.authenticate = fingerprint_authenticate;
+    dev->device.cancel = fingerprint_cancel;
+    dev->device.enumerate = fingerprint_enumerate;
+    dev->device.remove = fingerprint_remove;
     dev->device.set_notify = set_notify_callback;
     dev->device.notify = NULL;
 
