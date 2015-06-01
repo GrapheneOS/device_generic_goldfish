@@ -779,7 +779,8 @@ void GL2Encoder::s_glDeleteProgram(void *self, GLuint program)
 void GL2Encoder::s_glGetUniformiv(void *self, GLuint program, GLint location, GLint* params)
 {
     GL2Encoder *ctx = (GL2Encoder*)self;
-    SET_ERROR_IF(!ctx->m_shared->isProgram(program), GL_INVALID_VALUE);
+    SET_ERROR_IF(!ctx->m_shared->isObject(program), GL_INVALID_VALUE);
+    SET_ERROR_IF(!ctx->m_shared->isProgram(program), GL_INVALID_OPERATION);
     SET_ERROR_IF(!ctx->m_shared->isProgramInitialized(program), GL_INVALID_OPERATION);
     GLint hostLoc = ctx->m_shared->locationWARAppToHost(program, location);
     SET_ERROR_IF(ctx->m_shared->getProgramUniformType(program,hostLoc)==0, GL_INVALID_OPERATION);
@@ -788,7 +789,8 @@ void GL2Encoder::s_glGetUniformiv(void *self, GLuint program, GLint location, GL
 void GL2Encoder::s_glGetUniformfv(void *self, GLuint program, GLint location, GLfloat* params)
 {
     GL2Encoder *ctx = (GL2Encoder*)self;
-    SET_ERROR_IF(!ctx->m_shared->isProgram(program), GL_INVALID_VALUE);
+    SET_ERROR_IF(!ctx->m_shared->isObject(program), GL_INVALID_VALUE);
+    SET_ERROR_IF(!ctx->m_shared->isProgram(program), GL_INVALID_OPERATION);
     SET_ERROR_IF(!ctx->m_shared->isProgramInitialized(program), GL_INVALID_OPERATION);
     GLint hostLoc = ctx->m_shared->locationWARAppToHost(program,location);
     SET_ERROR_IF(ctx->m_shared->getProgramUniformType(program,hostLoc)==0, GL_INVALID_OPERATION);
