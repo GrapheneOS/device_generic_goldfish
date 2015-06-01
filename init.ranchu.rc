@@ -24,6 +24,7 @@ on boot
     setprop ro.radio.use-ppp no
     setprop ro.build.product generic
     setprop ro.product.device generic
+    setprop ro.hardware.audio.primary goldfish
 
 # fake some battery state
     setprop status.battery.state Slow
