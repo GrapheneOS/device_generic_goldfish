@@ -92,7 +92,7 @@ static void save_fingerid(FILE* fp, int fingerid, uint64_t secureid, uint64_t au
 
 static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
 {
-    fingerprint_msg_t message;
+    fingerprint_msg_t message = {0};
     bool is_authentication = false;
     bool is_valid_finger = false;
     pthread_mutex_lock(&dev->listener.mutex);
@@ -130,13 +130,13 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
 
     pthread_mutex_lock(&dev->lock);
     if (is_authentication) {
-        fingerprint_msg_t acquired_message;
+        fingerprint_msg_t acquired_message = {0};
         acquired_message.type = FINGERPRINT_ACQUIRED;
         message.data.acquired.acquired_info = FINGERPRINT_ACQUIRED_GOOD;
-        dev->device.notify(acquired_message);
+        dev->device.notify(&acquired_message);
     }
     if (is_valid_finger || is_authentication) {
-        dev->device.notify(message);
+        dev->device.notify(&message);
     }
     pthread_mutex_unlock(&dev->lock);
 }
@@ -314,7 +314,7 @@ static int fingerprint_enumerate(struct fingerprint_device *device,
 }
 
 static int fingerprint_remove(struct fingerprint_device __unused *dev,
-        fingerprint_finger_id_t __unused fingerprint_id) {
+        uint32_t __unused gid, uint32_t __unused fid) {
     // TODO: implement enroll and remove, and set dev->authenticator_id = 0 when no FPs enrolled
     return FINGERPRINT_ERROR;
 }
