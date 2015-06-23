@@ -49,6 +49,12 @@ on boot
     start goldfish-logcat
     start goldfish-setup
 
+# enable dhcpcd on eth0 interface
+service dhcpcd_eth0 /system/bin/dhcpcd -ABDKL
+    class main
+    disabled
+    oneshot
+
 # enable Google-specific location features,
 # like NetworkLocationProvider and LocationCollector
     setprop ro.com.google.locationfeatures 1
