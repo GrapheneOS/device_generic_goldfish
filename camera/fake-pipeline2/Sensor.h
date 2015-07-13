@@ -158,6 +158,7 @@ class Sensor: private Thread, public virtual RefBase {
      * Static sensor characteristics
      */
     static const unsigned int kResolution[2];
+    static const unsigned int kActiveArray[4];
 
     static const nsecs_t kExposureTimeRange[2];
     static const nsecs_t kFrameDurationRange[2];
