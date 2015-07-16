@@ -17,6 +17,7 @@
 #include "GL2Encoder.h"
 #include <assert.h>
 #include <ctype.h>
+#include <cmath>
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -126,6 +127,7 @@ GL2Encoder::GL2Encoder(IOStream *stream) : gl2_encoder_context_t(stream)
     OVERRIDE(glTexParameteri);
     OVERRIDE(glTexParameteriv);
     OVERRIDE(glTexImage2D);
+    OVERRIDE(glTexSubImage2D);
 }
 
 GL2Encoder::~GL2Encoder()
@@ -1342,6 +1344,18 @@ void GL2Encoder::s_glTexImage2D(void* self, GLenum target, GLint level,
     }
 }
 
+void GL2Encoder::s_glTexSubImage2D(void* self, GLenum target, GLint level,
+        GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format,
+        GLenum type, const GLvoid* pixels)
+{
+    GL2Encoder* ctx = (GL2Encoder*)self;
+    GLint maxTextureSize;
+    ctx->glGetIntegerv(self, GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+
+    SET_ERROR_IF((level < 0 || level > log2(maxTextureSize)), GL_INVALID_VALUE);
+
+    ctx->m_glTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
 
 void GL2Encoder::s_glTexParameteriv(void* self,
         GLenum target, GLenum pname, const GLint* params)
