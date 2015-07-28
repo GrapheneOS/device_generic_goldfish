@@ -35,11 +35,17 @@
 namespace android {
 
 const unsigned int Sensor::kResolution[2]  = {640, 480};
+const unsigned int Sensor::kActiveArray[4]  = {0, 0, 640, 480};
 
+//const nsecs_t Sensor::kExposureTimeRange[2] =
+//    {1000L, 30000000000L} ; // 1 us - 30 sec
+//const nsecs_t Sensor::kFrameDurationRange[2] =
+//    {33331760L, 30000000000L}; // ~1/30 s - 30 sec
 const nsecs_t Sensor::kExposureTimeRange[2] =
-    {1000L, 30000000000L} ; // 1 us - 30 sec
+    {1000L, 300000000L} ; // 1 us - 0.3 sec
 const nsecs_t Sensor::kFrameDurationRange[2] =
-    {33331760L, 30000000000L}; // ~1/30 s - 30 sec
+    {33331760L, 300000000L}; // ~1/30 s - 0.3 sec
+
 const nsecs_t Sensor::kMinVerticalBlank = 10000L;
 
 const uint8_t Sensor::kColorFilterArrangement =
