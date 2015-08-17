@@ -257,11 +257,6 @@ egl_window_surface_t::egl_window_surface_t (
 {
     // keep a reference on the window
     nativeWindow->common.incRef(&nativeWindow->common);
-    EGLint w,h;
-    nativeWindow->query(nativeWindow, NATIVE_WINDOW_WIDTH, &w);
-    setWidth(w);
-    nativeWindow->query(nativeWindow, NATIVE_WINDOW_HEIGHT, &h);
-    setHeight(h);
 }
 
 EGLBoolean egl_window_surface_t::init()
@@ -269,6 +264,8 @@ EGLBoolean egl_window_surface_t::init()
     if (nativeWindow->dequeueBuffer_DEPRECATED(nativeWindow, &buffer) != NO_ERROR) {
         setErrorReturn(EGL_BAD_ALLOC, EGL_FALSE);
     }
+    setWidth(buffer->width);
+    setHeight(buffer->height);
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
     rcSurface = rcEnc->rcCreateWindowSurface(rcEnc, (uintptr_t)config,
@@ -326,6 +323,9 @@ EGLBoolean egl_window_surface_t::swapBuffers()
 
     rcEnc->rcSetWindowColorBuffer(rcEnc, rcSurface,
             ((cb_handle_t *)(buffer->handle))->hostHandle);
+
+    setWidth(buffer->width);
+    setHeight(buffer->height);
 
     return EGL_TRUE;
 }
