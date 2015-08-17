@@ -757,6 +757,15 @@ EGLBoolean eglQuerySurface(EGLDisplay dpy, EGLSurface eglSurface, EGLint attribu
             // and we ignore it when creating a PBuffer surface (default is EGL_FALSE)
             if (surface->getSurfaceType() & EGL_PBUFFER_BIT) *value = EGL_FALSE;
             break;
+        case EGL_MIPMAP_LEVEL:
+            // not modified for a window or pixmap surface
+            // and we ignore it when creating a PBuffer surface (default is 0)
+            if (surface->getSurfaceType() & EGL_PBUFFER_BIT) *value = 0;
+            break;
+        case EGL_MULTISAMPLE_RESOLVE:
+            // ignored when creating the surface, return default
+            *value = EGL_MULTISAMPLE_RESOLVE_DEFAULT;
+            break;
         //TODO: complete other attributes
         default:
             ALOGE("eglQuerySurface %x  EGL_BAD_ATTRIBUTE", attribute);
