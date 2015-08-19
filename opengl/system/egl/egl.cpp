@@ -659,7 +659,7 @@ EGLSurface eglCreatePbufferSurface(EGLDisplay dpy, EGLConfig config, const EGLin
     int32_t h = 0;
     EGLint texFormat = EGL_NO_TEXTURE;
     EGLint texTarget = EGL_NO_TEXTURE;
-    while (attrib_list[0]) {
+    while (attrib_list[0] != EGL_NONE) {
         switch (attrib_list[0]) {
             case EGL_WIDTH:
                 w = attrib_list[1];
@@ -883,7 +883,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     VALIDATE_CONFIG(config, EGL_NO_CONTEXT);
 
     EGLint version = 1; //default
-    while (attrib_list && attrib_list[0]) {
+    while (attrib_list && attrib_list[0] != EGL_NONE) {
         if (attrib_list[0] == EGL_CONTEXT_CLIENT_VERSION) version = attrib_list[1];
         attrib_list+=2;
     }
@@ -1001,7 +1001,7 @@ EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLC
             hostCon->glEncoder()->setClientState(context->getClientState());
             hostCon->glEncoder()->setSharedGroup(context->getSharedGroup());
         }
-    } 
+    }
     else if (tInfo->currentContext) {
         //release ClientState & SharedGroup
         if (tInfo->currentContext->version == 2) {
