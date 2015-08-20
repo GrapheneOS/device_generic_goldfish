@@ -498,8 +498,12 @@ EGLBoolean eglDisplay::getConfigGLPixelFormat(EGLConfig config, GLenum * format)
     }
 
     //calculate the GL internal format
-    if ((redSize==8)&&(blueSize==8)&&(blueSize==8)&&(alphaSize==8)) *format = GL_RGBA;
-    else if ((redSize==8)&&(greenSize==8)&&(blueSize==8)&&(alphaSize==0)) *format = GL_RGB;
+    if ((redSize == greenSize) && (redSize == blueSize) &&
+        ((redSize == 8) || (redSize == 16) || (redSize == 32)))
+    {
+        if (alphaSize == 0) *format = GL_RGB;
+        else *format = GL_RGBA;
+    }
     else if ((redSize==5)&&(greenSize==6)&&(blueSize==5)&&(alphaSize==0)) *format = GL_RGB565_OES;
     else if ((redSize==5)&&(greenSize==5)&&(blueSize==5)&&(alphaSize==1)) *format = GL_RGB5_A1_OES;
     else if ((redSize==4)&&(greenSize==4)&&(blueSize==4)&&(alphaSize==4)) *format = GL_RGBA4_OES;
