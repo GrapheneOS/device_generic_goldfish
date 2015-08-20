@@ -635,7 +635,7 @@ EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, EGLNativeWin
     }
 
     egl_surface_t* surface = egl_window_surface_t::create(
-            &s_display, config, surfaceType, static_cast<ANativeWindow*>(win));
+            &s_display, config, EGL_WINDOW_BIT, static_cast<ANativeWindow*>(win));
     if (!surface) {
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_SURFACE);
     }
@@ -689,7 +689,7 @@ EGLSurface eglCreatePbufferSurface(EGLDisplay dpy, EGLConfig config, const EGLin
         setErrorReturn(EGL_BAD_MATCH, EGL_NO_SURFACE);
 
     egl_surface_t* surface = egl_pbuffer_surface_t::create(dpy, config,
-            surfaceType, w, h, pixelFormat);
+            EGL_PBUFFER_BIT, w, h, pixelFormat);
     if (!surface) {
         setErrorReturn(EGL_BAD_ALLOC, EGL_NO_SURFACE);
     }
