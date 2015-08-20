@@ -14,10 +14,24 @@
  * limitations under the License.
  */
 
+/**
+ * This is a very basic implementation of fingerprint to allow testing on the emulator. It
+ * is *not* meant to be the final implementation on real devices.  For example,  it does *not*
+ * implement all of the required features, such as secure template storage and recognition
+ * inside a Trusted Execution Environment (TEE). However, this file is a reasonable starting
+ * point as developers add fingerprint support to their platform.  See inline comments and
+ * recommendations for details.
+ *
+ * Please see the Android Compatibility Definition Document (CDD) for a full list of requirements
+ * and suggestions.
+ */
 #define  FINGERPRINT_LISTEN_SERVICE_NAME "fingerprintlisten"
 #define  FINGERPRINT_TXT_FILENAME "/data/fingerprint.txt"
 
 #define LOG_TAG "FingerprintHal"
+
+// Typical devices will allow up to 5 fingerprints per user to maintain performance of 
+// t < 500ms for recognition.  This is the total number of fingerprints we'll store.
 #define MAX_NUM_FINGERS 32
 
 #include <errno.h>
@@ -30,11 +44,19 @@
 #include <hardware/fingerprint.h>
 #include <hardware/qemud.h>
 
+/**
+ * Most devices will have an internal state machine resembling this. There are 3 basic states, as
+ * shown below. When device is not authenticating or enrolling, it is expected to be in
+ * the idle state.
+ *
+ * Note that this is completely independent of device wake state.  If the hardware device was in
+ * the "scan" state when the device drops into power collapse, it should resume scanning when power
+ * is restored.  This is to facilitate rapid touch-to-unlock from keyguard.
+ */
 typedef enum worker_state_t {
     STATE_ENROLL = 1,
     STATE_SCAN = 2,
     STATE_IDLE = 3,
-    STATE_EXIT = 4
 } worker_state_t;
 
 typedef struct worker_thread_t {
@@ -63,6 +85,9 @@ typedef struct emu_fingerprint_hal_device_t {
 } emu_fingerprint_hal_device_t;
 
 static uint64_t get_64bit_rand() {
+    // This should use a cryptographically-secure random number generator like arc4random().
+    // It should be generated inside of the TEE where possible. Here we just use something
+    // very simple.
     return (((uint64_t) rand()) << 32) | ((uint64_t) rand());
 }
 
@@ -90,6 +115,9 @@ static void save_fingerid(FILE* fp, int fingerid, uint64_t secureid, uint64_t au
     fflush(fp);
 }
 
+/**
+ * This is the communication channel from the HAL layer to fingerprintd.
+ */
 static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
 {
     fingerprint_msg_t message = {0};
@@ -103,11 +131,13 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
         dev->authenticator_id = get_64bit_rand();
         dev->listener.state = STATE_SCAN;
         if (!finger_already_enrolled(dev)) {
-            dev->listener.all_fingerids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = dev->listener.fingerid;
-            dev->listener.all_secureids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = dev->secure_user_id;
-            dev->listener.all_authenids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = dev->authenticator_id;
+            const int n = dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS;
+            dev->listener.all_fingerids[n] = dev->listener.fingerid;
+            dev->listener.all_secureids[n] = dev->secure_user_id;
+            dev->listener.all_authenids[n] = dev->authenticator_id;
             ++ dev->listener.num_fingers_enrolled;
-            save_fingerid(dev->listener.fp_write, dev->listener.fingerid, dev->secure_user_id, dev->authenticator_id);
+            save_fingerid(dev->listener.fp_write, dev->listener.fingerid, dev->secure_user_id,
+                          dev->authenticator_id);
             is_valid_finger = true;
         }
     } else {
@@ -141,6 +171,29 @@ static void listener_send_notice(emu_fingerprint_hal_device_t* dev)
     pthread_mutex_unlock(&dev->lock);
 }
 
+/**
+ * This a very simple event loop for the fingerprint sensor. For a given state (enroll, scan),
+ * this would receive events from the sensor and forward them to fingerprintd using the
+ * notify() method.
+ *
+ * In this simple example, we open a qemu channel (a pipe) where the developer can inject events to
+ * exercise the API and test application code.
+ *
+ * The scanner should remain in the scanning state until either an error occurs or the operation
+ * completes.
+ *
+ * Recoverable errors such as EINTR should be handled locally;  they should not
+ * be propagated unless there's something the user can do about it (e.g. "clean sensor"). Such
+ * messages should go through the onAcquired() interface.
+ *
+ * If an unrecoverable error occurs, an acquired message (e.g. ACQUIRED_PARTIAL) should be sent,
+ * followed by an error message (e.g. FINGERPRINT_ERROR_UNABLE_TO_PROCESS).
+ *
+ * Note that this event loop would typically run in TEE since it must interact with the sensor
+ * hardware and handle raw fingerprint data and encrypted templates.  It is expected that
+ * this code monitors the TEE for resulting events, such as enrollment and authentication status.
+ * Here we just have a very simple event loop that monitors a qemu channel for pseudo events.
+ */
 static void* listenerFunction(void* data)
 {
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) data;
@@ -171,9 +224,10 @@ static void* listenerFunction(void* data)
             uint64_t secureid = 0;
             uint64_t authenid = 0;
             if(fscanf(fp_stored, "%d %" SCNu64 " %" SCNu64, &fingerid, &secureid, &authenid) == 3) {
-                dev->listener.all_fingerids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = fingerid;
-                dev->listener.all_secureids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = secureid;
-                dev->listener.all_authenids[dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS] = authenid;
+                const int n = dev->listener.num_fingers_enrolled % MAX_NUM_FINGERS;
+                dev->listener.all_fingerids[n] = fingerid;
+                dev->listener.all_secureids[n] = secureid;
+                dev->listener.all_authenids[n] = authenid;
                 ++ dev->listener.num_fingers_enrolled;
             } else {
                 break;
@@ -243,16 +297,28 @@ static void setListenerState(emu_fingerprint_hal_device_t* dev, worker_state_t s
 }
 
 static uint64_t fingerprint_get_auth_id(struct fingerprint_device __unused *device) {
+    // This should return the authentication_id generated when the fingerprint template database
+    // was created.  Though this isn't expected to be secret, it is reasonable to expect it to be
+    // cryptographically generated to avoid replay attacks.
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
     return dev->authenticator_id;
 }
 
 static int fingerprint_set_active_group(struct fingerprint_device __unused *device, uint32_t gid,
         const char *path) {
-    // TODO: implements me
+    // Groups are a future feature.  For now, the framework sends the profile owner's id (userid)
+    // as the primary group id for the user.  This code should create a tuple (groupId, fingerId)
+    // that represents a single fingerprint entity in the database.  For now we just generate
+    // globally unique ids.
     return 0;
 }
 
+/**
+ * If fingerprints are enrolled, then this function is expected to put the sensor into a
+ * "scanning" state where it's actively scanning and recognizing fingerprint features.
+ * Actual authentication must happen in TEE and should be monitored in a separate thread
+ * since this function is expected to return immediately.
+ */
 static int fingerprint_authenticate(struct fingerprint_device __unused *device,
     uint64_t __unused operation_id, __unused uint32_t gid)
 {
@@ -266,6 +332,15 @@ static int fingerprint_authenticate(struct fingerprint_device __unused *device,
     return 0;
 }
 
+/**
+ * This is expected to put the sensor into an "enroll" state where it's actively scanning and
+ * working towards a finished fingerprint database entry. Authentication must happen in
+ * a separate thread since this function is expected to return immediately.
+ *
+ * Note: This method should always generate a new random authenticator_id.
+ *
+ * Note: As with fingerprint_authenticate(), this would run in TEE on a real device.
+ */
 static int fingerprint_enroll(struct fingerprint_device *device,
         const hw_auth_token_t *hat,
         uint32_t __unused gid,
@@ -273,6 +348,9 @@ static int fingerprint_enroll(struct fingerprint_device *device,
     ALOGD("fingerprint_enroll");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
     if (hat && hat->challenge == dev->challenge) {
+        // The secure_user_id retrieved from the auth token should be stored
+        // with the enrolled fingerprint template and returned in the auth result
+        // for a successful authentication with that finger.
         dev->secure_user_id = hat->user_id;
     } else {
         ALOGW("%s: invalid or null auth token", __func__);
@@ -293,13 +371,26 @@ static int fingerprint_enroll(struct fingerprint_device *device,
 
 }
 
+/**
+ * The pre-enrollment step is simply to get an authentication token that can be wrapped and
+ * verified at a later step.  The primary purpose is to return a token that protects against
+ * spoofing and replay attacks. It is passed to password authentication where it is wrapped and
+ * propagated to the enroll step.
+ */
 static uint64_t fingerprint_pre_enroll(struct fingerprint_device *device) {
     ALOGD("fingerprint_pre_enroll");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
+    // The challenge will typically be a cryptographically-secure key
+    // coming from the TEE so it can be verified at a later step. For now we just generate a
+    // random value.
     dev->challenge = get_64bit_rand();
     return dev->challenge;
 }
 
+/**
+ * Cancel is called by the framework to cancel an outstanding event.  This should *not* be called
+ * by the driver since it will cause the framework to stop listening for fingerprints.
+ */
 static int fingerprint_cancel(struct fingerprint_device __unused *device) {
     ALOGD("fingerprint_cancel");
     emu_fingerprint_hal_device_t* dev = (emu_fingerprint_hal_device_t*) device;
@@ -357,6 +448,10 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     dev->device.set_notify = set_notify_callback;
     dev->device.notify = NULL;
 
+    // This is typically a cryptographically-secure token generated when the private fingerprint
+    // template database is created.  For simplicity of this driver, we store a recognizable value.
+    //
+    // Real devices should *not* use this token!
     dev->authenticator_id = 0xdeadbeef;
 
     pthread_mutex_init(&dev->lock, NULL);
