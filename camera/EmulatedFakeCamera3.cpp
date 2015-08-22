@@ -1185,7 +1185,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         static const float qO[] = { 0.707107f, 0.f, 0.f, 0.707107f};
 
         // Either a 180-degree rotation for back-facing, or no rotation for front-facing
-        const float qF[] = {(mFacingBack ? 0.f : 1.f), 0, (!mFacingBack ? 1.f : 0.f), 0};
+        const float qF[] = {0, (mFacingBack ? 1.f : 0.f), 0, (mFacingBack ? 0.f : 1.f)};
 
         // Quarternion product, orientation change then facing
         const float lensPoseRotation[] = {qO[0]*qF[0] - qO[1]*qF[1] - qO[2]*qF[2] - qO[3]*qF[3],
