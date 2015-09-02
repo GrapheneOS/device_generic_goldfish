@@ -519,11 +519,34 @@ void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei co
 }
 
 
+static bool isValidDrawMode(GLenum mode) {
+    switch(mode) {
+    case GL_POINTS:
+    case GL_LINE_STRIP:
+    case GL_LINE_LOOP:
+    case GL_LINES:
+    case GL_TRIANGLE_STRIP:
+    case GL_TRIANGLE_FAN:
+    case GL_TRIANGLES:
+        return true;
+    }
+    return false;
+}
+
+static bool isValidDrawType(GLenum mode) {
+    return  mode == GL_UNSIGNED_BYTE ||
+            mode == GL_UNSIGNED_SHORT ||
+            mode == GL_UNSIGNED_INT;
+}
+
 void GL2Encoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum type, const void *indices)
 {
 
     GL2Encoder *ctx = (GL2Encoder *)self;
     assert(ctx->m_state != NULL);
+    SET_ERROR_IF(!(isValidDrawMode(mode) && isValidDrawType(type)),GL_INVALID_ENUM);
+    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
+        GL_INVALID_FRAMEBUFFER_OPERATION);
     SET_ERROR_IF(count<0, GL_INVALID_VALUE);
 
     bool has_immediate_arrays = false;
