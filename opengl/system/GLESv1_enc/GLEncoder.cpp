@@ -421,6 +421,7 @@ void GLEncoder::sendVertexData(unsigned int first, unsigned int count)
             if (stride == 0) stride = state->elementSize;
             int firstIndex = stride * first;
 
+            this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, state->bufferObject);
             if (state->bufferObject == 0) {
 
                 switch(i) {
@@ -461,7 +462,6 @@ void GLEncoder::sendVertexData(unsigned int first, unsigned int count)
                     break;
                 }
             } else {
-                this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, state->bufferObject);
 
                 switch(i) {
                 case GLClientState::VERTEX_LOCATION:
@@ -500,8 +500,8 @@ void GLEncoder::sendVertexData(unsigned int first, unsigned int count)
                                               (uintptr_t)state->data+firstIndex);
                     break;
                 }
-                this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, m_state->currentArrayVbo());
             }
+            this->m_glBindBuffer_enc(this, GL_ARRAY_BUFFER, m_state->currentArrayVbo());
         } else {
             this->m_glDisableClientState_enc(this, state->glConst);
         }
