@@ -8,8 +8,6 @@ on init
     # See storage config details at http://source.android.com/tech/storage/
     mkdir /storage/sdcard 0555 root root
 
-    export EXTERNAL_STORAGE /storage/sdcard
-
     # Support legacy paths
     #symlink /storage/sdcard /sdcard
     #symlink /storage/sdcard /mnt/sdcard
