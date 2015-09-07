@@ -513,14 +513,6 @@ void GL2Encoder::sendVertexAttributes(GLint first, GLsizei count)
     }
 }
 
-void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei count)
-{
-    GL2Encoder *ctx = (GL2Encoder *)self;
-    ctx->sendVertexAttributes(first, count);
-    ctx->m_glDrawArrays_enc(ctx, mode, 0, count);
-}
-
-
 static bool isValidDrawMode(GLenum mode) {
     switch(mode) {
     case GL_POINTS:
@@ -539,6 +531,19 @@ static bool isValidDrawType(GLenum mode) {
     return  mode == GL_UNSIGNED_BYTE ||
             mode == GL_UNSIGNED_SHORT ||
             mode == GL_UNSIGNED_INT;
+}
+
+void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei count)
+{
+    GL2Encoder *ctx = (GL2Encoder *)self;
+
+    SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
+    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
+        GL_INVALID_FRAMEBUFFER_OPERATION);
+    SET_ERROR_IF(count<0, GL_INVALID_VALUE);
+
+    ctx->sendVertexAttributes(first, count);
+    ctx->m_glDrawArrays_enc(ctx, mode, 0, count);
 }
 
 void GL2Encoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum type, const void *indices)
