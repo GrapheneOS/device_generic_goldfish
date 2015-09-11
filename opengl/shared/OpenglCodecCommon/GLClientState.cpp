@@ -65,6 +65,8 @@ GLClientState::GLClientState(int nLocations)
     m_tex.textures = NULL;
     m_tex.numTextures = 0;
     m_tex.allocTextures = 0;
+
+    m_num_texture_units = 0;
 }
 
 GLClientState::~GLClientState()
@@ -243,10 +245,15 @@ size_t GLClientState::pixelDataSize(GLsizei width, GLsizei height, GLenum format
     return aligned_linesize * height;
 }
 
+void GLClientState::setNumTexture(GLint num)
+{
+    m_num_texture_units = (num>MAX_TEXTURE_UNITS) ? MAX_TEXTURE_UNITS : num;
+}
+
 GLenum GLClientState::setActiveTextureUnit(GLenum texture)
 {
     GLuint unit = texture - GL_TEXTURE0;
-    if (unit >= MAX_TEXTURE_UNITS) {
+    if (unit >= m_num_texture_units) {
         return GL_INVALID_ENUM;
     }
     m_tex.activeUnit = &m_tex.unit[unit];
