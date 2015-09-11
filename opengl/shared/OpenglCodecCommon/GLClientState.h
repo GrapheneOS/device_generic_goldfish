@@ -181,6 +181,8 @@ public:
     // Remove references to the to-be-deleted textures.
     void deleteTextures(GLsizei n, const GLuint* textures);
 
+    void setNumTexture(GLint num);
+
 private:
     PixelStoreState m_pixelStore;
     VertexAttribState *m_states;
@@ -189,6 +191,7 @@ private:
     GLuint m_currentIndexVbo;
     int m_activeTexture;
     GLint m_currentProgram;
+    GLint m_num_texture_units;
 
     bool validLocation(int location) { return (location >= 0 && location < m_nLocations); }
 
