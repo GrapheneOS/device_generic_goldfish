@@ -61,7 +61,9 @@ private:
 
     void sendVertexAttributes(GLint first, GLsizei count);
     bool updateHostTexture2DBinding(GLenum texUnit, GLenum newTarget);
-    void getHostLocation(void * self, GLint location, GLint * hostLoc);
+    void checkValidUniformParam(void * self, GLsizei count, GLboolean transpose);
+    void getHostLocation(void *self, GLint location, GLint *hostLoc);
+
 
     glGetError_client_proc_t    m_glGetError_enc;
     static GLenum s_glGetError(void * self);
