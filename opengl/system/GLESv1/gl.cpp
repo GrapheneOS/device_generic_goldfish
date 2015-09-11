@@ -132,6 +132,7 @@ void init()
     ctx->glEGLImageTargetTexture2DOES = &glEGLImageTargetTexture2DOES;
     ctx->glEGLImageTargetRenderbufferStorageOES = &glEGLImageTargetRenderbufferStorageOES;
     ctx->glGetString = &my_glGetString;
+    ctx->init(ctx);
 }
 
 extern "C" {

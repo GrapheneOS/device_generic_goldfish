@@ -135,6 +135,15 @@ GL2Encoder::~GL2Encoder()
     delete m_compressedTextureFormats;
 }
 
+void GL2Encoder::init(void *self)
+{
+    GL2Encoder* ctx = (GL2Encoder*)self;
+    GLClientState* state = ctx->m_state;
+    GLint num;
+    ctx->m_glGetIntegerv_enc(self, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &num);
+    state->setNumTexture(num);
+}
+
 GLenum GL2Encoder::s_glGetError(void * self)
 {
     GL2Encoder *ctx = (GL2Encoder *)self;
