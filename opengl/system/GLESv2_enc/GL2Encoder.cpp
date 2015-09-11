@@ -996,14 +996,24 @@ void GL2Encoder::s_glUseProgram(void *self, GLuint program)
     }
 }
 
-void GL2Encoder::getHostLocation(void *self, GLint location, GLint *hostLoc)
+void GL2Encoder::checkValidUniformParam(void *self, GLsizei count, GLboolean transpose)
 {
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLuint program = ctx->m_state->currentProgram();
     SET_ERROR_IF(!ctx->m_shared->isProgram(program), GL_INVALID_OPERATION);
+    SET_ERROR_IF((count < 0 || transpose == GL_TRUE), GL_INVALID_VALUE);
+}
+
+void GL2Encoder::getHostLocation(void *self, GLint location, GLint *hostLoc)
+{
+    GL2Encoder *ctx = (GL2Encoder*)self;
+    GLuint program = ctx->m_state->currentProgram();
+    if (location == -1)
+        return;
+    SET_ERROR_IF((location < 0), GL_INVALID_OPERATION);
     GLint curHostLoc = ctx->m_shared->locationWARAppToHost(program,location);
     SET_ERROR_IF((ctx->m_shared->getProgramUniformType(program,curHostLoc) == 0 &&
-            location!=-1), GL_INVALID_OPERATION);
+            curHostLoc!=-1), GL_INVALID_OPERATION);
     *hostLoc = curHostLoc;
 }
 
@@ -1012,6 +1022,7 @@ void GL2Encoder::s_glUniform1f(void *self , GLint location, GLfloat x)
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform1f_enc(self, hostLoc, x);
 }
@@ -1021,6 +1032,7 @@ void GL2Encoder::s_glUniform1fv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform1fv_enc(self, hostLoc, count, v);
 }
@@ -1032,6 +1044,7 @@ void GL2Encoder::s_glUniform1i(void *self , GLint location, GLint x)
     GLSharedGroupPtr shared = ctx->m_shared;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform1i_enc(self, hostLoc, x);
 
@@ -1050,6 +1063,7 @@ void GL2Encoder::s_glUniform1iv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform1iv_enc(self, hostLoc, count, v);
 }
@@ -1059,6 +1073,7 @@ void GL2Encoder::s_glUniform2f(void *self , GLint location, GLfloat x, GLfloat y
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform2f_enc(self, hostLoc, x, y);
 }
@@ -1068,6 +1083,7 @@ void GL2Encoder::s_glUniform2fv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform2fv_enc(self, hostLoc, count, v);
 }
@@ -1077,6 +1093,7 @@ void GL2Encoder::s_glUniform2i(void *self , GLint location, GLint x, GLint y)
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform2i_enc(self, hostLoc, x, y);
 }
@@ -1086,6 +1103,7 @@ void GL2Encoder::s_glUniform2iv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform2iv_enc(self, hostLoc, count, v);
 }
@@ -1095,6 +1113,7 @@ void GL2Encoder::s_glUniform3f(void *self , GLint location, GLfloat x, GLfloat y
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform3f_enc(self, hostLoc, x, y, z);
 }
@@ -1104,6 +1123,7 @@ void GL2Encoder::s_glUniform3fv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform3fv_enc(self, hostLoc, count, v);
 }
@@ -1113,6 +1133,7 @@ void GL2Encoder::s_glUniform3i(void *self , GLint location, GLint x, GLint y, GL
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform3i_enc(self, hostLoc, x, y, z);
 }
@@ -1122,6 +1143,7 @@ void GL2Encoder::s_glUniform3iv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform3iv_enc(self, hostLoc, count, v);
 }
@@ -1131,6 +1153,7 @@ void GL2Encoder::s_glUniform4f(void *self , GLint location, GLfloat x, GLfloat y
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform4f_enc(self, hostLoc, x, y, z, w);
 }
@@ -1140,6 +1163,7 @@ void GL2Encoder::s_glUniform4fv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform4fv_enc(self, hostLoc, count, v);
 }
@@ -1149,6 +1173,7 @@ void GL2Encoder::s_glUniform4i(void *self , GLint location, GLint x, GLint y, GL
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, 0, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform4i_enc(self, hostLoc, x, y, z, w);
 }
@@ -1158,6 +1183,7 @@ void GL2Encoder::s_glUniform4iv(void *self , GLint location, GLsizei count, cons
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, GL_FALSE);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniform4iv_enc(self, hostLoc, count, v);
 }
@@ -1167,6 +1193,7 @@ void GL2Encoder::s_glUniformMatrix2fv(void *self , GLint location, GLsizei count
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, transpose);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniformMatrix2fv_enc(self, hostLoc, count, transpose, value);
 }
@@ -1176,6 +1203,7 @@ void GL2Encoder::s_glUniformMatrix3fv(void *self , GLint location, GLsizei count
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, transpose);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniformMatrix3fv_enc(self, hostLoc, count, transpose, value);
 }
@@ -1185,6 +1213,7 @@ void GL2Encoder::s_glUniformMatrix4fv(void *self , GLint location, GLsizei count
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLint hostLoc;
 
+    ctx->checkValidUniformParam(self, count, transpose);
     ctx->getHostLocation(self, location, &hostLoc);
     ctx->m_glUniformMatrix4fv_enc(self, hostLoc, count, transpose, value);
 }
