@@ -26,6 +26,8 @@
 #include <hardware/fingerprint.h>
 #include <hardware/qemud.h>
 
+#include <poll.h>
+
 #define FINGERPRINT_LISTEN_SERVICE_NAME "fingerprintlisten"
 #define FINGERPRINT_FILENAME \
     "/data/system/users/0/fpdata/emulator_fingerprint_storage.bin"
@@ -446,7 +448,7 @@ static void send_enroll_notice(qemu_fingerprint_device_t* qdev, int fid) {
 }
 
 static worker_state_t getListenerState(qemu_fingerprint_device_t* dev) {
-    ALOGD("----------------> %s ----------------->", __FUNCTION__);
+    ALOGV("----------------> %s ----------------->", __FUNCTION__);
     worker_state_t state = STATE_IDLE;
 
     pthread_mutex_lock(&dev->lock);
@@ -473,14 +475,59 @@ static void* listenerFunction(void* data) {
     const char* cmd = "listen";
     if (qemud_channel_send(qdev->qchanfd, cmd, strlen(cmd)) < 0) {
         ALOGE("cannot write fingerprint 'listen' to host");
-        return NULL;
+        goto done_quiet;
     }
+
     int comm_errors = 0;
-    while (getListenerState(qdev) != STATE_EXIT) {
+    struct pollfd pfd = {
+        .fd = qdev->qchanfd,
+        .events = POLLIN,
+    };
+    while (1) {
         int size = 0;
         int fid = 0;
         char buffer[MAX_COMM_CHARS] = {0};
-        // will block until a new event happens
+        bool disconnected = false;
+        while (1) {
+            if (getListenerState(qdev) == STATE_EXIT) {
+                ALOGD("Received request to exit listener thread");
+                goto done;
+            }
+
+            // Reset revents before poll() (just to be safe)
+            pfd.revents = 0;
+
+            // Poll qemud channel for 5 seconds
+            // TODO: Eliminate the timeout so that polling can be interrupted
+            // instantly. One possible solution is to follow the example of
+            // android::Looper ($AOSP/system/core/include/utils/Looper.h and
+            // $AOSP/system/core/libutils/Looper.cpp), which makes use of an
+            // additional file descriptor ("wake event fd").
+            int nfds = poll(&pfd, 1, 5000);
+            if (nfds < 0) {
+                ALOGE("Could not poll qemud channel: %s", strerror(errno));
+                goto done;
+            }
+
+            if (!nfds) {
+                // poll() timed out - try again
+                continue;
+            }
+
+            // assert(nfds == 1)
+            if (pfd.revents & POLLIN) {
+                // Input data being available doesn't rule out a disconnection
+                disconnected = pfd.revents & (POLLERR | POLLHUP);
+                break;  // Exit inner while loop
+            } else {
+                // Some event(s) other than "input data available" occurred,
+                // i.e. POLLERR or POLLHUP, indicating a disconnection
+                ALOGW("Lost connection to qemud channel");
+                goto done;
+            }
+        }
+
+        // Shouldn't block since we were just notified of a POLLIN event
         if ((size = qemud_channel_recv(qdev->qchanfd, buffer,
                                        sizeof(buffer) - 1)) > 0) {
             buffer[size] = '\0';
@@ -511,6 +558,11 @@ static void* listenerFunction(void* data) {
             } else {
                 ALOGE("Invalid command '%s' to fingerprint listener", buffer);
             }
+
+            if (disconnected) {
+                ALOGW("Connection to qemud channel has been lost");
+                break;
+            }
         } else {
             ALOGE("fingerprint listener receive failure");
             if (comm_errors > MAX_COMM_ERRORS)
@@ -518,7 +570,10 @@ static void* listenerFunction(void* data) {
         }
     }
 
+done:
     ALOGD("Listener exit with %d receive errors", comm_errors);
+done_quiet:
+    close(qdev->qchanfd);
     return NULL;
 }
 
@@ -531,8 +586,7 @@ static int fingerprint_close(hw_device_t* device) {
 
     qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)device;
     pthread_mutex_lock(&qdev->lock);
-    if (qdev->qchanfd != 0)
-        close(qdev->qchanfd);  // unblock listener
+    // Ask listener thread to exit
     qdev->listener.state = STATE_EXIT;
     pthread_mutex_unlock(&qdev->lock);
 
