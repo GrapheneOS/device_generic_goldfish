@@ -30,14 +30,6 @@ on boot
     setprop status.battery.level_raw  50
     setprop status.battery.level_scale 9
 
-# Disable GPU support
-    setprop ro.kernel.qemu 1
-    setprop ro.kernel.qemu.gles 0
-    symlink /system/lib64/hw/gralloc.default.aosp.so /system/lib64/hw/gralloc.default.so
-
-# disable RenderScript
-    setprop config.disable_renderscript 1
-
 # disable some daemons the emulator doesn't want
     stop dund
     stop akmd
@@ -58,6 +50,18 @@ service dhcpcd_eth0 /system/bin/dhcpcd -ABDKL
     setprop ro.com.google.locationfeatures 1
 
 service goldfish-setup /system/etc/init.goldfish.sh
+    user root
+    group root
+    oneshot
+
+# The qemu-props program is used to set various system
+# properties on boot. It must be run early during the boot
+# process to avoid race conditions with other daemons that
+# might read them (e.g. surface flinger), so define it in
+# class 'core'
+#
+service qemu-props /system/bin/qemu-props
+    class core
     user root
     group root
     oneshot
