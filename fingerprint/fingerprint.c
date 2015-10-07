@@ -93,6 +93,9 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
     // Save fingerprints to file
     FILE* fp = fopen(FINGERPRINT_FILENAME, "r+");  // write but don't truncate
     if (fp == NULL) {
+        fp = fopen(FINGERPRINT_FILENAME, "w");
+    }
+    if (fp == NULL) {
         ALOGE("Could not open fingerprints storage at %s; "
               "fingerprints won't be saved",
               FINGERPRINT_FILENAME);
@@ -128,7 +131,7 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
 
 static void loadFingerprints(worker_thread_t* listener) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
-    FILE* fp = fopen(FINGERPRINT_FILENAME, "a+");  // so we can create if empty
+    FILE* fp = fopen(FINGERPRINT_FILENAME, "r");
     if (fp == NULL) {
         ALOGE("Could not load fingerprints from storage at %s; "
               "it has not yet been created.",
