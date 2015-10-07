@@ -432,6 +432,17 @@ static int set_notify_callback(struct fingerprint_device *device,
     return 0;
 }
 
+static bool is_valid_fid(qemu_fingerprint_device_t* qdev, int fid) {
+    int idx = 0;
+    if (0 == fid) { return false; }
+    for (idx = 0; idx < MAX_NUM_FINGERS; idx++) {
+        if (qdev->listener.authenid[idx] == fid) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void send_scan_notice(qemu_fingerprint_device_t* qdev, int fid) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
 
@@ -443,7 +454,7 @@ static void send_scan_notice(qemu_fingerprint_device_t* qdev, int fid) {
     // authenticated message
     fingerprint_msg_t auth_msg = {0};
     auth_msg.type = FINGERPRINT_AUTHENTICATED;
-    auth_msg.data.authenticated.finger.fid = fid;
+    auth_msg.data.authenticated.finger.fid = is_valid_fid(qdev, fid) ? fid : 0;
     auth_msg.data.authenticated.finger.gid = 0;  // unused
     auth_msg.data.authenticated.hat.version = HW_AUTH_TOKEN_VERSION;
     auth_msg.data.authenticated.hat.authenticator_type =
