@@ -1025,7 +1025,7 @@ struct private_module_t HAL_MODULE_INFO_SYM = {
 
 /* This function is called once to detect whether the emulator supports
  * GPU emulation (this is done by looking at the qemu.gles kernel
- * parameter, which must be > 0 if this is the case).
+ * parameter, which must be == 1 if this is the case).
  *
  * If not, then load gralloc.default instead as a fallback.
  */
@@ -1035,11 +1035,14 @@ fallback_init(void)
     char  prop[PROPERTY_VALUE_MAX];
     void* module;
 
+    // qemu.gles=0 -> no GLES 2.x support (only 1.x through software).
+    // qemu.gles=1 -> host-side GPU emulation through EmuGL
+    // qemu.gles=2 -> guest-side GPU emulation.
     property_get("ro.kernel.qemu.gles", prop, "0");
-    if (atoi(prop) > 0) {
+    if (atoi(prop) == 1) {
         return;
     }
-    ALOGD("Emulator without GPU emulation detected.");
+    ALOGD("Emulator without host-side GPU emulation detected.");
 #if __LP64__
     module = dlopen("/system/lib64/hw/gralloc.default.so", RTLD_LAZY|RTLD_LOCAL);
 #else
