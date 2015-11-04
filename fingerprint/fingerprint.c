@@ -70,6 +70,7 @@ typedef struct worker_thread_t {
     worker_state_t state;
     uint64_t secureid[MAX_NUM_FINGERS];
     uint64_t authenid[MAX_NUM_FINGERS];
+    uint64_t fingerid[MAX_NUM_FINGERS];
 } worker_thread_t;
 
 typedef struct qemu_fingerprint_device_t {
@@ -113,6 +114,7 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
         return;
     }
     int ns = fwrite(&listener->secureid[idx], sizeof(uint64_t), 1, fp);
+
     if (fseek(fp, (MAX_NUM_FINGERS + idx) * sizeof(uint64_t), SEEK_SET) < 0) {
         ALOGE("Failed while seeking for fingerprint[%d] in emulator storage",
               idx);
@@ -120,7 +122,14 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
         return;
     }
     int na = fwrite(&listener->authenid[idx], sizeof(uint64_t), 1, fp);
-    if (ns != 1 || na != 1)
+    if (fseek(fp, (2*MAX_NUM_FINGERS + idx) * sizeof(uint64_t), SEEK_SET) < 0) {
+        ALOGE("Failed while seeking for fingerprint[%d] in emulator storage",
+              idx);
+        fclose(fp);
+        return;
+    }
+    int nf = fwrite(&listener->fingerid[idx], sizeof(uint64_t), 1, fp);
+    if (ns != 1 || na != 1 || ns !=1)
         ALOGW("Corrupt emulator fingerprints storage; could not save "
               "fingerprints");
 
@@ -144,7 +153,9 @@ static void loadFingerprints(worker_thread_t* listener) {
                    fp);
     int na = fread(listener->authenid, MAX_NUM_FINGERS * sizeof(uint64_t), 1,
                    fp);
-    if (ns != 1 || na != 1)
+    int nf = fread(listener->fingerid, MAX_NUM_FINGERS * sizeof(uint64_t), 1,
+                   fp);
+    if (ns != 1 || na != 1 || nf != 1)
         ALOGW("Corrupt emulator fingerprints storage (read %d+%db)", ns, na);
 
     int i = 0;
@@ -325,7 +336,7 @@ static int fingerprint_enumerate(struct fingerprint_device *device) {
     unsigned int i = 0;
     for (i = 0; i < MAX_NUM_FINGERS; i++) {
         if (qdev->listener.secureid[i] != 0 ||
-            qdev->listener.authenid[i] != 0) {
+            qdev->listener.fingerid[i] != 0) {
             ALOGD("ENUM: Fingerprint [%d] = 0x%" PRIx64 ",%" PRIx64, i,
                   qdev->listener.secureid[i], qdev->listener.authenid[i]);
         }
@@ -357,11 +368,12 @@ static int fingerprint_remove(struct fingerprint_device *device,
             pthread_mutex_lock(&qdev->lock);
             listIsEmpty = true;  // Haven't seen a valid entry yet
             for (idx = 0; idx < MAX_NUM_FINGERS; idx++) {
-                uint32_t theFid = qdev->listener.authenid[idx];
+                uint32_t theFid = qdev->listener.fingerid[idx];
                 if (theFid != 0) {
                     // Delete this entry
                     qdev->listener.secureid[idx] = 0;
                     qdev->listener.authenid[idx] = 0;
+                    qdev->listener.fingerid[idx] = 0;
                     saveFingerprint(&qdev->listener, idx);
 
                     // Send a notification that we deleted this one
@@ -385,7 +397,8 @@ static int fingerprint_remove(struct fingerprint_device *device,
         // Look for this finger ID in our table.
         pthread_mutex_lock(&qdev->lock);
         for (idx = 0; idx < MAX_NUM_FINGERS; idx++) {
-            if (qdev->listener.authenid[idx] == fid &&
+            if (qdev->listener.fingerid[idx] == fid &&
+                qdev->listener.authenid[idx] != 0 &&
                 qdev->listener.secureid[idx] != 0) {
                 // Found it!
                 break;
@@ -400,6 +413,7 @@ static int fingerprint_remove(struct fingerprint_device *device,
 
         qdev->listener.secureid[idx] = 0;
         qdev->listener.authenid[idx] = 0;
+        qdev->listener.fingerid[idx] = 0;
         saveFingerprint(&qdev->listener, idx);
 
         qdev->listener.state = STATE_IDLE;
@@ -436,7 +450,8 @@ static bool is_valid_fid(qemu_fingerprint_device_t* qdev, uint64_t fid) {
     int idx = 0;
     if (0 == fid) { return false; }
     for (idx = 0; idx < MAX_NUM_FINGERS; idx++) {
-        if (qdev->listener.authenid[idx] == fid) {
+        if (qdev->listener.fingerid[idx] == fid) {
+            qdev->authenticator_id = qdev->listener.authenid[idx];
             return true;
         }
     }
@@ -487,12 +502,14 @@ static void send_enroll_notice(qemu_fingerprint_device_t* qdev, int fid) {
         return;
     }
 
+    qdev->authenticator_id = get_64bit_rand();
     // Find an available entry in the table
     pthread_mutex_lock(&qdev->lock);
     int idx = 0;
     for (idx = 0; idx < MAX_NUM_FINGERS; idx++) {
         if (qdev->listener.secureid[idx] == 0 ||
-            qdev->listener.authenid[idx] == 0) {
+            qdev->listener.authenid[idx] == 0 ||
+            qdev->listener.fingerid[idx] == 0) {
             // This entry is available
             break;
         }
@@ -505,7 +522,8 @@ static void send_enroll_notice(qemu_fingerprint_device_t* qdev, int fid) {
     }
 
     qdev->listener.secureid[idx] = qdev->secure_user_id;
-    qdev->listener.authenid[idx] = fid;
+    qdev->listener.authenid[idx] = qdev->authenticator_id;
+    qdev->listener.fingerid[idx] = fid;
     saveFingerprint(&qdev->listener, idx);
 
     qdev->listener.state = STATE_SCAN;
