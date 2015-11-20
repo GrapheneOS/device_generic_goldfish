@@ -95,6 +95,13 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
     FILE* fp = fopen(FINGERPRINT_FILENAME, "r+");  // write but don't truncate
     if (fp == NULL) {
         fp = fopen(FINGERPRINT_FILENAME, "w");
+        if (fp) {
+            uint64_t zero = 0;
+            int i = 0;
+            for (i = 0; i < 3*MAX_NUM_FINGERS; ++i) {
+                fwrite(&zero, sizeof(uint64_t), 1, fp);
+            }
+        }
     }
     if (fp == NULL) {
         ALOGE("Could not open fingerprints storage at %s; "
@@ -156,12 +163,12 @@ static void loadFingerprints(worker_thread_t* listener) {
     int nf = fread(listener->fingerid, MAX_NUM_FINGERS * sizeof(uint64_t), 1,
                    fp);
     if (ns != 1 || na != 1 || nf != 1)
-        ALOGW("Corrupt emulator fingerprints storage (read %d+%db)", ns, na);
+        ALOGW("Corrupt emulator fingerprints storage (read %d+%db+%db)", ns, na, nf);
 
     int i = 0;
     for (i = 0; i < MAX_NUM_FINGERS; i++)
-        ALOGD("Read fingerprint %d (0x%" PRIx64 ",0x%" PRIx64 ")", i,
-              listener->secureid[i], listener->authenid[i]);
+        ALOGD("Read fingerprint %d (0x%" PRIx64 ",0x%" PRIx64 ",0x%" PRIx64 ")", i,
+              listener->secureid[i], listener->authenid[i], listener->fingerid[i]);
 
     fclose(fp);
 
