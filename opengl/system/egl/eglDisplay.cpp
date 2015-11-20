@@ -25,15 +25,9 @@ static const char systemEGLVendor[] = "Google Android emulator";
 //  NOTE that each extension name should be suffixed with space
 static const char systemStaticEGLExtensions[] =
             "EGL_ANDROID_image_native_buffer "
-            "EGL_KHR_fence_sync ";
-
-// list of extensions supported by this EGL implementation only if supported
-// on the host implementation.
-//  NOTE that each extension name should be suffixed with space
-static const char systemDynamicEGLExtensions[] =
+            "EGL_KHR_fence_sync "
             "EGL_KHR_image_base "
             "EGL_KHR_gl_texture_2d_image ";
-
 
 static void *s_gles_lib = NULL;
 static void *s_gles2_lib = NULL;
@@ -308,28 +302,6 @@ static char *buildExtensionString()
         // no extensions on host - only static extension list supported
         return strdup(systemStaticEGLExtensions);
     }
-
-    //
-    // Filter host extension list to include only extensions
-    // we can support (in the systemDynamicEGLExtensions list)
-    //
-    char *ext = (char *)hostExt;
-    char *c = ext;
-    char *insert = ext;
-    while(*c != '\0') {
-        if (*c == ' ') {
-            int len = c - ext;
-            if (findExtInList(ext, len, systemDynamicEGLExtensions)) {
-                if (ext != insert) {
-                    memcpy(insert, ext, len+1); // including space
-                }
-                insert += (len + 1);
-            }
-            ext = c + 1;
-        }
-        c++;
-    }
-    *insert = '\0';
 
     int n = strlen(hostExt);
     if (n > 0) {

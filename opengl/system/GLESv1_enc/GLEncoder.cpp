@@ -26,7 +26,7 @@
 static GLubyte *gVendorString= (GLubyte *) "Android";
 static GLubyte *gRendererString= (GLubyte *) "Android HW-GLES 1.0";
 static GLubyte *gVersionString= (GLubyte *) "OpenGL ES-CM 1.0";
-static GLubyte *gExtensionsString= (GLubyte *) ""; // no extensions at this point;
+static GLubyte *gExtensionsString= (GLubyte *) "GL_OES_EGL_image_external ";
 
 #define SET_ERROR_IF(condition,err) if((condition)) {                            \
         ALOGE("%s:%s:%d GL error 0x%x\n", __FILE__, __FUNCTION__, __LINE__, err); \
