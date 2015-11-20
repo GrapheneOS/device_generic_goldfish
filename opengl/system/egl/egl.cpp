@@ -24,6 +24,7 @@
 #include "GLSharedGroup.h"
 #include "eglContext.h"
 #include "ClientAPIExts.h"
+#include "EGLImage.h"
 
 #include "GLEncoder.h"
 #ifdef WITH_GLES2
@@ -1187,52 +1188,90 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
     (void)attrib_list;
 
     VALIDATE_DISPLAY_INIT(dpy, EGL_NO_IMAGE_KHR);
-    if (ctx != EGL_NO_CONTEXT) {
-        setErrorReturn(EGL_BAD_CONTEXT, EGL_NO_IMAGE_KHR);
-    }
-    if (target != EGL_NATIVE_BUFFER_ANDROID) {
-        setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
-    }
 
-    android_native_buffer_t* native_buffer = (android_native_buffer_t*)buffer;
+    if (target == EGL_NATIVE_BUFFER_ANDROID) {
+        if (ctx != EGL_NO_CONTEXT) {
+            setErrorReturn(EGL_BAD_CONTEXT, EGL_NO_IMAGE_KHR);
+        }
 
-    if (native_buffer->common.magic != ANDROID_NATIVE_BUFFER_MAGIC)
-        setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
+        android_native_buffer_t* native_buffer = (android_native_buffer_t*)buffer;
 
-    if (native_buffer->common.version != sizeof(android_native_buffer_t))
-        setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
-
-    cb_handle_t *cb = (cb_handle_t *)(native_buffer->handle);
-
-    switch (cb->format) {
-        case HAL_PIXEL_FORMAT_RGBA_8888:
-        case HAL_PIXEL_FORMAT_RGBX_8888:
-        case HAL_PIXEL_FORMAT_RGB_888:
-        case HAL_PIXEL_FORMAT_RGB_565:
-        case HAL_PIXEL_FORMAT_BGRA_8888:
-            break;
-        default:
+        if (native_buffer->common.magic != ANDROID_NATIVE_BUFFER_MAGIC)
             setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
+
+        if (native_buffer->common.version != sizeof(android_native_buffer_t))
+            setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
+
+        cb_handle_t *cb = (cb_handle_t *)(native_buffer->handle);
+
+        switch (cb->format) {
+            case HAL_PIXEL_FORMAT_RGBA_8888:
+            case HAL_PIXEL_FORMAT_RGBX_8888:
+            case HAL_PIXEL_FORMAT_RGB_888:
+            case HAL_PIXEL_FORMAT_RGB_565:
+            case HAL_PIXEL_FORMAT_BGRA_8888:
+                break;
+            default:
+                setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
+        }
+
+        native_buffer->common.incRef(&native_buffer->common);
+
+        EGLImage_t *image = new EGLImage_t();
+        image->dpy = dpy;
+        image->target = target;
+        image->native_buffer = native_buffer;
+
+        return (EGLImageKHR)image;
+    }
+    else if (target == EGL_GL_TEXTURE_2D_KHR) {
+        setErrorReturn(EGL_BAD_CONTEXT, EGL_NO_IMAGE_KHR);   // TODO
+
+        VALIDATE_CONTEXT_RETURN(ctx, EGL_NO_IMAGE_KHR);
+
+        EGLImage_t *image = new EGLImage_t();
+        image->dpy = dpy;
+        image->target = target;
+        image->texture_2d = 0;   // TODO
+
+        return (EGLImageKHR)image;
     }
 
-    native_buffer->common.incRef(&native_buffer->common);
-    return (EGLImageKHR)native_buffer;
+    setErrorReturn(EGL_BAD_PARAMETER, EGL_NO_IMAGE_KHR);
 }
 
 EGLBoolean eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR img)
 {
     VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
-    android_native_buffer_t* native_buffer = (android_native_buffer_t*)img;
+    EGLImage_t *image = (EGLImage_t*)img;
 
-    if (native_buffer->common.magic != ANDROID_NATIVE_BUFFER_MAGIC)
-        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+    if (!image || image->dpy != dpy) {
+        RETURN_ERROR(EGL_FALSE, EGL_BAD_PARAMETER);
+    }
 
-    if (native_buffer->common.version != sizeof(android_native_buffer_t))
-        setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+    if (image->target == EGL_NATIVE_BUFFER_ANDROID) {
+        android_native_buffer_t* native_buffer = image->native_buffer;
 
-    native_buffer->common.decRef(&native_buffer->common);
+        if (native_buffer->common.magic != ANDROID_NATIVE_BUFFER_MAGIC)
+            setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
 
-    return EGL_TRUE;
+        if (native_buffer->common.version != sizeof(android_native_buffer_t))
+            setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
+
+        native_buffer->common.decRef(&native_buffer->common);
+        delete image;
+
+        return EGL_TRUE;
+    }
+    else if (image->target == EGL_GL_TEXTURE_2D_KHR) {
+        // TODO
+
+        delete image;
+
+        return EGL_TRUE;
+    }
+
+    setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
 }
 
 #define FENCE_SYNC_HANDLE (EGLSyncKHR)0xFE4CE

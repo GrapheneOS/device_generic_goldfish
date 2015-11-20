@@ -22,6 +22,7 @@
 #include "ErrorLog.h"
 #include "gralloc_cb.h"
 #include "ThreadInfo.h"
+#include "EGLImage.h"
 
 //XXX: fix this macro to get the context from fast tls path
 #define GET_CONTEXT GL2Encoder * ctx = getEGLThreadInfo()->hostConn->gl2Encoder();
@@ -48,31 +49,41 @@ static EGLClient_glesInterface * s_gl = NULL;
     }
 
 //GL extensions
-void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES image)
+void glEGLImageTargetTexture2DOES(void * self, GLenum target, GLeglImageOES img)
 {
     (void)self;
     (void)target;
 
-    DBG("glEGLImageTargetTexture2DOES v2 target=%#x img=%p\n", target, image);
-    //TODO: check error - we don't have a way to set gl error
-    android_native_buffer_t* native_buffer = (android_native_buffer_t*)image;
+    DBG("glEGLImageTargetTexture2DOES v2 target=%#x img=%p\n", target, img);
 
-    if (native_buffer->common.magic != ANDROID_NATIVE_BUFFER_MAGIC) {
+    EGLImage_t *image = (EGLImage_t*)img;
+
+    if (image->target == EGL_NATIVE_BUFFER_ANDROID) {
+        //TODO: check error - we don't have a way to set gl error
+        android_native_buffer_t* native_buffer = image->native_buffer;
+
+        if (native_buffer->common.magic != ANDROID_NATIVE_BUFFER_MAGIC) {
+            return;
+        }
+
+        if (native_buffer->common.version != sizeof(android_native_buffer_t)) {
+            return;
+        }
+
+        GET_CONTEXT;
+        DEFINE_AND_VALIDATE_HOST_CONNECTION();
+
+        ctx->override2DTextureTarget(target);
+        rcEnc->rcBindTexture(rcEnc, ((cb_handle_t *)(native_buffer->handle))->hostHandle);
+        ctx->restore2DTextureTarget();
+
         return;
     }
+    else if (image->target == EGL_GL_TEXTURE_2D_KHR) {
+        // TODO
 
-    if (native_buffer->common.version != sizeof(android_native_buffer_t)) {
         return;
     }
-
-    GET_CONTEXT;
-    DEFINE_AND_VALIDATE_HOST_CONNECTION();
-
-    ctx->override2DTextureTarget(target);
-    rcEnc->rcBindTexture(rcEnc, ((cb_handle_t *)(native_buffer->handle))->hostHandle);
-    ctx->restore2DTextureTarget();
-
-    return;
 }
 
 void glEGLImageTargetRenderbufferStorageOES(void *self, GLenum target, GLeglImageOES image)
