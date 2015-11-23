@@ -32,6 +32,8 @@ extern "C" {
 	void rcReadColorBuffer(uint32_t colorbuffer, GLint x, GLint y, GLint width, GLint height, GLenum format, GLenum type, void* pixels);
 	int rcUpdateColorBuffer(uint32_t colorbuffer, GLint x, GLint y, GLint width, GLint height, GLenum format, GLenum type, void* pixels);
 	int rcOpenColorBuffer2(uint32_t colorbuffer);
+	uint32_t rcCreateClientImage(uint32_t context, EGLenum target, GLuint buffer);
+	int rcDestroyClientImage(uint32_t image);
 };
 
 #endif
@@ -195,5 +197,17 @@ int rcOpenColorBuffer2(uint32_t colorbuffer)
 {
 	GET_CONTEXT;
 	return ctx->rcOpenColorBuffer2(ctx, colorbuffer);
+}
+
+uint32_t rcCreateClientImage(uint32_t context, EGLenum target, GLuint buffer)
+{
+	GET_CONTEXT;
+	return ctx->rcCreateClientImage(ctx, context, target, buffer);
+}
+
+int rcDestroyClientImage(uint32_t image)
+{
+	GET_CONTEXT;
+	return ctx->rcDestroyClientImage(ctx, image);
 }
 

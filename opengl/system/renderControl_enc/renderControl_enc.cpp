@@ -526,6 +526,46 @@ int rcOpenColorBuffer2_enc(void *self , uint32_t colorbuffer)
 	return retval;
 }
 
+uint32_t rcCreateClientImage_enc(void *self , uint32_t context, EGLenum target, GLuint buffer)
+{
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+
+	 unsigned char *ptr;
+	 const size_t packetSize = 8 + 4 + 4 + 4;
+	ptr = stream->alloc(packetSize);
+	int tmp = OP_rcCreateClientImage;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &packetSize, 4);  ptr += 4;
+
+		memcpy(ptr, &context, 4); ptr += 4;
+		memcpy(ptr, &target, 4); ptr += 4;
+		memcpy(ptr, &buffer, 4); ptr += 4;
+
+	uint32_t retval;
+	stream->readback(&retval, 4);
+	return retval;
+}
+
+int rcDestroyClientImage_enc(void *self , uint32_t image)
+{
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+
+	 unsigned char *ptr;
+	 const size_t packetSize = 8 + 4;
+	ptr = stream->alloc(packetSize);
+	int tmp = OP_rcDestroyClientImage;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &packetSize, 4);  ptr += 4;
+
+		memcpy(ptr, &image, 4); ptr += 4;
+
+	int retval;
+	stream->readback(&retval, 4);
+	return retval;
+}
+
 }  // namespace
 
 renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *stream)
@@ -558,5 +598,7 @@ renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *strea
 	this->rcReadColorBuffer = &rcReadColorBuffer_enc;
 	this->rcUpdateColorBuffer = &rcUpdateColorBuffer_enc;
 	this->rcOpenColorBuffer2 = &rcOpenColorBuffer2_enc;
+	this->rcCreateClientImage = &rcCreateClientImage_enc;
+	this->rcDestroyClientImage = &rcDestroyClientImage_enc;
 }
 

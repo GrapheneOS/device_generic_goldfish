@@ -1225,14 +1225,18 @@ EGLImageKHR eglCreateImageKHR(EGLDisplay dpy, EGLContext ctx, EGLenum target, EG
         return (EGLImageKHR)image;
     }
     else if (target == EGL_GL_TEXTURE_2D_KHR) {
-        setErrorReturn(EGL_BAD_CONTEXT, EGL_NO_IMAGE_KHR);   // TODO
-
         VALIDATE_CONTEXT_RETURN(ctx, EGL_NO_IMAGE_KHR);
 
+        EGLContext_t *context = static_cast<EGLContext_t*>(ctx);
+        DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_NO_IMAGE_KHR);
+
+        uint32_t ctxHandle = (context) ? context->rcContext : 0;
+        GLuint texture = (GLuint)reinterpret_cast<uintptr_t>(buffer);
+        uint32_t img = rcEnc->rcCreateClientImage(rcEnc, ctxHandle, target, texture);
         EGLImage_t *image = new EGLImage_t();
         image->dpy = dpy;
         image->target = target;
-        image->texture_2d = 0;   // TODO
+        image->host_egl_image = img;
 
         return (EGLImageKHR)image;
     }
@@ -1264,11 +1268,10 @@ EGLBoolean eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR img)
         return EGL_TRUE;
     }
     else if (image->target == EGL_GL_TEXTURE_2D_KHR) {
-        // TODO
-
+        uint32_t host_egl_image = image->host_egl_image;
         delete image;
-
-        return EGL_TRUE;
+        DEFINE_AND_VALIDATE_HOST_CONNECTION(EGL_FALSE);
+        return rcEnc->rcDestroyClientImage(rcEnc, host_egl_image);
     }
 
     setErrorReturn(EGL_BAD_PARAMETER, EGL_FALSE);
