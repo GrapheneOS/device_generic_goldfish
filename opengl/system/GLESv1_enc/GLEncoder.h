@@ -146,5 +146,9 @@ private:
     static void s_glTexParameterx(void* self, GLenum target, GLenum pname, GLfixed param);
     static void s_glTexParameteriv(void* self, GLenum target, GLenum pname, const GLint* params);
     static void s_glTexParameterxv(void* self, GLenum target, GLenum pname, const GLfixed* params);
+
+public:
+    glEGLImageTargetTexture2DOES_client_proc_t m_glEGLImageTargetTexture2DOES_enc;
+
 };
 #endif
