@@ -314,27 +314,24 @@ static int fingerprint_cancel(struct fingerprint_device *device) {
     return 0;
 }
 
-static int fingerprint_enumerate(struct fingerprint_device *device,
-        fingerprint_finger_id_t *results, uint32_t *max_size) {
+static int fingerprint_enumerate(struct fingerprint_device *device) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
-    if (device == NULL || results == NULL || max_size == NULL) {
+    if (device == NULL) {
         ALOGE("Cannot enumerate saved fingerprints with uninitialized params");
         return -1;
     }
 
     qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)device;
     unsigned int i = 0;
-    int num = 0;
     for (i = 0; i < MAX_NUM_FINGERS; i++) {
         if (qdev->listener.secureid[i] != 0 ||
             qdev->listener.authenid[i] != 0) {
             ALOGD("ENUM: Fingerprint [%d] = 0x%" PRIx64 ",%" PRIx64, i,
                   qdev->listener.secureid[i], qdev->listener.authenid[i]);
-            num++;
         }
     }
 
-    return num;
+    return 0;
 }
 
 static int fingerprint_remove(struct fingerprint_device *device,
@@ -717,7 +714,7 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
     loadFingerprints(&qdev->listener);
 
     qdev->device.common.tag = HARDWARE_DEVICE_TAG;
-    qdev->device.common.version = HARDWARE_MODULE_API_VERSION(2, 0);
+    qdev->device.common.version = HARDWARE_MODULE_API_VERSION(2, 1);
     qdev->device.common.module = (struct hw_module_t*)module;
     qdev->device.common.close = fingerprint_close;
 
@@ -752,7 +749,7 @@ static struct hw_module_methods_t fingerprint_module_methods = {
 fingerprint_module_t HAL_MODULE_INFO_SYM = {
     .common = {
         .tag                = HARDWARE_MODULE_TAG,
-        .module_api_version = FINGERPRINT_MODULE_API_VERSION_2_0,
+        .module_api_version = FINGERPRINT_MODULE_API_VERSION_2_1,
         .hal_api_version    = HARDWARE_HAL_API_VERSION,
         .id                 = FINGERPRINT_HARDWARE_MODULE_ID,
         .name               = "Emulator Fingerprint HAL",
