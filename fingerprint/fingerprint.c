@@ -188,7 +188,7 @@ static int fingerprint_set_active_group(struct fingerprint_device __unused *devi
     // as the primary group id for the user.  This code should create a tuple (groupId, fingerId)
     // that represents a single fingerprint entity in the database.  For now we just generate
     // globally unique ids.
-    ALOGW("Setting active finger group not implemented");
+    ALOGW("Setting active finger group not implemented, path: %s, gid: %d", path, gid);
     return 0;
 }
 
@@ -301,7 +301,7 @@ static int fingerprint_cancel(struct fingerprint_device *device) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
     qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)device;
 
-    fingerprint_msg_t msg = {0};
+    fingerprint_msg_t msg = {0, {0}};
     msg.type = FINGERPRINT_ERROR;
     msg.data.error = FINGERPRINT_ERROR_CANCELED;
 
@@ -337,7 +337,7 @@ static int fingerprint_enumerate(struct fingerprint_device *device) {
 static int fingerprint_remove(struct fingerprint_device *device,
         uint32_t __unused gid, uint32_t fid) {
     int idx = 0;
-    fingerprint_msg_t msg = {0};
+    fingerprint_msg_t msg = {0, {0}};
     ALOGD("----------------> %s -----------------> fid %d", __FUNCTION__, fid);
     if (device == NULL) {
         ALOGE("Can't remove fingerprint (gid=%d, fid=%d); "
@@ -432,7 +432,7 @@ static int set_notify_callback(struct fingerprint_device *device,
     return 0;
 }
 
-static bool is_valid_fid(qemu_fingerprint_device_t* qdev, int fid) {
+static bool is_valid_fid(qemu_fingerprint_device_t* qdev, uint64_t fid) {
     int idx = 0;
     if (0 == fid) { return false; }
     for (idx = 0; idx < MAX_NUM_FINGERS; idx++) {
@@ -447,12 +447,12 @@ static void send_scan_notice(qemu_fingerprint_device_t* qdev, int fid) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
 
     // acquired message
-    fingerprint_msg_t acqu_msg = {0};
+    fingerprint_msg_t acqu_msg = {0, {0}};
     acqu_msg.type = FINGERPRINT_ACQUIRED;
     acqu_msg.data.acquired.acquired_info = FINGERPRINT_ACQUIRED_GOOD;
 
     // authenticated message
-    fingerprint_msg_t auth_msg = {0};
+    fingerprint_msg_t auth_msg = {0, {0}};
     auth_msg.type = FINGERPRINT_AUTHENTICATED;
     auth_msg.data.authenticated.finger.fid = is_valid_fid(qdev, fid) ? fid : 0;
     auth_msg.data.authenticated.finger.gid = 0;  // unused
@@ -512,7 +512,7 @@ static void send_enroll_notice(qemu_fingerprint_device_t* qdev, int fid) {
     pthread_mutex_unlock(&qdev->lock);
 
     // LOCKED notification?
-    fingerprint_msg_t msg = {0};
+    fingerprint_msg_t msg = {0, {0}};
     msg.type = FINGERPRINT_TEMPLATE_ENROLLING;
     msg.data.enroll.finger.fid = fid;
     msg.data.enroll.samples_remaining = 0;
