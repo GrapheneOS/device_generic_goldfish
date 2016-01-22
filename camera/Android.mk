@@ -35,7 +35,7 @@ LOCAL_SHARED_LIBRARIES += \
 	libjpeg \
 	libcamera_metadata
 
-LOCAL_C_INCLUDES += external/jpeg \
+LOCAL_C_INCLUDES += \
 	frameworks/native/include/media/hardware \
 	$(LOCAL_PATH)/../opengl/system/OpenglSystemCommon \
 	$(call include-path-for, camera)
@@ -88,7 +88,7 @@ LOCAL_SHARED_LIBRARIES:= \
     libskia \
     libandroid_runtime
 
-LOCAL_C_INCLUDES += external/jpeg \
+LOCAL_C_INCLUDES += external/libjpeg-turbo \
                     external/skia/include/core/ \
                     frameworks/base/core/jni/android/graphics \
                     frameworks/native/include
