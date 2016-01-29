@@ -914,6 +914,11 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
         attrib_list+=2;
     }
 
+    // Currently only support GLES1 and 2
+    if (version != 1 && version != 2) {
+        setErrorReturn(EGL_BAD_CONFIG, EGL_NO_CONTEXT);
+    }
+
     uint32_t rcShareCtx = 0;
     EGLContext_t * shareCtx = NULL;
     if (share_context) {
