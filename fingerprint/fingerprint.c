@@ -71,6 +71,7 @@ typedef struct worker_thread_t {
     uint64_t secureid[MAX_NUM_FINGERS];
     uint64_t authenid[MAX_NUM_FINGERS];
     uint64_t fingerid[MAX_NUM_FINGERS];
+    char filename[PATH_MAX];
 } worker_thread_t;
 
 typedef struct qemu_fingerprint_device_t {
@@ -92,9 +93,9 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
     ALOGD("----------------> %s -----------------> idx %d", __FUNCTION__, idx);
 
     // Save fingerprints to file
-    FILE* fp = fopen(FINGERPRINT_FILENAME, "r+");  // write but don't truncate
+    FILE* fp = fopen(listener->filename, "r+");  // write but don't truncate
     if (fp == NULL) {
-        fp = fopen(FINGERPRINT_FILENAME, "w");
+        fp = fopen(listener->filename, "w");
         if (fp) {
             uint64_t zero = 0;
             int i = 0;
@@ -106,7 +107,7 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
     if (fp == NULL) {
         ALOGE("Could not open fingerprints storage at %s; "
               "fingerprints won't be saved",
-              FINGERPRINT_FILENAME);
+              listener->filename);
         perror("Failed to open file");
         return;
     }
@@ -147,11 +148,11 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
 
 static void loadFingerprints(worker_thread_t* listener) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
-    FILE* fp = fopen(FINGERPRINT_FILENAME, "r");
+    FILE* fp = fopen(listener->filename, "r");
     if (fp == NULL) {
         ALOGE("Could not load fingerprints from storage at %s; "
               "it has not yet been created.",
-              FINGERPRINT_FILENAME);
+              listener->filename);
         perror("Failed to open/create file");
         return;
     }
@@ -200,13 +201,11 @@ static uint64_t fingerprint_get_auth_id(struct fingerprint_device* device) {
     return authenticator_id;
 }
 
-static int fingerprint_set_active_group(struct fingerprint_device __unused *device, uint32_t gid,
+static int fingerprint_set_active_group(struct fingerprint_device *device, uint32_t gid,
         const char *path) {
-    // Groups are a future feature.  For now, the framework sends the profile owner's id (userid)
-    // as the primary group id for the user.  This code should create a tuple (groupId, fingerId)
-    // that represents a single fingerprint entity in the database.  For now we just generate
-    // globally unique ids.
-    ALOGW("Setting active finger group not implemented, path: %s, gid: %d", path, gid);
+    qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)device;
+    qdev->group_id = gid;
+    strlcpy(qdev->listener.filename, path, sizeof(qdev->listener.filename));
     return 0;
 }
 
