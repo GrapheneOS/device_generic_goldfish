@@ -580,6 +580,16 @@ void GLEncoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum 
                                                  count, -minIndex);
             }
             break;
+        case GL_INT:
+        case GL_UNSIGNED_INT:
+            GLUtils::minmax<unsigned int>((unsigned int *)indices, count, &minIndex, &maxIndex);
+            if (minIndex != 0) {
+                adjustedIndices = ctx->m_fixedBuffer.alloc(glSizeof(type) * count);
+                GLUtils::shiftIndices<unsigned int>((unsigned int *)indices,
+                                                 (unsigned int *)adjustedIndices,
+                                                 count, -minIndex);
+            }
+            break;
         default:
             ALOGE("unsupported index buffer type %d\n", type);
         }
