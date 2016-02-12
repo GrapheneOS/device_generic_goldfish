@@ -64,8 +64,9 @@ LOCAL_SRC_FILES := \
 		fake-pipeline2/JpegCompressor.cpp \
 	EmulatedCamera3.cpp \
 		EmulatedFakeCamera3.cpp
-
-ifeq ($(TARGET_PRODUCT),vbox_x86)
+ifeq ($(TARGET_BOARD_PLATFORM),brilloemulator)
+LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
+else ifeq ($(TARGET_PRODUCT),vbox_x86)
 LOCAL_MODULE := camera.vbox_x86
 else
 LOCAL_MODULE := camera.goldfish
