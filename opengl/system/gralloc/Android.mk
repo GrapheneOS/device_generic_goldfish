@@ -2,11 +2,12 @@ ifneq (false,$(BUILD_EMULATOR_OPENGL_DRIVER))
 
 LOCAL_PATH := $(call my-dir)
 
-$(call emugl-begin-shared-library,gralloc.goldfish)
-$(call emugl-import,libGLESv1_enc lib_renderControl_enc libOpenglSystemCommon)
-$(call emugl-set-shared-library-subpath,hw)
+define gralloc_recipe
+$$(call emugl-begin-shared-library,gralloc.$(1))
+$$(call emugl-import,libGLESv1_enc lib_renderControl_enc libOpenglSystemCommon)
+$$(call emugl-set-shared-library-subpath,hw)
 
-LOCAL_CFLAGS += -DLOG_TAG=\"gralloc_goldfish\"
+LOCAL_CFLAGS += -DLOG_TAG=\"gralloc_$(1)\"
 LOCAL_CFLAGS += -Wno-missing-field-initializers
 
 LOCAL_SRC_FILES := gralloc.cpp
@@ -15,21 +16,10 @@ LOCAL_SRC_FILES := gralloc.cpp
 LOCAL_C_INCLUDES += bionic/libc/private
 LOCAL_SHARED_LIBRARIES += libdl
 
-$(call emugl-end-module)
+$$(call emugl-end-module)
+endef  # define gralloc_recipe
 
-$(call emugl-begin-shared-library,gralloc.ranchu)
-$(call emugl-import,libGLESv1_enc lib_renderControl_enc libOpenglSystemCommon)
-$(call emugl-set-shared-library-subpath,hw)
-
-LOCAL_CFLAGS += -DLOG_TAG=\"gralloc_ranchu\"
-LOCAL_CFLAGS += -Wno-missing-field-initializers
-
-LOCAL_SRC_FILES := gralloc.cpp
-
-# Need to access the special OPENGL TLS Slot
-LOCAL_C_INCLUDES += bionic/libc/private
-LOCAL_SHARED_LIBRARIES += libdl
-
-$(call emugl-end-module)
+$(eval $(call gralloc_recipe,goldfish))
+$(eval $(call gralloc_recipe,ranchu))
 
 endif # BUILD_EMULATOR_OPENGL_DRIVER != false
