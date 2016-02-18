@@ -817,13 +817,29 @@ EGLSurface eglCreatePbufferFromClientBuffer(EGLDisplay dpy, EGLenum buftype, EGL
 
 EGLBoolean eglSurfaceAttrib(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint value)
 {
-    //TODO
-    (void)dpy;
-    (void)surface;
-    (void)attribute;
+    // Right now we don't do anything when using host GPU.
+    // This is purely just to pass the data through
+    // without issuing a warning. We may benefit from validating the
+    // display and surface for debug purposes.
+    // TODO: Find cases where we actually need to do something.
+    VALIDATE_DISPLAY_INIT(dpy, EGL_FALSE);
+    VALIDATE_SURFACE_RETURN(surface, EGL_FALSE);
+    if (surface == EGL_NO_SURFACE) {
+        setErrorReturn(EGL_BAD_SURFACE, EGL_FALSE);
+    }
+
     (void)value;
-    ALOGW("%s not implemented", __FUNCTION__);
-    return 0;
+
+    switch (attribute) {
+    case EGL_MIPMAP_LEVEL:
+    case EGL_MULTISAMPLE_RESOLVE:
+    case EGL_SWAP_BEHAVIOR:
+        return true;
+        break;
+    default:
+        ALOGW("%s: attr=0x%x not implemented", __FUNCTION__, attribute);
+    }
+    return false;
 }
 
 EGLBoolean eglBindTexImage(EGLDisplay dpy, EGLSurface eglSurface, EGLint buffer)
