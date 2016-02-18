@@ -109,6 +109,7 @@ size_t glUtilsParamSize(GLenum param)
     case GL_POINT_SIZE_MIN:
     case GL_POINT_SIZE_MAX:
     case GL_POINT_FADE_THRESHOLD_SIZE:
+    case GL_CULL_FACE:
     case GL_CULL_FACE_MODE:
     case GL_FRONT_FACE:
     case GL_SHADE_MODEL:
@@ -126,6 +127,7 @@ size_t glUtilsParamSize(GLenum param)
     case GL_ALPHA_TEST_FUNC:
     case GL_ALPHA_TEST_REF:
     case GL_ALPHA_TEST:
+    case GL_DITHER:
     case GL_BLEND_DST:
     case GL_BLEND_SRC:
     case GL_BLEND:
@@ -187,6 +189,7 @@ size_t glUtilsParamSize(GLenum param)
     case GL_SAMPLE_COVERAGE_INVERT:
     case GL_SAMPLE_COVERAGE_VALUE:
     case GL_SAMPLES:
+    case GL_MAX_SAMPLES_EXT:
     case GL_STENCIL_BITS:
     case GL_STENCIL_CLEAR_VALUE:
     case GL_STENCIL_FUNC:
