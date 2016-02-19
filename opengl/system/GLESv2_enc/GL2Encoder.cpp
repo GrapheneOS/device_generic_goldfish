@@ -1051,8 +1051,10 @@ void GL2Encoder::getHostLocation(void *self, GLint location, GLint *hostLoc)
 {
     GL2Encoder *ctx = (GL2Encoder*)self;
     GLuint program = ctx->m_state->currentProgram();
-    if (location == -1)
+    if (location == -1) {
+        *hostLoc = location;
         return;
+    }
     SET_ERROR_IF((location < 0), GL_INVALID_OPERATION);
     GLint curHostLoc = ctx->m_shared->locationWARAppToHost(program,location);
     SET_ERROR_IF((ctx->m_shared->getProgramUniformType(program,curHostLoc) == 0 &&
