@@ -769,7 +769,7 @@ void glBufferData_enc(void *self , GLenum target, GLsizeiptr size, const GLvoid*
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_data =  size;
+	const unsigned int __size_data = ((data != NULL) ?  size : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + __size_data + 4 + 1*4;
 	ptr = stream->alloc(packetSize);
@@ -779,7 +779,7 @@ void glBufferData_enc(void *self , GLenum target, GLsizeiptr size, const GLvoid*
 		memcpy(ptr, &target, 4); ptr += 4;
 		memcpy(ptr, &size, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_data; ptr += 4;
-	memcpy(ptr, data, __size_data);ptr += __size_data;
+	if (data != NULL) memcpy(ptr, data, __size_data);ptr += __size_data;
 		memcpy(ptr, &usage, 4); ptr += 4;
 }
 
@@ -789,7 +789,7 @@ void glBufferSubData_enc(void *self , GLenum target, GLintptr offset, GLsizeiptr
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_data =  size;
+	const unsigned int __size_data = ((data != NULL) ?  size : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + __size_data + 1*4;
 	ptr = stream->alloc(packetSize);
@@ -800,7 +800,7 @@ void glBufferSubData_enc(void *self , GLenum target, GLintptr offset, GLsizeiptr
 		memcpy(ptr, &offset, 4); ptr += 4;
 		memcpy(ptr, &size, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_data; ptr += 4;
-	memcpy(ptr, data, __size_data);ptr += __size_data;
+	if (data != NULL) memcpy(ptr, data, __size_data);ptr += __size_data;
 }
 
 void glClear_enc(void *self , GLbitfield mask)
@@ -965,7 +965,7 @@ void glCompressedTexSubImage2D_enc(void *self , GLenum target, GLint level, GLin
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_data =  imageSize;
+	const unsigned int __size_data = ((data != NULL) ?  imageSize : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_data + 1*4;
 	ptr = stream->alloc(packetSize);
@@ -981,7 +981,7 @@ void glCompressedTexSubImage2D_enc(void *self , GLenum target, GLint level, GLin
 		memcpy(ptr, &format, 4); ptr += 4;
 		memcpy(ptr, &imageSize, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_data; ptr += 4;
-	memcpy(ptr, data, __size_data);ptr += __size_data;
+	if (data != NULL) memcpy(ptr, data, __size_data);ptr += __size_data;
 }
 
 void glCopyTexImage2D_enc(void *self , GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border)
@@ -2343,7 +2343,7 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 	gl_encoder_context_t *ctx = (gl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
 
-	const unsigned int __size_pixels =  glesv1_enc::pixelDataSize(self, width, height, format, type, 0);
+	const unsigned int __size_pixels = ((pixels != NULL) ?  glesv1_enc::pixelDataSize(self, width, height, format, type, 0) : 0);
 	 unsigned char *ptr;
 	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
 	ptr = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
@@ -2360,7 +2360,7 @@ void glTexSubImage2D_enc(void *self , GLenum target, GLint level, GLint xoffset,
 		memcpy(ptr, &type, 4); ptr += 4;
 	stream->flush();
 	stream->writeFully(&__size_pixels,4);
-	stream->writeFully(pixels, __size_pixels);
+	if (pixels != NULL) stream->writeFully(pixels, __size_pixels);
 }
 
 void glTranslatex_enc(void *self , GLfixed x, GLfixed y, GLfixed z)
