@@ -21,5 +21,8 @@ endef  # define gralloc_recipe
 
 $(eval $(call gralloc_recipe,goldfish))
 $(eval $(call gralloc_recipe,ranchu))
+ifeq ($(TARGET_BOARD_PLATFORM),brilloemulator)
+$(eval $(call gralloc_recipe,$(TARGET_BOARD_PLATFORM)))
+endif  # defined(BRILLO)
 
 endif # BUILD_EMULATOR_OPENGL_DRIVER != false
