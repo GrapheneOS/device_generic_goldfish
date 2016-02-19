@@ -74,7 +74,9 @@ LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
 LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
 LOCAL_SRC_FILES := ${emulator_camera_src}
 
-ifeq ($(TARGET_PRODUCT),vbox_x86)
+ifeq ($(TARGET_BOARD_PLATFORM),brilloemulator)
+LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
+else ifeq ($(TARGET_PRODUCT),vbox_x86)
 LOCAL_MODULE := camera.vbox_x86
 else
 LOCAL_MODULE := camera.goldfish
