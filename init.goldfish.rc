@@ -6,9 +6,6 @@ on init
     # Support legacy paths
     symlink /sdcard /mnt/sdcard
 
-    # By default, primary storage is physical
-    setprop ro.vold.primary_physical 1
-
 on boot
     setprop ARGH ARGH
     setprop net.eth0.gw 10.0.2.2
