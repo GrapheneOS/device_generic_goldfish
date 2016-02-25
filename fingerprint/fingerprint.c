@@ -40,8 +40,7 @@
 #include <poll.h>
 
 #define FINGERPRINT_LISTEN_SERVICE_NAME "fingerprintlisten"
-#define FINGERPRINT_FILENAME \
-    "/data/system/users/0/fpdata/emulator_fingerprint_storage.bin"
+#define FINGERPRINT_FILENAME "emufp.bin"
 #define MAX_COMM_CHARS 128
 #define MAX_COMM_ERRORS 8
 // Typical devices will allow up to 5 fingerprints per user to maintain performance of
@@ -207,7 +206,7 @@ static int fingerprint_set_active_group(struct fingerprint_device *device, uint3
     qdev->group_id = gid;
     ALOGD("----------------> %s -----------------> path %s", __FUNCTION__, path);
     snprintf(qdev->listener.filename, sizeof(qdev->listener.filename),
-            "%s/emufp.bin", path);
+            "%s/%s", path, FINGERPRINT_FILENAME);
     loadFingerprints(&qdev->listener);
     return 0;
 }
