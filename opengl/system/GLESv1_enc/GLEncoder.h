@@ -41,7 +41,6 @@ public:
 
     void override2DTextureTarget(GLenum target);
     void restore2DTextureTarget();
-    void init(void *self);
 
 private:
 

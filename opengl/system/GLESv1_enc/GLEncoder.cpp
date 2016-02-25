@@ -1015,15 +1015,6 @@ GLEncoder::~GLEncoder()
     delete [] m_compressedTextureFormats;
 }
 
-void GLEncoder::init(void *self)
-{
-    GLEncoder* ctx = (GLEncoder*)self;
-    GLClientState* state = ctx->m_state;
-    GLint num;
-    ctx->m_glGetIntegerv_enc(self, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &num);
-    state->setNumTexture(num);
-}
-
 size_t GLEncoder::pixelDataSize(GLsizei width, GLsizei height, GLenum format, GLenum type, int pack)
 {
     assert(m_state != NULL);
