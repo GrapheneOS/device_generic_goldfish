@@ -205,7 +205,10 @@ static int fingerprint_set_active_group(struct fingerprint_device *device, uint3
         const char *path) {
     qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)device;
     qdev->group_id = gid;
-    strlcpy(qdev->listener.filename, path, sizeof(qdev->listener.filename));
+    ALOGD("----------------> %s -----------------> path %s", __FUNCTION__, path);
+    snprintf(qdev->listener.filename, sizeof(qdev->listener.filename),
+            "%s/emufp.bin", path);
+    loadFingerprints(&qdev->listener);
     return 0;
 }
 
@@ -735,7 +738,6 @@ static int fingerprint_open(const hw_module_t* module, const char __unused *id,
         return -ENOMEM;
     }
 
-    loadFingerprints(&qdev->listener);
 
     qdev->device.common.tag = HARDWARE_DEVICE_TAG;
     qdev->device.common.version = HARDWARE_MODULE_API_VERSION(2, 1);
