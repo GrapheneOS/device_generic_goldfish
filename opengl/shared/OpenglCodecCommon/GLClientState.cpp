@@ -65,6 +65,8 @@ GLClientState::GLClientState(int nLocations)
     m_tex.textures = NULL;
     m_tex.numTextures = 0;
     m_tex.allocTextures = 0;
+
+    m_maxVertexAttribsDirty = true;
 }
 
 GLClientState::~GLClientState()
