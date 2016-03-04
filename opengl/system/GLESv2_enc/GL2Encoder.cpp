@@ -544,8 +544,6 @@ void GL2Encoder::s_glDrawArrays(void *self, GLenum mode, GLint first, GLsizei co
     GL2Encoder *ctx = (GL2Encoder *)self;
 
     SET_ERROR_IF(!isValidDrawMode(mode), GL_INVALID_ENUM);
-    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
-        GL_INVALID_FRAMEBUFFER_OPERATION);
     SET_ERROR_IF(count<0, GL_INVALID_VALUE);
 
     bool has_arrays = false;
@@ -578,8 +576,6 @@ void GL2Encoder::s_glDrawElements(void *self, GLenum mode, GLsizei count, GLenum
     GL2Encoder *ctx = (GL2Encoder *)self;
     assert(ctx->m_state != NULL);
     SET_ERROR_IF(!(isValidDrawMode(mode) && isValidDrawType(type)),GL_INVALID_ENUM);
-    SET_ERROR_IF(ctx->glCheckFramebufferStatus(ctx, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE,
-        GL_INVALID_FRAMEBUFFER_OPERATION);
     SET_ERROR_IF(count<0, GL_INVALID_VALUE);
 
     bool has_immediate_arrays = false;
