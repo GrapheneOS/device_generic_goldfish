@@ -22,13 +22,21 @@ GLint rcGetRendererVersion_enc(void *self )
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcGetRendererVersion;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	GLint retval;
 	stream->readback(&retval, 4);
@@ -40,17 +48,25 @@ EGLint rcGetEGLVersion_enc(void *self , EGLint* major, EGLint* minor)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_major =  sizeof(EGLint);
 	const unsigned int __size_minor =  sizeof(EGLint);
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + __size_major + __size_minor + 2*4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + __size_major + __size_minor + 2*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcGetEGLVersion;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 	*(unsigned int *)(ptr) = __size_major; ptr += 4;
 	*(unsigned int *)(ptr) = __size_minor; ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	stream->readback(major, __size_major);
 	stream->readback(minor, __size_minor);
 
@@ -64,17 +80,25 @@ EGLint rcQueryEGLString_enc(void *self , EGLenum name, void* buffer, EGLint buff
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_buffer =  bufferSize;
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + __size_buffer + 4 + 1*4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + __size_buffer + 4 + 1*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcQueryEGLString;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &name, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_buffer; ptr += 4;
 		memcpy(ptr, &bufferSize, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	stream->readback(buffer, __size_buffer);
 
 	EGLint retval;
@@ -87,17 +111,25 @@ EGLint rcGetGLString_enc(void *self , EGLenum name, void* buffer, EGLint bufferS
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_buffer =  bufferSize;
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + __size_buffer + 4 + 1*4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + __size_buffer + 4 + 1*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcGetGLString;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &name, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_buffer; ptr += 4;
 		memcpy(ptr, &bufferSize, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	stream->readback(buffer, __size_buffer);
 
 	EGLint retval;
@@ -110,15 +142,23 @@ EGLint rcGetNumConfigs_enc(void *self , uint32_t* numAttribs)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_numAttribs =  sizeof(uint32_t);
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + __size_numAttribs + 1*4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + __size_numAttribs + 1*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcGetNumConfigs;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 	*(unsigned int *)(ptr) = __size_numAttribs; ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	stream->readback(numAttribs, __size_numAttribs);
 
 	EGLint retval;
@@ -131,16 +171,24 @@ EGLint rcGetConfigs_enc(void *self , uint32_t bufSize, GLuint* buffer)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_buffer =  bufSize;
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + __size_buffer + 1*4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + __size_buffer + 1*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcGetConfigs;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &bufSize, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_buffer; ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	stream->readback(buffer, __size_buffer);
 
 	EGLint retval;
@@ -153,20 +201,28 @@ EGLint rcChooseConfig_enc(void *self , EGLint* attribs, uint32_t attribs_size, u
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_attribs =  attribs_size;
 	const unsigned int __size_configs = ((configs != NULL) ?  configs_size*sizeof(uint32_t) : 0);
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + __size_attribs + 4 + __size_configs + 4 + 2*4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + __size_attribs + 4 + __size_configs + 4 + 2*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcChooseConfig;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 	*(unsigned int *)(ptr) = __size_attribs; ptr += 4;
 	memcpy(ptr, attribs, __size_attribs);ptr += __size_attribs;
 		memcpy(ptr, &attribs_size, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_configs; ptr += 4;
 		memcpy(ptr, &configs_size, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	if (configs != NULL) stream->readback(configs, __size_configs);
 
 	EGLint retval;
@@ -179,14 +235,22 @@ EGLint rcGetFBParam_enc(void *self , EGLint param)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcGetFBParam;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &param, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	EGLint retval;
 	stream->readback(&retval, 4);
@@ -198,16 +262,24 @@ uint32_t rcCreateContext_enc(void *self , uint32_t config, uint32_t share, uint3
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcCreateContext;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &config, 4); ptr += 4;
 		memcpy(ptr, &share, 4); ptr += 4;
 		memcpy(ptr, &glVersion, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	uint32_t retval;
 	stream->readback(&retval, 4);
@@ -219,14 +291,22 @@ void rcDestroyContext_enc(void *self , uint32_t context)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcDestroyContext;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &context, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 uint32_t rcCreateWindowSurface_enc(void *self , uint32_t config, uint32_t width, uint32_t height)
@@ -234,16 +314,24 @@ uint32_t rcCreateWindowSurface_enc(void *self , uint32_t config, uint32_t width,
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcCreateWindowSurface;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &config, 4); ptr += 4;
 		memcpy(ptr, &width, 4); ptr += 4;
 		memcpy(ptr, &height, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	uint32_t retval;
 	stream->readback(&retval, 4);
@@ -255,14 +343,22 @@ void rcDestroyWindowSurface_enc(void *self , uint32_t windowSurface)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcDestroyWindowSurface;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &windowSurface, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 uint32_t rcCreateColorBuffer_enc(void *self , uint32_t width, uint32_t height, GLenum internalFormat)
@@ -270,16 +366,24 @@ uint32_t rcCreateColorBuffer_enc(void *self , uint32_t width, uint32_t height, G
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcCreateColorBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &width, 4); ptr += 4;
 		memcpy(ptr, &height, 4); ptr += 4;
 		memcpy(ptr, &internalFormat, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	uint32_t retval;
 	stream->readback(&retval, 4);
@@ -291,14 +395,22 @@ void rcOpenColorBuffer_enc(void *self , uint32_t colorbuffer)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcOpenColorBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorbuffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 void rcCloseColorBuffer_enc(void *self , uint32_t colorbuffer)
@@ -306,14 +418,22 @@ void rcCloseColorBuffer_enc(void *self , uint32_t colorbuffer)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcCloseColorBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorbuffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	stream->flush();
 }
 
@@ -322,15 +442,23 @@ void rcSetWindowColorBuffer_enc(void *self , uint32_t windowSurface, uint32_t co
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcSetWindowColorBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &windowSurface, 4); ptr += 4;
 		memcpy(ptr, &colorBuffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 int rcFlushWindowColorBuffer_enc(void *self , uint32_t windowSurface)
@@ -338,14 +466,22 @@ int rcFlushWindowColorBuffer_enc(void *self , uint32_t windowSurface)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcFlushWindowColorBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &windowSurface, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	int retval;
 	stream->readback(&retval, 4);
@@ -357,16 +493,24 @@ EGLint rcMakeCurrent_enc(void *self , uint32_t context, uint32_t drawSurf, uint3
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcMakeCurrent;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &context, 4); ptr += 4;
 		memcpy(ptr, &drawSurf, 4); ptr += 4;
 		memcpy(ptr, &readSurf, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	EGLint retval;
 	stream->readback(&retval, 4);
@@ -378,14 +522,22 @@ void rcFBPost_enc(void *self , uint32_t colorBuffer)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcFBPost;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorBuffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 void rcFBSetSwapInterval_enc(void *self , EGLint interval)
@@ -393,14 +545,22 @@ void rcFBSetSwapInterval_enc(void *self , EGLint interval)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcFBSetSwapInterval;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &interval, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 void rcBindTexture_enc(void *self , uint32_t colorBuffer)
@@ -408,14 +568,22 @@ void rcBindTexture_enc(void *self , uint32_t colorBuffer)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcBindTexture;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorBuffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 void rcBindRenderbuffer_enc(void *self , uint32_t colorBuffer)
@@ -423,14 +591,22 @@ void rcBindRenderbuffer_enc(void *self , uint32_t colorBuffer)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcBindRenderbuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorBuffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 }
 
 EGLint rcColorBufferCacheFlush_enc(void *self , uint32_t colorbuffer, EGLint postCount, int forRead)
@@ -438,16 +614,24 @@ EGLint rcColorBufferCacheFlush_enc(void *self , uint32_t colorbuffer, EGLint pos
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcColorBufferCacheFlush;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorbuffer, 4); ptr += 4;
 		memcpy(ptr, &postCount, 4); ptr += 4;
 		memcpy(ptr, &forRead, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	EGLint retval;
 	stream->readback(&retval, 4);
@@ -459,13 +643,18 @@ void rcReadColorBuffer_enc(void *self , uint32_t colorbuffer, GLint x, GLint y, 
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_pixels =  (((glUtilsPixelBitSize(format, type) * width) >> 3) * height);
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcReadColorBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorbuffer, 4); ptr += 4;
 		memcpy(ptr, &x, 4); ptr += 4;
@@ -475,6 +664,9 @@ void rcReadColorBuffer_enc(void *self , uint32_t colorbuffer, GLint x, GLint y, 
 		memcpy(ptr, &format, 4); ptr += 4;
 		memcpy(ptr, &type, 4); ptr += 4;
 	*(unsigned int *)(ptr) = __size_pixels; ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 	stream->readback(pixels, __size_pixels);
 }
 
@@ -483,13 +675,18 @@ int rcUpdateColorBuffer_enc(void *self , uint32_t colorbuffer, GLint x, GLint y,
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	const unsigned int __size_pixels =  (((glUtilsPixelBitSize(format, type) * width) >> 3) * height);
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
-	ptr = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + __size_pixels + 1*4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(8 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+	ptr = buf;
 	int tmp = OP_rcUpdateColorBuffer;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorbuffer, 4); ptr += 4;
 		memcpy(ptr, &x, 4); ptr += 4;
@@ -498,9 +695,15 @@ int rcUpdateColorBuffer_enc(void *self , uint32_t colorbuffer, GLint x, GLint y,
 		memcpy(ptr, &height, 4); ptr += 4;
 		memcpy(ptr, &format, 4); ptr += 4;
 		memcpy(ptr, &type, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
 	stream->flush();
 	stream->writeFully(&__size_pixels,4);
-	stream->writeFully(pixels, __size_pixels);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(&__size_pixels,4);
+		stream->writeFully(pixels, __size_pixels);
+		if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(pixels, __size_pixels);
+	buf = stream->alloc(checksumSize);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(buf, checksumSize);
 
 	int retval;
 	stream->readback(&retval, 4);
@@ -512,14 +715,22 @@ int rcOpenColorBuffer2_enc(void *self , uint32_t colorbuffer)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcOpenColorBuffer2;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &colorbuffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	int retval;
 	stream->readback(&retval, 4);
@@ -531,16 +742,24 @@ uint32_t rcCreateClientImage_enc(void *self , uint32_t context, EGLenum target, 
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4 + 4 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcCreateClientImage;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &context, 4); ptr += 4;
 		memcpy(ptr, &target, 4); ptr += 4;
 		memcpy(ptr, &buffer, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	uint32_t retval;
 	stream->readback(&retval, 4);
@@ -552,25 +771,58 @@ int rcDestroyClientImage_enc(void *self , uint32_t image)
 
 	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
 	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
 
 	 unsigned char *ptr;
-	 const size_t packetSize = 8 + 4;
-	ptr = stream->alloc(packetSize);
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
 	int tmp = OP_rcDestroyClientImage;memcpy(ptr, &tmp, 4); ptr += 4;
-	memcpy(ptr, &packetSize, 4);  ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
 
 		memcpy(ptr, &image, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
 
 	int retval;
 	stream->readback(&retval, 4);
 	return retval;
 }
 
+void rcSelectChecksumHelper_enc(void *self , uint32_t newProtocol, uint32_t reserved)
+{
+
+	renderControl_encoder_context_t *ctx = (renderControl_encoder_context_t *)self;
+	IOStream *stream = ctx->m_stream;
+	ChecksumCalculator *checksumCalculator = ctx->m_checksumCalculator;
+
+	 unsigned char *ptr;
+	 unsigned char *buf;
+	 const size_t sizeWithoutChecksum = 8 + 4 + 4;
+	 const size_t checksumSize = checksumCalculator->checksumByteSize();
+	 const size_t totalSize = sizeWithoutChecksum + checksumSize;
+	buf = stream->alloc(totalSize);
+	ptr = buf;
+	int tmp = OP_rcSelectChecksumHelper;memcpy(ptr, &tmp, 4); ptr += 4;
+	memcpy(ptr, &totalSize, 4);  ptr += 4;
+
+		memcpy(ptr, &newProtocol, 4); ptr += 4;
+		memcpy(ptr, &reserved, 4); ptr += 4;
+
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->addBuffer(buf, ptr-buf);
+	if (checksumCalculator->getVersion() > 0) checksumCalculator->writeChecksum(ptr, checksumSize); ptr += checksumSize;
+}
+
 }  // namespace
 
-renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *stream)
+renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *stream, ChecksumCalculator *checksumCalculator)
 {
 	m_stream = stream;
+	m_checksumCalculator = checksumCalculator;
 
 	this->rcGetRendererVersion = &rcGetRendererVersion_enc;
 	this->rcGetEGLVersion = &rcGetEGLVersion_enc;
@@ -600,5 +852,6 @@ renderControl_encoder_context_t::renderControl_encoder_context_t(IOStream *strea
 	this->rcOpenColorBuffer2 = &rcOpenColorBuffer2_enc;
 	this->rcCreateClientImage = &rcCreateClientImage_enc;
 	this->rcDestroyClientImage = &rcDestroyClientImage_enc;
+	this->rcSelectChecksumHelper = &rcSelectChecksumHelper_enc;
 }
 

@@ -21,10 +21,9 @@
 #include "GLSharedGroup.h"
 #include "FixedBuffer.h"
 
-
 class GL2Encoder : public gl2_encoder_context_t {
 public:
-    GL2Encoder(IOStream *stream);
+    GL2Encoder(IOStream *stream, ChecksumCalculator* protocol);
     virtual ~GL2Encoder();
     void setClientState(GLClientState *state) {
         m_state = state;
