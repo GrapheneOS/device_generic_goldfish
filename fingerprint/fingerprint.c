@@ -320,15 +320,9 @@ static int fingerprint_cancel(struct fingerprint_device *device) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
     qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)device;
 
-    fingerprint_msg_t msg = {0, {0}};
-    msg.type = FINGERPRINT_ERROR;
-    msg.data.error = FINGERPRINT_ERROR_CANCELED;
-
     pthread_mutex_lock(&qdev->lock);
     qdev->listener.state = STATE_IDLE;
     pthread_mutex_unlock(&qdev->lock);
-
-    device->notify(&msg);
 
     return 0;
 }
