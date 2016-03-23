@@ -34,6 +34,7 @@ extern "C" {
 	int rcOpenColorBuffer2(uint32_t colorbuffer);
 	uint32_t rcCreateClientImage(uint32_t context, EGLenum target, GLuint buffer);
 	int rcDestroyClientImage(uint32_t image);
+	void rcSelectChecksumHelper(uint32_t newProtocol, uint32_t reserved);
 };
 
 #endif
@@ -209,5 +210,11 @@ int rcDestroyClientImage(uint32_t image)
 {
 	GET_CONTEXT;
 	return ctx->rcDestroyClientImage(ctx, image);
+}
+
+void rcSelectChecksumHelper(uint32_t newProtocol, uint32_t reserved)
+{
+	GET_CONTEXT;
+	ctx->rcSelectChecksumHelper(ctx, newProtocol, reserved);
 }
 

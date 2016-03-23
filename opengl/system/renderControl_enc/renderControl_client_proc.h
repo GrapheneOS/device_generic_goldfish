@@ -37,6 +37,7 @@ typedef int (renderControl_APIENTRY *rcUpdateColorBuffer_client_proc_t) (void * 
 typedef int (renderControl_APIENTRY *rcOpenColorBuffer2_client_proc_t) (void * ctx, uint32_t);
 typedef uint32_t (renderControl_APIENTRY *rcCreateClientImage_client_proc_t) (void * ctx, uint32_t, EGLenum, GLuint);
 typedef int (renderControl_APIENTRY *rcDestroyClientImage_client_proc_t) (void * ctx, uint32_t);
+typedef void (renderControl_APIENTRY *rcSelectChecksumHelper_client_proc_t) (void * ctx, uint32_t, uint32_t);
 
 
 #endif
