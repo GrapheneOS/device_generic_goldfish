@@ -20,11 +20,12 @@
 #include "GLClientState.h"
 #include "GLSharedGroup.h"
 #include "FixedBuffer.h"
+#include "ChecksumCalculator.h"
 
 class GLEncoder : public gl_encoder_context_t {
 
 public:
-    GLEncoder(IOStream *stream);
+    GLEncoder(IOStream *stream, ChecksumCalculator* protocol);
     virtual ~GLEncoder();
     void setClientState(GLClientState *state) {
         m_state = state;
