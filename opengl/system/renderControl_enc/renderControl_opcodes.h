@@ -31,7 +31,8 @@
 #define OP_rcOpenColorBuffer2 					10025
 #define OP_rcCreateClientImage 					10026
 #define OP_rcDestroyClientImage 					10027
-#define OP_last 					10028
+#define OP_rcSelectChecksumHelper 					10028
+#define OP_last 					10029
 
 
 #endif

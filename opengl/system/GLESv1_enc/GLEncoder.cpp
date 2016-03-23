@@ -950,7 +950,8 @@ void GLEncoder::restore2DTextureTarget()
             m_state->getBoundTexture(priorityTarget));
 }
 
-GLEncoder::GLEncoder(IOStream *stream) : gl_encoder_context_t(stream)
+GLEncoder::GLEncoder(IOStream *stream, ChecksumCalculator *protocol)
+        : gl_encoder_context_t(stream, protocol)
 {
     m_initialized = false;
     m_state = NULL;

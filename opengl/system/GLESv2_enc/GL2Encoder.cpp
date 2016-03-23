@@ -42,7 +42,8 @@ static GLubyte *gExtensionsString= (GLubyte *) "GL_OES_EGL_image_external ";
     }
 
 
-GL2Encoder::GL2Encoder(IOStream *stream) : gl2_encoder_context_t(stream)
+GL2Encoder::GL2Encoder(IOStream *stream, ChecksumCalculator *protocol)
+        : gl2_encoder_context_t(stream, protocol)
 {
     m_initialized = false;
     m_state = NULL;
