@@ -5,8 +5,6 @@ on early-init
     mount debugfs debugfs /sys/kernel/debug
 
 on init
-    # Support legacy paths
-    symlink /sdcard /mnt/sdcard
 
     symlink /dev/goldfish_pipe /dev/android_pipe
     symlink /dev/goldfish_pipe /dev/qemu_pipe
