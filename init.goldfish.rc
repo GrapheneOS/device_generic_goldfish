@@ -20,6 +20,19 @@ on boot
     setprop status.battery.level_raw  50
     setprop status.battery.level_scale 9
 
+# set up the GPU caching
+    setprop ro.hwui.texture_cache_size 72
+    setprop ro.hwui.layer_cache_size 48
+    setprop ro.hwui.r_buffer_cache_size 8
+    setprop ro.hwui.path_cache_size 32
+    setprop ro.hwui.gradient_cache_size 1
+    setprop ro.hwui.drop_shadow_cache_size 6
+    setprop ro.hwui.texture_cache_flushrate 0.4
+    setprop ro.hwui.text_small_cache_width 1024
+    setprop ro.hwui.text_small_cache_height 1024
+    setprop ro.hwui.text_large_cache_width 2048
+    setprop ro.hwui.text_large_cache_height 1024
+
 # disable some daemons the emulator doesn't want
     stop dund
     stop akmd
