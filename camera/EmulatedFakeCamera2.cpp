@@ -1118,7 +1118,7 @@ EmulatedFakeCamera2::ReadoutThread::ReadoutThread(EmulatedFakeCamera2 *parent):
 }
 
 EmulatedFakeCamera2::ReadoutThread::~ReadoutThread() {
-    delete mInFlightQueue;
+    delete[] mInFlightQueue;
 }
 
 status_t EmulatedFakeCamera2::ReadoutThread::readyToRun() {

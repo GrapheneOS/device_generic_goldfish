@@ -925,6 +925,8 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
                 GraphicBufferMapper::get().unlock(
                         *(request->output_buffers[i].buffer));
             }
+            delete sensorBuffers;
+            delete buffers;
             return NO_INIT;
         }
 
