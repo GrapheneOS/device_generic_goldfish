@@ -489,7 +489,7 @@ EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_c
     }
 
     EGLContext ctx =  getDispatch()->eglCreateContext(dpy, config, share, attrib);
-    delete attrib;
+    delete[] attrib;
     EGLWrapperContext *wctx = new EGLWrapperContext(ctx, version);
     if (ctx != EGL_NO_CONTEXT) {
         ServerConnection *server;

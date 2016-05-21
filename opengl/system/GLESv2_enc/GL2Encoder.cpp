@@ -786,13 +786,13 @@ void GL2Encoder::s_glShaderSource(void *self, GLuint shader, GLsizei count, cons
     // Perhaps we can borrow Mesa's pre-processor?
 
     if (!replaceSamplerExternalWith2D(str, shaderData)) {
-        delete str;
+        delete[] str;
         ctx->setError(GL_OUT_OF_MEMORY);
         return;
     }
 
     ctx->glShaderString(ctx, shader, str, len + 1);
-    delete str;
+    delete[] str;
 }
 
 void GL2Encoder::s_glFinish(void *self)
