@@ -312,10 +312,13 @@ static int gralloc_alloc(alloc_device_t* dev,
     //
     // Allocate ColorBuffer handle on the host (only if h/w access is allowed)
     // Only do this for some h/w usages, not all.
+    // Also do this if we need to read from the surface, in this case the
+    // rendering will still happen on the host but we also need to be able to
+    // read back from the color buffer, which requires that there is a buffer
     //
     if (usage & (GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_RENDER |
                     GRALLOC_USAGE_HW_2D | GRALLOC_USAGE_HW_COMPOSER |
-                    GRALLOC_USAGE_HW_FB) ) {
+                    GRALLOC_USAGE_HW_FB | GRALLOC_USAGE_SW_READ_MASK) ) {
         DEFINE_HOST_CONNECTION;
         if (hostCon && rcEnc) {
             cb->hostHandle = rcEnc->rcCreateColorBuffer(rcEnc, w, h, glFormat);
@@ -682,12 +685,8 @@ static int gralloc_lock(gralloc_module_t const* module,
             return -EBUSY;
         }
 
-        const bool sw_read = (cb->usage & GRALLOC_USAGE_SW_READ_MASK);
-        const bool hw_write = (cb->usage & GRALLOC_USAGE_HW_RENDER);
-        const bool screen_capture_mode = (sw_read && hw_write);
-        if (screen_capture_mode) {
+        if (sw_read) {
             D("gralloc_lock read back color buffer %d %d\n", cb->width, cb->height);
-            DEFINE_AND_VALIDATE_HOST_CONNECTION;
             rcEnc->rcReadColorBuffer(rcEnc, cb->hostHandle,
                     0, 0, cb->width, cb->height, GL_RGBA, GL_UNSIGNED_BYTE, cpu_addr);
         }
