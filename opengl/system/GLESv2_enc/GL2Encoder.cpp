@@ -955,7 +955,7 @@ int GL2Encoder::s_glGetUniformLocation(void *self, GLuint program, const GLchar 
     if (needLocationWAR) {
         int namelen = strlen(name);
         if (name[namelen-1] == ']') {
-            char *brace = strrchr(name,'[');
+            const char *brace = strrchr(name,'[');
             if (!brace || sscanf(brace+1,"%d",&arrIndex) != 1) {
                 return -1;
             }
