@@ -732,7 +732,7 @@ static int gralloc_unlock(gralloc_module_t const* module,
     // if buffer was locked for s/w write, we need to update the host with
     // the updated data
     //
-    if (cb->lockedWidth > 0 && cb->lockedHeight > 0 && cb->hostHandle) {
+    if (cb->hostHandle) {
 
         // Make sure we have host connection
         DEFINE_AND_VALIDATE_HOST_CONNECTION;
