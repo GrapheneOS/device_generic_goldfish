@@ -25,7 +25,7 @@
 
 #include <ui/PixelFormat.h>
 
-#define ATTRIBUTE_NONE -1
+#define ATTRIBUTE_NONE (-1)
 //FIXME: are we in this namespace?
 using namespace android;
 

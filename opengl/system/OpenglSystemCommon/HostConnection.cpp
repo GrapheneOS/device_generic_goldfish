@@ -21,7 +21,7 @@
 #include "GLEncoder.h"
 #include "GL2Encoder.h"
 
-#define STREAM_BUFFER_SIZE  4*1024*1024
+#define STREAM_BUFFER_SIZE  (4*1024*1024)
 #define STREAM_PORT_NUM     22468
 
 /* Set to 1 to use a QEMU pipe, or 0 for a TCP connection */
