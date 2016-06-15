@@ -30,7 +30,6 @@ on boot
     stop akmd
 
 # start essential services
-    start qemud
     start goldfish-logcat
     start goldfish-setup
 
@@ -71,10 +70,6 @@ service qemu-props /system/bin/qemu-props
     class core
     user root
     group root
-    oneshot
-
-service qemud /system/bin/qemud
-    socket qemud    stream 666
     oneshot
 
 # -Q is a special logcat option that forces the
