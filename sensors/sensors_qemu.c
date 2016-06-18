@@ -571,6 +571,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 2.8f,
           .resolution = 1.0f/4032.0f,
           .power      = 3.0f,
+          .minDelay   = 2000,
           .reserved   = {}
         },
 
@@ -582,6 +583,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 2000.0f,
           .resolution = 1.0f,
           .power      = 6.7f,
+          .minDelay   = 2000,
           .reserved   = {}
         },
 
@@ -593,6 +595,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 360.0f,
           .resolution = 1.0f,
           .power      = 9.7f,
+          .minDelay   = 2000,
           .reserved   = {}
         },
 
@@ -604,6 +607,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 80.0f,
           .resolution = 1.0f,
           .power      = 0.0f,
+          .minDelay   = 2000,
           .reserved   = {}
         },
 
@@ -615,6 +619,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 1.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
+          .minDelay   = 2000,
           .reserved   = {}
         },
 
@@ -626,6 +631,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 40000.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
+          .minDelay   = 2000,
           .reserved   = {}
         },
 
@@ -637,6 +643,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 800.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
+          .minDelay   = 2000,
           .reserved   = {}
         },
 
@@ -648,6 +655,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 100.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
+          .minDelay   = 2000,
           .reserved   = {}
         }
 };
