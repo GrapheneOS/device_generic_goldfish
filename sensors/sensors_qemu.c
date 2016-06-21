@@ -23,9 +23,9 @@
  */
 
 
-/* we connect with the emulator through the "sensors" qemud service
+/* we connect with the emulator through the "sensors" qemu pipe service
  */
-#define  SENSORS_SERVICE_NAME "sensors"
+#define  SENSORS_SERVICE_NAME "pipe:qemud:sensors"
 
 #define LOG_TAG "QemuSensors"
 
@@ -45,7 +45,7 @@
 
 #define  E(...)  ALOGE(__VA_ARGS__)
 
-#include <hardware/qemud.h>
+#include <system/qemu_pipe.h>
 
 /** SENSOR IDS AND NAMES
  **/
@@ -152,9 +152,9 @@ typedef struct SensorDevice {
  * from different threads, and poll() is blocking.
  *
  * Note that the emulator's sensors service creates a new client for each
- * connection through qemud_channel_open(), where each client has its own
+ * connection through qemu_pipe_open(), where each client has its own
  * delay and set of activated sensors. This precludes calling
- * qemud_channel_open() on each request, because a typical emulated system
+ * qemu_pipe_open() on each request, because a typical emulated system
  * will do something like:
  *
  * 1) On a first thread, de-activate() all sensors first, then call poll(),
@@ -174,7 +174,7 @@ typedef struct SensorDevice {
 static int sensor_device_get_fd_locked(SensorDevice* dev) {
     /* Create connection to service on first call */
     if (dev->fd < 0) {
-        dev->fd = qemud_channel_open(SENSORS_SERVICE_NAME);
+        dev->fd = qemu_pipe_open(SENSORS_SERVICE_NAME);
         if (dev->fd < 0) {
             int ret = -errno;
             E("%s: Could not open connection to service: %s", __FUNCTION__,
@@ -196,7 +196,7 @@ static int sensor_device_send_command_locked(SensorDevice* dev,
     }
 
     int ret = 0;
-    if (qemud_channel_send(fd, cmd, strlen(cmd)) < 0) {
+    if (qemu_pipe_frame_send(fd, cmd, strlen(cmd)) < 0) {
         ret = -errno;
         E("%s(fd=%d): ERROR: %s", __FUNCTION__, fd, strerror(errno));
     }
@@ -267,7 +267,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
 
         /* read the next event */
         char buff[256];
-        int len = qemud_channel_recv(fd, buff, sizeof(buff) - 1U);
+        int len = qemu_pipe_frame_recv(fd, buff, sizeof(buff) - 1U);
         /* re-acquire the lock to modify the device state. */
         pthread_mutex_lock(&dev->lock);
 
@@ -657,22 +657,23 @@ static struct sensor_t  sSensorList[MAX_NUM_SENSORS];
 static int sensors__get_sensors_list(struct sensors_module_t* module __unused,
         struct sensor_t const** list)
 {
-    int  fd = qemud_channel_open(SENSORS_SERVICE_NAME);
+    int  fd = qemu_pipe_open(SENSORS_SERVICE_NAME);
     char buffer[12];
     int  mask, nn, count;
     int  ret = 0;
 
     if (fd < 0) {
-        E("%s: no qemud connection", __FUNCTION__);
+        E("%s: no qemu pipe connection", __FUNCTION__);
         goto out;
     }
-    ret = qemud_channel_send(fd, "list-sensors", -1);
+    static const char kListSensors[] = "list-sensors";
+    ret = qemu_pipe_frame_send(fd, kListSensors, sizeof(kListSensors) - 1);
     if (ret < 0) {
         E("%s: could not query sensor list: %s", __FUNCTION__,
           strerror(errno));
         goto out;
     }
-    ret = qemud_channel_recv(fd, buffer, sizeof buffer-1);
+    ret = qemu_pipe_frame_recv(fd, buffer, sizeof buffer-1);
     if (ret < 0) {
         E("%s: could not receive sensor list: %s", __FUNCTION__,
           strerror(errno));

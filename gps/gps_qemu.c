@@ -34,10 +34,10 @@
 #include <cutils/log.h>
 #include <cutils/sockets.h>
 #include <hardware/gps.h>
-#include <hardware/qemud.h>
+#include <system/qemu_pipe.h>
 
-/* the name of the qemud-controlled socket */
-#define  QEMU_CHANNEL_NAME  "gps"
+/* the name of the qemu-controlled pipe */
+#define  QEMU_CHANNEL_NAME  "pipe:qemud:gps"
 
 #define  GPS_DEBUG  0
 
@@ -356,9 +356,9 @@ nmea_reader_update_latlong( NmeaReader*  r,
 
 
 static int
-nmea_reader_update_altitude( NmeaReader*  r,
-                             Token        altitude,
-                             Token        units )
+nmea_reader_update_altitude( NmeaReader* r,
+                             Token altitude,
+                             Token __unused units )
 {
     double  alt;
     Token   tok = altitude;
@@ -777,14 +777,14 @@ gps_state_init( GpsState*  state, GpsCallbacks* callbacks )
     state->control[1] = -1;
     state->fd         = -1;
 
-    state->fd = qemud_channel_open(QEMU_CHANNEL_NAME);
+    state->fd = qemu_pipe_open(QEMU_CHANNEL_NAME);
 
     if (state->fd < 0) {
         D("no gps emulation detected");
         return;
     }
 
-    D("gps emulation will read from '%s' qemud channel", QEMU_CHANNEL_NAME );
+    D("gps emulation will read from '%s' qemu pipe", QEMU_CHANNEL_NAME );
 
     if ( socketpair( AF_LOCAL, SOCK_STREAM, 0, state->control ) < 0 ) {
         ALOGE("could not create thread control socket pair: %s", strerror(errno));
@@ -874,30 +874,38 @@ qemu_gps_stop()
 
 
 static int
-qemu_gps_inject_time(GpsUtcTime time, int64_t timeReference, int uncertainty)
+qemu_gps_inject_time(GpsUtcTime __unused time,
+                     int64_t __unused timeReference,
+                     int __unused uncertainty)
 {
     return 0;
 }
 
 static int
-qemu_gps_inject_location(double latitude, double longitude, float accuracy)
+qemu_gps_inject_location(double __unused latitude,
+                         double __unused longitude,
+                         float __unused accuracy)
 {
     return 0;
 }
 
 static void
-qemu_gps_delete_aiding_data(GpsAidingData flags)
+qemu_gps_delete_aiding_data(GpsAidingData __unused flags)
 {
 }
 
-static int qemu_gps_set_position_mode(GpsPositionMode mode, int fix_frequency)
+static int qemu_gps_set_position_mode(GpsPositionMode __unused mode,
+                                      GpsPositionRecurrence __unused recurrence,
+                                      uint32_t __unused min_interval,
+                                      uint32_t __unused preferred_accuracy,
+                                      uint32_t __unused preferred_time)
 {
     // FIXME - support fix_frequency
     return 0;
 }
 
 static const void*
-qemu_gps_get_extension(const char* name)
+qemu_gps_get_extension(const char* __unused name)
 {
     // no extensions supported
     return NULL;
@@ -916,13 +924,14 @@ static const GpsInterface  qemuGpsInterface = {
     qemu_gps_get_extension,
 };
 
-const GpsInterface* gps__get_gps_interface(struct gps_device_t* dev)
+const GpsInterface* gps__get_gps_interface(struct gps_device_t* __unused dev)
 {
     return &qemuGpsInterface;
 }
 
-static int open_gps(const struct hw_module_t* module, char const* name,
-        struct hw_device_t** device)
+static int open_gps(const struct hw_module_t* module,
+                    char const* __unused name,
+                    struct hw_device_t** device)
 {
     struct gps_device_t *dev = malloc(sizeof(struct gps_device_t));
     memset(dev, 0, sizeof(*dev));
