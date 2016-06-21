@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 #include "QemuPipeStream.h"
-#include <hardware/qemu_pipe.h>
+#include <system/qemu_pipe.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,7 +51,7 @@ QemuPipeStream::~QemuPipeStream()
 
 int QemuPipeStream::connect(void)
 {
-    m_sock = qemu_pipe_open("opengles");
+    m_sock = qemu_pipe_open("pipe:opengles");
     if (!valid()) return -1;
     return 0;
 }
