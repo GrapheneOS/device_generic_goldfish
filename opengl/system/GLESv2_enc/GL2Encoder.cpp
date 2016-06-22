@@ -1441,7 +1441,15 @@ void GL2Encoder::s_glTexSubImage2D(void* self, GLenum target, GLint level,
 
     SET_ERROR_IF((level < 0 || level > log2(maxTextureSize)), GL_INVALID_VALUE);
 
-    ctx->m_glTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, width, height, format, type, pixels);
+     if (target == GL_TEXTURE_2D || target == GL_TEXTURE_EXTERNAL_OES) {
+        ctx->override2DTextureTarget(target);
+        ctx->m_glTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, width,
+                height, format, type, pixels);
+        ctx->restore2DTextureTarget();
+     } else {
+         ctx->m_glTexSubImage2D_enc(ctx, target, level, xoffset, yoffset, width,
+                 height, format, type, pixels);
+     }
 }
 
 void GL2Encoder::s_glTexParameteriv(void* self,
