@@ -42,7 +42,8 @@ on boot
     stop akmd
 
 # start essential services
-# These were written for the classic emulator, but are applicable to ranchu
+    setprop rild.libpath libreference-ril.so
+    # These were written for the classic emulator, but are applicable to ranchu
     start goldfish-logcat
     start goldfish-setup
 
