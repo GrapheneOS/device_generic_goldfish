@@ -38,6 +38,7 @@ on boot
     stop akmd
 
 # start essential services
+    setprop rild.libpath libreference-ril.so
     start goldfish-logcat
     start goldfish-setup
 
