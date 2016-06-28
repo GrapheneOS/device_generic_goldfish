@@ -279,7 +279,14 @@ nmea_reader_update_time( NmeaReader*  r, Token  tok )
     tm.tm_mday  = r->utc_day;
     tm.tm_isdst = -1;
 
-    fix_time = mktime( &tm ) + r->utc_diff;
+    // This is a little confusing, let's use an example:
+    // Suppose now it's 1970-1-1 01:00 GMT, local time is 1970-1-1 00:00 GMT-1
+    // Then the utc_diff is 3600.
+    // The time string from GPS is 01:00:00, mktime assumes it's a local
+    // time. So we are doing mktime for 1970-1-1 01:00 GMT-1. The result of
+    // mktime is 7200 (1970-1-1 02:00 GMT) actually. To get the correct
+    // timestamp, we have to subtract utc_diff here.
+    fix_time = mktime( &tm ) - r->utc_diff;
     r->fix.timestamp = (long long)fix_time * 1000;
     return 0;
 }
