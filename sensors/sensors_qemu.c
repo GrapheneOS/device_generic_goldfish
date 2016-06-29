@@ -229,7 +229,7 @@ static int sensor_device_pick_pending_event_locked(SensorDevice* d,
     }
     E("No sensor to return!!! pendingSensors=0x%08x", d->pendingSensors);
     // we may end-up in a busy loop, slow things down, just in case.
-    usleep(100000);
+    usleep(1000);
     return -EINVAL;
 }
 
@@ -387,13 +387,28 @@ out:
         dev->pendingSensors |= new_sensors;
         int64_t t = (event_time < 0) ? 0 : event_time * 1000LL;
 
-        /* use the time at the first sync: as the base for later
-         * time values */
+        /* Use the time at the first "sync:" as the base for later
+         * time values.
+         * CTS tests require sensors to return an event timestamp (sync) that is
+         * strictly before the time of the event arrival. We don't actually have
+         * a time syncronization protocol here, and the only data point is the
+         * "sync:" timestamp - which is an emulator's timestamp of a clock that
+         * is synced with the guest clock, and it only the timestamp after all
+         * events were sent.
+         * To make it work, let's compare the calculated timestamp with current
+         * time and take the lower value - we don't believe in events from the
+         * future anyway.
+         */
+        const int64_t now = now_ns();
+
         if (dev->timeStart == 0) {
-            dev->timeStart  = now_ns();
+            dev->timeStart  = now;
             dev->timeOffset = dev->timeStart - t;
         }
         t += dev->timeOffset;
+        if (t > now) {
+            t = now;
+        }
 
         while (new_sensors) {
             uint32_t i = 31 - __builtin_clz(new_sensors);
@@ -571,7 +586,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 2.8f,
           .resolution = 1.0f/4032.0f,
           .power      = 3.0f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         },
 
@@ -583,7 +599,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 2000.0f,
           .resolution = 1.0f,
           .power      = 6.7f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         },
 
@@ -595,7 +612,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 360.0f,
           .resolution = 1.0f,
           .power      = 9.7f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         },
 
@@ -607,7 +625,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 80.0f,
           .resolution = 1.0f,
           .power      = 0.0f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         },
 
@@ -619,7 +638,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 1.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         },
 
@@ -631,7 +651,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 40000.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         },
 
@@ -643,7 +664,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 800.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         },
 
@@ -655,7 +677,8 @@ static const struct sensor_t sSensorListInit[] = {
           .maxRange   = 100.0f,
           .resolution = 1.0f,
           .power      = 20.0f,
-          .minDelay   = 2000,
+          .minDelay   = 10000,
+          .maxDelay   = 60 * 1000 * 1000,
           .reserved   = {}
         }
 };
