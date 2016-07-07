@@ -27,11 +27,12 @@ namespace ClientAPIExts
 // typename has the form __egl_{funcname}_t
 //
 #define FUNC_TYPE(fname) __egl_ ## fname ## _t
+// NOLINT: clang-tidy adds parentheses around 'params'.
 #define API_ENTRY(fname,params,args) \
-    typedef void (GL_APIENTRY *FUNC_TYPE(fname)) params;
+    typedef void (GL_APIENTRY *FUNC_TYPE(fname)) params;  // NOLINT
 
 #define API_ENTRY_RET(rtype,fname,params,args) \
-    typedef rtype (GL_APIENTRY *FUNC_TYPE(fname)) params;
+    typedef rtype (GL_APIENTRY *FUNC_TYPE(fname)) params;  // NOLINT
 
 #include "ClientAPIExts.in"
 #undef API_ENTRY
@@ -44,7 +45,7 @@ namespace ClientAPIExts
 // loaded.
 /////
 #define API_ENTRY(fname,params,args) \
-    FUNC_TYPE(fname) fname;
+    FUNC_TYPE(fname) (fname);
 
 #define API_ENTRY_RET(rtype,fname,params,args) \
     API_ENTRY(fname,params,args)
@@ -88,6 +89,7 @@ void initClientFuncs(const EGLClient_glesInterface *iface, int idx)
 // the current context version and calls to the correct client API
 // function.
 //
+// NOLINT: clang-tidy adds parentheses around 'args'.
 #define API_ENTRY(fname,params,args) \
     static void _egl_ ## fname params \
     { \
@@ -99,7 +101,7 @@ void initClientFuncs(const EGLClient_glesInterface *iface, int idx)
         if (!s_client_extensions[idx].fname) { \
             return; \
         } \
-        (*s_client_extensions[idx].fname) args; \
+        (*s_client_extensions[idx].fname) args; /* NOLINT */ \
     }
 
 #define API_ENTRY_RET(rtype,fname,params,args) \
@@ -113,7 +115,7 @@ void initClientFuncs(const EGLClient_glesInterface *iface, int idx)
         if (!s_client_extensions[idx].fname) { \
             return (rtype)0; \
         } \
-        return (*s_client_extensions[idx].fname) args; \
+        return (*s_client_extensions[idx].fname) args; /* NOLINT */ \
     }
 
 #include "ClientAPIExts.in"

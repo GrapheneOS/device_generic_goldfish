@@ -87,7 +87,7 @@ const char *  eglStrError(EGLint err)
 #endif //LOG_EGL_ERRORS
 
 #define VALIDATE_CONFIG(cfg,ret) \
-    if(((intptr_t)cfg<0)||((intptr_t)cfg>s_display.getNumConfigs())) { \
+    if(((intptr_t)(cfg)<0)||((intptr_t)(cfg)>s_display.getNumConfigs())) { \
         RETURN_ERROR(ret,EGL_BAD_CONFIG); \
     }
 
@@ -118,13 +118,13 @@ const char *  eglStrError(EGLint err)
         return ret; \
     }
 
-#define VALIDATE_CONTEXT_RETURN(context,ret)        \
-    if (!context) {                                    \
+#define VALIDATE_CONTEXT_RETURN(context,ret)  \
+    if (!(context)) {                         \
         RETURN_ERROR(ret,EGL_BAD_CONTEXT);    \
     }
 
 #define VALIDATE_SURFACE_RETURN(surface, ret)    \
-    if (surface != EGL_NO_SURFACE) {    \
+    if ((surface) != EGL_NO_SURFACE) {    \
         egl_surface_t* s( static_cast<egl_surface_t*>(surface) );    \
         if (s->dpy != (EGLDisplay)&s_display)    \
             setErrorReturn(EGL_BAD_DISPLAY, EGL_FALSE);    \

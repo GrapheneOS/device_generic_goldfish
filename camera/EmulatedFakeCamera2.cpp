@@ -31,7 +31,7 @@
 #include <ui/GraphicBufferMapper.h>
 #include "gralloc_cb.h"
 
-#define ERROR_CAMERA_NOT_PRESENT -EPIPE
+#define ERROR_CAMERA_NOT_PRESENT (-EPIPE)
 
 #define CAMERA2_EXT_TRIGGER_TESTING_DISCONNECT 0xFFFFFFFF
 
