@@ -25,7 +25,7 @@
 
 /* we connect with the emulator through the "sensors" qemu pipe service
  */
-#define  SENSORS_SERVICE_NAME "pipe:qemud:sensors"
+#define  SENSORS_SERVICE_NAME "pipe:sensors"
 
 #define LOG_TAG "QemuSensors"
 
