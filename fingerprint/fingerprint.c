@@ -477,11 +477,11 @@ static int fingerprint_remove(struct fingerprint_device *device,
                 }
             }  // end for (idx < MAX_NUM_FINGERS)
         } while (!listIsEmpty);
+        qdev->listener.state = STATE_IDLE;
+        pthread_mutex_unlock(&qdev->lock);
         msg.type = FINGERPRINT_TEMPLATE_REMOVED;
         msg.data.removed.finger.fid = 0;
         device->notify(&msg);
-        qdev->listener.state = STATE_IDLE;
-        pthread_mutex_unlock(&qdev->lock);
     } else {
         // Delete one fingerprint
         // Look for this finger ID in our table.
@@ -661,8 +661,9 @@ static void* listenerFunction(void* data) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
     qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)data;
 
+    int fd = qemu_pipe_open(FINGERPRINT_LISTEN_SERVICE_NAME);
     pthread_mutex_lock(&qdev->lock);
-    qdev->qchanfd = qemu_pipe_open(FINGERPRINT_LISTEN_SERVICE_NAME);
+    qdev->qchanfd = fd;
     if (qdev->qchanfd < 0) {
         ALOGE("listener cannot open fingerprint listener service exit");
         pthread_mutex_unlock(&qdev->lock);
