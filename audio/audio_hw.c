@@ -36,9 +36,8 @@
 #define PCM_DEVICE 0
 
 
-/* TODO validate values */
-#define OUT_PERIOD_SIZE 880
-#define OUT_LONG_PERIOD_COUNT 8
+#define OUT_PERIOD_SIZE 2048
+#define OUT_LONG_PERIOD_COUNT 2
 
 #define IN_PERIOD_MS 20
 #define IN_PERIOD_COUNT 4
@@ -118,9 +117,10 @@ static size_t out_get_buffer_size(const struct audio_stream *stream)
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
     int channel_count = popcount(out->req_config.channel_mask);
-    int size = pcm_get_buffer_size(out->pcm);
+    int size = out->pcm_config.period_size *
+                audio_stream_out_frame_size(&out->stream);
 
-    return size*channel_count*sizeof(short);
+    return size;
 }
 
 static audio_channel_mask_t out_get_channels(const struct audio_stream *stream)
@@ -245,7 +245,8 @@ static char * out_get_parameters(const struct audio_stream *stream, const char *
 static uint32_t out_get_latency(const struct audio_stream_out *stream)
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
-    return (out->pcm_config.period_size * out->pcm_config.period_count * 1000) / out->pcm_config.rate;
+    return (out->pcm_config.period_size *
+            out->pcm_config.period_count * 1000) / out->pcm_config.rate;
 }
 
 static int out_set_volume(struct audio_stream_out *stream, float left,
