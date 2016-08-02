@@ -36,7 +36,7 @@
 #define PCM_DEVICE 0
 
 
-#define OUT_PERIOD_SIZE 2048
+#define OUT_PERIOD_SIZE 512
 #define OUT_LONG_PERIOD_COUNT 2
 
 #define IN_PERIOD_MS 20
