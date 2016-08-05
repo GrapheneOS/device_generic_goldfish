@@ -509,6 +509,13 @@ status_t EmulatedCamera::sendCommand(int32_t cmd, int32_t arg1, int32_t arg2)
 {
     ALOGV("%s: cmd = %d, arg1 = %d, arg2 = %d", __FUNCTION__, cmd, arg1, arg2);
 
+    switch (cmd) {
+        case CAMERA_CMD_START_FACE_DETECTION:
+        case CAMERA_CMD_STOP_FACE_DETECTION:
+            // We do not support hardware face detection so we need to indicate
+            // that any attempt to start/stop face detection is invalid
+            return BAD_VALUE;
+    }
     /* TODO: Future enhancements. */
     return 0;
 }
