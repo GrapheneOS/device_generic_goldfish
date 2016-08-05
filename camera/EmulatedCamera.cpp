@@ -507,6 +507,14 @@ status_t EmulatedCamera::setParameters(const char* parms)
         return BAD_VALUE;
     }
 
+    // Validate preview size, if there is no preview size the initial values of
+    // the integers below will be preserved thus intentionally failing the test
+    int preview_width = -1, preview_height = -1;
+    new_param.getPreviewSize(&preview_width, &preview_height);
+    if (preview_width < 0 || preview_height < 0) {
+        return BAD_VALUE;
+    }
+
     mParameters = new_param;
 
     return NO_ERROR;
