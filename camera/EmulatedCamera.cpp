@@ -36,6 +36,16 @@
 
 namespace android {
 
+static const char* kValidFocusModes[] = {
+    CameraParameters::FOCUS_MODE_AUTO,
+    CameraParameters::FOCUS_MODE_INFINITY,
+    CameraParameters::FOCUS_MODE_MACRO,
+    CameraParameters::FOCUS_MODE_FIXED,
+    CameraParameters::FOCUS_MODE_EDOF,
+    CameraParameters::FOCUS_MODE_CONTINUOUS_VIDEO,
+    CameraParameters::FOCUS_MODE_CONTINUOUS_PICTURE,
+};
+
 #if DEBUG_PARAM
 /* Calculates and logs parameter changes.
  * Param:
@@ -57,6 +67,20 @@ static void PrintParamDiff(const CameraParameters& current, const char* new_par)
  *  freeing it with 'free'.
  */
 static char* AddValue(const char* param, const char* val);
+
+/*
+ * Check if a given string |value| equals at least one of the strings in |list|
+ */
+template<size_t N>
+static bool IsValueInList(const char* value, const char* const (&list)[N])
+{
+    for (size_t i = 0; i < N; ++i) {
+        if (strcmp(value, list[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 EmulatedCamera::EmulatedCamera(int cameraId,
                                struct hw_module_t* module)
@@ -155,6 +179,10 @@ status_t EmulatedCamera::Initialize()
     getCameraDevice()->initializeWhiteBalanceModes(
             CameraParameters::WHITE_BALANCE_TWILIGHT, 0.92f, 1.22f);
     getCameraDevice()->setWhiteBalanceMode(CameraParameters::WHITE_BALANCE_AUTO);
+
+    /* Set focus distances for "near,optimal,far" */
+    mParameters.set(CameraParameters::KEY_FOCUS_DISTANCES,
+                    "Infinity,Infinity,Infinity");
 
     /* Not supported features
      */
@@ -471,6 +499,12 @@ status_t EmulatedCamera::setParameters(const char* parms)
             ALOGV("Setting white balance to %s", new_white_balance);
             getCameraDevice()->setWhiteBalanceMode(new_white_balance);
         }
+    }
+
+    // Validate focus mode
+    const char* focus_mode = new_param.get(CameraParameters::KEY_FOCUS_MODE);
+    if (focus_mode && !IsValueInList(focus_mode, kValidFocusModes)) {
+        return BAD_VALUE;
     }
 
     mParameters = new_param;
