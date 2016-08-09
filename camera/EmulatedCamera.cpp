@@ -180,6 +180,9 @@ status_t EmulatedCamera::Initialize()
             CameraParameters::WHITE_BALANCE_TWILIGHT, 0.92f, 1.22f);
     getCameraDevice()->setWhiteBalanceMode(CameraParameters::WHITE_BALANCE_AUTO);
 
+    /* Set suported antibanding values */
+    mParameters.set(CameraParameters::KEY_SUPPORTED_ANTIBANDING, CameraParameters::ANTIBANDING_AUTO);
+
     /* Set focus distances for "near,optimal,far" */
     mParameters.set(CameraParameters::KEY_FOCUS_DISTANCES,
                     "Infinity,Infinity,Infinity");
