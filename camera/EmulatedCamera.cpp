@@ -183,6 +183,11 @@ status_t EmulatedCamera::Initialize()
     /* Set suported antibanding values */
     mParameters.set(CameraParameters::KEY_SUPPORTED_ANTIBANDING, CameraParameters::ANTIBANDING_AUTO);
 
+    /* Set control effect mode
+     * Bug: 30862244
+     * */
+    mParameters.set(CameraParameters::KEY_SUPPORTED_EFFECTS, CameraParameters::EFFECT_NONE);
+
     /* Set focus distances for "near,optimal,far" */
     mParameters.set(CameraParameters::KEY_FOCUS_DISTANCES,
                     "Infinity,Infinity,Infinity");
