@@ -102,51 +102,16 @@ static gl2_wrapper_context_t *getGL2Context()
 
 const char *getProcName()
 {
-    static const char *procname = NULL;
+    static constexpr size_t kMaxProcessNameLength = 100;
+    static const char procname[kMaxProcessNameLength]{0};
 
-    if (procname == NULL) {
-        const char *str = get_process_name();
-        if (strcmp(str, "unknown") != 0) {
-            procname = str;
-        } else {
-            // we need to obtain our process name from the command line;
-            FILE *fp = fopen("/proc/self/cmdline", "rt");
-            if (fp == NULL) {
-                ALOGE("couldn't open /proc/self/cmdline\n");
-                return NULL;
-            }
+    int rc = pthread_getname_np(pthread_self(), procname, kMaxProcessNameLength);
 
-            char line[1000];
-            if (fgets(line, sizeof(line), fp) == NULL) {
-                ALOGE("couldn't read the self cmdline from \n");
-                fclose(fp);
-                return NULL;
-            }
-            fclose(fp);
-
-            if (line[0] == '\0') {
-                ALOGE("cmdline is empty\n");
-                return NULL;
-            }
-
-            //obtain the basename;
-            line[sizeof(line) - 1] = '\0';
-            char *p = line;
-            while (*p != '\0' &&
-                   *p != '\t' &&
-                   *p != ' ' &&
-                   *p != '\n') {
-                p++;
-            }
-
-            *p = '\0'; p--;
-            while (p > line && *p != '/') p--;
-            if (*p == '/') p++;
-            procname = strdup(p);
-        }
+    if (rc == 0) {
+        return procname;
     }
 
-    return procname;
+    return nullptr;
 }
 
 
