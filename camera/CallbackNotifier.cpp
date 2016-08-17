@@ -24,6 +24,9 @@
 #include <cutils/log.h>
 #include <MetadataBufferType.h>
 #include "EmulatedCameraDevice.h"
+#undef min
+#undef max
+#include "Exif.h"
 #include "CallbackNotifier.h"
 #include "JpegCompressor.h"
 
@@ -252,13 +255,17 @@ void CallbackNotifier::onNextFrameAvailable(const void* frame,
             mNotifyCB(CAMERA_MSG_RAW_IMAGE_NOTIFY, 0, 0, mCBOpaque);
         }
         if (isMessageEnabled(CAMERA_MSG_COMPRESSED_IMAGE)) {
+            // Create EXIF data from the camera parameters, this includes things
+            // like EXIF default fields, a timestamp and GPS information.
+            ExifData* exifData = createExifData(mCameraParameters);
+
             /* Compress the frame to JPEG. Note that when taking pictures, we
              * have requested camera device to provide us with NV21 frames. */
             NV21JpegCompressor compressor;
             status_t res =
                 compressor.compressRawImage(frame, camera_dev->getFrameWidth(),
                                             camera_dev->getFrameHeight(),
-                                            mJpegQuality);
+                                            mJpegQuality, exifData);
             if (res == NO_ERROR) {
                 camera_memory_t* jpeg_buff =
                     mGetMemoryCB(-1, compressor.getCompressedSize(), 1, NULL);
@@ -272,6 +279,8 @@ void CallbackNotifier::onNextFrameAvailable(const void* frame,
             } else {
                 ALOGE("%s: Compression failure in CAMERA_MSG_VIDEO_FRAME", __FUNCTION__);
             }
+            // The EXIF data has been consumed, free it
+            freeExifData(exifData);
         }
     }
 }

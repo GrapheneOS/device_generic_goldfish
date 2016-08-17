@@ -23,6 +23,7 @@
  */
 
 #include <utils/List.h>
+#include <camera/CameraParameters.h>
 
 namespace android {
 
@@ -182,6 +183,14 @@ public:
         mJpegQuality = jpeg_quality;
     }
 
+    /* Sets the camera parameters that will be used to populate exif data in the
+     * picture.
+     */
+    void setCameraParameters(CameraParameters cameraParameters)
+    {
+        mCameraParameters = cameraParameters;
+    }
+
     /****************************************************************************
      * Private API
      ***************************************************************************/
@@ -225,6 +234,9 @@ protected:
 
     /* JPEG quality used to compress frame during picture taking. */
     int                             mJpegQuality;
+
+    /* Camera parameters used for EXIF data in picture */
+    CameraParameters                mCameraParameters;
 
     /* Video recording status. */
     bool                            mVideoRecEnabled;

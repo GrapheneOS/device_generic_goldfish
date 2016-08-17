@@ -434,6 +434,7 @@ status_t EmulatedCamera::takePicture()
 
     /* Deliver one frame only. */
     mCallbackNotifier.setJpegQuality(jpeg_quality);
+    mCallbackNotifier.setCameraParameters(mParameters);
     mCallbackNotifier.setTakingPicture(true);
     res = camera_dev->startDeliveringFrames(true);
     if (res != NO_ERROR) {
