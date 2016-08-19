@@ -23,7 +23,6 @@
 #include <inttypes.h>
 #include <math.h>
 #include <stdint.h>
-#include <time64.h>
 
 #include <camera/CameraParameters.h>
 #include <libexif/exif-data.h>
@@ -33,6 +32,18 @@
 
 #include <string>
 #include <vector>
+
+// For GPS timestamping we want to ensure we use a 64-bit time_t, 32-bit
+// platforms have time64_t but 64-bit platforms do not.
+#if defined(__LP64__)
+#include <time.h>
+using Timestamp = time_t;
+#define TIMESTAMP_TO_TM(timestamp, tm) gmtime_r(timestamp, tm)
+#else
+#include <time64.h>
+using Timestamp = time64_t;
+#define TIMESTAMP_TO_TM(timestamp, tm) gmtime64_r(timestamp, tm)
+#endif
 
 namespace android {
 
@@ -206,9 +217,9 @@ static void convertGpsCoordinate(float degrees, float (*result)[3]) {
 static bool convertTimestampToTimeAndDate(int64_t timestamp,
                                           float (*timeValues)[3],
                                           std::string* date) {
-    time64_t time = timestamp;
+    Timestamp time = timestamp;
     struct tm utcTime;
-    if (gmtime64_r(&time, &utcTime) == nullptr) {
+    if (TIMESTAMP_TO_TM(&time, &utcTime) == nullptr) {
         ALOGE("Could not decompose timestamp into components");
         return false;
     }
