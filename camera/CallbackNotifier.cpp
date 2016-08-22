@@ -29,6 +29,7 @@
 #include "Exif.h"
 #include "CallbackNotifier.h"
 #include "JpegCompressor.h"
+#include "Thumbnail.h"
 
 namespace android {
 
@@ -259,13 +260,30 @@ void CallbackNotifier::onNextFrameAvailable(const void* frame,
             // like EXIF default fields, a timestamp and GPS information.
             ExifData* exifData = createExifData(mCameraParameters);
 
+            // Create a thumbnail and place the pointer and size in the EXIF
+            // data structure. This transfers ownership to the EXIF data and
+            // the memory will be deallocated in the freeExifData call below.
+            int width = camera_dev->getFrameWidth();
+            int height = camera_dev->getFrameHeight();
+            int thumbWidth = mCameraParameters.getInt(
+                    CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH);
+            int thumbHeight = mCameraParameters.getInt(
+                    CameraParameters::KEY_JPEG_THUMBNAIL_HEIGHT);
+            if (thumbWidth > 0 && thumbHeight > 0) {
+                if (!createThumbnail(static_cast<const unsigned char*>(frame),
+                                     width, height, thumbWidth, thumbHeight,
+                                     mJpegQuality, exifData)) {
+                    // Not really a fatal error, we'll just keep going
+                    ALOGE("%s: Failed to create thumbnail for image",
+                          __FUNCTION__);
+                }
+            }
+
             /* Compress the frame to JPEG. Note that when taking pictures, we
              * have requested camera device to provide us with NV21 frames. */
             NV21JpegCompressor compressor;
-            status_t res =
-                compressor.compressRawImage(frame, camera_dev->getFrameWidth(),
-                                            camera_dev->getFrameHeight(),
-                                            mJpegQuality, exifData);
+            status_t res = compressor.compressRawImage(frame, width, height,
+                                                       mJpegQuality, exifData);
             if (res == NO_ERROR) {
                 camera_memory_t* jpeg_buff =
                     mGetMemoryCB(-1, compressor.getCompressedSize(), 1, NULL);

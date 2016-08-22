@@ -35,8 +35,12 @@ emulator_camera_shared_libraries := \
 	libjpeg \
 	libcamera_metadata
 
+emulator_camera_static_libraries := \
+	libyuv_static
+
 emulator_camera_c_includes := external/libjpeg-turbo \
 	external/libexif \
+	external/libyuv/files/include \
 	frameworks/native/include/media/hardware \
 	$(LOCAL_PATH)/../../goldfish-opengl/system/OpenglSystemCommon \
 	$(call include-path-for, camera)
@@ -66,6 +70,7 @@ emulator_camera_src := \
 	EmulatedCamera3.cpp \
 		EmulatedFakeCamera3.cpp \
 	Exif.cpp \
+	Thumbnail.cpp \
 
 
 # Emulated camera - goldfish / vbox_x86 build###################################
@@ -75,6 +80,7 @@ LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
 
 LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
+LOCAL_STATIC_LIBRARIES := ${emulator_camera_static_libraries}
 LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
 LOCAL_SRC_FILES := ${emulator_camera_src}
 
@@ -97,6 +103,7 @@ LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
 
 LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
+LOCAL_STATIC_LIBRARIES := ${emulator_camera_static_libraries}
 LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
 LOCAL_SRC_FILES := ${emulator_camera_src}
 

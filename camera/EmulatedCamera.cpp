@@ -120,8 +120,8 @@ status_t EmulatedCamera::Initialize()
 
     mParameters.set(CameraParameters::KEY_SUPPORTED_JPEG_THUMBNAIL_SIZES, "320x240,0x0");
 
-    mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, "512");
-    mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_HEIGHT, "384");
+    mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, "320");
+    mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_HEIGHT, "240");
     mParameters.set(CameraParameters::KEY_JPEG_QUALITY, "90");
     mParameters.set(CameraParameters::KEY_FOCAL_LENGTH, "4.31");
     mParameters.set(CameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "54.8");
