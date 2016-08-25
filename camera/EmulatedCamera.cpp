@@ -461,6 +461,7 @@ status_t EmulatedCamera::setParameters(const char* parms)
     CameraParameters new_param;
     String8 str8_param(parms);
     new_param.unflatten(str8_param);
+    bool restartPreview = false;
 
     /*
      * Check for new exposure compensation parameter.
@@ -518,14 +519,51 @@ status_t EmulatedCamera::setParameters(const char* parms)
 
     // Validate preview size, if there is no preview size the initial values of
     // the integers below will be preserved thus intentionally failing the test
-    int preview_width = -1, preview_height = -1;
-    new_param.getPreviewSize(&preview_width, &preview_height);
-    if (preview_width < 0 || preview_height < 0) {
+    int new_preview_width = -1, new_preview_height = -1;
+    new_param.getPreviewSize(&new_preview_width, &new_preview_height);
+    if (new_preview_width < 0 || new_preview_height < 0) {
         return BAD_VALUE;
+    }
+    // If the preview size has changed we have to restart the preview to make
+    // sure we provide frames of the correct size. The receiver assumes the
+    // frame size is correct and will copy all data provided into a buffer whose
+    // size is determined by the preview size without checks, potentially
+    // causing buffer overruns or underruns if there is a size mismatch.
+    int old_preview_width = -1, old_preview_height = -1;
+    mParameters.getPreviewSize(&old_preview_width, &old_preview_height);
+    if (old_preview_width != new_preview_width ||
+            old_preview_height != new_preview_height) {
+        restartPreview = true;
+    }
+
+    // For the same reasons as with the preview size we have to look for changes
+    // in video size and restart the preview if the size has changed.
+    int old_video_width = -1, old_video_height = -1;
+    int new_video_width = -1, new_video_height = -1;
+    mParameters.getVideoSize(&old_video_width, &old_video_height);
+    new_param.getVideoSize(&new_video_width, &new_video_height);
+    if (old_video_width != new_video_width ||
+        old_video_height != new_video_height) {
+        restartPreview = true;
     }
 
     mParameters = new_param;
 
+    // Now that the parameters have been assigned check if the preview needs to
+    // be restarted. If necessary this will then use the new parameters to set
+    // up the preview as requested by the caller.
+    if (restartPreview) {
+        status_t status = doStopPreview();
+        if (status != NO_ERROR) {
+            ALOGE("%s: Stopping preview failed: %d", __FUNCTION__, status);
+            return status;
+        }
+        status = doStartPreview();
+        if (status != NO_ERROR) {
+            ALOGE("%s: Starting preview failed: %d", __FUNCTION__, status);
+            return status;
+        }
+    }
     return NO_ERROR;
 }
 
