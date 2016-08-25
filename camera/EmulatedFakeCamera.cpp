@@ -78,6 +78,9 @@ status_t EmulatedFakeCamera::Initialize()
                     "640x480,352x288,320x240,176x144");
     mParameters.set(CameraParameters::KEY_SUPPORTED_VIDEO_SIZES,
                     "640x480,352x288,320x240,176x144");
+    mParameters.set(CameraParameters::KEY_PREFERRED_PREVIEW_SIZE_FOR_VIDEO,
+                    "640x480");
+
     mParameters.setPreviewSize(640, 480);
     mParameters.setPictureSize(640, 480);
 
