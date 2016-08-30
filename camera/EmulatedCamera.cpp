@@ -82,6 +82,16 @@ static bool IsValueInList(const char* value, const char* const (&list)[N])
     return false;
 }
 
+static bool StringsEqual(const char* str1, const char* str2) {
+    if (str1 == nullptr && str2 == nullptr) {
+        return true;
+    }
+    if (str1 == nullptr || str2 == nullptr) {
+        return false;
+    }
+    return strcmp(str1, str2) == 0;
+}
+
 EmulatedCamera::EmulatedCamera(int cameraId,
                                struct hw_module_t* module)
         : EmulatedBaseCamera(cameraId,
@@ -552,6 +562,13 @@ status_t EmulatedCamera::setParameters(const char* parms)
         old_video_height != new_video_height) {
         restartPreview = true;
     }
+    // Restart the preview if the pixel format changes to make sure we serve
+    // the selected encoding to the client.
+    const char* old_format = mParameters.getPreviewFormat();
+    const char* new_format = new_param.getPreviewFormat();
+    if (!StringsEqual(old_format, new_format)) {
+        restartPreview = true;
+    }
 
     mParameters = new_param;
 
@@ -665,27 +682,7 @@ status_t EmulatedCamera::doStartPreview()
     } else {
         mParameters.getPreviewSize(&width, &height);
     }
-    /* Lets see what should we use for the frame pixel format. Note that there
-     * are two parameters that define pixel formats for frames sent to the
-     * application via notification callbacks:
-     * - KEY_VIDEO_FRAME_FORMAT, that is used when recording video, and
-     * - KEY_PREVIEW_FORMAT, that is used for preview frame notification.
-     * We choose one or the other, depending on "recording-hint" property set by
-     * the framework that indicating intention: video, or preview. */
-    const char* pix_fmt = NULL;
-    const char* is_video = mParameters.get(EmulatedCamera::RECORDING_HINT_KEY);
-    if (is_video == NULL) {
-        is_video = CameraParameters::FALSE;
-    }
-    if (strcmp(is_video, CameraParameters::TRUE) == 0) {
-        /* Video recording is requested. Lets see if video frame format is set. */
-        pix_fmt = mParameters.get(CameraParameters::KEY_VIDEO_FRAME_FORMAT);
-    }
-    /* If this was not video recording, or video frame format is not set, lets
-     * use preview pixel format for the main framebuffer. */
-    if (pix_fmt == NULL) {
-        pix_fmt = mParameters.getPreviewFormat();
-    }
+    const char* pix_fmt = mParameters.getPreviewFormat();
     if (pix_fmt == NULL) {
         ALOGE("%s: Unable to obtain video format", __FUNCTION__);
         mPreviewWindow.stopPreview();
