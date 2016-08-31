@@ -153,9 +153,6 @@ private:
      * number of both, Us and Vs in a single row in the interleaved UV pane. */
     int         mUVInRow;
 
-    /* Total number of each, U, and V elements in the framebuffer. */
-    int         mUVTotalNum;
-
     /*
      * Checkerboard drawing related stuff
      */

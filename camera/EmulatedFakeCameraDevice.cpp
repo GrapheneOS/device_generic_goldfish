@@ -124,33 +124,29 @@ status_t EmulatedFakeCameraDevice::startDevice(int width,
         /* Calculate U/V panes inside the framebuffer. */
         switch (mPixelFormat) {
             case V4L2_PIX_FMT_YVU420:
-                mFrameV = mCurrentFrame + mTotalPixels;
-                mFrameU = mFrameU + mTotalPixels / 4;
+                mFrameV = mCurrentFrame + mYStride * mFrameHeight;
+                mFrameU = mFrameV + mUVStride * (mFrameHeight / 2);
                 mUVStep = 1;
-                mUVTotalNum = mTotalPixels / 4;
                 break;
 
             case V4L2_PIX_FMT_YUV420:
-                mFrameU = mCurrentFrame + mTotalPixels;
-                mFrameV = mFrameU + mTotalPixels / 4;
+                mFrameU = mCurrentFrame + mYStride * mFrameHeight;
+                mFrameV = mFrameU + mUVStride * (mFrameHeight / 2);
                 mUVStep = 1;
-                mUVTotalNum = mTotalPixels / 4;
                 break;
 
             case V4L2_PIX_FMT_NV21:
                 /* Interleaved UV pane, V first. */
-                mFrameV = mCurrentFrame + mTotalPixels;
+                mFrameV = mCurrentFrame + mYStride * mFrameHeight;
                 mFrameU = mFrameV + 1;
                 mUVStep = 2;
-                mUVTotalNum = mTotalPixels / 4;
                 break;
 
             case V4L2_PIX_FMT_NV12:
                 /* Interleaved UV pane, U first. */
-                mFrameU = mCurrentFrame + mTotalPixels;
+                mFrameU = mCurrentFrame + mYStride * mFrameHeight;
                 mFrameV = mFrameU + 1;
                 mUVStep = 2;
-                mUVTotalNum = mTotalPixels / 4;
                 break;
 
             default:
@@ -257,11 +253,6 @@ void EmulatedFakeCameraDevice::drawCheckerboard()
 
     int county = mCheckY % size;
     int checkxremainder = mCheckX % size;
-    uint8_t* Y = mCurrentFrame;
-    uint8_t* U_pos = mFrameU;
-    uint8_t* V_pos = mFrameV;
-    uint8_t* U = U_pos;
-    uint8_t* V = V_pos;
 
     YUVPixel adjustedWhite = YUVPixel(mWhiteYUV);
     changeWhiteBalance(adjustedWhite.Y, adjustedWhite.U, adjustedWhite.V);
@@ -269,6 +260,9 @@ void EmulatedFakeCameraDevice::drawCheckerboard()
     for(int y = 0; y < mFrameHeight; y++) {
         int countx = checkxremainder;
         bool current = black;
+        uint8_t* Y = mCurrentFrame + mYStride * y;
+        uint8_t* U = mFrameU + mUVStride * (y / 2);
+        uint8_t* V = mFrameV + mUVStride * (y / 2);
         for(int x = 0; x < mFrameWidth; x += 2) {
             if (current) {
                 mBlackYUV.get(Y, U, V);
@@ -283,13 +277,6 @@ void EmulatedFakeCameraDevice::drawCheckerboard()
                 countx = 0;
                 current = !current;
             }
-        }
-        if (y & 0x1) {
-            U_pos = U;
-            V_pos = V;
-        } else {
-            U = U_pos;
-            V = V_pos;
         }
         if(county++ >= size) {
             county = 0;
@@ -317,14 +304,14 @@ void EmulatedFakeCameraDevice::drawSquare(int x,
 {
     const int square_xstop = min(mFrameWidth, x + size);
     const int square_ystop = min(mFrameHeight, y + size);
-    uint8_t* Y_pos = mCurrentFrame + y * mFrameWidth + x;
+    uint8_t* Y_pos = mCurrentFrame + y * mYStride + x;
 
     YUVPixel adjustedColor = *color;
     changeWhiteBalance(adjustedColor.Y, adjustedColor.U, adjustedColor.V);
 
     // Draw the square.
     for (; y < square_ystop; y++) {
-        const int iUV = (y / 2) * mUVInRow + (x / 2) * mUVStep;
+        const int iUV = (y / 2) * mUVStride + (x / 2) * mUVStep;
         uint8_t* sqU = mFrameU + iUV;
         uint8_t* sqV = mFrameV + iUV;
         uint8_t* sqY = Y_pos;
@@ -334,7 +321,7 @@ void EmulatedFakeCameraDevice::drawSquare(int x,
             sqY[1] = *sqY;
             sqY += 2; sqU += mUVStep; sqV += mUVStep;
         }
-        Y_pos += mFrameWidth;
+        Y_pos += mYStride;
     }
 }
 
@@ -345,15 +332,19 @@ void EmulatedFakeCameraDevice::drawSolid(YUVPixel* color)
     YUVPixel adjustedColor = *color;
     changeWhiteBalance(adjustedColor.Y, adjustedColor.U, adjustedColor.V);
 
-    /* All Ys are the same. */
-    memset(mCurrentFrame, changeExposure(adjustedColor.Y), mTotalPixels);
+    /* All Ys are the same, will fill any alignment padding but that's OK */
+    memset(mCurrentFrame, changeExposure(adjustedColor.Y),
+           mFrameHeight * mYStride);
 
     /* Fill U, and V panes. */
-    uint8_t* U = mFrameU;
-    uint8_t* V = mFrameV;
-    for (int k = 0; k < mUVTotalNum; k++, U += mUVStep, V += mUVStep) {
-        *U = color->U;
-        *V = color->V;
+    for (int y = 0; y < mFrameHeight / 2; ++y) {
+        uint8_t* U = mFrameU + y * mUVStride;
+        uint8_t* V = mFrameV + y * mUVStride;
+
+        for (int x = 0; x < mFrameWidth / 2; ++x, U += mUVStep, V += mUVStep) {
+            *U = color->U;
+            *V = color->V;
+        }
     }
 }
 
@@ -363,7 +354,7 @@ void EmulatedFakeCameraDevice::drawStripes()
     const int change_color_at = mFrameHeight / 4;
     const int each_in_row = mUVInRow / mUVStep;
     uint8_t* pY = mCurrentFrame;
-    for (int y = 0; y < mFrameHeight; y++, pY += mFrameWidth) {
+    for (int y = 0; y < mFrameHeight; y++, pY += mYStride) {
         /* Select the color. */
         YUVPixel* color;
         const int color_index = y / change_color_at;
@@ -386,7 +377,7 @@ void EmulatedFakeCameraDevice::drawStripes()
         memset(pY, changeExposure(color->Y), mFrameWidth);
 
         /* Offset of the current row inside U/V panes. */
-        const int uv_off = (y / 2) * mUVInRow;
+        const int uv_off = (y / 2) * mUVStride;
         /* Fill U, and V panes. */
         uint8_t* U = mFrameU + uv_off;
         uint8_t* V = mFrameV + uv_off;

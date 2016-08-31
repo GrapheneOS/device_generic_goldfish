@@ -30,6 +30,8 @@
 #include <cmath>
 #include "EmulatedCameraDevice.h"
 
+#include "Alignment.h"
+
 namespace android {
 
 const float GAMMA_CORRECTION = 2.2f;
@@ -200,11 +202,24 @@ status_t EmulatedCameraDevice::commonStartDevice(int width,
     switch (pix_fmt) {
         case V4L2_PIX_FMT_YVU420:
         case V4L2_PIX_FMT_YUV420:
+            // For these pixel formats the strides have to be aligned to 16 byte
+            // boundaries as per the format specification
+            // https://developer.android.com/reference/android/graphics/ImageFormat.html#YV12
+            mYStride = align(width, 16);
+            mUVStride = align(mYStride / 2, 16);
+            // The second term should use half the height but since there are
+            // two planes the multiplication with two cancels that out
+            mFrameBufferSize = mYStride * height + mUVStride * height;
+            break;
         case V4L2_PIX_FMT_NV21:
         case V4L2_PIX_FMT_NV12:
-            mFrameBufferSize = (width * height * 12) / 8;
+            mYStride = width;
+            // Because of interleaving the UV stride is the same as the Y stride
+            // since it covers two pixels, one U and one V.
+            mUVStride = mYStride;
+            // Since the U/V stride covers both U and V we don't multiply by two
+            mFrameBufferSize = mYStride * height + mUVStride * (height / 2);
             break;
-
         default:
             ALOGE("%s: Unknown pixel format %.4s",
                  __FUNCTION__, reinterpret_cast<const char*>(&pix_fmt));

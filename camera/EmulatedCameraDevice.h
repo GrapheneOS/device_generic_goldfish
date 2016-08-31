@@ -514,6 +514,16 @@ protected:
     /* Frame height */
     int                         mFrameHeight;
 
+    /* Defines byte distance between the start of each Y row */
+    int                         mYStride;
+
+    /* Defines byte distance between the start of each U/V row. For formats with
+     * separate U and V planes this is the distance between rows in each plane.
+     * For formats with interleaved U and V components this is the distance
+     * between rows in the interleaved plane, meaning that it's the stride over
+     * the combined U and V components. */
+    int                         mUVStride;
+
     /* Total number of pixels */
     int                         mTotalPixels;
 
