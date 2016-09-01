@@ -118,6 +118,11 @@ public:
      * These methods are called from the camera API callback routines.
      ***************************************************************************/
 
+public:
+    /* Signal that a requested auto-focus has completed. This will be called
+     * from the camera device's worker thread. */
+    void autoFocusComplete();
+
 protected:
     /* Actual handler for camera_device_ops_t::set_preview_window callback.
      * NOTE: When this method is called the object is locked.
@@ -378,6 +383,7 @@ private:
     /* Registered callbacks implementing camera API. */
     static camera_device_ops_t      mDeviceOps;
 
+    bool                            mPreviewInProgress;
     /****************************************************************************
      * Common keys
      ***************************************************************************/

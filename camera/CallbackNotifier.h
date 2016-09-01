@@ -106,6 +106,13 @@ public:
      */
     void releaseRecordingFrame(const void* opaque);
 
+    /* Send a message to the notify callback that auto-focus has completed.
+     * This method is called from the containing emulated camera object when it
+     * has received confirmation from the camera device that auto-focusing is
+     * completed.
+     */
+    void autoFocusComplete();
+
     /* Actual handler for camera_device_ops_t::msg_type_enabled callback.
      * This method is called by the containing emulated camera object when it is
      * handing the camera_device_ops_t::msg_type_enabled callback.

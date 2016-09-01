@@ -227,6 +227,9 @@ bool EmulatedFakeCameraDevice::inWorkerThread()
     mCurFrameTimestamp = systemTime(SYSTEM_TIME_MONOTONIC);
     mCameraHAL->onNextFrameAvailable(mCurrentFrame, mCurFrameTimestamp, this);
 
+    /* Check if an auto-focus event needs to be triggered */
+    checkAutoFocusTrigger();
+
     return true;
 }
 

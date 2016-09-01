@@ -241,6 +241,9 @@ bool EmulatedQemuCameraDevice::inWorkerThread()
         return false;
     }
 
+    /* Check if an auto-focus event needs to be triggered */
+    checkAutoFocusTrigger();
+
     /* Query frames from the service. */
     status_t query_res = mQemuClient.queryFrame(mCurrentFrame, mPreviewFrame,
                                                  mFrameBufferSize,

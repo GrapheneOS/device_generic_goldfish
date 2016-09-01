@@ -28,6 +28,7 @@
 #include <cutils/log.h>
 #include <sys/select.h>
 #include <cmath>
+#include "EmulatedCamera.h"
 #include "EmulatedCameraDevice.h"
 
 #include "Alignment.h"
@@ -43,7 +44,8 @@ EmulatedCameraDevice::EmulatedCameraDevice(EmulatedCamera* camera_hal)
       mExposureCompensation(1.0f),
       mWhiteBalanceScale(NULL),
       mSupportedWhiteBalanceScale(),
-      mState(ECDS_CONSTRUCTED)
+      mState(ECDS_CONSTRUCTED),
+      mTriggerAutoFocus(false)
 {
 }
 
@@ -157,6 +159,18 @@ void EmulatedCameraDevice::changeWhiteBalance(uint8_t& y,
     v = RGB2V(r, g, b);
 }
 
+void EmulatedCameraDevice::checkAutoFocusTrigger() {
+    // The expected value is a reference so we need it to be a variable
+    bool expectedTrigger = true;
+    if (mTriggerAutoFocus.compare_exchange_strong(expectedTrigger, false)) {
+        // If the compare exchange returns true then the value was the expected
+        // 'true' and was successfully set to 'false'. So that means it's time
+        // to trigger an auto-focus event and that we have disabled that trigger
+        // so it won't happen until another request is received.
+        mCameraHAL->autoFocusComplete();
+    }
+}
+
 status_t EmulatedCameraDevice::getCurrentPreviewFrame(void* buffer)
 {
     if (!isStarted()) {
@@ -188,6 +202,16 @@ status_t EmulatedCameraDevice::getCurrentPreviewFrame(void* buffer)
                  __FUNCTION__, reinterpret_cast<const char*>(&mPixelFormat));
             return EINVAL;
     }
+}
+
+status_t EmulatedCameraDevice::setAutoFocus() {
+    mTriggerAutoFocus = true;
+    return NO_ERROR;
+}
+
+status_t EmulatedCameraDevice::cancelAutoFocus() {
+    mTriggerAutoFocus = false;
+    return NO_ERROR;
 }
 
 /****************************************************************************

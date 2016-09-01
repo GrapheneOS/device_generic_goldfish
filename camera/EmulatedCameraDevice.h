@@ -274,6 +274,17 @@ public:
         return mState == ECDS_STARTED;
     }
 
+    /* Enable auto-focus for the camera, this is only possible between calls to
+     * startPreview and stopPreview, i.e. when preview frames are being
+     * delivered. This will eventually trigger a callback to the camera HAL
+     * saying auto-focus completed.
+     */
+    virtual status_t setAutoFocus();
+
+    /* Cancel auto-focus if it's enabled.
+     */
+    virtual status_t cancelAutoFocus();
+
     /****************************************************************************
      * Emulated camera device private API
      ***************************************************************************/
@@ -308,6 +319,13 @@ protected:
      * white balance mode.
      */
     void changeWhiteBalance(uint8_t& y, uint8_t& u, uint8_t& v) const;
+
+    /* Check if there is a pending auto-focus trigger and send a notification
+     * if there is. This should be called from the worker thread loop if the
+     * camera device wishes to use the default behavior of immediately sending
+     * an auto-focus completion event on request. Otherwise the device should
+     * implement its own auto-focus behavior. */
+    void checkAutoFocusTrigger();
 
     /****************************************************************************
      * Worker thread management.
@@ -549,6 +567,17 @@ protected:
 
     /* Object state. */
     EmulatedCameraDeviceState   mState;
+
+private:
+    /* A flag indicating if an auto-focus completion event should be sent the
+     * next time the worker thread runs. This implies that auto-focus completion
+     * event can only be delivered while preview frames are being delivered.
+     * This is also a requirement specified in the documentation where a request
+     * to perform auto-focusing is only valid between calls to startPreview and
+     * stopPreview.
+     * https://developer.android.com/reference/android/hardware/Camera.html#autoFocus(android.hardware.Camera.AutoFocusCallback)
+     */
+    std::atomic<bool> mTriggerAutoFocus;
 };
 
 }; /* namespace android */

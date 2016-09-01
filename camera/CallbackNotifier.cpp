@@ -184,6 +184,13 @@ void CallbackNotifier::releaseRecordingFrame(const void* opaque)
     }
 }
 
+void CallbackNotifier::autoFocusComplete() {
+    // Even though we don't support auto-focus we are expected to send a fake
+    // success message according to the documentation.
+    // https://developer.android.com/reference/android/hardware/Camera.AutoFocusCallback.html
+    mNotifyCB(CAMERA_MSG_FOCUS, true, 0, mCBOpaque);
+}
+
 status_t CallbackNotifier::storeMetaDataInBuffers(bool enable)
 {
     // Return error if metadata is request, otherwise silently agree.

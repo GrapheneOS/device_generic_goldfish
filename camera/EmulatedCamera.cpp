@@ -99,7 +99,8 @@ EmulatedCamera::EmulatedCamera(int cameraId,
                 &common,
                 module),
           mPreviewWindow(),
-          mCallbackNotifier()
+          mCallbackNotifier(),
+          mPreviewInProgress(false)
 {
     /* camera_device v1 fields. */
     common.close = EmulatedCamera::close;
@@ -293,6 +294,10 @@ status_t EmulatedCamera::getCameraInfo(struct camera_info* info)
     return EmulatedBaseCamera::getCameraInfo(info);
 }
 
+void EmulatedCamera::autoFocusComplete() {
+    mCallbackNotifier.autoFocusComplete();
+}
+
 status_t EmulatedCamera::setPreviewWindow(struct preview_stream_ops* window)
 {
     /* Callback should return a negative errno. */
@@ -370,18 +375,30 @@ void EmulatedCamera::releaseRecordingFrame(const void* opaque)
 
 status_t EmulatedCamera::setAutoFocus()
 {
-    ALOGV("%s", __FUNCTION__);
-
-    /* TODO: Future enhancements. */
-    return NO_ERROR;
+    // Make sure to check that a preview is in progress. Otherwise this will
+    // silently fail because no callback will be called until the preview starts
+    // which might be never.
+    if (!mPreviewInProgress) {
+        return EINVAL;
+    }
+    EmulatedCameraDevice* const camera_dev = getCameraDevice();
+    if (camera_dev && camera_dev->isStarted()) {
+        return camera_dev->setAutoFocus();
+    }
+    return EINVAL;
 }
 
 status_t EmulatedCamera::cancelAutoFocus()
 {
-    ALOGV("%s", __FUNCTION__);
-
-    /* TODO: Future enhancements. */
-    return NO_ERROR;
+    // In this case we don't check if a preview is in progress or not. Unlike
+    // setAutoFocus this call will not silently fail without the check. If an
+    // auto-focus request is somehow pending without having preview enabled this
+    // will correctly cancel that pending auto-focus which seems reasonable.
+    EmulatedCameraDevice* const camera_dev = getCameraDevice();
+    if (camera_dev && camera_dev->isStarted()) {
+        return camera_dev->cancelAutoFocus();
+    }
+    return EINVAL;
 }
 
 status_t EmulatedCamera::takePicture()
@@ -714,15 +731,18 @@ status_t EmulatedCamera::doStartPreview()
     if (res != NO_ERROR) {
         camera_dev->stopDevice();
         mPreviewWindow.stopPreview();
+        return res;
     }
 
-    return res;
+    mPreviewInProgress = true;
+    return NO_ERROR;
 }
 
 status_t EmulatedCamera::doStopPreview()
 {
     ALOGV("%s", __FUNCTION__);
 
+    mPreviewInProgress = false;
     status_t res = NO_ERROR;
     if (mPreviewWindow.isPreviewEnabled()) {
         /* Stop the camera. */
