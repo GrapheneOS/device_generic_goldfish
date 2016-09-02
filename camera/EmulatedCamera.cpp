@@ -338,6 +338,17 @@ status_t EmulatedCamera::startPreview()
 
 void EmulatedCamera::stopPreview()
 {
+    /* The camera client will not pass on calls to set the preview window to
+     * NULL if the preview is not enabled. If preview is not enabled the camera
+     * client will instead simply destroy the preview window without notifying
+     * the HAL. Later on when preview is enabled again that means the HAL will
+     * attempt to use the old, destroyed window which will cause a crash.
+     * Instead we need to clear the preview window here, the client will set
+     * a preview window when needed. The preview window is cleared here instead
+     * of inside doStopPreview to prevent the window from being cleared when
+     * restarting the preview because of a parameter change. */
+    mPreviewWindow.setPreviewWindow(nullptr, 0);
+
     doStopPreview();
 }
 
