@@ -603,7 +603,7 @@ status_t EmulatedCamera::setParameters(const char* parms)
     // Now that the parameters have been assigned check if the preview needs to
     // be restarted. If necessary this will then use the new parameters to set
     // up the preview as requested by the caller.
-    if (restartPreview) {
+    if (restartPreview && isPreviewEnabled()) {
         status_t status = doStopPreview();
         if (status != NO_ERROR) {
             ALOGE("%s: Stopping preview failed: %d", __FUNCTION__, status);
