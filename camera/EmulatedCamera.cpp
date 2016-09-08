@@ -99,8 +99,7 @@ EmulatedCamera::EmulatedCamera(int cameraId,
                 &common,
                 module),
           mPreviewWindow(),
-          mCallbackNotifier(),
-          mPreviewInProgress(false)
+          mCallbackNotifier()
 {
     /* camera_device v1 fields. */
     common.close = EmulatedCamera::close;
@@ -389,7 +388,7 @@ status_t EmulatedCamera::setAutoFocus()
     // Make sure to check that a preview is in progress. Otherwise this will
     // silently fail because no callback will be called until the preview starts
     // which might be never.
-    if (!mPreviewInProgress) {
+    if (!isPreviewEnabled()) {
         return EINVAL;
     }
     EmulatedCameraDevice* const camera_dev = getCameraDevice();
@@ -742,18 +741,15 @@ status_t EmulatedCamera::doStartPreview()
     if (res != NO_ERROR) {
         camera_dev->stopDevice();
         mPreviewWindow.stopPreview();
-        return res;
     }
 
-    mPreviewInProgress = true;
-    return NO_ERROR;
+    return res;
 }
 
 status_t EmulatedCamera::doStopPreview()
 {
     ALOGV("%s", __FUNCTION__);
 
-    mPreviewInProgress = false;
     status_t res = NO_ERROR;
     if (mPreviewWindow.isPreviewEnabled()) {
         /* Stop the camera. */

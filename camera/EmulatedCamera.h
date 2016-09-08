@@ -383,7 +383,6 @@ private:
     /* Registered callbacks implementing camera API. */
     static camera_device_ops_t      mDeviceOps;
 
-    bool                            mPreviewInProgress;
     /****************************************************************************
      * Common keys
      ***************************************************************************/
