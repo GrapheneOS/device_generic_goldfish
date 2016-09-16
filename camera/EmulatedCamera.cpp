@@ -675,6 +675,9 @@ status_t EmulatedCamera::cleanupCamera()
 
     mCallbackNotifier.cleanupCBNotifier();
 
+    /* Re-init the camera settings in case settings were changed */
+    Initialize();
+
     return NO_ERROR;
 }
 
