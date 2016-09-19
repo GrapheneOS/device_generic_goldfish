@@ -28,19 +28,20 @@
 #include <cutils/log.h>
 #include <sys/select.h>
 #include <cmath>
+#include "Alignment.h"
 #include "EmulatedCamera.h"
 #include "EmulatedCameraDevice.h"
 
-#include "Alignment.h"
+#undef min
+#undef max
+#include <algorithm>
 
 namespace android {
 
 const float GAMMA_CORRECTION = 2.2f;
 EmulatedCameraDevice::EmulatedCameraDevice(EmulatedCamera* camera_hal)
     : mObjectLock(),
-      mCurFrameTimestamp(0),
       mCameraHAL(camera_hal),
-      mCurrentFrame(NULL),
       mExposureCompensation(1.0f),
       mWhiteBalanceScale(NULL),
       mSupportedWhiteBalanceScale(),
@@ -52,9 +53,6 @@ EmulatedCameraDevice::EmulatedCameraDevice(EmulatedCamera* camera_hal)
 EmulatedCameraDevice::~EmulatedCameraDevice()
 {
     ALOGV("EmulatedCameraDevice destructor");
-    if (mCurrentFrame != NULL) {
-        delete[] mCurrentFrame;
-    }
     for (size_t i = 0; i < mSupportedWhiteBalanceScale.size(); ++i) {
         if (mSupportedWhiteBalanceScale.valueAt(i) != NULL) {
             delete[] mSupportedWhiteBalanceScale.valueAt(i);
@@ -74,13 +72,6 @@ status_t EmulatedCameraDevice::Initialize()
         return NO_ERROR;
     }
 
-    /* Instantiate worker thread object. */
-    mWorkerThread = new WorkerThread(this);
-    if (getWorkerThread() == NULL) {
-        ALOGE("%s: Unable to instantiate worker thread object", __FUNCTION__);
-        return ENOMEM;
-    }
-
     mState = ECDS_INITIALIZED;
 
     return NO_ERROR;
@@ -96,8 +87,8 @@ status_t EmulatedCameraDevice::startDeliveringFrames(bool one_burst)
     }
 
     /* Frames will be delivered from the thread routine. */
-    const status_t res = startWorkerThread(one_burst);
-    ALOGE_IF(res != NO_ERROR, "%s: startWorkerThread failed", __FUNCTION__);
+    const status_t res = startWorkerThreads(one_burst);
+    ALOGE_IF(res != NO_ERROR, "%s: startWorkerThreads failed", __FUNCTION__);
     return res;
 }
 
@@ -110,9 +101,17 @@ status_t EmulatedCameraDevice::stopDeliveringFrames()
         return NO_ERROR;
     }
 
-    const status_t res = stopWorkerThread();
-    ALOGE_IF(res != NO_ERROR, "%s: startWorkerThread failed", __FUNCTION__);
+    const status_t res = stopWorkerThreads();
+    ALOGE_IF(res != NO_ERROR, "%s: stopWorkerThreads failed", __FUNCTION__);
     return res;
+}
+
+status_t EmulatedCameraDevice::setPreviewFrameRate(int framesPerSecond) {
+    if (framesPerSecond <= 0) {
+        return EINVAL;
+    }
+    mFramesPerSecond = framesPerSecond;
+    return NO_ERROR;
 }
 
 void EmulatedCameraDevice::setExposureCompensation(const float ev) {
@@ -171,13 +170,41 @@ void EmulatedCameraDevice::checkAutoFocusTrigger() {
     }
 }
 
+status_t EmulatedCameraDevice::getCurrentFrame(void* buffer)
+{
+    if (!isStarted()) {
+        ALOGE("%s: Device is not started", __FUNCTION__);
+        return EINVAL;
+    }
+    if (buffer == nullptr) {
+        ALOGE("%s: Invalid buffer provided", __FUNCTION__);
+        return EINVAL;
+    }
+
+    FrameLock lock(*this);
+    const void* source = mFrameProducer->getPrimaryBuffer();
+    if (source == nullptr) {
+        ALOGE("%s: No framebuffer", __FUNCTION__);
+        return EINVAL;
+    }
+    memcpy(buffer, source, mFrameBufferSize);
+    return NO_ERROR;
+}
+
 status_t EmulatedCameraDevice::getCurrentPreviewFrame(void* buffer)
 {
     if (!isStarted()) {
         ALOGE("%s: Device is not started", __FUNCTION__);
         return EINVAL;
     }
-    if (mCurrentFrame == NULL || buffer == NULL) {
+    if (buffer == nullptr) {
+        ALOGE("%s: Invalid buffer provided", __FUNCTION__);
+        return EINVAL;
+    }
+
+    FrameLock lock(*this);
+    const void* currentFrame = mFrameProducer->getPrimaryBuffer();
+    if (currentFrame == nullptr) {
         ALOGE("%s: No framebuffer", __FUNCTION__);
         return EINVAL;
     }
@@ -185,16 +212,16 @@ status_t EmulatedCameraDevice::getCurrentPreviewFrame(void* buffer)
     /* In emulation the framebuffer is never RGB. */
     switch (mPixelFormat) {
         case V4L2_PIX_FMT_YVU420:
-            YV12ToRGB32(mCurrentFrame, buffer, mFrameWidth, mFrameHeight);
+            YV12ToRGB32(currentFrame, buffer, mFrameWidth, mFrameHeight);
             return NO_ERROR;
         case V4L2_PIX_FMT_YUV420:
-            YU12ToRGB32(mCurrentFrame, buffer, mFrameWidth, mFrameHeight);
+            YU12ToRGB32(currentFrame, buffer, mFrameWidth, mFrameHeight);
             return NO_ERROR;
         case V4L2_PIX_FMT_NV21:
-            NV21ToRGB32(mCurrentFrame, buffer, mFrameWidth, mFrameHeight);
+            NV21ToRGB32(currentFrame, buffer, mFrameWidth, mFrameHeight);
             return NO_ERROR;
         case V4L2_PIX_FMT_NV12:
-            NV12ToRGB32(mCurrentFrame, buffer, mFrameWidth, mFrameHeight);
+            NV12ToRGB32(currentFrame, buffer, mFrameWidth, mFrameHeight);
             return NO_ERROR;
 
         default:
@@ -202,6 +229,22 @@ status_t EmulatedCameraDevice::getCurrentPreviewFrame(void* buffer)
                  __FUNCTION__, reinterpret_cast<const char*>(&mPixelFormat));
             return EINVAL;
     }
+}
+
+const void* EmulatedCameraDevice::getCurrentFrame() {
+    if (mFrameProducer.get()) {
+        return mFrameProducer->getPrimaryBuffer();
+    }
+    return nullptr;
+}
+
+EmulatedCameraDevice::FrameLock::FrameLock(EmulatedCameraDevice& cameraDevice)
+    : mCameraDevice(cameraDevice) {
+        mCameraDevice.lockCurrentFrame();
+}
+
+EmulatedCameraDevice::FrameLock::~FrameLock() {
+    mCameraDevice.unlockCurrentFrame();
 }
 
 status_t EmulatedCameraDevice::setAutoFocus() {
@@ -257,13 +300,10 @@ status_t EmulatedCameraDevice::commonStartDevice(int width,
     mTotalPixels = width * height;
 
     /* Allocate framebuffer. */
-    mCurrentFrame = new uint8_t[mFrameBufferSize];
-    if (mCurrentFrame == NULL) {
-        ALOGE("%s: Unable to allocate framebuffer", __FUNCTION__);
-        return ENOMEM;
-    }
-    ALOGV("%s: Allocated %p %zu bytes for %d pixels in %.4s[%dx%d] frame",
-         __FUNCTION__, mCurrentFrame, mFrameBufferSize, mTotalPixels,
+    mFrameBuffers[0].resize(mFrameBufferSize);
+    mFrameBuffers[1].resize(mFrameBufferSize);
+    ALOGV("%s: Allocated %zu bytes for %d pixels in %.4s[%dx%d] frame",
+         __FUNCTION__, mFrameBufferSize, mTotalPixels,
          reinterpret_cast<const char*>(&mPixelFormat), mFrameWidth, mFrameHeight);
     return NO_ERROR;
 }
@@ -273,17 +313,18 @@ void EmulatedCameraDevice::commonStopDevice()
     mFrameWidth = mFrameHeight = mTotalPixels = 0;
     mPixelFormat = 0;
 
-    if (mCurrentFrame != NULL) {
-        delete[] mCurrentFrame;
-        mCurrentFrame = NULL;
-    }
+    mFrameBuffers[0].clear();
+    mFrameBuffers[1].clear();
+    // No need to keep all that memory allocated if the camera isn't running
+    mFrameBuffers[0].shrink_to_fit();
+    mFrameBuffers[1].shrink_to_fit();
 }
 
 /****************************************************************************
  * Worker thread management.
  ***************************************************************************/
 
-status_t EmulatedCameraDevice::startWorkerThread(bool one_burst)
+status_t EmulatedCameraDevice::startWorkerThreads(bool one_burst)
 {
     ALOGV("%s", __FUNCTION__);
 
@@ -292,12 +333,46 @@ status_t EmulatedCameraDevice::startWorkerThread(bool one_burst)
         return EINVAL;
     }
 
-    const status_t res = getWorkerThread()->startThread(one_burst);
-    ALOGE_IF(res != NO_ERROR, "%s: Unable to start worker thread", __FUNCTION__);
+    // First create and start a frame producer, without a producer there are no
+    // frames to deliver and the deliverer will not deliver frames until one has
+    // been produced.
+    void* primaryBuffer = getPrimaryBuffer();
+    void* secondaryBuffer = getSecondaryBuffer();
+    mFrameProducer = new FrameProducer(this, mObjectLock,
+                                       staticProduceFrame, this,
+                                       primaryBuffer, secondaryBuffer);
+    if (mFrameProducer == NULL) {
+        ALOGE("%s: Unable to instantiate FrameProducer object", __FUNCTION__);
+        return ENOMEM;
+    }
+    status_t res = mFrameProducer->startThread(one_burst);
+    if (res != NO_ERROR) {
+        ALOGE("%s: Unable to start frame producer thread: %s",
+              __FUNCTION__, strerror(res));
+        return res;
+    }
+
+    // Then create a frame deliverer, this takes the producer as a reference to
+    // be able to check if a frame has been produced yet.
+    mFrameDeliverer = new FrameDeliverer(this, mObjectLock,
+                                         mFrameProducer.get());
+    if (mFrameDeliverer == NULL) {
+        ALOGE("%s: Unable to instantiate FrameDeliverer object", __FUNCTION__);
+        mFrameProducer->stopThread();
+        return ENOMEM;
+    }
+    res = mFrameDeliverer->startThread(one_burst);
+    if (res != NO_ERROR) {
+        ALOGE("%s: Unable to start frame deliverer: %s",
+              __FUNCTION__, strerror(res));
+        mFrameProducer->stopThread();
+        return res;
+    }
+
     return res;
 }
 
-status_t EmulatedCameraDevice::stopWorkerThread()
+status_t EmulatedCameraDevice::stopWorkerThreads()
 {
     ALOGV("%s", __FUNCTION__);
 
@@ -306,146 +381,133 @@ status_t EmulatedCameraDevice::stopWorkerThread()
         return EINVAL;
     }
 
-    const status_t res = getWorkerThread()->stopThread();
-    ALOGE_IF(res != NO_ERROR, "%s: Unable to stop worker thread", __FUNCTION__);
+    // Since the deliverer holds a reference to the producer make sure we shut
+    // down the deliverer first so that it won't use an invalid reference.
+    status_t res = mFrameDeliverer->stopThread();
+    ALOGE_IF(res != NO_ERROR, "%s: Unable to stop FrameDeliverer", __FUNCTION__);
+
+    res = mFrameProducer->stopThread();
+    ALOGE_IF(res != NO_ERROR, "%s: Unable to stop FrameProducer", __FUNCTION__);
+
+    // Destroy the threads as well
+    mFrameDeliverer.clear();
+    mFrameProducer.clear();
     return res;
 }
 
-bool EmulatedCameraDevice::inWorkerThread()
-{
-    /* This will end the thread loop, and will terminate the thread. Derived
-     * classes must override this method. */
-    return false;
+EmulatedCameraDevice::FrameDeliverer::FrameDeliverer(EmulatedCameraDevice* dev,
+                                                     Mutex& cameraMutex,
+                                                     FrameProducer* producer)
+    : WorkerThread("Camera_FrameDeliverer", dev, cameraMutex),
+      mCurFrameTimestamp(0),
+      mFrameProducer(producer) {
+
 }
 
-/****************************************************************************
- * Worker thread implementation.
- ***************************************************************************/
+bool EmulatedCameraDevice::FrameDeliverer::inWorkerThread() {
+    /* Wait till FPS timeout expires, or thread exit message is received. */
+    nsecs_t wakeAt =
+        mCurFrameTimestamp + 1000000000.0 / mCameraDevice->mFramesPerSecond;
+    nsecs_t now = systemTime(SYSTEM_TIME_MONOTONIC);
+    nsecs_t timeout = std::max<nsecs_t>(0, wakeAt - now);
 
-status_t EmulatedCameraDevice::WorkerThread::readyToRun()
-{
-    ALOGV("Starting emulated camera device worker thread...");
+    // Keep waiting until the frame producer indicates that a frame is available
+    // This does introduce some unnecessary latency to the first frame delivery
+    // but avoids a lot of thread synchronization.
+    do {
+        // We don't have any specific fd we want to select so we pass in -1
+        // timeout is in nanoseconds but Select expects microseconds
+        SelectRes res = Select(-1, timeout / 1000);
+        if (res == EXIT_THREAD) {
+            ALOGV("%s: FrameDeliverer thread has been terminated.",
+                  __FUNCTION__);
+            // Reset this to true, the next time the thread is started it will
+            // be considred as the first loop
+            return false;
+        }
+        // Set a short timeout in case there is no frame available and we are
+        // going to loop. This way we ensure a sleep but keep a decent latency
+        timeout = milliseconds(5);
+    } while (!mFrameProducer->hasFrame());
 
-    ALOGW_IF(mThreadControl >= 0 || mControlFD >= 0,
-            "%s: Thread control FDs are opened", __FUNCTION__);
-    /* Create a pair of FDs that would be used to control the thread. */
-    int thread_fds[2];
-    status_t ret;
-    Mutex::Autolock lock(mCameraDevice->mObjectLock);
-    if (pipe(thread_fds) == 0) {
-        mThreadControl = thread_fds[1];
-        mControlFD = thread_fds[0];
-        ALOGV("Emulated device's worker thread has been started.");
-        ret = NO_ERROR;
-    } else {
-        ALOGE("%s: Unable to create thread control FDs: %d -> %s",
-             __FUNCTION__, errno, strerror(errno));
-        ret = errno;
+    /* Check if an auto-focus event needs to be triggered */
+    mCameraDevice->checkAutoFocusTrigger();
+
+    mCurFrameTimestamp = systemTime(SYSTEM_TIME_MONOTONIC);
+    mCameraDevice->mCameraHAL->onNextFrameAvailable(mCurFrameTimestamp,
+                                                    mCameraDevice);
+
+    return true;
+}
+
+EmulatedCameraDevice::FrameProducer::FrameProducer(EmulatedCameraDevice* dev,
+                                                   Mutex& cameraMutex,
+                                                   ProduceFrameFunc producer,
+                                                   void* opaque,
+                                                   void* primaryBuffer,
+                                                   void* secondaryBuffer)
+    : WorkerThread("Camera_FrameProducer", dev, cameraMutex),
+      mProducer(producer),
+      mOpaque(opaque),
+      mPrimaryBuffer(primaryBuffer),
+      mSecondaryBuffer(secondaryBuffer),
+      mLastFrame(0),
+      mHasFrame(false) {
+
+}
+
+const void* EmulatedCameraDevice::FrameProducer::getPrimaryBuffer() const {
+    return mPrimaryBuffer;
+}
+
+void EmulatedCameraDevice::FrameProducer::lockPrimaryBuffer() {
+    mBufferMutex.lock();
+}
+void EmulatedCameraDevice::FrameProducer::unlockPrimaryBuffer() {
+    mBufferMutex.unlock();
+}
+
+bool EmulatedCameraDevice::FrameProducer::hasFrame() const {
+    return mHasFrame;
+}
+
+bool EmulatedCameraDevice::FrameProducer::inWorkerThread() {
+    nsecs_t nextFrame =
+        mLastFrame + 1000000000 / mCameraDevice->mFramesPerSecond;
+    nsecs_t now = systemTime(SYSTEM_TIME_MONOTONIC);
+    nsecs_t timeout = std::max<nsecs_t>(0, nextFrame - now);
+
+    SelectRes res = Select(-1, timeout / 1000);
+    if (res == EXIT_THREAD) {
+        ALOGV("%s: FrameProducer thread has been terminated.", __FUNCTION__);
+        return false;
     }
 
-    mSetup.signal();
-    return ret;
-}
+    // Produce one frame and place it in the secondary buffer
+    mLastFrame = systemTime(SYSTEM_TIME_MONOTONIC);
+    if (!mProducer(mOpaque, mSecondaryBuffer)) {
+        ALOGE("FrameProducer could not produce frame, exiting thread");
+        return false;
+    }
 
-status_t EmulatedCameraDevice::WorkerThread::stopThread()
-{
-    ALOGV("Stopping emulated camera device's worker thread...");
-
-    status_t res = EINVAL;
-
-    // Limit the scope of the Autolock
     {
-      // If thread is running and readyToRun() has not finished running,
-      //    then wait until it is done.
-      Mutex::Autolock lock(mCameraDevice->mObjectLock);
-      if (isRunning() && (mThreadControl < 0 || mControlFD < 0)) {
-          mSetup.wait(mCameraDevice->mObjectLock);
-      }
+        // Switch buffers now that the secondary buffer is ready
+        Mutex::Autolock lock(mBufferMutex);
+        std::swap(mPrimaryBuffer, mSecondaryBuffer);
     }
-
-    if (mThreadControl >= 0) {
-        /* Send "stop" message to the thread loop. */
-        const ControlMessage msg = THREAD_STOP;
-        const int wres =
-            TEMP_FAILURE_RETRY(write(mThreadControl, &msg, sizeof(msg)));
-        if (wres == sizeof(msg)) {
-            /* Stop the thread, and wait till it's terminated. */
-            res = requestExitAndWait();
-            if (res == NO_ERROR) {
-                /* Close control FDs. */
-                if (mThreadControl >= 0) {
-                    close(mThreadControl);
-                    mThreadControl = -1;
-                }
-                if (mControlFD >= 0) {
-                    close(mControlFD);
-                    mControlFD = -1;
-                }
-                ALOGV("Emulated camera device's worker thread has been stopped.");
-            } else {
-                ALOGE("%s: requestExitAndWait failed: %d -> %s",
-                     __FUNCTION__, res, strerror(-res));
-            }
-        } else {
-            ALOGE("%s: Unable to send THREAD_STOP message: %d -> %s",
-                 __FUNCTION__, errno, strerror(errno));
-            res = errno ? errno : EINVAL;
-        }
-    } else {
-        ALOGE("%s: Thread control FDs are not opened", __FUNCTION__);
-    }
-
-    return res;
+    mHasFrame = true;
+    return true;
 }
 
-EmulatedCameraDevice::WorkerThread::SelectRes
-EmulatedCameraDevice::WorkerThread::Select(int fd, int timeout)
-{
-    fd_set fds[1];
-    struct timeval tv, *tvp = NULL;
+void EmulatedCameraDevice::lockCurrentFrame() {
+    if (mFrameProducer.get()) {
+        mFrameProducer->lockPrimaryBuffer();
+    }
+}
 
-    const int fd_num = (fd >= 0) ? max(fd, mControlFD) + 1 :
-                                   mControlFD + 1;
-    FD_ZERO(fds);
-    FD_SET(mControlFD, fds);
-    if (fd >= 0) {
-        FD_SET(fd, fds);
-    }
-    if (timeout) {
-        tv.tv_sec = timeout / 1000000;
-        tv.tv_usec = timeout % 1000000;
-        tvp = &tv;
-    }
-    int res = TEMP_FAILURE_RETRY(select(fd_num, fds, NULL, NULL, tvp));
-    if (res < 0) {
-        ALOGE("%s: select returned %d and failed: %d -> %s",
-             __FUNCTION__, res, errno, strerror(errno));
-        return ERROR;
-    } else if (res == 0) {
-        /* Timeout. */
-        return TIMEOUT;
-    } else if (FD_ISSET(mControlFD, fds)) {
-        /* A control event. Lets read the message. */
-        ControlMessage msg;
-        res = TEMP_FAILURE_RETRY(read(mControlFD, &msg, sizeof(msg)));
-        if (res != sizeof(msg)) {
-            ALOGE("%s: Unexpected message size %d, or an error %d -> %s",
-                 __FUNCTION__, res, errno, strerror(errno));
-            return ERROR;
-        }
-        /* THREAD_STOP is the only message expected here. */
-        if (msg == THREAD_STOP) {
-            ALOGV("%s: THREAD_STOP message is received", __FUNCTION__);
-            return EXIT_THREAD;
-        } else {
-            ALOGE("Unknown worker thread message %d", msg);
-            return ERROR;
-        }
-    } else {
-        /* Must be an FD. */
-        ALOGW_IF(fd < 0 || !FD_ISSET(fd, fds), "%s: Undefined 'select' result",
-                __FUNCTION__);
-        return READY;
+void EmulatedCameraDevice::unlockCurrentFrame() {
+    if (mFrameProducer.get()) {
+        mFrameProducer->unlockPrimaryBuffer();
     }
 }
 

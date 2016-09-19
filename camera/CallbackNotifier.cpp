@@ -26,8 +26,8 @@
 #include "EmulatedCameraDevice.h"
 #undef min
 #undef max
-#include "Exif.h"
 #include "CallbackNotifier.h"
+#include "Exif.h"
 #include "JpegCompressor.h"
 #include "Thumbnail.h"
 
@@ -217,8 +217,7 @@ void CallbackNotifier::cleanupCBNotifier()
     mTakingPicture = false;
 }
 
-void CallbackNotifier::onNextFrameAvailable(const void* frame,
-                                            nsecs_t timestamp,
+void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
                                             EmulatedCameraDevice* camera_dev)
 {
     if (isMessageEnabled(CAMERA_MSG_VIDEO_FRAME) && isVideoRecordingEnabled() &&
@@ -226,10 +225,9 @@ void CallbackNotifier::onNextFrameAvailable(const void* frame,
         camera_memory_t* cam_buff =
             mGetMemoryCB(-1, camera_dev->getFrameBufferSize(), 1, NULL);
         if (NULL != cam_buff && NULL != cam_buff->data) {
-            memcpy(cam_buff->data, frame, camera_dev->getFrameBufferSize());
+            camera_dev->getCurrentFrame(cam_buff->data);
             mDataCBTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME,
                                cam_buff, 0, mCBOpaque);
-
             mCameraMemoryTs.push_back( cam_buff );
         } else {
             ALOGE("%s: Memory failure in CAMERA_MSG_VIDEO_FRAME", __FUNCTION__);
@@ -240,7 +238,7 @@ void CallbackNotifier::onNextFrameAvailable(const void* frame,
         camera_memory_t* cam_buff =
             mGetMemoryCB(-1, camera_dev->getFrameBufferSize(), 1, NULL);
         if (NULL != cam_buff && NULL != cam_buff->data) {
-            memcpy(cam_buff->data, frame, camera_dev->getFrameBufferSize());
+            camera_dev->getCurrentFrame(cam_buff->data);
             mDataCB(CAMERA_MSG_PREVIEW_FRAME, cam_buff, 0, NULL, mCBOpaque);
             cam_buff->release(cam_buff);
         } else {
@@ -266,6 +264,11 @@ void CallbackNotifier::onNextFrameAvailable(const void* frame,
             // Create EXIF data from the camera parameters, this includes things
             // like EXIF default fields, a timestamp and GPS information.
             ExifData* exifData = createExifData(mCameraParameters);
+
+            // Hold the frame lock while accessing the current frame to prevent
+            // concurrent modifications. Then create our JPEG from that frame.
+            EmulatedCameraDevice::FrameLock lock(*camera_dev);
+            const void* frame = camera_dev->getCurrentFrame();
 
             // Create a thumbnail and place the pointer and size in the EXIF
             // data structure. This transfers ownership to the EXIF data and

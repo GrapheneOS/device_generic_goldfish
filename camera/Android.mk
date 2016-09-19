@@ -71,6 +71,7 @@ emulator_camera_src := \
 		EmulatedFakeCamera3.cpp \
 	Exif.cpp \
 	Thumbnail.cpp \
+	WorkerThread.cpp \
 
 
 # Emulated camera - goldfish / vbox_x86 build###################################

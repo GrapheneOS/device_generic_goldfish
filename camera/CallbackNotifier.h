@@ -28,6 +28,7 @@
 namespace android {
 
 class EmulatedCameraDevice;
+class FrameProducer;
 
 /* Manages callbacks set via set_callbacks, enable_msg_type, and disable_msg_type
  * camera HAL API.
@@ -152,21 +153,15 @@ public:
 
     /* Next frame is available in the camera device.
      * This is a notification callback that is invoked by the camera device when
-     * a new frame is available.
+     * a new frame is available. The captured frame is available through the
+     * |camera_dev| obejct.
      * Note that most likely this method is called in context of a worker thread
      * that camera device has created for frame capturing.
      * Param:
-     *  frame - Captured frame, or NULL if camera device didn't pull the frame
-     *      yet. If NULL is passed in this parameter use GetCurrentFrame method
-     *      of the camera device class to obtain the next frame. Also note that
-     *      the size of the frame that is passed here (as well as the frame
-     *      returned from the GetCurrentFrame method) is defined by the current
-     *      frame settings (width + height + pixel format) for the camera device.
      * timestamp - Frame's timestamp.
      * camera_dev - Camera device instance that delivered the frame.
      */
-    void onNextFrameAvailable(const void* frame,
-                              nsecs_t timestamp,
+    void onNextFrameAvailable(nsecs_t timestamp,
                               EmulatedCameraDevice* camera_dev);
 
     /* Entry point for notifications that occur in camera device.

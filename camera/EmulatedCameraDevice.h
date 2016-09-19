@@ -31,6 +31,11 @@
 #include <utils/String8.h>
 #include "EmulatedCameraCommon.h"
 #include "Converters.h"
+#include "WorkerThread.h"
+
+#undef min
+#undef max
+#include <vector>
 
 namespace android {
 
@@ -161,6 +166,11 @@ public:
      */
     virtual status_t stopDeliveringFrames();
 
+    /* Set the preview frame rate.
+     * Indicates the rate at which the camera should provide preview frames in
+     * frames per second. */
+    status_t setPreviewFrameRate(int framesPerSecond);
+
     /* Sets the exposure compensation for the camera device.
      */
     void setExposureCompensation(const float ev);
@@ -169,20 +179,56 @@ public:
      */
     void setWhiteBalanceMode(const char* mode);
 
+    /* Gets current framebuffer in its raw format.
+     * This method must be called on a connected instance of this class with a
+     * started camera device. If it is called on a disconnected instance, or
+     * camera device has not been started, this method must return a failure.
+     * Note that this method should be called only after at least one frame has
+     * been captured and delivered. Otherwise it will return garbage in the
+     * preview frame buffer. Typically, this method should be called from
+     * onNextFrameAvailable callback.
+     * Param:
+     *  buffer - Buffer, large enough to contain the entire frame.
+     * Return:
+     *  NO_ERROR on success, or an appropriate error status.
+     */
+    virtual status_t getCurrentFrame(void* buffer);
+
     /* Gets current framebuffer, converted into preview frame format.
      * This method must be called on a connected instance of this class with a
      * started camera device. If it is called on a disconnected instance, or
      * camera device has not been started, this method must return a failure.
      * Note that this method should be called only after at least one frame has
      * been captured and delivered. Otherwise it will return garbage in the
-     * preview frame buffer. Typically, this method shuld be called from
-     * onNextFrameAvailable callback.
+     * preview frame buffer. Typically, this method should be called from
+     * onNextFrameAvailable callback. Note that this does NOT require that the
+     * current frame be locked using a FrameLock object.
      * Param:
      *  buffer - Buffer, large enough to contain the entire preview frame.
      * Return:
      *  NO_ERROR on success, or an appropriate error status.
      */
     virtual status_t getCurrentPreviewFrame(void* buffer);
+
+    /* Gets a pointer to the current frame buffer in its raw format.
+     * This method must be called on a connected instance of this class with a
+     * started camera device. If it is called on a disconnected instance, or
+     * camera device has not been started, this method must return NULL.
+     * This method should only be called when the frame lock is held through
+     * a FrameLock object. Otherwise the contents of the frame might change
+     * unexpectedly or its memory could be deallocated leading to a crash.
+     * Return:
+     *  A pointer to the current frame buffer on success, NULL otherwise.
+     */
+    virtual const void* getCurrentFrame();
+
+    class FrameLock {
+    public:
+        FrameLock(EmulatedCameraDevice& cameraDevice);
+        ~FrameLock();
+    private:
+        EmulatedCameraDevice& mCameraDevice;
+    };
 
     /* Gets width of the frame obtained from the physical device.
      * Return:
@@ -261,9 +307,7 @@ public:
      */
 
     inline bool isInitialized() const {
-        /* Instance is initialized when the worker thread has been successfuly
-         * created (but not necessarily started). */
-        return mWorkerThread.get() != NULL && mState != ECDS_CONSTRUCTED;
+        return mState != ECDS_CONSTRUCTED;
     }
     inline bool isConnected() const {
         /* Instance is connected when its status is either"connected", or
@@ -337,163 +381,101 @@ protected:
      ***************************************************************************/
 
 protected:
-    /* Starts the worker thread.
-     * Typically, worker thread is started from startDeliveringFrames method of
-     * this class.
+    /* Starts the worker threads.
+     * Typically, worker threads are started from the startDeliveringFrames
+     * method of this class.
      * Param:
      *  one_burst - Controls how many times thread loop should run. If this
      *      parameter is 'true', thread routine will run only once If this
-     *      parameter is 'false', thread routine will run until stopWorkerThread
-     *      method is called. See startDeliveringFrames for more info.
+     *      parameter is 'false', thread routine will run until
+     *      stopWorkerThreads method is called. See startDeliveringFrames for
+     *      more info.
      * Return:
      *  NO_ERROR on success, or an appropriate error status.
      */
-    virtual status_t startWorkerThread(bool one_burst);
+    virtual status_t startWorkerThreads(bool one_burst);
 
-    /* Stops the worker thread.
-     * Note that this method will always wait for the worker thread to terminate.
-     * Typically, worker thread is started from stopDeliveringFrames method of
-     * this class.
+    /* Stops the worker threads.
+     * Note that this method will always wait for the worker threads to
+     * terminate. Typically, worker threads are stopped from the
+     * stopDeliveringFrames method of this class.
      * Return:
      *  NO_ERROR on success, or an appropriate error status.
      */
-    virtual status_t stopWorkerThread();
+    virtual status_t stopWorkerThreads();
 
-    /* Implementation of the worker thread routine.
-     * In the default implementation of the worker thread routine we simply
-     * return 'false' forcing the thread loop to exit, and the thread to
-     * terminate. Derived class should override that method to provide there the
-     * actual frame delivery.
-     * Return:
-     *  true To continue thread loop (this method will be called again), or false
-     *  to exit the thread loop and to terminate the thread.
+    /* Produce a camera frame and place it in buffer. The buffer is one of
+     * the two buffers provided to mFrameProducer during construction along with
+     * a pointer to this method. The method is expected to know what size frames
+     * it provided to the producer thread. Returning false indicates an
+     * unrecoverable error that will stop the frame production thread. */
+    virtual bool produceFrame(void* buffer) = 0;
+
+    /* Get the primary buffer to use when constructing the FrameProducer. */
+    virtual void* getPrimaryBuffer() {
+        return mFrameBuffers[0].data();
+    }
+
+    /* Get the seconary buffer to use when constructing the FrameProducer. */
+    virtual void* getSecondaryBuffer() {
+        return mFrameBuffers[1].data();
+    }
+
+    /* A class with a thread that will call a function at a specified interval
+     * to produce frames. This is done in a double-buffered fashion to make sure
+     * that one of the frames can be delivered without risk of overwriting its
+     * contents. Access to the primary buffer, the one NOT being drawn to,
+     * should be protected with the lock methods provided or the guarantee of
+     * not overwriting the contents does not hold.
      */
-    virtual bool inWorkerThread();
+    class FrameProducer : public WorkerThread {
+    public:
+        typedef bool (*ProduceFrameFunc)(void* opaque, void* destinationBuffer);
+        FrameProducer(EmulatedCameraDevice* cameraDevice, Mutex& cameraMutex,
+                      ProduceFrameFunc producer, void* opaque,
+                      void* primaryBuffer, void* secondaryBuffer);
 
-    /* Encapsulates a worker thread used by the emulated camera device.
-     */
-    friend class WorkerThread;
-    class WorkerThread : public Thread {
+        /* Indicates if the producer has produced at least one frame or not. */
+        bool hasFrame() const;
 
-        /****************************************************************************
-         * Public API
-         ***************************************************************************/
+        /* Access the primary buffer of the frame producer, this is the frame
+         * that is currently not being written to. The buffer will only have
+         * valid contents if hasFrame() returns true. Note that accessing this
+         * without first having created a Lock can lead to contents changing
+         * without notice. */
+        const void* getPrimaryBuffer() const;
 
-        public:
-            inline explicit WorkerThread(EmulatedCameraDevice* camera_dev)
-                : Thread(true),   // Callbacks may involve Java calls.
-                  mCameraDevice(camera_dev),
-                  mThreadControl(-1),
-                  mControlFD(-1)
-            {
-            }
+        /* Lock and unlock the primary buffer */
+        void lockPrimaryBuffer();
+        void unlockPrimaryBuffer();
 
-            inline ~WorkerThread()
-            {
-                ALOGW_IF(mThreadControl >= 0 || mControlFD >= 0,
-                        "%s: Control FDs are opened in the destructor",
-                        __FUNCTION__);
-                if (mThreadControl >= 0) {
-                    close(mThreadControl);
-                }
-                if (mControlFD >= 0) {
-                    close(mControlFD);
-                }
-            }
+    protected:
+        bool inWorkerThread() override;
 
-            /* Starts the thread
-             * Param:
-             *  one_burst - Controls how many times thread loop should run. If
-             *      this parameter is 'true', thread routine will run only once
-             *      If this parameter is 'false', thread routine will run until
-             *      stopThread method is called. See startWorkerThread for more
-             *      info.
-             * Return:
-             *  NO_ERROR on success, or an appropriate error status.
-             */
-            inline status_t startThread(bool one_burst)
-            {
-                mOneBurst = one_burst;
-                return run("Camera_startThread", ANDROID_PRIORITY_URGENT_DISPLAY, 0);
-            }
-
-            /* Overriden base class method.
-             * It is overriden in order to provide one-time initialization just
-             * prior to starting the thread routine.
-             */
-            status_t readyToRun();
-
-            /* Stops the thread. */
-            status_t stopThread();
-
-            /* Values returned from the Select method of this class. */
-            enum SelectRes {
-                /* A timeout has occurred. */
-                TIMEOUT,
-                /* Data are available for read on the provided FD. */
-                READY,
-                /* Thread exit request has been received. */
-                EXIT_THREAD,
-                /* An error has occurred. */
-                ERROR
-            };
-
-            /* Select on an FD event, keeping in mind thread exit message.
-             * Param:
-             *  fd - File descriptor on which to wait for an event. This
-             *      parameter may be negative. If it is negative this method will
-             *      only wait on a control message to the thread.
-             *  timeout - Timeout in microseconds. 0 indicates no timeout (wait
-             *      forever).
-             * Return:
-             *  See SelectRes enum comments.
-             */
-            SelectRes Select(int fd, int timeout);
-
-        /****************************************************************************
-         * Private API
-         ***************************************************************************/
-
-        private:
-            /* Implements abstract method of the base Thread class. */
-            bool threadLoop()
-            {
-                /* Simply dispatch the call to the containing camera device. */
-                if (mCameraDevice->inWorkerThread()) {
-                    /* Respect "one burst" parameter (see startThread). */
-                    return !mOneBurst;
-                } else {
-                    return false;
-                }
-            }
-
-            /* Containing camera device object. */
-            EmulatedCameraDevice*   mCameraDevice;
-
-            /* FD that is used to send control messages into the thread. */
-            int                     mThreadControl;
-
-            /* FD that thread uses to receive control messages. */
-            int                     mControlFD;
-
-            /* Controls number of times the thread loop runs.
-             * See startThread for more information. */
-            bool                    mOneBurst;
-
-            /* Enumerates control messages that can be sent into the thread. */
-            enum ControlMessage {
-                /* Stop the thread. */
-                THREAD_STOP
-            };
-
-            Condition mSetup;
+        ProduceFrameFunc mProducer;
+        void* mOpaque;
+        void* mPrimaryBuffer;
+        void* mSecondaryBuffer;
+        nsecs_t mLastFrame;
+        mutable Mutex mBufferMutex;
+        std::atomic<bool> mHasFrame;
     };
 
-    /* Worker thread accessor. */
-    inline WorkerThread* getWorkerThread() const
-    {
-        return mWorkerThread.get();
-    }
+    /* A class encapsulating a thread that will deliver frame available
+     * notifications at a fixed interval. The first notification will NOT be
+     * delivered until the provided FrameProducer has produced at least one
+     * frame. The deliver takes place through the provided camera device. */
+    class FrameDeliverer : public WorkerThread {
+    public:
+        FrameDeliverer(EmulatedCameraDevice* cameraDevice,
+                       Mutex& cameraMutex,
+                       FrameProducer* frameProducer);
+    protected:
+        bool inWorkerThread() override;
+
+        nsecs_t mCurFrameTimestamp;
+        FrameProducer* mFrameProducer;
+    };
 
     /****************************************************************************
      * Data members
@@ -503,17 +485,25 @@ protected:
     /* Locks this instance for parameters, state, etc. change. */
     Mutex                       mObjectLock;
 
-    /* Worker thread that is used in frame capturing. */
-    sp<WorkerThread>            mWorkerThread;
+    /* Worker thread that is used in frame delivery. The process of generating
+     * and delivering frames is split up into two threads. This way frames can
+     * always be delivered on time even if they cannot be produced fast enough
+     * to keep up with the expected frame rate. It also increases performance on
+     * multi-core systems. If the producer cannot keep up the last frame will
+     * simply be delivered again. */
+    sp<FrameDeliverer>          mFrameDeliverer;
 
-    /* Timestamp of the current frame. */
-    nsecs_t                     mCurFrameTimestamp;
+    /* Worker thread that will produce frames for the frame deliverer */
+    sp<FrameProducer>           mFrameProducer;
 
     /* Emulated camera object containing this instance. */
     EmulatedCamera*             mCameraHAL;
 
-    /* Framebuffer containing the current frame. */
-    uint8_t*                    mCurrentFrame;
+    /* Framebuffers containing the frame being drawn to and the frame being
+     * delivered. This is used by the double buffering producer thread and
+     * the consumer thread will copy frames from one of these buffers to
+     * mCurrentFrame to avoid being stalled by frame production. */
+    std::vector<uint8_t>        mFrameBuffers[2];
 
     /*
      * Framebuffer properties.
@@ -531,6 +521,9 @@ protected:
 
     /* Frame height */
     int                         mFrameHeight;
+
+    /* The number of frames per second that the camera should deliver */
+    int                         mFramesPerSecond;
 
     /* Defines byte distance between the start of each Y row */
     int                         mYStride;
@@ -569,6 +562,21 @@ protected:
     EmulatedCameraDeviceState   mState;
 
 private:
+    /* Lock the current frame so that it can safely be accessed using
+     * getCurrentFrame. Prefer using a FrameLock object on the stack instead
+     * to ensure that the lock is always unlocked properly.
+     */
+    void lockCurrentFrame();
+    /* Unlock the current frame after locking it. Prefer using a FrameLock
+     * object instead.
+     */
+    void unlockCurrentFrame();
+
+    static bool staticProduceFrame(void* opaque, void* buffer) {
+        auto cameraDevice = reinterpret_cast<EmulatedCameraDevice*>(opaque);
+        return cameraDevice->produceFrame(buffer);
+    }
+
     /* A flag indicating if an auto-focus completion event should be sent the
      * next time the worker thread runs. This implies that auto-focus completion
      * event can only be delivered while preview frames are being delivered.

@@ -218,15 +218,14 @@ status_t EmulatedCamera::Initialize()
     return NO_ERROR;
 }
 
-void EmulatedCamera::onNextFrameAvailable(const void* frame,
-                                          nsecs_t timestamp,
+void EmulatedCamera::onNextFrameAvailable(nsecs_t timestamp,
                                           EmulatedCameraDevice* camera_dev)
 {
     /* Notify the preview window first. */
-    mPreviewWindow.onNextFrameAvailable(frame, timestamp, camera_dev);
+    mPreviewWindow.onNextFrameAvailable(timestamp, camera_dev);
 
     /* Notify callback notifier next. */
-    mCallbackNotifier.onNextFrameAvailable(frame, timestamp, camera_dev);
+    mCallbackNotifier.onNextFrameAvailable(timestamp, camera_dev);
 }
 
 void EmulatedCamera::onCameraDeviceError(int err)
@@ -553,6 +552,11 @@ status_t EmulatedCamera::setParameters(const char* parms)
             getCameraDevice()->setWhiteBalanceMode(new_white_balance);
         }
     }
+    int old_frame_rate = mParameters.getPreviewFrameRate();
+    int new_frame_rate = new_param.getPreviewFrameRate();
+    if (old_frame_rate != new_frame_rate) {
+        getCameraDevice()->setPreviewFrameRate(new_frame_rate);
+    }
 
     // Validate focus mode
     const char* focus_mode = new_param.get(CameraParameters::KEY_FOCUS_MODE);
@@ -729,6 +733,7 @@ status_t EmulatedCamera::doStartPreview()
         mPreviewWindow.stopPreview();
         return EINVAL;
     }
+    camera_dev->setPreviewFrameRate(mParameters.getPreviewFrameRate());
     ALOGD("Starting camera: %dx%d -> %.4s(%s)",
          width, height, reinterpret_cast<const char*>(&org_fmt), pix_fmt);
     res = camera_dev->startDevice(width, height, org_fmt);

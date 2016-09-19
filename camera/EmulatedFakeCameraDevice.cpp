@@ -25,6 +25,10 @@
 #include "EmulatedFakeCamera.h"
 #include "EmulatedFakeCameraDevice.h"
 
+#undef min
+#undef max
+#include <algorithm>
+
 namespace android {
 
 EmulatedFakeCameraDevice::EmulatedFakeCameraDevice(EmulatedFakeCamera* camera_hal)
@@ -124,28 +128,28 @@ status_t EmulatedFakeCameraDevice::startDevice(int width,
         /* Calculate U/V panes inside the framebuffer. */
         switch (mPixelFormat) {
             case V4L2_PIX_FMT_YVU420:
-                mFrameV = mCurrentFrame + mYStride * mFrameHeight;
-                mFrameU = mFrameV + mUVStride * (mFrameHeight / 2);
+                mFrameVOffset = mYStride * mFrameHeight;
+                mFrameUOffset = mFrameVOffset + mUVStride * (mFrameHeight / 2);
                 mUVStep = 1;
                 break;
 
             case V4L2_PIX_FMT_YUV420:
-                mFrameU = mCurrentFrame + mYStride * mFrameHeight;
-                mFrameV = mFrameU + mUVStride * (mFrameHeight / 2);
+                mFrameUOffset = mYStride * mFrameHeight;
+                mFrameVOffset = mFrameUOffset + mUVStride * (mFrameHeight / 2);
                 mUVStep = 1;
                 break;
 
             case V4L2_PIX_FMT_NV21:
                 /* Interleaved UV pane, V first. */
-                mFrameV = mCurrentFrame + mYStride * mFrameHeight;
-                mFrameU = mFrameV + 1;
+                mFrameVOffset = mYStride * mFrameHeight;
+                mFrameUOffset = mFrameVOffset + 1;
                 mUVStep = 2;
                 break;
 
             case V4L2_PIX_FMT_NV12:
                 /* Interleaved UV pane, U first. */
-                mFrameU = mCurrentFrame + mYStride * mFrameHeight;
-                mFrameV = mFrameU + 1;
+                mFrameUOffset = mYStride * mFrameHeight;
+                mFrameVOffset = mFrameUOffset + 1;
                 mUVStep = 2;
                 break;
 
@@ -174,7 +178,6 @@ status_t EmulatedFakeCameraDevice::stopDevice()
         return NO_ERROR;
     }
 
-    mFrameU = mFrameV = NULL;
     EmulatedCameraDevice::commonStopDevice();
     mState = ECDS_CONNECTED;
 
@@ -185,51 +188,24 @@ status_t EmulatedFakeCameraDevice::stopDevice()
  * Worker thread management overrides.
  ***************************************************************************/
 
-bool EmulatedFakeCameraDevice::inWorkerThread()
+bool EmulatedFakeCameraDevice::produceFrame(void* buffer)
 {
-    /* Wait till FPS timeout expires, or thread exit message is received. */
-    WorkerThread::SelectRes res =
-        getWorkerThread()->Select(-1, 1000000 / mEmulatedFPS);
-    if (res == WorkerThread::EXIT_THREAD) {
-        ALOGV("%s: Worker thread has been terminated.", __FUNCTION__);
-        return false;
-    }
-
-    /* Lets see if we need to generate a new frame. */
-    if ((systemTime(SYSTEM_TIME_MONOTONIC) - mLastRedrawn) >= mRedrawAfter) {
-        /*
-         * Time to generate a new frame.
-         */
-
 #if EFCD_ROTATE_FRAME
-        const int frame_type = rotateFrame();
-        switch (frame_type) {
-            case 0:
-                drawCheckerboard();
-                break;
-            case 1:
-                drawStripes();
-                break;
-            case 2:
-                drawSolid(mCurrentColor);
-                break;
-        }
-#else
-        /* Draw the checker board. */
-        drawCheckerboard();
-
-#endif  // EFCD_ROTATE_FRAME
-
-        mLastRedrawn = systemTime(SYSTEM_TIME_MONOTONIC);
+    const int frame_type = rotateFrame();
+    switch (frame_type) {
+        case 0:
+            drawCheckerboard(buffer);
+            break;
+        case 1:
+            drawStripes(buffer);
+            break;
+        case 2:
+            drawSolid(buffer, mCurrentColor);
+            break;
     }
-
-    /* Timestamp the current frame, and notify the camera HAL about new frame. */
-    mCurFrameTimestamp = systemTime(SYSTEM_TIME_MONOTONIC);
-    mCameraHAL->onNextFrameAvailable(mCurrentFrame, mCurFrameTimestamp, this);
-
-    /* Check if an auto-focus event needs to be triggered */
-    checkAutoFocusTrigger();
-
+#else
+    drawCheckerboard(buffer);
+#endif  // EFCD_ROTATE_FRAME
     return true;
 }
 
@@ -237,8 +213,12 @@ bool EmulatedFakeCameraDevice::inWorkerThread()
  * Fake camera device private API
  ***************************************************************************/
 
-void EmulatedFakeCameraDevice::drawCheckerboard()
+void EmulatedFakeCameraDevice::drawCheckerboard(void* buffer)
 {
+    uint8_t* currentFrame = reinterpret_cast<uint8_t*>(buffer);
+    uint8_t* frameU = currentFrame + mFrameUOffset;
+    uint8_t* frameV = currentFrame + mFrameVOffset;
+
     const int size = mFrameWidth / 10;
     bool black = true;
 
@@ -263,9 +243,9 @@ void EmulatedFakeCameraDevice::drawCheckerboard()
     for(int y = 0; y < mFrameHeight; y++) {
         int countx = checkxremainder;
         bool current = black;
-        uint8_t* Y = mCurrentFrame + mYStride * y;
-        uint8_t* U = mFrameU + mUVStride * (y / 2);
-        uint8_t* V = mFrameV + mUVStride * (y / 2);
+        uint8_t* Y = currentFrame + mYStride * y;
+        uint8_t* U = frameU + mUVStride * (y / 2);
+        uint8_t* V = frameV + mUVStride * (y / 2);
         for(int x = 0; x < mFrameWidth; x += 2) {
             if (current) {
                 mBlackYUV.get(Y, U, V);
@@ -295,19 +275,24 @@ void EmulatedFakeCameraDevice::drawCheckerboard()
     int sqy = ((mCcounter * 5) & 255);
     if(sqy > 128) sqy = 255 - sqy;
     const int sqsize = mFrameWidth / 10;
-    drawSquare(sqx * sqsize / 32, sqy * sqsize / 32, (sqsize * 5) >> 1,
+    drawSquare(buffer, sqx * sqsize / 32, sqy * sqsize / 32, (sqsize * 5) >> 1,
                (mCcounter & 0x100) ? &mRedYUV : &mGreenYUV);
     mCcounter++;
 }
 
-void EmulatedFakeCameraDevice::drawSquare(int x,
+void EmulatedFakeCameraDevice::drawSquare(void* buffer,
+                                          int x,
                                           int y,
                                           int size,
                                           const YUVPixel* color)
 {
-    const int square_xstop = min(mFrameWidth, x + size);
-    const int square_ystop = min(mFrameHeight, y + size);
-    uint8_t* Y_pos = mCurrentFrame + y * mYStride + x;
+    uint8_t* currentFrame = reinterpret_cast<uint8_t*>(buffer);
+    uint8_t* frameU = currentFrame + mFrameUOffset;
+    uint8_t* frameV = currentFrame + mFrameVOffset;
+
+    const int square_xstop = std::min(mFrameWidth, x + size);
+    const int square_ystop = std::min(mFrameHeight, y + size);
+    uint8_t* Y_pos = currentFrame + y * mYStride + x;
 
     YUVPixel adjustedColor = *color;
     changeWhiteBalance(adjustedColor.Y, adjustedColor.U, adjustedColor.V);
@@ -315,8 +300,8 @@ void EmulatedFakeCameraDevice::drawSquare(int x,
     // Draw the square.
     for (; y < square_ystop; y++) {
         const int iUV = (y / 2) * mUVStride + (x / 2) * mUVStep;
-        uint8_t* sqU = mFrameU + iUV;
-        uint8_t* sqV = mFrameV + iUV;
+        uint8_t* sqU = frameU + iUV;
+        uint8_t* sqV = frameV + iUV;
         uint8_t* sqY = Y_pos;
         for (int i = x; i < square_xstop; i += 2) {
             adjustedColor.get(sqY, sqU, sqV);
@@ -330,7 +315,7 @@ void EmulatedFakeCameraDevice::drawSquare(int x,
 
 #if EFCD_ROTATE_FRAME
 
-void EmulatedFakeCameraDevice::drawSolid(YUVPixel* color)
+void EmulatedFakeCameraDevice::drawSolid(void* buffer, YUVPixel* color)
 {
     YUVPixel adjustedColor = *color;
     changeWhiteBalance(adjustedColor.Y, adjustedColor.U, adjustedColor.V);
@@ -351,7 +336,7 @@ void EmulatedFakeCameraDevice::drawSolid(YUVPixel* color)
     }
 }
 
-void EmulatedFakeCameraDevice::drawStripes()
+void EmulatedFakeCameraDevice::drawStripes(void* buffer)
 {
     /* Divide frame into 4 stripes. */
     const int change_color_at = mFrameHeight / 4;
