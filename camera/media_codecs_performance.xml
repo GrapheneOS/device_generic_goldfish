@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Copyright 2016 The Android Open Source Project
+<!-- Copyright 2015 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -12,63 +12,100 @@
      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
      See the License for the specific language governing permissions and
      limitations under the License.
+
 -->
 
-<!-- The 'range' values below are based on tests run 2016-04-13 on Ubuntu 14.04
-     x86-64, Xeon 2.8 GHz x 10
+<!-- This file was generated from running the following tests:
+        android.media.cts.VideoDecoderPerfTest
+        com.android.cts.videoperf.VideoEncoderDecoderTest
+     System: z840
+     The results were fed through the get_achievable_rates.py as published:
+     https://source.android.com/devices/media/oem.html
 
-     The range values are set to (meas / sqrt(tolerance)) and
-     (meas * sqrt(tolerance)).
-     These values maximize the 'success' window for the tests performed in
-     cts/libs/deviceutil/src/android/cts/util/MediaUtils.java.
-     That file defines 'tolerance' as sqrt(12.1).
-
-     Where multiple results were obtained, the geometric mean was used.
-
-        OMX.google.h264.encoder  video/avc            320x 240 measured 1294.2
-        OMX.google.h264.decoder  video/avc            320x 240 measured 7204.1, 9151.4
-
-        OMX.google.h263.encoder  video/3gpp           176x 144 measured 2127.0
-        OMX.google.h263.decoder  video/3gpp           176x 144 measured 7574.0
-
-        OMX.google.mpeg4.encoder video/mp4v-es        176x 144 measured 2783.8
-        OMX.google.mpeg4.decoder video/mp4v-es        176x 144 measured 6954.2
-
-        OMX.google.vp8.encoder   video/x-vnd.on2.vp8 1280x 720 measured  195.0
-        OMX.google.vp8.encoder   video/x-vnd.on2.vp8 1920x1080 measured   93.3,   91.1
-        OMX.google.vp8.decoder   video/x-vnd.on2.vp8 1280x 720 measured 1196.1, 1211.3
-        OMX.google.vp8.decoder   video/x-vnd.on2.vp8 1920x1080 measured  483.7,  497.6
+     This script computes the geometric mean m of the min and max measurements,
+     and outputs a single-value range [m, m]. Code in the test framework
+     (MediaUtils.java::verifyResults) divides and multiplies this value by a
+     tolerance factor to compute a range of values acceptable for the device
+     under test.
 -->
 
 <MediaCodecs>
     <Encoders>
-        <MediaCodec name="OMX.google.h264.encoder" type="video/avc" update="true">
-            <Limit name="measured-frame-rate-320x240" range="694-2414" />
-        </MediaCodec>
         <MediaCodec name="OMX.google.h263.encoder" type="video/3gpp" update="true">
-            <Limit name="measured-frame-rate-176x144" range="1140-3967" />
+            <!-- 8 runs, min 2127 max 2430 -->
+            <Limit name="measured-frame-rate-176x144" range="2273-2273" />
+        </MediaCodec>
+        <MediaCodec name="OMX.google.h264.encoder" type="video/avc" update="true">
+            <!-- 8 runs, min 1217 max 1308 -->
+            <Limit name="measured-frame-rate-320x240" range="1261-1261" />
+            <!-- 8 runs, min 388 max 455 -->
+            <Limit name="measured-frame-rate-720x480" range="420-420" />
+            <!-- 8 runs, min 190 max 204 -->
+            <Limit name="measured-frame-rate-1280x720" range="197-197" />
+            <!-- 8 runs, min 89 max 98 -->
+            <Limit name="measured-frame-rate-1920x1080" range="93-93" />
         </MediaCodec>
         <MediaCodec name="OMX.google.mpeg4.encoder" type="video/mp4v-es" update="true">
-            <Limit name="measured-frame-rate-176x144" range="1493-5192" />
+            <!-- 8 runs, min 2448 max 2616 -->
+            <Limit name="measured-frame-rate-176x144" range="2531-2531" />
         </MediaCodec>
         <MediaCodec name="OMX.google.vp8.encoder" type="video/x-vnd.on2.vp8" update="true">
-            <Limit name="measured-frame-rate-1280x720" range="105-364" />
-            <Limit name="measured-frame-rate-1920x1080" range="49-172" />
+            <!-- 8 runs, min 1361 max 1649 -->
+            <Limit name="measured-frame-rate-320x180" range="1498-1498" />
+            <!-- 8 runs, min 651 max 738 -->
+            <Limit name="measured-frame-rate-640x360" range="693-693" />
+            <!-- 8 runs, min 192 max 228 -->
+            <Limit name="measured-frame-rate-1280x720" range="209-209" />
+            <!-- 8 runs, min 89 max 108 -->
+            <Limit name="measured-frame-rate-1920x1080" range="98-98" />
         </MediaCodec>
     </Encoders>
     <Decoders>
-        <MediaCodec name="OMX.google.h264.decoder" type="video/avc" update="true">
-            <Limit name="measured-frame-rate-320x240" range="4353-15114" />
-        </MediaCodec>
         <MediaCodec name="OMX.google.h263.decoder" type="video/3gpp" update="true">
-            <Limit name="measured-frame-rate-176x144" range="4061-14126" />
+            <!-- 4 runs, min 3823 max 4586 -->
+            <Limit name="measured-frame-rate-176x144" range="4187-4187" />
+            <!-- 12 runs, min 2346 max 3294 -->
+            <Limit name="measured-frame-rate-352x288" range="2780-2780" />
         </MediaCodec>
-        <MediaCodec name="OMX.google.mpeg4.decoder" type="video/mp4v-es" update="true">
-            <Limit name="measured-frame-rate-176x144" range="3729-12970" />
+        <MediaCodec name="OMX.google.h264.decoder" type="video/avc" update="true">
+            <!-- 12 runs, min 1569 max 2299 -->
+            <Limit name="measured-frame-rate-320x240" range="1899-1899" />
+            <!-- 12 runs, min 660 max 810 -->
+            <Limit name="measured-frame-rate-720x480" range="731-731" />
+            <!-- 12 runs, min 275 max 293 -->
+            <Limit name="measured-frame-rate-1280x720" range="284-284" />
+            <!-- 12 runs, min 65 max 168 -->
+            <Limit name="measured-frame-rate-1920x1080" range="104-104" />
+        </MediaCodec>
+        <MediaCodec name="OMX.google.hevc.decoder" type="video/hevc" update="true">
+            <!-- 12 runs, min 2127 max 2968 -->
+            <Limit name="measured-frame-rate-352x288" range="2512-2512" />
+            <!-- 12 runs, min 1235 max 1702 -->
+            <Limit name="measured-frame-rate-640x360" range="1450-1450" />
+            <!-- 12 runs, min 522 max 625 -->
+            <Limit name="measured-frame-rate-1280x720" range="571-571" />
+            <!-- 12 runs, min 218 max 307 -->
+            <Limit name="measured-frame-rate-1920x1080" range="259-259" />
         </MediaCodec>
         <MediaCodec name="OMX.google.vp8.decoder" type="video/x-vnd.on2.vp8" update="true">
-            <Limit name="measured-frame-rate-1280x720" range="645-2245" />
-            <Limit name="measured-frame-rate-1920x1080" range="263-915" />
+            <!-- 12 runs, min 3052 max 4670 -->
+            <Limit name="measured-frame-rate-320x180" range="3775-3775" />
+            <!-- 12 runs, min 1344 max 1608 -->
+            <Limit name="measured-frame-rate-640x360" range="1470-1470" />
+            <!-- 12 runs, min 326 max 340 -->
+            <Limit name="measured-frame-rate-1280x720" range="333-333" />
+            <!-- 12 runs, min 384 max 436 -->
+            <Limit name="measured-frame-rate-1920x1080" range="409-409" />
+        </MediaCodec>
+        <MediaCodec name="OMX.google.vp9.decoder" type="video/x-vnd.on2.vp9" update="true">
+            <!-- 12 runs, min 1071 max 1444 -->
+            <Limit name="measured-frame-rate-320x180" range="1243-1243" />
+            <!-- 12 runs, min 1204 max 1714 -->
+            <Limit name="measured-frame-rate-640x360" range="1437-1437" />
+            <!-- 12 runs, min 481 max 526 -->
+            <Limit name="measured-frame-rate-1280x720" range="503-503" />
+            <!-- 12 runs, min 224 max 255 -->
+            <Limit name="measured-frame-rate-1920x1080" range="239-239" />
         </MediaCodec>
     </Decoders>
 </MediaCodecs>

@@ -112,13 +112,13 @@ status_t EmulatedCamera::Initialize()
                     preview_formats);
     mParameters.setPreviewFormat(CameraParameters::PIXEL_FORMAT_YUV420SP);
 
-    /* We don't relay on the actual frame rates supported by the camera device,
+    /* We don't rely on the actual frame rates supported by the camera device,
      * since we will emulate them through timeouts in the emulated camera device
      * worker thread. */
     mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES,
                     "30,24,20,15,10,5");
-    mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(5,30)");
-    mParameters.set(CameraParameters::KEY_PREVIEW_FPS_RANGE, "5,30");
+    mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(24000,24000)");
+    mParameters.set(CameraParameters::KEY_PREVIEW_FPS_RANGE, "(24000,24000)");
     mParameters.setPreviewFrameRate(24);
 
     /* Only PIXEL_FORMAT_YUV420P is accepted by video framework in emulator! */
