@@ -206,9 +206,15 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
         errno = 0;
         val = strtol(value, &end, 10);
         if (errno == 0 && (end != NULL) && (*end == '\0') && ((int)val == val)) {
-            pthread_mutex_lock(&out->lock);
-            out->device = (int)val;
-            pthread_mutex_unlock(&out->lock);
+            if (out->pcm) {
+                //Do not support changing params while stream running
+                ret = -ENOSYS;
+            } else {
+                pthread_mutex_lock(&out->lock);
+                out->device = (int)val;
+                pthread_mutex_unlock(&out->lock);
+                ret = 0;
+            }
         } else {
             ret = -EINVAL;
         }
@@ -542,7 +548,15 @@ static int in_set_parameters(struct audio_stream *stream, const char *kvpairs)
         errno = 0;
         val = strtol(value, &end, 10);
         if ((errno == 0) && (end != NULL) && (*end == '\0') && ((int)val == val)) {
-            in->device = (int)val;
+            if (in->pcm) {
+                //Do not support changing params while stream running
+                ret = -ENOSYS;
+            } else {
+                pthread_mutex_lock(&in->lock);
+                in->device = (int)val;
+                pthread_mutex_unlock(&in->lock);
+                ret = 0;
+            }
         } else {
             ret = -EINVAL;
         }
