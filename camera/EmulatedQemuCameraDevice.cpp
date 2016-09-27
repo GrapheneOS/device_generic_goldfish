@@ -227,7 +227,7 @@ status_t EmulatedQemuCameraDevice::getCurrentFrame(void* buffer) {
     }
 
     FrameLock lock(*this);
-    const void* primary = mFrameProducer->getPrimaryBuffer();
+    const void* primary = mCameraThread->getPrimaryBuffer();
     auto frameBufferPair = reinterpret_cast<const FrameBufferPair*>(primary);
     uint8_t* frame = frameBufferPair->first;
 
@@ -250,7 +250,7 @@ status_t EmulatedQemuCameraDevice::getCurrentPreviewFrame(void* buffer) {
     }
 
     FrameLock lock(*this);
-    const void* primary = mFrameProducer->getPrimaryBuffer();
+    const void* primary = mCameraThread->getPrimaryBuffer();
     auto frameBufferPair = reinterpret_cast<const FrameBufferPair*>(primary);
     uint32_t* previewFrame = frameBufferPair->second;
 
@@ -263,11 +263,11 @@ status_t EmulatedQemuCameraDevice::getCurrentPreviewFrame(void* buffer) {
 }
 
 const void* EmulatedQemuCameraDevice::getCurrentFrame() {
-    if (mFrameProducer.get() == nullptr) {
+    if (mCameraThread.get() == nullptr) {
         return nullptr;
     }
 
-    const void* primary = mFrameProducer->getPrimaryBuffer();
+    const void* primary = mCameraThread->getPrimaryBuffer();
     auto frameBufferPair = reinterpret_cast<const FrameBufferPair*>(primary);
     uint8_t* frame = frameBufferPair->first;
 
@@ -294,7 +294,6 @@ bool EmulatedQemuCameraDevice::produceFrame(void* buffer)
     if (query_res != NO_ERROR) {
         ALOGE("%s: Unable to get current video frame: %s",
              __FUNCTION__, strerror(query_res));
-        mCameraHAL->onCameraDeviceError(CAMERA_ERROR_SERVER_DIED);
         return false;
     }
     return true;

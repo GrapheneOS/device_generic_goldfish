@@ -95,6 +95,9 @@ public:
      */
     virtual void onCameraDeviceError(int err);
 
+    /* Signal to the callback notifier that a pictuer is being taken. */
+    void setTakingPicture(bool takingPicture);
+
     /****************************************************************************
      * Camera API implementation
      ***************************************************************************/

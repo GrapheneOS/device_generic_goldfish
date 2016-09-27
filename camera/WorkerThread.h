@@ -21,18 +21,19 @@
 
 namespace android {
 
+class EmulatedCamera;
 class EmulatedCameraDevice;
 
 class WorkerThread : public Thread {
 public:
     WorkerThread(const char* threadName,
                  EmulatedCameraDevice* camera_dev,
-                 Mutex& cameraMutex);
-    virtual ~WorkerThread();
+                 EmulatedCamera* cameraHAL);
+    virtual ~WorkerThread() {}
 
     /* Starts the thread
      * Param:
-     *  one_burst - Controls how many times thread loop should run. If
+     *  oneBurst - Controls how many times thread loop should run. If
      *      this parameter is 'true', thread routine will run only once
      *      If this parameter is 'false', thread routine will run until
      *      stopThread method is called. See startWorkerThread for more
@@ -40,43 +41,18 @@ public:
      * Return:
      *  NO_ERROR on success, or an appropriate error status.
      */
-    status_t startThread(bool one_burst);
+    status_t startThread(bool oneBurst);
 
-    /* Overriden base class method.
-     * It is overriden in order to provide one-time initialization just
-     * prior to starting the thread routine.
-     */
-    status_t readyToRun() override;
-
-    /* Stops the thread. */
+    /* Stops the thread, this only requests that the thread exits. The method
+     * will return right after the request has been made. Use joinThread to
+     * wait for the thread to exit. */
     status_t stopThread();
 
     /* Wake a thread that's currently waiting to timeout or to be awoken */
     status_t wakeThread();
 
-    /* Values returned from the Select method of this class. */
-    enum SelectRes {
-        TIMEOUT,      /* A timeout has occurred. */
-        READY,        /* Data are available for read on the provided FD. */
-        EXIT_THREAD,  /* Thread exit request has been received. */
-        WAKE_THREAD,  /* Thread wake request has been received */
-        ERROR         /* An error has occurred. */
-    };
-
-    /* Select on an FD event, keeping in mind thread exit message.
-     * Param:
-     *  fd - File descriptor on which to wait for an event. This
-     *      parameter may be negative. If it is negative this method will
-     *      only wait on a control message to the thread.
-     *  timeoutMicroSec - Timeout in microseconds. A negative value indicates
-     *            no timeout (wait forever). A timeout of zero indicates
-     *            an immediate return after polling the FD's; this can
-     *            be used to check if a thread exit has been requested
-     *            without having to wait for a timeout.
-     * Return:
-     *  See SelectRes enum comments.
-     */
-    SelectRes Select(int fd, int timeoutMicroSec);
+    /* Join the thread, waits until the thread exits before returning. */
+    status_t joinThread();
 
 protected:
     /* Perform whatever work should be done in the worker thread. A subclass
@@ -87,36 +63,44 @@ protected:
      */
     virtual bool inWorkerThread() = 0;
 
+    /* This provides an opportunity for a subclass to perform some operation
+     * when the thread starts. This is run on the newly started thread. If this
+     * returns an error the thread will exit and inWorkerThread will never be
+     * called.
+     */
+    virtual status_t onThreadStart() { return NO_ERROR; }
+
+    /* This provides an opportunity for a subclass to perform some operation
+     * when the thread exits. This is run on the worker thread. By default this
+     * does nothing.
+     */
+    virtual void onThreadExit() { }
+
     /* Containing camera device object. */
     EmulatedCameraDevice* mCameraDevice;
+    /* The camera HAL from the camera device object */
+    EmulatedCamera* mCameraHAL;
 
     /* Controls number of times the thread loop runs.
      * See startThread for more information. */
     bool mOneBurst;
 
+    /* Running Condition and mutex, use these to sleep the thread, the
+     * supporting functions will use these to signal wakes and exits. */
+    Condition mRunningCondition;
+    Mutex mRunningMutex;
+    bool mRunning;
 private:
-    /* Enumerates control messages that can be sent into the thread. */
-    enum ControlMessage {
-        THREAD_STOP,  /* Stop the thread. */
-        THREAD_WAKE   /* Wake the thread if it's waiting for something */
-    };
+    /* Overriden base class method.
+     * It is overriden in order to provide one-time initialization just
+     * prior to starting the thread routine.
+     */
+    status_t readyToRun() final;
 
     /* Implements abstract method of the base Thread class. */
-    bool threadLoop() override;
-
-    /* Send a control message to the thread */
-    status_t sendControlMessage(ControlMessage message);
+    bool threadLoop() final;
 
     const char* mThreadName;
-
-    /* FD that is used to send control messages into the thread. */
-    int mThreadControl;
-
-    /* FD that thread uses to receive control messages. */
-    int mControlFD;
-
-    Mutex& mCameraMutex;
-    Condition mSetup;
 };
 
 }  // namespace android

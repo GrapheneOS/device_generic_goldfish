@@ -234,6 +234,9 @@ void EmulatedCamera::onCameraDeviceError(int err)
     mCallbackNotifier.onCameraDeviceError(err);
 }
 
+void EmulatedCamera::setTakingPicture(bool takingPicture) {
+    mCallbackNotifier.setTakingPicture(takingPicture);
+}
 /****************************************************************************
  * Camera API implementation.
  ***************************************************************************/
@@ -445,47 +448,40 @@ status_t EmulatedCamera::takePicture()
      * picture.
      */
 
-    const bool preview_on = mPreviewWindow.isPreviewEnabled();
-    if (preview_on) {
-        doStopPreview();
-    }
-
-    /* Camera device should have been stopped when the shutter message has been
-     * enabled. */
     EmulatedCameraDevice* const camera_dev = getCameraDevice();
-    if (camera_dev->isStarted()) {
-        ALOGW("%s: Camera device is started", __FUNCTION__);
-        camera_dev->stopDeliveringFrames();
-        camera_dev->stopDevice();
-    }
+    mCallbackNotifier.setJpegQuality(jpeg_quality);
+    mCallbackNotifier.setCameraParameters(mParameters);
 
-    /*
-     * Take the picture now.
-     */
-
-    /* Start camera device for the picture frame. */
     ALOGD("Starting camera for picture: %.4s(%s)[%dx%d]",
-         reinterpret_cast<const char*>(&org_fmt), pix_fmt, width, height);
-    res = camera_dev->startDevice(width, height, org_fmt);
-    if (res != NO_ERROR) {
-        if (preview_on) {
-            doStartPreview();
+          reinterpret_cast<const char*>(&org_fmt), pix_fmt, width, height);
+    if (mPreviewWindow.isPreviewEnabled()) {
+        mPreviewWindow.stopPreview();
+        /* If the camera preview is enabled we need to perform an asynchronous
+         * restart. A blocking restart could deadlock this thread as it's
+         * currently holding the camera client lock and the frame delivery could
+         * be stuck on waiting for that lock. If this was synchronous then this
+         * thread would in turn get stuck on waiting for the delivery thread. */
+        if (!camera_dev->requestRestart(width, height, org_fmt,
+                                        true /* takingPicture */,
+                                        true /* oneBurst */)) {
+            return UNKNOWN_ERROR;
+        }
+        return NO_ERROR;
+    } else {
+        /* Start camera device for the picture frame. */
+        res = camera_dev->startDevice(width, height, org_fmt);
+        if (res != NO_ERROR) {
+            return res;
+        }
+
+        /* Deliver one frame only. */
+        mCallbackNotifier.setTakingPicture(true);
+        res = camera_dev->startDeliveringFrames(true);
+        if (res != NO_ERROR) {
+            mCallbackNotifier.setTakingPicture(false);
         }
         return res;
     }
-
-    /* Deliver one frame only. */
-    mCallbackNotifier.setJpegQuality(jpeg_quality);
-    mCallbackNotifier.setCameraParameters(mParameters);
-    mCallbackNotifier.setTakingPicture(true);
-    res = camera_dev->startDeliveringFrames(true);
-    if (res != NO_ERROR) {
-        mCallbackNotifier.setTakingPicture(false);
-        if (preview_on) {
-            doStartPreview();
-        }
-    }
-    return res;
 }
 
 status_t EmulatedCamera::cancelPicture()

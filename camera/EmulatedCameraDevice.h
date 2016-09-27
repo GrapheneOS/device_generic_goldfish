@@ -329,6 +329,16 @@ public:
      */
     virtual status_t cancelAutoFocus();
 
+    /* Request an asynchronous camera restart with new image parameters. The
+     * restart will be performed on the same thread that delivers frames,
+     * ensuring that all callbacks are done from the same thread.
+     * Return
+     *  false if the thread request cannot be honored because no thread is
+     *        running or some other error occured.
+     */
+    bool requestRestart(int width, int height, uint32_t pixelFormat,
+                        bool takingPicture, bool oneBurst);
+
     /****************************************************************************
      * Emulated camera device private API
      ***************************************************************************/
@@ -381,8 +391,8 @@ protected:
      ***************************************************************************/
 
 protected:
-    /* Starts the worker threads.
-     * Typically, worker threads are started from the startDeliveringFrames
+    /* Starts the worker thread.
+     * Typically, the worker thread is started from the startDeliveringFrames
      * method of this class.
      * Param:
      *  one_burst - Controls how many times thread loop should run. If this
@@ -393,16 +403,16 @@ protected:
      * Return:
      *  NO_ERROR on success, or an appropriate error status.
      */
-    virtual status_t startWorkerThreads(bool one_burst);
+    virtual status_t startWorkerThread(bool one_burst);
 
-    /* Stops the worker threads.
-     * Note that this method will always wait for the worker threads to
-     * terminate. Typically, worker threads are stopped from the
+    /* Stop the worker thread.
+     * Note that this method will always wait for the worker thread to
+     * terminate. Typically, the worker thread is stopped from the
      * stopDeliveringFrames method of this class.
      * Return:
      *  NO_ERROR on success, or an appropriate error status.
      */
-    virtual status_t stopWorkerThreads();
+    virtual status_t stopWorkerThread();
 
     /* Produce a camera frame and place it in buffer. The buffer is one of
      * the two buffers provided to mFrameProducer during construction along with
@@ -421,22 +431,16 @@ protected:
         return mFrameBuffers[1].data();
     }
 
-    /* A class with a thread that will call a function at a specified interval
-     * to produce frames. This is done in a double-buffered fashion to make sure
-     * that one of the frames can be delivered without risk of overwriting its
-     * contents. Access to the primary buffer, the one NOT being drawn to,
-     * should be protected with the lock methods provided or the guarantee of
-     * not overwriting the contents does not hold.
-     */
-    class FrameProducer : public WorkerThread {
+    /* A class that encaspulates the asynchronous behavior of a camera. This
+     * includes asynchronous production (through another thread), frame delivery
+     * as well as asynchronous state changes that have to be synchronized with
+     * frame production and delivery but can't be blocking the camera HAL. */
+    class CameraThread : public WorkerThread {
     public:
         typedef bool (*ProduceFrameFunc)(void* opaque, void* destinationBuffer);
-        FrameProducer(EmulatedCameraDevice* cameraDevice, Mutex& cameraMutex,
-                      ProduceFrameFunc producer, void* opaque,
-                      void* primaryBuffer, void* secondaryBuffer);
-
-        /* Indicates if the producer has produced at least one frame or not. */
-        bool hasFrame() const;
+        CameraThread(EmulatedCameraDevice* cameraDevice,
+                     ProduceFrameFunc producer,
+                     void* producerOpaque);
 
         /* Access the primary buffer of the frame producer, this is the frame
          * that is currently not being written to. The buffer will only have
@@ -449,32 +453,62 @@ protected:
         void lockPrimaryBuffer();
         void unlockPrimaryBuffer();
 
-    protected:
+        void requestRestart(int width, int height, uint32_t pixelFormat,
+                            bool takingPicture, bool oneBurst);
+
+    private:
+        bool checkRestartRequest();
+        bool waitForFrameOrTimeout(nsecs_t timeout);
         bool inWorkerThread() override;
 
-        ProduceFrameFunc mProducer;
-        void* mOpaque;
-        void* mPrimaryBuffer;
-        void* mSecondaryBuffer;
-        nsecs_t mLastFrame;
-        mutable Mutex mBufferMutex;
-        std::atomic<bool> mHasFrame;
-    };
+        status_t onThreadStart() override;
+        void onThreadExit() override;
 
-    /* A class encapsulating a thread that will deliver frame available
-     * notifications at a fixed interval. The first notification will NOT be
-     * delivered until the provided FrameProducer has produced at least one
-     * frame. The deliver takes place through the provided camera device. */
-    class FrameDeliverer : public WorkerThread {
-    public:
-        FrameDeliverer(EmulatedCameraDevice* cameraDevice,
-                       Mutex& cameraMutex,
-                       FrameProducer* frameProducer);
-    protected:
-        bool inWorkerThread() override;
+        /* A class with a thread that will call a function at a specified
+         * interval to produce frames. This is done in a double-buffered fashion
+         * to make sure that one of the frames can be delivered without risk of
+         * overwriting its contents. Access to the primary buffer, the one NOT
+         * being drawn to, should be protected with the lock methods provided or
+         * the guarantee of not overwriting the contents does not hold.
+         */
+        class FrameProducer : public WorkerThread {
+        public:
+            FrameProducer(EmulatedCameraDevice* cameraDevice,
+                          ProduceFrameFunc producer, void* opaque,
+                          void* primaryBuffer, void* secondaryBuffer);
+
+            /* Indicates if the producer has produced at least one frame. */
+            bool hasFrame() const;
+
+            const void* getPrimaryBuffer() const;
+
+            void lockPrimaryBuffer();
+            void unlockPrimaryBuffer();
+
+        protected:
+            bool inWorkerThread() override;
+
+            ProduceFrameFunc mProducer;
+            void* mOpaque;
+            void* mPrimaryBuffer;
+            void* mSecondaryBuffer;
+            nsecs_t mLastFrame;
+            mutable Mutex mBufferMutex;
+            std::atomic<bool> mHasFrame;
+        };
 
         nsecs_t mCurFrameTimestamp;
-        FrameProducer* mFrameProducer;
+        /* Worker thread that will produce frames for the camera thread */
+        sp<FrameProducer> mFrameProducer;
+        ProduceFrameFunc mProducerFunc;
+        void* mProducerOpaque;
+        Mutex mRequestMutex;
+        int mRestartWidth;
+        int mRestartHeight;
+        uint32_t mRestartPixelFormat;
+        bool mRestartOneBurst;
+        bool mRestartTakingPicture;
+        bool mRestartRequested;
     };
 
     /****************************************************************************
@@ -485,16 +519,14 @@ protected:
     /* Locks this instance for parameters, state, etc. change. */
     Mutex                       mObjectLock;
 
-    /* Worker thread that is used in frame delivery. The process of generating
-     * and delivering frames is split up into two threads. This way frames can
+    /* A camera thread that is used in frame production, delivery and handling
+     * of asynchronous restarts. Internally the process of generating and
+     * delivering frames is split up into two threads. This way frames can
      * always be delivered on time even if they cannot be produced fast enough
      * to keep up with the expected frame rate. It also increases performance on
      * multi-core systems. If the producer cannot keep up the last frame will
      * simply be delivered again. */
-    sp<FrameDeliverer>          mFrameDeliverer;
-
-    /* Worker thread that will produce frames for the frame deliverer */
-    sp<FrameProducer>           mFrameProducer;
+    sp<CameraThread>          mCameraThread;
 
     /* Emulated camera object containing this instance. */
     EmulatedCamera*             mCameraHAL;
