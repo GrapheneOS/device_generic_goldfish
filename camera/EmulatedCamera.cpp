@@ -128,6 +128,8 @@ status_t EmulatedCamera::Initialize()
      * Fake required parameters.
      */
 
+    mParameters.set(CameraParameters::KEY_RECORDING_HINT,
+                    CameraParameters::FALSE);
     mParameters.set(CameraParameters::KEY_SUPPORTED_JPEG_THUMBNAIL_SIZES, "320x240,0x0");
 
     mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, "320");
@@ -597,6 +599,16 @@ status_t EmulatedCamera::setParameters(const char* parms)
         restartPreview = true;
     }
 
+    const char* old_hint =
+        mParameters.get(CameraParameters::KEY_RECORDING_HINT);
+    const char* new_hint = new_param.get(CameraParameters::KEY_RECORDING_HINT);
+    if (!StringsEqual(old_hint, new_hint)) {
+        // The recording hint changed, this indicates we transitioned from
+        // recording to non-recording or the other way around. We need to look
+        // at a new pixel format for this and that requires a restart.
+        restartPreview = true;
+    }
+
     mParameters = new_param;
 
     // Now that the parameters have been assigned check if the preview needs to
@@ -709,8 +721,17 @@ status_t EmulatedCamera::doStartPreview()
     } else {
         mParameters.getPreviewSize(&width, &height);
     }
-    const char* pix_fmt = mParameters.getPreviewFormat();
-    if (pix_fmt == NULL) {
+    const char* pix_fmt = nullptr;
+    const char* recordingHint =
+        mParameters.get(CameraParameters::KEY_RECORDING_HINT);
+    if (recordingHint && strcmp(recordingHint, CameraParameters::TRUE) == 0) {
+        // We're recording a video, use the video pixel format
+        pix_fmt = mParameters.get(CameraParameters::KEY_VIDEO_FRAME_FORMAT);
+    }
+    if (pix_fmt == nullptr) {
+        pix_fmt = mParameters.getPreviewFormat();
+    }
+    if (pix_fmt == nullptr) {
         ALOGE("%s: Unable to obtain video format", __FUNCTION__);
         mPreviewWindow.stopPreview();
         return EINVAL;
