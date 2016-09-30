@@ -36,8 +36,8 @@
 #define PCM_DEVICE 0
 
 
-#define OUT_PERIOD_SIZE 512
-#define OUT_LONG_PERIOD_COUNT 2
+#define OUT_PERIOD_SIZE 1024
+#define OUT_LONG_PERIOD_COUNT 4
 
 #define IN_PERIOD_MS 20
 #define IN_PERIOD_COUNT 4
@@ -66,6 +66,9 @@ struct generic_stream_out {
     struct audio_config req_config;   // Constant after init
     struct pcm *pcm;                  // Protected by this->lock
     struct pcm_config pcm_config;     // Constant after init
+    size_t frames_played;             // Protected by this->lock
+    struct timespec frames_played_time;    // Protected by this->lock
+    size_t frames_written;            // Protected by this->lock
 };
 
 struct generic_stream_in {
@@ -116,7 +119,6 @@ static int out_set_sample_rate(struct audio_stream *stream, uint32_t rate)
 static size_t out_get_buffer_size(const struct audio_stream *stream)
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
-    int channel_count = popcount(out->req_config.channel_mask);
     int size = out->pcm_config.period_size *
                 audio_stream_out_frame_size(&out->stream);
 
@@ -273,7 +275,8 @@ static int start_output_stream(struct generic_stream_out *out)
     }
     // pcm_open always returns a non-null pcm ptr which must be
     // checked with pcm_is_ready
-    out->pcm = pcm_open(PCM_CARD, PCM_DEVICE, PCM_OUT, &out->pcm_config);
+    out->pcm = pcm_open(PCM_CARD, PCM_DEVICE,
+                        PCM_OUT | PCM_MONOTONIC, &out->pcm_config);
     if (!pcm_is_ready(out->pcm)) {
         ALOGE("pcm_open(out) failed: %s: channels %d format %d rate %d",
               pcm_get_error(out->pcm),
@@ -297,7 +300,8 @@ static int start_input_stream(struct generic_stream_in *in)
     }
     // pcm_open always returns a non-null pcm ptr which must be
     // checked with pcm_is_ready
-    in->pcm = pcm_open(PCM_CARD, PCM_DEVICE, PCM_IN, &in->pcm_config);
+    in->pcm = pcm_open(PCM_CARD, PCM_DEVICE,
+                       PCM_IN | PCM_MONOTONIC, &in->pcm_config);
     if (!pcm_is_ready(in->pcm)) {
         ALOGE("pcm_open(in) failed: %s: channels %d format %d rate %d",
               pcm_get_error(in->pcm),
@@ -310,23 +314,68 @@ static int start_input_stream(struct generic_stream_in *in)
     return 0;
 }
 
-static ssize_t out_write(struct audio_stream_out *stream, const void* buffer,
+static double diffTimespec(struct timespec *tend, struct timespec *tstart)
+{
+    return (tend->tv_sec-tstart->tv_sec) +
+           (tend->tv_nsec-tstart->tv_nsec)/1000000000.0;
+}
+
+// Must be called with out->lock held
+static void updateFramesPlayed(struct generic_stream_out *out)
+{
+    struct timespec prev_played_time = out->frames_played_time;
+    clock_gettime(CLOCK_MONOTONIC, &out->frames_played_time);
+    double diffTime = diffTimespec(&out->frames_played_time, &prev_played_time);
+    size_t frames_played = out->pcm_config.rate * diffTime;
+    out->frames_played += frames_played;
+    if (out->frames_played > out->frames_written) {
+        out->frames_played = out->frames_written;
+    }
+}
+
+static ssize_t out_write(struct audio_stream_out *stream, const void *buffer,
                          size_t bytes)
 {
     int ret = 0;
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
     pthread_mutex_lock(&out->lock);
+
     if (!out->pcm) {
         ret = start_output_stream(out);
     }
     if (ret == 0) {
         ret = pcm_write(out->pcm, buffer, bytes);
     }
+
+    if (ret == 0) {
+        updateFramesPlayed(out);
+        out->frames_written += bytes/audio_stream_out_frame_size(stream);
+    }
+
     pthread_mutex_unlock(&out->lock);
 
-    if (ret != 0)
-        bytes = 0;
+    if (ret != 0) {
+        bytes = -1;
+    }
     return bytes;
+}
+
+static int out_get_presentation_position(const struct audio_stream_out *stream,
+                                   uint64_t *frames, struct timespec *timestamp)
+
+{
+    struct generic_stream_out *out = (struct generic_stream_out *)stream;
+    int ret = -EINVAL;
+    pthread_mutex_lock(&out->lock);
+    if (out->pcm) {
+        updateFramesPlayed(out);
+        *timestamp = out->frames_played_time;
+        *frames = out->frames_played;
+        ret = 0;
+    }
+    pthread_mutex_unlock(&out->lock);
+
+    return ret;
 }
 
 static int out_get_render_position(const struct audio_stream_out *stream,
@@ -366,7 +415,8 @@ static int in_set_sample_rate(struct audio_stream *stream, uint32_t rate)
 
 static int refine_output_parameters(uint32_t *sample_rate, audio_format_t *format, audio_channel_mask_t *channel_mask)
 {
-    static const uint32_t sample_rates [] = {44100};
+    static const uint32_t sample_rates [] = {8000,11025,16000,22050,24000,32000,
+                                            44100,48000};
     static const int sample_rates_count = sizeof(sample_rates)/sizeof(uint32_t);
     bool inval = false;
     if (*format != AUDIO_FORMAT_PCM_16_BIT) {
@@ -375,7 +425,7 @@ static int refine_output_parameters(uint32_t *sample_rate, audio_format_t *forma
     }
 
     int channel_count = popcount(*channel_mask);
-    if (channel_count != 2) {
+    if (channel_count != 1 && channel_count != 2) {
         *channel_mask = AUDIO_CHANNEL_IN_STEREO;
         inval = true;
     }
@@ -726,6 +776,7 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->stream.set_volume = out_set_volume;
     out->stream.write = out_write;
     out->stream.get_render_position = out_get_render_position;
+    out->stream.get_presentation_position = out_get_presentation_position;
     out->stream.get_next_write_timestamp = out_get_next_write_timestamp;
 
     out->dev = adev;
@@ -736,6 +787,9 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
 
     memcpy(&out->pcm_config, &pcm_config_out, sizeof(struct pcm_config));
     out->pcm_config.rate = config->sample_rate;
+    out->frames_played= 0;
+    clock_gettime(CLOCK_MONOTONIC, &out->frames_played_time);
+    out->frames_written = 0;
 
     *stream_out = &out->stream;
 
