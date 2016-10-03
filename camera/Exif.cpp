@@ -54,6 +54,17 @@ static const unsigned char kAsciiPrefix[] = {
     0x41, 0x53, 0x43, 0x49, 0x49, 0x00, 0x00, 0x00 // "ASCII\0\0\0"
 };
 
+// Remove an existing EXIF entry from |exifData| if it exists. This is useful
+// when replacing existing data, it's easier to just remove the data and
+// re-allocate it than to adjust the amount of allocated data.
+static void removeExistingEntry(ExifData* exifData, ExifIfd ifd, int tag) {
+    ExifEntry* entry = exif_content_get_entry(exifData->ifd[ifd],
+                                              static_cast<ExifTag>(tag));
+    if (entry) {
+        exif_content_remove_entry(exifData->ifd[ifd], entry);
+    }
+}
+
 static ExifEntry* allocateEntry(int tag,
                                 ExifFormat format,
                                 unsigned int numComponents) {
@@ -79,6 +90,7 @@ static bool createEntry(ExifData* exifData,
                         int tag,
                         const float (&values)[N],
                         float denominator = 1000.0) {
+    removeExistingEntry(exifData, ifd, tag);
     ExifByteOrder byteOrder = exif_data_get_byte_order(exifData);
     ExifEntry* entry = allocateEntry(tag, EXIF_FORMAT_RATIONAL, N);
     exif_content_add_entry(exifData->ifd[ifd], entry);
@@ -116,6 +128,7 @@ static bool createEntry(ExifData* exifData,
                         const unsigned char* data,
                         size_t size,
                         ExifFormat format = EXIF_FORMAT_UNDEFINED) {
+    removeExistingEntry(exifData, ifd, tag);
     ExifEntry* entry = allocateEntry(tag, format, size);
     memcpy(entry->data, data, size);
     exif_content_add_entry(exifData->ifd[ifd], entry);
@@ -149,9 +162,27 @@ static bool createEntry(ExifData* exifData,
 static bool createEntry(ExifData* exifData,
                         ExifIfd ifd,
                         int tag) {
+    removeExistingEntry(exifData, ifd, tag);
     ExifEntry* entry = exif_entry_new();
     exif_content_add_entry(exifData->ifd[ifd], entry);
     exif_entry_initialize(entry, static_cast<ExifTag>(tag));
+    // Unref entry after changing owner to the ExifData struct
+    exif_entry_unref(entry);
+    return true;
+}
+
+// Create an entry with a single EXIF LONG (32-bit value) and place it in
+// |exifData|.
+static bool createEntry(ExifData* exifData,
+                        ExifIfd ifd,
+                        int tag,
+                        int value) {
+    removeExistingEntry(exifData, ifd, tag);
+    ExifByteOrder byteOrder = exif_data_get_byte_order(exifData);
+    ExifEntry* entry = allocateEntry(tag, EXIF_FORMAT_LONG, 1);
+    exif_content_add_entry(exifData->ifd[ifd], entry);
+    exif_set_long(entry->data, byteOrder, value);
+
     // Unref entry after changing owner to the ExifData struct
     exif_entry_unref(entry);
     return true;
@@ -254,6 +285,15 @@ ExifData* createExifData(const CameraParameters& params) {
     // set the current date and time in the tag so just do that.
     createEntry(exifData, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
 
+    // Picture size
+    int width = -1, height = -1;
+    params.getPictureSize(&width, &height);
+    if (width >= 0 && height >= 0) {
+        createEntry(exifData, EXIF_IFD_EXIF,
+                    EXIF_TAG_PIXEL_X_DIMENSION, width);
+        createEntry(exifData, EXIF_IFD_EXIF,
+                    EXIF_TAG_PIXEL_Y_DIMENSION, height);
+    }
     // Focal length
     if (getCameraParam(params,
                        CameraParameters::KEY_FOCAL_LENGTH,
