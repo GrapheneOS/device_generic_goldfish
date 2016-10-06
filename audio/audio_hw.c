@@ -37,11 +37,10 @@
 
 
 #define OUT_PERIOD_SIZE 1024
-#define OUT_LONG_PERIOD_COUNT 4
+#define OUT_PERIOD_COUNT 4
 
-#define IN_PERIOD_MS 20
+#define IN_PERIOD_MS 10
 #define IN_PERIOD_COUNT 4
-
 
 struct generic_audio_device {
     struct audio_hw_device device; // Constant after init
@@ -59,17 +58,142 @@ static pthread_once_t sFallbackOnce = PTHREAD_ONCE_INIT;
 static void fallback_init(void);
 static int adev_get_mic_mute(const struct audio_hw_device *dev, bool *state);
 
+typedef struct audio_vbuffer {
+    pthread_mutex_t lock;
+    uint8_t *  data;
+    size_t     frame_size;
+    size_t     frame_count;
+    size_t     head;
+    size_t     tail;
+    size_t     live;
+} audio_vbuffer_t;
+
+static int audio_vbuffer_init (audio_vbuffer_t * audio_vbuffer, size_t frame_count,
+                              size_t frame_size) {
+    if (!audio_vbuffer) {
+        return -EINVAL;
+    }
+    audio_vbuffer->frame_size = frame_size;
+    audio_vbuffer->frame_count = frame_count;
+    size_t bytes = frame_count * frame_size;
+    audio_vbuffer->data = calloc(bytes, 1);
+    if (!audio_vbuffer->data) {
+        return -ENOMEM;
+    }
+    audio_vbuffer->head = 0;
+    audio_vbuffer->tail = 0;
+    audio_vbuffer->live = 0;
+    pthread_mutex_init (&audio_vbuffer->lock, (const pthread_mutexattr_t *) NULL);
+    return 0;
+}
+
+static int audio_vbuffer_destroy (audio_vbuffer_t * audio_vbuffer) {
+    if (!audio_vbuffer) {
+        return -EINVAL;
+    }
+    free(audio_vbuffer->data);
+    pthread_mutex_destroy(&audio_vbuffer->lock);
+    return 0;
+}
+
+static int audio_vbuffer_live (audio_vbuffer_t * audio_vbuffer) {
+    if (!audio_vbuffer) {
+        return -EINVAL;
+    }
+    pthread_mutex_lock (&audio_vbuffer->lock);
+    int live = audio_vbuffer->live;
+    pthread_mutex_unlock (&audio_vbuffer->lock);
+    return live;
+}
+
+static int audio_vbuffer_dead (audio_vbuffer_t * audio_vbuffer) {
+    if (!audio_vbuffer) {
+        return -EINVAL;
+    }
+    pthread_mutex_lock (&audio_vbuffer->lock);
+    int dead = audio_vbuffer->frame_count - audio_vbuffer->live;
+    pthread_mutex_unlock (&audio_vbuffer->lock);
+    return dead;
+}
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
+static size_t audio_vbuffer_write (audio_vbuffer_t * audio_vbuffer, const void * buffer, size_t frame_count) {
+    size_t frames_written = 0;
+    pthread_mutex_lock (&audio_vbuffer->lock);
+
+    while (frame_count != 0) {
+        int frames = 0;
+        if (audio_vbuffer->live == 0 || audio_vbuffer->head > audio_vbuffer->tail) {
+            frames = MIN(frame_count, audio_vbuffer->frame_count - audio_vbuffer->head);
+        } else if (audio_vbuffer->head < audio_vbuffer->tail) {
+            frames = MIN(frame_count, audio_vbuffer->tail - (audio_vbuffer->head));
+        } else {
+            // Full
+            break;
+        }
+        memcpy(&audio_vbuffer->data[audio_vbuffer->head*audio_vbuffer->frame_size],
+               &((uint8_t*)buffer)[frames_written*audio_vbuffer->frame_size],
+               frames*audio_vbuffer->frame_size);
+        audio_vbuffer->live += frames;
+        frames_written += frames;
+        frame_count -= frames;
+        audio_vbuffer->head = (audio_vbuffer->head + frames) % audio_vbuffer->frame_count;
+    }
+
+    pthread_mutex_unlock (&audio_vbuffer->lock);
+    return frames_written;
+}
+
+static size_t audio_vbuffer_read (audio_vbuffer_t * audio_vbuffer, void * buffer, size_t frame_count) {
+    size_t frames_read = 0;
+    pthread_mutex_lock (&audio_vbuffer->lock);
+
+    while (frame_count != 0) {
+        int frames = 0;
+        if (audio_vbuffer->live == audio_vbuffer->frame_count ||
+            audio_vbuffer->tail > audio_vbuffer->head) {
+            frames = MIN(frame_count, audio_vbuffer->frame_count - audio_vbuffer->tail);
+        } else if (audio_vbuffer->tail < audio_vbuffer->head) {
+            frames = MIN(frame_count, audio_vbuffer->head - audio_vbuffer->tail);
+        } else {
+            break;
+        }
+        memcpy(&((uint8_t*)buffer)[frames_read*audio_vbuffer->frame_size],
+               &audio_vbuffer->data[audio_vbuffer->tail*audio_vbuffer->frame_size],
+               frames*audio_vbuffer->frame_size);
+        audio_vbuffer->live -= frames;
+        frames_read += frames;
+        frame_count -= frames;
+        audio_vbuffer->tail = (audio_vbuffer->tail + frames) % audio_vbuffer->frame_count;
+    }
+
+    pthread_mutex_unlock (&audio_vbuffer->lock);
+    return frames_read;
+}
+
 struct generic_stream_out {
     struct audio_stream_out stream;   // Constant after init
     pthread_mutex_t lock;
     struct generic_audio_device *dev; // Constant after init
     audio_devices_t device;           // Protected by this->lock
     struct audio_config req_config;   // Constant after init
-    struct pcm *pcm;                  // Protected by this->lock
     struct pcm_config pcm_config;     // Constant after init
-    size_t frames_played;             // Protected by this->lock
-    struct timespec frames_played_time;    // Protected by this->lock
-    size_t frames_written;            // Protected by this->lock
+    audio_vbuffer_t buffer;           // Constant after init
+
+    // Time & Position Keeping
+    bool standby;                      // Protected by this->lock
+    uint64_t underrun_position;        // Protected by this->lock
+    struct timespec underrun_time;     // Protected by this->lock
+    uint64_t last_write_time_us;       // Protected by this->lock
+    uint64_t frames_total_buffered;    // Protected by this->lock
+    uint64_t frames_written;           // Protected by this->lock
+    uint64_t frames_rendered;          // Protected by this->lock
+
+    // Worker
+    pthread_t worker_thread;          // Constant after init
+    pthread_cond_t worker_wake;       // Protected by this->lock
+    bool worker_standby;              // Protected by this->lock
+    bool worker_exit;                 // Protected by this->lock
 };
 
 struct generic_stream_in {
@@ -78,17 +202,30 @@ struct generic_stream_in {
     struct generic_audio_device *dev; // Constant after init
     audio_devices_t device;           // Protected by this->lock
     struct audio_config req_config;   // Constant after init
-    struct pcm *pcm;                  // Protecetd by this->lock
+    struct pcm *pcm;                  // Protected by this->lock
     struct pcm_config pcm_config;     // Constant after init
     int16_t *stereo_to_mono_buf;      // Protected by this->lock
     size_t stereo_to_mono_buf_size;   // Protected by this->lock
+    audio_vbuffer_t buffer;           // Protected by this->lock
+
+    // Time & Position Keeping
+    bool standby;                     // Protected by this->lock
+    int64_t standby_position;         // Protected by this->lock
+    struct timespec standby_exit_time;// Protected by this->lock
+    int64_t standby_frames_read;      // Protected by this->lock
+
+    // Worker
+    pthread_t worker_thread;          // Constant after init
+    pthread_cond_t worker_wake;       // Protected by this->lock
+    bool worker_standby;              // Protected by this->lock
+    bool worker_exit;                 // Protected by this->lock
 };
 
 static struct pcm_config pcm_config_out = {
     .channels = 2,
     .rate = 0,
     .period_size = OUT_PERIOD_SIZE,
-    .period_count = OUT_LONG_PERIOD_COUNT,
+    .period_count = OUT_PERIOD_COUNT,
     .format = PCM_FORMAT_S16_LE,
     .start_threshold = 0,
 };
@@ -143,34 +280,6 @@ static int out_set_format(struct audio_stream *stream, audio_format_t format)
     return -ENOSYS;
 }
 
-
-static void do_out_standby(struct generic_stream_out *out)
-{
-    pthread_mutex_lock(&out->lock);
-    if (out->pcm) {
-        pcm_close(out->pcm); // Frees out->pcm
-        out->pcm = NULL;
-    }
-    pthread_mutex_unlock(&out->lock);
-}
-
-static int out_standby(struct audio_stream *stream)
-{
-    struct generic_stream_out *out = (struct generic_stream_out *)stream;
-    do_out_standby(out);
-    return 0;
-}
-
-static void do_in_standby(struct generic_stream_in *in)
-{
-    pthread_mutex_lock(&in->lock);
-    if (in->pcm) {
-        pcm_close(in->pcm); // Frees in->pcm
-        in->pcm = NULL;
-    }
-    pthread_mutex_unlock(&in->lock);
-}
-
 static int out_dump(const struct audio_stream *stream, int fd)
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
@@ -201,29 +310,27 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
     long val;
     char *end;
 
-    parms = str_parms_create_str(kvpairs);
-
-    ret = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
-                            value, sizeof(value));
-    if (ret >= 0) {
-        errno = 0;
-        val = strtol(value, &end, 10);
-        if (errno == 0 && (end != NULL) && (*end == '\0') && ((int)val == val)) {
-            if (out->pcm) {
-                //Do not support changing params while stream running
-                ret = -ENOSYS;
-            } else {
-                pthread_mutex_lock(&out->lock);
+    pthread_mutex_lock(&out->lock);
+    if (!out->standby) {
+        //Do not support changing params while stream running
+        ret = -ENOSYS;
+    } else {
+        parms = str_parms_create_str(kvpairs);
+        ret = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
+                                value, sizeof(value));
+        if (ret >= 0) {
+            errno = 0;
+            val = strtol(value, &end, 10);
+            if (errno == 0 && (end != NULL) && (*end == '\0') && ((int)val == val)) {
                 out->device = (int)val;
-                pthread_mutex_unlock(&out->lock);
                 ret = 0;
+            } else {
+                ret = -EINVAL;
             }
-        } else {
-            ret = -EINVAL;
         }
+        str_parms_destroy(parms);
     }
-
-    str_parms_destroy(parms);
+    pthread_mutex_unlock(&out->lock);
     return ret;
 }
 
@@ -254,8 +361,7 @@ static char * out_get_parameters(const struct audio_stream *stream, const char *
 static uint32_t out_get_latency(const struct audio_stream_out *stream)
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
-    return (out->pcm_config.period_size *
-            out->pcm_config.period_count * 1000) / out->pcm_config.rate;
+    return (out->pcm_config.period_size * 1000) / out->pcm_config.rate;
 }
 
 static int out_set_volume(struct audio_stream_out *stream, float left,
@@ -264,100 +370,187 @@ static int out_set_volume(struct audio_stream_out *stream, float left,
     return -ENOSYS;
 }
 
-
-/*
- * start_output_stream must be called with out->lock held.
- */
-static int start_output_stream(struct generic_stream_out *out)
+static void *out_write_worker(void * args)
 {
-    if (out->pcm) {
-        ALOGE("pcm_open(out) failed: already open");
-        return -ENOSYS;
+    struct generic_stream_out *out = (struct generic_stream_out *)args;
+    struct pcm *pcm = NULL;
+    uint8_t *buffer = NULL;
+    int buffer_frames;
+    int buffer_size;
+    bool restart = false;
+    bool shutdown = false;
+    while (true) {
+        pthread_mutex_lock(&out->lock);
+        while (out->worker_standby || restart) {
+            restart = false;
+            if (pcm) {
+                pcm_close(pcm); // Frees pcm
+                pcm = NULL;
+                free(buffer);
+                buffer=NULL;
+            }
+            if (out->worker_exit) {
+                break;
+            }
+            pthread_cond_wait(&out->worker_wake, &out->lock);
+        }
+
+        if (out->worker_exit) {
+            if (!out->worker_standby) {
+                ALOGE("Out worker not in standby before exiting");
+            }
+            shutdown = true;
+        }
+
+        while (!shutdown && audio_vbuffer_live(&out->buffer) == 0) {
+            pthread_cond_wait(&out->worker_wake, &out->lock);
+        }
+
+        if (shutdown) {
+            pthread_mutex_unlock(&out->lock);
+            break;
+        }
+
+        if (!pcm) {
+            pcm = pcm_open(PCM_CARD, PCM_DEVICE,
+                          PCM_OUT | PCM_MONOTONIC, &out->pcm_config);
+            if (!pcm_is_ready(pcm)) {
+                ALOGE("pcm_open(out) failed: %s: channels %d format %d rate %d",
+                  pcm_get_error(pcm),
+                  out->pcm_config.channels,
+                  out->pcm_config.format,
+                  out->pcm_config.rate
+                   );
+                pthread_mutex_unlock(&out->lock);
+                break;
+            }
+            buffer_frames = out->pcm_config.period_size;
+            buffer_size = pcm_frames_to_bytes(pcm, buffer_frames);
+            buffer = malloc(buffer_size);
+            if (!buffer) {
+                ALOGE("could not allocate write buffer");
+                pthread_mutex_unlock(&out->lock);
+                break;
+            }
+        }
+        int frames = audio_vbuffer_read(&out->buffer, buffer, buffer_frames);
+        pthread_mutex_unlock(&out->lock);
+        int ret = pcm_write(pcm, buffer, pcm_frames_to_bytes(pcm, frames));
+        if (ret != 0) {
+            ALOGE("pcm_write failed %s", pcm_get_error(pcm));
+            restart = true;
+        }
     }
-    // pcm_open always returns a non-null pcm ptr which must be
-    // checked with pcm_is_ready
-    out->pcm = pcm_open(PCM_CARD, PCM_DEVICE,
-                        PCM_OUT | PCM_MONOTONIC, &out->pcm_config);
-    if (!pcm_is_ready(out->pcm)) {
-        ALOGE("pcm_open(out) failed: %s: channels %d format %d rate %d",
-              pcm_get_error(out->pcm),
-              out->pcm_config.channels,
-              out->pcm_config.format,
-              out->pcm_config.rate
-              );
-        return -ENOMEM;
+    if (buffer) {
+        free(buffer);
     }
-    return 0;
+
+    return NULL;
 }
 
-/*
- * start_input_stream must be called with in->lock held.
- */
-static int start_input_stream(struct generic_stream_in *in)
-{
-    if (in->pcm) {
-        ALOGE("pcm_open(in) failed: already open");
-        return -ENOSYS;
+// Call with in->lock held
+static void get_current_output_position(struct generic_stream_out *out,
+                                       uint64_t * position,
+                                       struct timespec * timestamp) {
+    struct timespec curtime = { .tv_sec = 0, .tv_nsec = 0 };
+    clock_gettime(CLOCK_MONOTONIC, &curtime);
+    const int64_t now_us = (curtime.tv_sec * 1000000000LL + curtime.tv_nsec) / 1000;
+    if (timestamp) {
+        *timestamp = curtime;
     }
-    // pcm_open always returns a non-null pcm ptr which must be
-    // checked with pcm_is_ready
-    in->pcm = pcm_open(PCM_CARD, PCM_DEVICE,
-                       PCM_IN | PCM_MONOTONIC, &in->pcm_config);
-    if (!pcm_is_ready(in->pcm)) {
-        ALOGE("pcm_open(in) failed: %s: channels %d format %d rate %d",
-              pcm_get_error(in->pcm),
-              in->pcm_config.channels,
-              in->pcm_config.format,
-              in->pcm_config.rate
-              );
-        return -ENOMEM;
+    int64_t position_since_underrun;
+    if (out->standby) {
+        position_since_underrun = 0;
+    } else {
+        const int64_t first_us = (out->underrun_time.tv_sec * 1000000000LL +
+                                  out->underrun_time.tv_nsec) / 1000;
+        position_since_underrun = (now_us - first_us) *
+                out_get_sample_rate(&out->stream.common) /
+                1000000;
+        if (position_since_underrun < 0) {
+            position_since_underrun = 0;
+        }
     }
-    return 0;
+    *position = out->underrun_position + position_since_underrun;
+
+    // The device will reuse the same output stream leading to periods of
+    // underrun.
+    if (*position > out->frames_written) {
+        ALOGW("Not supplying enough data to HAL, expected position %lld , only wrote %lld",
+              *position, out->frames_written);
+
+        *position = out->frames_written;
+        out->underrun_position = *position;
+        out->underrun_time = curtime;
+        out->frames_total_buffered = 0;
+    }
 }
 
-static double diffTimespec(struct timespec *tend, struct timespec *tstart)
-{
-    return (tend->tv_sec-tstart->tv_sec) +
-           (tend->tv_nsec-tstart->tv_nsec)/1000000000.0;
-}
-
-// Must be called with out->lock held
-static void updateFramesPlayed(struct generic_stream_out *out)
-{
-    struct timespec prev_played_time = out->frames_played_time;
-    clock_gettime(CLOCK_MONOTONIC, &out->frames_played_time);
-    double diffTime = diffTimespec(&out->frames_played_time, &prev_played_time);
-    size_t frames_played = out->pcm_config.rate * diffTime;
-    out->frames_played += frames_played;
-    if (out->frames_played > out->frames_written) {
-        out->frames_played = out->frames_written;
-    }
-}
 
 static ssize_t out_write(struct audio_stream_out *stream, const void *buffer,
                          size_t bytes)
 {
-    int ret = 0;
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
+    const size_t frames =  bytes / audio_stream_out_frame_size(stream);
+
     pthread_mutex_lock(&out->lock);
 
-    if (!out->pcm) {
-        ret = start_output_stream(out);
-    }
-    if (ret == 0) {
-        ret = pcm_write(out->pcm, buffer, bytes);
+    if (out->worker_standby) {
+        out->worker_standby = false;
     }
 
-    if (ret == 0) {
-        updateFramesPlayed(out);
-        out->frames_written += bytes/audio_stream_out_frame_size(stream);
+    uint64_t current_position;
+    struct timespec current_time;
+
+    get_current_output_position(out, &current_position, &current_time);
+    const uint64_t now_us = (current_time.tv_sec * 1000000000LL +
+                             current_time.tv_nsec) / 1000;
+    if (out->standby) {
+        out->standby = false;
+        out->underrun_time = current_time;
+        out->frames_rendered = 0;
+        out->frames_total_buffered = 0;
     }
+
+    size_t frames_written = audio_vbuffer_write(&out->buffer, buffer, frames);
+    pthread_cond_signal(&out->worker_wake);
+
+    /* Implementation just consumes bytes if we start getting backed up */
+    out->frames_written += frames;
+    out->frames_rendered += frames;
+    out->frames_total_buffered += frames;
+
+    // We simulate the audio device blocking when it's write buffers become
+    // full.
+
+    // At the beginning or after an underrun, try to fill up the vbuffer.
+    // This will be throttled by the PlaybackThread
+    int frames_sleep = out->frames_total_buffered < out->buffer.frame_count ? 0 : frames;
+
+    uint64_t sleep_time_us = frames_sleep * 1000000LL /
+                            out_get_sample_rate(&stream->common);
+
+    // If the write calls are delayed, subtract time off of the sleep to
+    // compensate
+    uint64_t time_since_last_write_us = now_us - out->last_write_time_us;
+    if (time_since_last_write_us < sleep_time_us) {
+        sleep_time_us -= time_since_last_write_us;
+    } else {
+        sleep_time_us = 0;
+    }
+    out->last_write_time_us = now_us + sleep_time_us;
 
     pthread_mutex_unlock(&out->lock);
 
-    if (ret != 0) {
-        bytes = -1;
+    if (sleep_time_us > 0) {
+        usleep(sleep_time_us);
     }
+
+    if (frames_written < frames) {
+        ALOGW("Hardware backing HAL too slow, could only write %d of %zu frames", frames_written, frames);
+    }
+
+    /* Always consume all bytes */
     return bytes;
 }
 
@@ -365,24 +558,46 @@ static int out_get_presentation_position(const struct audio_stream_out *stream,
                                    uint64_t *frames, struct timespec *timestamp)
 
 {
-    struct generic_stream_out *out = (struct generic_stream_out *)stream;
     int ret = -EINVAL;
-    pthread_mutex_lock(&out->lock);
-    if (out->pcm) {
-        updateFramesPlayed(out);
-        *timestamp = out->frames_played_time;
-        *frames = out->frames_played;
-        ret = 0;
+    if (stream == NULL || frames == NULL || timestamp == NULL) {
+        return -EINVAL;
     }
+    struct generic_stream_out *out = (struct generic_stream_out *)stream;
+
+    pthread_mutex_lock(&out->lock);
+    get_current_output_position(out, frames, timestamp);
     pthread_mutex_unlock(&out->lock);
 
-    return ret;
+    return 0;
 }
 
 static int out_get_render_position(const struct audio_stream_out *stream,
                                    uint32_t *dsp_frames)
 {
-    return -ENOSYS;
+    if (stream == NULL || dsp_frames == NULL) {
+        return -EINVAL;
+    }
+    struct generic_stream_out *out = (struct generic_stream_out *)stream;
+    pthread_mutex_lock(&out->lock);
+    *dsp_frames = out->frames_rendered;
+    pthread_mutex_unlock(&out->lock);
+    return 0;
+}
+
+static void do_out_standby(struct generic_stream_out *out)
+{
+    pthread_mutex_lock(&out->lock);
+    out->worker_standby = true;
+    get_current_output_position(out, &out->underrun_position, NULL);
+    out->standby = true;
+    pthread_mutex_unlock(&out->lock);
+}
+
+static int out_standby(struct audio_stream *stream)
+{
+    struct generic_stream_out *out = (struct generic_stream_out *)stream;
+    do_out_standby(out);
+    return 0;
 }
 
 static int out_add_audio_effect(const struct audio_stream *stream, effect_handle_t effect)
@@ -553,13 +768,6 @@ static int in_set_format(struct audio_stream *stream, audio_format_t format)
     return -ENOSYS;
 }
 
-static int in_standby(struct audio_stream *stream)
-{
-    struct generic_stream_in *in = (struct generic_stream_in *)stream;
-    do_in_standby(in);
-    return 0;
-}
-
 static int in_dump(const struct audio_stream *stream, int fd)
 {
     struct generic_stream_in *in = (struct generic_stream_in *)stream;
@@ -591,29 +799,28 @@ static int in_set_parameters(struct audio_stream *stream, const char *kvpairs)
     long val;
     char *end;
 
-    parms = str_parms_create_str(kvpairs);
+    pthread_mutex_lock(&in->lock);
+    if (!in->standby) {
+        ret = -ENOSYS;
+    } else {
+        parms = str_parms_create_str(kvpairs);
 
-    ret = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
-                            value, sizeof(value));
-    if (ret >= 0) {
-        errno = 0;
-        val = strtol(value, &end, 10);
-        if ((errno == 0) && (end != NULL) && (*end == '\0') && ((int)val == val)) {
-            if (in->pcm) {
-                //Do not support changing params while stream running
-                ret = -ENOSYS;
-            } else {
-                pthread_mutex_lock(&in->lock);
+        ret = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
+                                value, sizeof(value));
+        if (ret >= 0) {
+            errno = 0;
+            val = strtol(value, &end, 10);
+            if ((errno == 0) && (end != NULL) && (*end == '\0') && ((int)val == val)) {
                 in->device = (int)val;
-                pthread_mutex_unlock(&in->lock);
                 ret = 0;
+            } else {
+                ret = -EINVAL;
             }
-        } else {
-            ret = -EINVAL;
         }
-    }
 
-    str_parms_destroy(parms);
+        str_parms_destroy(parms);
+    }
+    pthread_mutex_unlock(&in->lock);
     return ret;
 }
 
@@ -646,83 +853,235 @@ static int in_set_gain(struct audio_stream_in *stream, float gain)
     return 0;
 }
 
+// Call with in->lock held
+static void get_current_input_position(struct generic_stream_in *in,
+                                       int64_t * position,
+                                       struct timespec * timestamp) {
+    struct timespec t = { .tv_sec = 0, .tv_nsec = 0 };
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    const int64_t now_us = (t.tv_sec * 1000000000LL + t.tv_nsec) / 1000;
+    if (timestamp) {
+        *timestamp = t;
+    }
+    int64_t position_since_standby;
+    if (in->standby) {
+        position_since_standby = 0;
+    } else {
+        const int64_t first_us = (in->standby_exit_time.tv_sec * 1000000000LL +
+                                  in->standby_exit_time.tv_nsec) / 1000;
+        position_since_standby = (now_us - first_us) *
+                in_get_sample_rate(&in->stream.common) /
+                1000000;
+        if (position_since_standby < 0) {
+            position_since_standby = 0;
+        }
+    }
+    *position = in->standby_position + position_since_standby;
+}
+
+static void do_in_standby(struct generic_stream_in *in)
+{
+    pthread_mutex_lock(&in->lock);
+    in->worker_standby = true;
+    get_current_input_position(in, &in->standby_position, NULL);
+    in->standby = true;
+    pthread_mutex_unlock(&in->lock);
+}
+
+static int in_standby(struct audio_stream *stream)
+{
+    struct generic_stream_in *in = (struct generic_stream_in *)stream;
+    do_in_standby(in);
+    return 0;
+}
+
+static void *in_read_worker(void * args)
+{
+    struct generic_stream_in *in = (struct generic_stream_in *)args;
+    struct pcm *pcm = NULL;
+    uint8_t *buffer = NULL;
+    size_t buffer_frames;
+    int buffer_size;
+
+    bool restart = false;
+    bool shutdown = false;
+    while (true) {
+        pthread_mutex_lock(&in->lock);
+        while (in->worker_standby || restart) {
+            restart = false;
+            if (pcm) {
+                pcm_close(pcm); // Frees pcm
+                pcm = NULL;
+                free(buffer);
+                buffer=NULL;
+            }
+            if (in->worker_exit) {
+                break;
+            }
+            pthread_cond_wait(&in->worker_wake, &in->lock);
+        }
+
+        if (in->worker_exit) {
+            if (!in->worker_standby) {
+                ALOGE("In worker not in standby before exiting");
+            }
+            shutdown = true;
+        }
+        if (shutdown) {
+            pthread_mutex_unlock(&in->lock);
+            break;
+        }
+        if (!pcm) {
+            pcm = pcm_open(PCM_CARD, PCM_DEVICE,
+                          PCM_IN | PCM_MONOTONIC, &in->pcm_config);
+            if (!pcm_is_ready(pcm)) {
+                ALOGE("pcm_open(in) failed: %s: channels %d format %d rate %d",
+                  pcm_get_error(pcm),
+                  in->pcm_config.channels,
+                  in->pcm_config.format,
+                  in->pcm_config.rate
+                   );
+                pthread_mutex_unlock(&in->lock);
+                break;
+            }
+            buffer_frames = in->pcm_config.period_size;
+            buffer_size = pcm_frames_to_bytes(pcm, buffer_frames);
+            buffer = malloc(buffer_size);
+            if (!buffer) {
+                ALOGE("could not allocate worker read buffer");
+                pthread_mutex_unlock(&in->lock);
+                break;
+            }
+        }
+        pthread_mutex_unlock(&in->lock);
+        int ret = pcm_read(pcm, buffer, pcm_frames_to_bytes(pcm, buffer_frames));
+        if (ret != 0) {
+            ALOGW("pcm_read failed %s", pcm_get_error(pcm));
+            restart = true;
+        }
+
+        pthread_mutex_lock(&in->lock);
+        size_t frames_written = audio_vbuffer_write(&in->buffer, buffer, buffer_frames);
+        pthread_mutex_unlock(&in->lock);
+
+        if (frames_written != buffer_frames) {
+            ALOGW("in_read_worker only could write %zu / %zu frames", frames_written, buffer_frames);
+        }
+    }
+    if (buffer) {
+        free(buffer);
+    }
+    return NULL;
+}
 
 static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
                        size_t bytes)
 {
     struct generic_stream_in *in = (struct generic_stream_in *)stream;
     struct generic_audio_device *adev = in->dev;
+    const size_t frames =  bytes / audio_stream_in_frame_size(stream);
     int ret = 0;
-    bool mic_mute;
+    bool mic_mute = false;
+    size_t read_bytes = 0;
 
     adev_get_mic_mute(&adev->device, &mic_mute);
-
     pthread_mutex_lock(&in->lock);
 
-    if (mic_mute) {
-        goto exit;
+    if (in->worker_standby) {
+        in->worker_standby = false;
+    }
+    pthread_cond_signal(&in->worker_wake);
+
+    int64_t current_position;
+    struct timespec current_time;
+
+    get_current_input_position(in, &current_position, &current_time);
+    if (in->standby) {
+        in->standby = false;
+        in->standby_exit_time = current_time;
+        in->standby_frames_read = 0;
     }
 
-    if (!in->pcm) {
-        ret = start_input_stream(in);
+    const int64_t frames_available = current_position - in->standby_position - in->standby_frames_read;
+
+    const size_t frames_wait = (frames_available > frames) ? 0 : frames - frames_available;
+
+    int64_t sleep_time_us  = frames_wait * 1000000LL /
+                             in_get_sample_rate(&stream->common);
+
+    pthread_mutex_unlock(&in->lock);
+
+    if (sleep_time_us > 0) {
+        usleep(sleep_time_us);
     }
-    if (ret < 0)
+
+    pthread_mutex_lock(&in->lock);
+    int read_frames = 0;
+    if (in->standby) {
+        ALOGW("Input put to sleep while read in progress");
         goto exit;
+    }
+    in->standby_frames_read += frames;
 
-    if (ret == 0) {
-        if (popcount(in->req_config.channel_mask) == 1 &&
-            in->pcm_config.channels == 2) {
-            // Need to resample to mono
-            if (in->stereo_to_mono_buf_size < bytes) {
-                in->stereo_to_mono_buf = realloc(in->stereo_to_mono_buf,
-                                                 bytes);
-                if (!in->stereo_to_mono_buf) {
-                    ALOGE("Failed to allocate stereo_to_mono_buff");
-                    ret = -ENOMEM;
-                    goto exit;
-                }
-            }
-            ret = pcm_read(in->pcm, in->stereo_to_mono_buf, bytes);
-            if (ret != 0) {
-                goto exit;
-            }
-
-            // Currently only pcm 16 is supported.
-            uint16_t *src = (uint16_t *)in->stereo_to_mono_buf;
-            uint16_t *dst = (uint16_t *)buffer;
-            size_t i;
-            bytes = bytes/2;
-            // Resample stereo 16 to mono 16 by dropping one channel.
-            // The stereo stream is interleaved L-R-L-R
-            for (i = 0; i < bytes; i++) {
-                *dst=*src;
-                src+=2;
-                dst+=1;
-            }
-            goto exit;
-        } else {
-            ret = pcm_read(in->pcm, buffer, bytes);
-            if (ret != 0) {
+    if (popcount(in->req_config.channel_mask) == 1 &&
+        in->pcm_config.channels == 2) {
+        // Need to resample to mono
+        if (in->stereo_to_mono_buf_size < bytes*2) {
+            in->stereo_to_mono_buf = realloc(in->stereo_to_mono_buf,
+                                             bytes*2);
+            if (!in->stereo_to_mono_buf) {
+                ALOGE("Failed to allocate stereo_to_mono_buff");
                 goto exit;
             }
         }
+
+        read_frames = audio_vbuffer_read(&in->buffer, in->stereo_to_mono_buf, frames);
+
+        // Currently only pcm 16 is supported.
+        uint16_t *src = (uint16_t *)in->stereo_to_mono_buf;
+        uint16_t *dst = (uint16_t *)buffer;
+        size_t i;
+        // Resample stereo 16 to mono 16 by dropping one channel.
+        // The stereo stream is interleaved L-R-L-R
+        for (i = 0; i < bytes; i++) {
+            *dst = *src;
+            src += 2;
+            dst += 1;
+        }
+    } else {
+        read_frames = audio_vbuffer_read(&in->buffer, buffer, frames);
     }
 
 exit:
-    pthread_mutex_unlock(&in->lock);
-    if (ret != 0 || mic_mute) {
-        // On any read error / muted, just set buffer to 0 and sleep for
-        // expected amount of time.
-        memset(buffer, 0, bytes);
-        usleep(bytes * 1000 * 1000 / audio_stream_in_frame_size(&in->stream) /
-               in_get_sample_rate(&stream->common));
-    }
-    return bytes;
+    read_bytes = read_frames*audio_stream_in_frame_size(stream);
 
+    if (mic_mute) {
+        read_bytes = 0;
+    }
+
+    if (read_bytes < bytes) {
+        memset (&((uint8_t *)buffer)[read_bytes], 0, bytes-read_bytes);
+    }
+
+    pthread_mutex_unlock(&in->lock);
+
+    return bytes;
 }
 
 static uint32_t in_get_input_frames_lost(struct audio_stream_in *stream)
 {
+    return 0;
+}
+
+static int in_get_capture_position(const struct audio_stream_in *stream,
+                                int64_t *frames, int64_t *time)
+{
+    struct generic_stream_in *in = (struct generic_stream_in *)stream;
+    pthread_mutex_lock(&in->lock);
+    struct timespec current_time;
+    get_current_input_position(in, frames, &current_time);
+    *time = (current_time.tv_sec * 1000000000LL + current_time.tv_nsec);
+    pthread_mutex_unlock(&in->lock);
     return 0;
 }
 
@@ -780,21 +1139,35 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->stream.get_presentation_position = out_get_presentation_position;
     out->stream.get_next_write_timestamp = out_get_next_write_timestamp;
 
+    pthread_mutex_init(&out->lock, (const pthread_mutexattr_t *) NULL);
     out->dev = adev;
     out->device = devices;
-    pthread_mutex_init(&out->lock, (const pthread_mutexattr_t *) NULL);
-
     memcpy(&out->req_config, config, sizeof(struct audio_config));
-
     memcpy(&out->pcm_config, &pcm_config_out, sizeof(struct pcm_config));
     out->pcm_config.rate = config->sample_rate;
-    out->frames_played= 0;
-    clock_gettime(CLOCK_MONOTONIC, &out->frames_played_time);
-    out->frames_written = 0;
 
+    out->standby = true;
+    out->underrun_position = 0;
+    out->underrun_time.tv_sec = 0;
+    out->underrun_time.tv_nsec = 0;
+    out->last_write_time_us = 0;
+    out->frames_total_buffered = 0;
+    out->frames_written = 0;
+    out->frames_rendered = 0;
+
+    ret = audio_vbuffer_init(&out->buffer,
+                      out->pcm_config.period_size*out->pcm_config.period_count,
+                      out->pcm_config.channels *
+                      pcm_format_to_bits(out->pcm_config.format) >> 3);
+    if (ret == 0) {
+        pthread_cond_init(&out->worker_wake, NULL);
+        out->worker_standby = true;
+        out->worker_exit = false;
+        pthread_create(&out->worker_thread, NULL, out_write_worker, out);
+
+    }
     *stream_out = &out->stream;
 
-    ret = start_output_stream(out);
 
 error:
 
@@ -806,6 +1179,15 @@ static void adev_close_output_stream(struct audio_hw_device *dev,
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
     do_out_standby(out);
+
+    pthread_mutex_lock(&out->lock);
+    out->worker_exit = true;
+    pthread_cond_signal(&out->worker_wake);
+    pthread_mutex_unlock(&out->lock);
+
+    pthread_join(out->worker_thread, NULL);
+    pthread_mutex_destroy(&out->lock);
+    audio_vbuffer_destroy(&out->buffer);
     free(stream);
 }
 
@@ -890,10 +1272,20 @@ static void adev_close_input_stream(struct audio_hw_device *dev,
 {
     struct generic_stream_in *in = (struct generic_stream_in *)stream;
     do_in_standby(in);
+
+    pthread_mutex_lock(&in->lock);
+    in->worker_exit = true;
+    pthread_cond_signal(&in->worker_wake);
+    pthread_mutex_unlock(&in->lock);
+    pthread_join(in->worker_thread, NULL);
+
     if (in->stereo_to_mono_buf != NULL) {
         free(in->stereo_to_mono_buf);
         in->stereo_to_mono_buf_size = 0;
     }
+
+    pthread_mutex_destroy(&in->lock);
+    audio_vbuffer_destroy(&in->buffer);
     free(stream);
 }
 
@@ -938,20 +1330,38 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     in->stream.set_gain = in_set_gain;                              // no op
     in->stream.read = in_read;
     in->stream.get_input_frames_lost = in_get_input_frames_lost;    // no op
+    in->stream.get_capture_position = in_get_capture_position;
 
+    pthread_mutex_init(&in->lock, (const pthread_mutexattr_t *) NULL);
     in->dev = adev;
     in->device = devices;
-    in->stereo_to_mono_buf = NULL;
-    in->stereo_to_mono_buf_size = 0;
-    pthread_mutex_init(&in->lock, (const pthread_mutexattr_t *) NULL);
-
     memcpy(&in->req_config, config, sizeof(struct audio_config));
-
     memcpy(&in->pcm_config, &pcm_config_in, sizeof(struct pcm_config));
     in->pcm_config.rate = config->sample_rate;
     in->pcm_config.period_size = in->pcm_config.rate*IN_PERIOD_MS/1000;
 
+    in->stereo_to_mono_buf = NULL;
+    in->stereo_to_mono_buf_size = 0;
+
+    in->standby = true;
+    in->standby_position = 0;
+    in->standby_exit_time.tv_sec = 0;
+    in->standby_exit_time.tv_nsec = 0;
+    in->standby_frames_read = 0;
+
+    ret = audio_vbuffer_init(&in->buffer,
+                      in->pcm_config.period_size*in->pcm_config.period_count,
+                      in->pcm_config.channels *
+                      pcm_format_to_bits(in->pcm_config.format) >> 3);
+    if (ret == 0) {
+        pthread_cond_init(&in->worker_wake, NULL);
+        in->worker_standby = true;
+        in->worker_exit = false;
+        pthread_create(&in->worker_thread, NULL, in_read_worker, in);
+    }
+
     *stream_in = &in->stream;
+
 error:
     return ret;
 }
