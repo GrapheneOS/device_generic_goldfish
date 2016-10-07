@@ -125,6 +125,7 @@ private:
     YUVPixel    mRedYUV;
     YUVPixel    mGreenYUV;
     YUVPixel    mBlueYUV;
+    YUVPixel*   mSquareColor;
 
     /* Last time the frame has been redrawn. */
     nsecs_t     mLastRedrawn;
@@ -150,14 +151,14 @@ private:
     /*
      * Checkerboard drawing related stuff
      */
+    nsecs_t     mLastColorChange;
 
-    int         mCheckX;
-    int         mCheckY;
-    int         mCcounter;
-
-    /* Defines time (in nanoseconds) between redrawing the checker board.
-     * We will redraw the checker board every 15 milliseconds. */
-    static const nsecs_t    mRedrawAfter = 15000000LL;
+    double      mCheckX;
+    double      mCheckY;
+    double      mSquareX;
+    double      mSquareY;
+    double      mSquareXSpeed;
+    double      mSquareYSpeed;
 
 #if EFCD_ROTATE_FRAME
     /* Frame rotation frequency in nanosec (currently - 3 sec) */
