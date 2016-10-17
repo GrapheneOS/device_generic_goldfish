@@ -4,6 +4,9 @@ on early-init
 
 on init
 
+    symlink /dev/goldfish_pipe /dev/android_pipe
+    symlink /dev/goldfish_pipe /dev/qemu_pipe
+
 on boot
     setprop ARGH ARGH
     setprop net.eth0.gw 10.0.2.2
