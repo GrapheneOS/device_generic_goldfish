@@ -36,7 +36,7 @@ emulator_camera_shared_libraries := \
 
 emulator_camera_c_includes := external/jpeg \
 	frameworks/native/include/media/hardware \
-	$(LOCAL_PATH)/../opengl/system/OpenglSystemCommon \
+	$(LOCAL_PATH)/../../goldfish-opengl/system/OpenglSystemCommon \
 	$(call include-path-for, camera)
 
 emulator_camera_src := \
