@@ -427,7 +427,8 @@ status_t EmulatedCamera::takePicture()
     mParameters.getPictureSize(&width, &height);
     const char* pix_fmt = mParameters.getPictureFormat();
     if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420P) == 0) {
-        org_fmt = V4L2_PIX_FMT_YUV420;
+        // Despite the name above this is a YVU format, specifically YV12
+        org_fmt = V4L2_PIX_FMT_YVU420;
     } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_RGBA8888) == 0) {
         org_fmt = V4L2_PIX_FMT_RGB32;
     } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420SP) == 0) {
@@ -740,7 +741,8 @@ status_t EmulatedCamera::doStartPreview()
     /* Convert framework's pixel format to the FOURCC one. */
     uint32_t org_fmt;
     if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420P) == 0) {
-        org_fmt = V4L2_PIX_FMT_YUV420;
+        // Despite the name above this is a YVU format, specifically YV12
+        org_fmt = V4L2_PIX_FMT_YVU420;
     } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_RGBA8888) == 0) {
         org_fmt = V4L2_PIX_FMT_RGB32;
     } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420SP) == 0) {
