@@ -47,6 +47,7 @@ struct generic_audio_device {
     struct audio_hw_device device; // Constant after init
     pthread_mutex_t lock;
     bool mic_mute;                 // Proteced by this->lock
+    struct mixer* mixer;           // Proteced by this->lock
 };
 
 /* If not NULL, this is a pointer to the fallback module.
@@ -977,6 +978,9 @@ static int adev_close(hw_device_t *dev)
     }
 
     if ((--audio_device_ref_count) == 0) {
+        if (adev->mixer) {
+            mixer_close(adev->mixer);
+        }
         free(adev);
     }
 
@@ -1034,6 +1038,32 @@ static int adev_open(const hw_module_t* module, const char* name,
     adev->device.dump = adev_dump;
 
     *device = &adev->device.common;
+
+    adev->mixer = mixer_open(PCM_CARD);
+    struct mixer_ctl *ctl;
+
+    // Set default mixer ctls
+    // Enable channels and set volume
+    for (int i = 0; i < (int)mixer_get_num_ctls(adev->mixer); i++) {
+        ctl = mixer_get_ctl(adev->mixer, i);
+        ALOGD("mixer %d name %s", i, mixer_ctl_get_name(ctl));
+        if (!strcmp(mixer_ctl_get_name(ctl), "Master Playback Volume") ||
+            !strcmp(mixer_ctl_get_name(ctl), "Capture Volume")) {
+            for (int z = 0; z < (int)mixer_ctl_get_num_values(ctl); z++) {
+                ALOGD("set ctl %d to %d", z, 100);
+                mixer_ctl_set_percent(ctl, z, 100);
+            }
+            continue;
+        }
+        if (!strcmp(mixer_ctl_get_name(ctl), "Master Playback Switch") ||
+            !strcmp(mixer_ctl_get_name(ctl), "Capture Switch")) {
+            for (int z = 0; z < (int)mixer_ctl_get_num_values(ctl); z++) {
+                ALOGD("set ctl %d to %d", z, 1);
+                mixer_ctl_set_value(ctl, z, 1);
+            }
+            continue;
+        }
+    }
 
     audio_device_ref_count++;
 
