@@ -20,6 +20,7 @@ on boot
     setprop ro.build.product generic
     setprop ro.product.device generic
     setprop ro.hardware.audio.primary goldfish
+    setprop ro.setupwizard.mode EMULATOR
 
 # fake some battery state
     setprop status.battery.state Slow
