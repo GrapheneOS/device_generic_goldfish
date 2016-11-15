@@ -584,11 +584,14 @@ static int out_get_render_position(const struct audio_stream_out *stream,
     return 0;
 }
 
+// Must be called with out->lock held
 static void do_out_standby(struct generic_stream_out *out)
 {
     int frames_sleep = 0;
     uint64_t sleep_time_us = 0;
-    pthread_mutex_lock(&out->lock);
+    if (out->standby) {
+        return;
+    }
     while (true) {
         get_current_output_position(out, &out->underrun_position, NULL);
         frames_sleep = out->frames_written - out->underrun_position;
@@ -606,13 +609,14 @@ static void do_out_standby(struct generic_stream_out *out)
     }
     out->worker_standby = true;
     out->standby = true;
-    pthread_mutex_unlock(&out->lock);
 }
 
 static int out_standby(struct audio_stream *stream)
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
+    pthread_mutex_lock(&out->lock);
     do_out_standby(out);
+    pthread_mutex_unlock(&out->lock);
     return 0;
 }
 
@@ -895,19 +899,23 @@ static void get_current_input_position(struct generic_stream_in *in,
     *position = in->standby_position + position_since_standby;
 }
 
+// Must be called with in->lock held
 static void do_in_standby(struct generic_stream_in *in)
 {
-    pthread_mutex_lock(&in->lock);
+    if (in->standby) {
+        return;
+    }
     in->worker_standby = true;
     get_current_input_position(in, &in->standby_position, NULL);
     in->standby = true;
-    pthread_mutex_unlock(&in->lock);
 }
 
 static int in_standby(struct audio_stream *stream)
 {
     struct generic_stream_in *in = (struct generic_stream_in *)stream;
+    pthread_mutex_lock(&in->lock);
     do_in_standby(in);
+    pthread_mutex_unlock(&in->lock);
     return 0;
 }
 
@@ -1133,6 +1141,7 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     }
 
     out = (struct generic_stream_out *)calloc(1, sizeof(struct generic_stream_out));
+
     if (!out)
         return -ENOMEM;
 
@@ -1194,9 +1203,9 @@ static void adev_close_output_stream(struct audio_hw_device *dev,
                                      struct audio_stream_out *stream)
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
+    pthread_mutex_lock(&out->lock);
     do_out_standby(out);
 
-    pthread_mutex_lock(&out->lock);
     out->worker_exit = true;
     pthread_cond_signal(&out->worker_wake);
     pthread_mutex_unlock(&out->lock);
@@ -1287,9 +1296,9 @@ static void adev_close_input_stream(struct audio_hw_device *dev,
                                    struct audio_stream_in *stream)
 {
     struct generic_stream_in *in = (struct generic_stream_in *)stream;
+    pthread_mutex_lock(&in->lock);
     do_in_standby(in);
 
-    pthread_mutex_lock(&in->lock);
     in->worker_exit = true;
     pthread_cond_signal(&in->worker_wake);
     pthread_mutex_unlock(&in->lock);
