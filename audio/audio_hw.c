@@ -1059,7 +1059,7 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
         size_t i;
         // Resample stereo 16 to mono 16 by dropping one channel.
         // The stereo stream is interleaved L-R-L-R
-        for (i = 0; i < bytes; i++) {
+        for (i = 0; i < frames; i++) {
             *dst = *src;
             src += 2;
             dst += 1;
