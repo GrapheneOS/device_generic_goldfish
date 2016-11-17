@@ -36,10 +36,10 @@
 #define PCM_DEVICE 0
 
 
-#define OUT_PERIOD_SIZE 1024
+#define OUT_PERIOD_MS 15
 #define OUT_PERIOD_COUNT 4
 
-#define IN_PERIOD_MS 10
+#define IN_PERIOD_MS 2
 #define IN_PERIOD_COUNT 4
 
 struct generic_audio_device {
@@ -224,7 +224,7 @@ struct generic_stream_in {
 static struct pcm_config pcm_config_out = {
     .channels = 2,
     .rate = 0,
-    .period_size = OUT_PERIOD_SIZE,
+    .period_size = 0,
     .period_count = OUT_PERIOD_COUNT,
     .format = PCM_FORMAT_S16_LE,
     .start_threshold = 0,
@@ -1170,6 +1170,7 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     memcpy(&out->req_config, config, sizeof(struct audio_config));
     memcpy(&out->pcm_config, &pcm_config_out, sizeof(struct pcm_config));
     out->pcm_config.rate = config->sample_rate;
+    out->pcm_config.period_size = out->pcm_config.rate*OUT_PERIOD_MS/1000;
 
     out->standby = true;
     out->underrun_position = 0;
