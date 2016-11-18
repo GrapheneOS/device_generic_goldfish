@@ -82,7 +82,7 @@ public:
 public:
 
     /* Copy the current frame to |buffer| */
-    status_t getCurrentFrame(void* buffer) override;
+    status_t getCurrentFrame(void* buffer, uint32_t pixelFormat) override;
 
     /* Copy the current preview frame to |buffer| */
     status_t getCurrentPreviewFrame(void* buffer) override;

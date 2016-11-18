@@ -216,7 +216,8 @@ status_t EmulatedQemuCameraDevice::stopDevice()
  * EmulatedCameraDevice virtual overrides
  ***************************************************************************/
 
-status_t EmulatedQemuCameraDevice::getCurrentFrame(void* buffer) {
+status_t EmulatedQemuCameraDevice::getCurrentFrame(void* buffer,
+                                                   uint32_t pixelFormat) {
     if (!isStarted()) {
         ALOGE("%s: Device is not started", __FUNCTION__);
         return EINVAL;
@@ -235,8 +236,7 @@ status_t EmulatedQemuCameraDevice::getCurrentFrame(void* buffer) {
         ALOGE("%s: No frame", __FUNCTION__);
         return EINVAL;
     }
-    memcpy(buffer, frame, mFrameBufferSize);
-    return NO_ERROR;
+    return getCurrentFrameImpl(frame, buffer, pixelFormat);
 }
 
 status_t EmulatedQemuCameraDevice::getCurrentPreviewFrame(void* buffer) {

@@ -225,7 +225,20 @@ void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
         camera_memory_t* cam_buff =
             mGetMemoryCB(-1, camera_dev->getFrameBufferSize(), 1, NULL);
         if (NULL != cam_buff && NULL != cam_buff->data) {
-            camera_dev->getCurrentFrame(cam_buff->data);
+            // This is the path for video frames, the format used here is not
+            // exposed to external users so it can be whatever the camera and
+            // the encoder can agree upon. The emulator system images use
+            // software encoders that expect a YUV420 format but the camera
+            // parameter constants cannot represent this. The closest we have
+            // is YV12 which is YVU420. So we produce YV12 frames so that we
+            // can serve those through the preview callback below and then we
+            // convert from YV12 to YU12 here. This is a pretty cheap conversion
+            // since we have to copy the frame here anyway. The conversion is
+            // just copying the U and V parts of the frame in different order.
+            // This way the encoder gets the format it expects and the preview
+            // callback (or data callback) below gets the format that is
+            // configured in camera parameters.
+            camera_dev->getCurrentFrame(cam_buff->data, V4L2_PIX_FMT_YUV420);
             mDataCBTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME,
                                cam_buff, 0, mCBOpaque);
             mCameraMemoryTs.push_back( cam_buff );
@@ -238,7 +251,8 @@ void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
         camera_memory_t* cam_buff =
             mGetMemoryCB(-1, camera_dev->getFrameBufferSize(), 1, NULL);
         if (NULL != cam_buff && NULL != cam_buff->data) {
-            camera_dev->getCurrentFrame(cam_buff->data);
+            camera_dev->getCurrentFrame(cam_buff->data,
+                                        camera_dev->getOriginalPixelFormat());
             mDataCB(CAMERA_MSG_PREVIEW_FRAME, cam_buff, 0, NULL, mCBOpaque);
             cam_buff->release(cam_buff);
         } else {

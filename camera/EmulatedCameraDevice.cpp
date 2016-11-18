@@ -170,7 +170,36 @@ void EmulatedCameraDevice::checkAutoFocusTrigger() {
     }
 }
 
-status_t EmulatedCameraDevice::getCurrentFrame(void* buffer)
+status_t EmulatedCameraDevice::getCurrentFrameImpl(const void* source,
+                                                   void* dest,
+                                                   uint32_t pixelFormat) const {
+    if (pixelFormat == mPixelFormat) {
+        memcpy(dest, source, mFrameBufferSize);
+        return NO_ERROR;
+    } else if (pixelFormat == V4L2_PIX_FMT_YUV420 &&
+               mPixelFormat == V4L2_PIX_FMT_YVU420) {
+        // Convert from YV12 to YU12
+        const int ySize = mYStride * mFrameHeight;
+        const int uvSize = mUVStride * (mFrameHeight / 2);
+        // Copy Y straight up
+        memcpy(dest, source, ySize);
+        // Swap U and V
+        memcpy(reinterpret_cast<uint8_t*>(dest) + ySize,
+               reinterpret_cast<const uint8_t*>(source) + ySize + uvSize,
+               uvSize);
+        memcpy(reinterpret_cast<uint8_t*>(dest) + ySize + uvSize,
+               reinterpret_cast<const uint8_t*>(source) + ySize,
+               uvSize);
+        return NO_ERROR;
+    }
+    ALOGE("%s: Invalid pixel format conversion [%.4s to %.4s] requested",
+          __FUNCTION__, reinterpret_cast<const char*>(&mPixelFormat),
+          reinterpret_cast<const char*>(&pixelFormat));
+    return EINVAL;
+}
+
+status_t EmulatedCameraDevice::getCurrentFrame(void* buffer,
+                                               uint32_t pixelFormat)
 {
     if (!isStarted()) {
         ALOGE("%s: Device is not started", __FUNCTION__);
@@ -187,7 +216,7 @@ status_t EmulatedCameraDevice::getCurrentFrame(void* buffer)
         ALOGE("%s: No framebuffer", __FUNCTION__);
         return EINVAL;
     }
-    memcpy(buffer, source, mFrameBufferSize);
+    return getCurrentFrameImpl(source, buffer, pixelFormat);
     return NO_ERROR;
 }
 

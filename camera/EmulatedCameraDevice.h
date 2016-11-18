@@ -186,13 +186,19 @@ public:
      * Note that this method should be called only after at least one frame has
      * been captured and delivered. Otherwise it will return garbage in the
      * preview frame buffer. Typically, this method should be called from
-     * onNextFrameAvailable callback.
+     * onNextFrameAvailable callback. The method can perform some basic pixel
+     * format conversion for the most efficient conversions. If a conversion
+     * is not supported the method will fail.
+     *
      * Param:
      *  buffer - Buffer, large enough to contain the entire frame.
+     *  pixelFormat - The pixel format to convert to, use
+     *                getOriginalPixelFormat() to get the configured pixel
+     *                format (if using this no conversion will be needed)
      * Return:
      *  NO_ERROR on success, or an appropriate error status.
      */
-    virtual status_t getCurrentFrame(void* buffer);
+    virtual status_t getCurrentFrame(void* buffer, uint32_t pixelFormat);
 
     /* Gets current framebuffer, converted into preview frame format.
      * This method must be called on a connected instance of this class with a
@@ -380,6 +386,13 @@ protected:
      * an auto-focus completion event on request. Otherwise the device should
      * implement its own auto-focus behavior. */
     void checkAutoFocusTrigger();
+
+    /* Implementation for getCurrentFrame that includes pixel format conversion
+     * if needed. This allows subclasses to easily use this method instead of
+     * having to reimplement the conversion all over.
+     */
+    status_t getCurrentFrameImpl(const void* source, void* dest,
+                                 uint32_t pixelFormat) const;
 
     /****************************************************************************
      * Worker thread management.
