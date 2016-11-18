@@ -92,6 +92,22 @@ static bool StringsEqual(const char* str1, const char* str2) {
     return strcmp(str1, str2) == 0;
 }
 
+static bool GetFourCcFormatFromCameraParam(const char* fmt_str,
+                                           uint32_t* fmt_val) {
+    if (strcmp(fmt_str, CameraParameters::PIXEL_FORMAT_YUV420P) == 0) {
+        // Despite the name above this is a YVU format, specifically YV12
+        *fmt_val = V4L2_PIX_FMT_YVU420;
+        return true;
+    } else if (strcmp(fmt_str, CameraParameters::PIXEL_FORMAT_RGBA8888) == 0) {
+        *fmt_val = V4L2_PIX_FMT_RGB32;
+        return true;
+    } else if (strcmp(fmt_str, CameraParameters::PIXEL_FORMAT_YUV420SP) == 0) {
+        *fmt_val = V4L2_PIX_FMT_NV21;
+        return true;
+    }
+    return false;
+}
+
 EmulatedCamera::EmulatedCamera(int cameraId,
                                struct hw_module_t* module)
         : EmulatedBaseCamera(cameraId,
@@ -368,8 +384,55 @@ status_t EmulatedCamera::storeMetaDataInBuffers(int enable)
 
 status_t EmulatedCamera::startRecording()
 {
-    /* Callback should return a negative errno. */
-    return -mCallbackNotifier.enableVideoRecording(mParameters.getPreviewFrameRate());
+    /* This callback should return a negative errno, hence all the negations */
+    int frameRate = mParameters.getPreviewFrameRate();
+    status_t res = mCallbackNotifier.enableVideoRecording(frameRate);
+    if (res != NO_ERROR) {
+        ALOGE("%s: CallbackNotifier failed to enable video recording",
+              __FUNCTION__);
+        stopRecording();
+        return -res;
+    }
+    EmulatedCameraDevice* const camera_dev = getCameraDevice();
+    if (camera_dev == nullptr || !camera_dev->isStarted()) {
+        // No need for restarts, the next preview start will use correct params
+        return NO_ERROR;
+    }
+
+    // If the camera is running we might have to restart it to accomodate
+    // whatever pixel format and frame size the caller wants.
+    uint32_t conf_fmt = 0;
+    res = getConfiguredPixelFormat(&conf_fmt);
+    if (res != NO_ERROR) {
+        stopRecording();
+        return -res;
+    }
+    uint32_t cur_fmt = camera_dev->getOriginalPixelFormat();
+    int conf_width = -1, conf_height = -1;
+    res = getConfiguredFrameSize(&conf_width, &conf_height);
+    if (res != NO_ERROR) {
+        stopRecording();
+        return -res;
+    }
+    int cur_width = camera_dev->getFrameWidth();
+    int cur_height = camera_dev->getFrameHeight();
+
+    if (cur_fmt != conf_fmt ||
+            cur_width != conf_width ||
+            cur_height != conf_height) {
+        // We need to perform a restart to use the new format or size and it
+        // has to be an asynchronous restart or this might block if the camera
+        // thread is currently delivering a frame.
+        if (!camera_dev->requestRestart(conf_width, conf_height, conf_fmt,
+                                        false /* takingPicture */,
+                                        false /* oneBurst */)) {
+            ALOGE("%s: Could not restart preview with new pixel format",
+                  __FUNCTION__);
+            stopRecording();
+            return -EINVAL;
+        }
+    }
+    return NO_ERROR;
 }
 
 void EmulatedCamera::stopRecording()
@@ -426,20 +489,18 @@ status_t EmulatedCamera::takePicture()
     /* Collect frame info for the picture. */
     mParameters.getPictureSize(&width, &height);
     const char* pix_fmt = mParameters.getPictureFormat();
-    if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420P) == 0) {
-        // Despite the name above this is a YVU format, specifically YV12
-        org_fmt = V4L2_PIX_FMT_YVU420;
-    } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_RGBA8888) == 0) {
-        org_fmt = V4L2_PIX_FMT_RGB32;
-    } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420SP) == 0) {
-        org_fmt = V4L2_PIX_FMT_NV21;
-    } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_JPEG) == 0) {
-        /* We only have JPEG converted for NV21 format. */
-        org_fmt = V4L2_PIX_FMT_NV21;
-    } else {
-        ALOGE("%s: Unsupported pixel format %s", __FUNCTION__, pix_fmt);
-        return EINVAL;
+    if (!GetFourCcFormatFromCameraParam(pix_fmt, &org_fmt)) {
+        // Also check for JPEG here, the function above does not do this since
+        // this is very specific to this use case.
+        if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_JPEG) == 0) {
+            /* We only have JPEG converted for NV21 format. */
+            org_fmt = V4L2_PIX_FMT_NV21;
+        } else {
+            ALOGE("%s: Unsupported pixel format %s", __FUNCTION__, pix_fmt);
+            return EINVAL;
+        }
     }
+
     /* Get JPEG quality. */
     int jpeg_quality = mParameters.getInt(CameraParameters::KEY_JPEG_QUALITY);
     if (jpeg_quality <= 0) {
@@ -687,6 +748,50 @@ status_t EmulatedCamera::dumpCamera(int fd)
     return -EINVAL;
 }
 
+status_t EmulatedCamera::getConfiguredPixelFormat(uint32_t* pixelFormat) const {
+    const char* pix_fmt = nullptr;
+    const char* recordingHint =
+        mParameters.get(CameraParameters::KEY_RECORDING_HINT);
+    bool recordingHintOn = recordingHint && strcmp(recordingHint,
+                                                   CameraParameters::TRUE) == 0;
+    bool recordingEnabled = mCallbackNotifier.isVideoRecordingEnabled();
+    if (recordingHintOn || recordingEnabled) {
+        // We're recording a video, use the video pixel format
+        pix_fmt = mParameters.get(CameraParameters::KEY_VIDEO_FRAME_FORMAT);
+    }
+    if (pix_fmt == nullptr) {
+        pix_fmt = mParameters.getPreviewFormat();
+    }
+    if (pix_fmt == nullptr) {
+        ALOGE("%s: Unable to obtain configured pixel format", __FUNCTION__);
+        return EINVAL;
+    }
+    /* Convert framework's pixel format to the FOURCC one. */
+    if (!GetFourCcFormatFromCameraParam(pix_fmt, pixelFormat)) {
+        ALOGE("%s: Unsupported pixel format %s", __FUNCTION__, pix_fmt);
+        return EINVAL;
+    }
+    return NO_ERROR;
+}
+
+status_t EmulatedCamera::getConfiguredFrameSize(int* outWidth,
+                                                int* outHeight) const {
+    int width = -1, height = -1;
+    if (mParameters.get(CameraParameters::KEY_VIDEO_SIZE) != nullptr) {
+        mParameters.getVideoSize(&width, &height);
+    } else {
+        mParameters.getPreviewSize(&width, &height);
+    }
+    if (width < 0 || height < 0) {
+        ALOGE("%s: No frame size configured for camera", __FUNCTION__);
+        return EINVAL;
+    }
+    // Only modify the out parameters once we know we succeeded
+    *outWidth = width;
+    *outHeight = height;
+    return NO_ERROR;
+}
+
 /****************************************************************************
  * Preview management.
  ***************************************************************************/
@@ -715,46 +820,24 @@ status_t EmulatedCamera::doStartPreview()
         }
     }
 
-    int width, height;
     /* Lets see what should we use for frame width, and height. */
-    if (mParameters.get(CameraParameters::KEY_VIDEO_SIZE) != NULL) {
-        mParameters.getVideoSize(&width, &height);
-    } else {
-        mParameters.getPreviewSize(&width, &height);
-    }
-    const char* pix_fmt = nullptr;
-    const char* recordingHint =
-        mParameters.get(CameraParameters::KEY_RECORDING_HINT);
-    if (recordingHint && strcmp(recordingHint, CameraParameters::TRUE) == 0) {
-        // We're recording a video, use the video pixel format
-        pix_fmt = mParameters.get(CameraParameters::KEY_VIDEO_FRAME_FORMAT);
-    }
-    if (pix_fmt == nullptr) {
-        pix_fmt = mParameters.getPreviewFormat();
-    }
-    if (pix_fmt == nullptr) {
-        ALOGE("%s: Unable to obtain video format", __FUNCTION__);
+    int width, height;
+    res = getConfiguredFrameSize(&width, &height);
+    if (res != NO_ERROR) {
         mPreviewWindow.stopPreview();
-        return EINVAL;
+        return res;
     }
 
-    /* Convert framework's pixel format to the FOURCC one. */
-    uint32_t org_fmt;
-    if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420P) == 0) {
-        // Despite the name above this is a YVU format, specifically YV12
-        org_fmt = V4L2_PIX_FMT_YVU420;
-    } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_RGBA8888) == 0) {
-        org_fmt = V4L2_PIX_FMT_RGB32;
-    } else if (strcmp(pix_fmt, CameraParameters::PIXEL_FORMAT_YUV420SP) == 0) {
-        org_fmt = V4L2_PIX_FMT_NV21;
-    } else {
-        ALOGE("%s: Unsupported pixel format %s", __FUNCTION__, pix_fmt);
+    uint32_t org_fmt = 0;
+    res = getConfiguredPixelFormat(&org_fmt);
+    if (res != NO_ERROR) {
         mPreviewWindow.stopPreview();
-        return EINVAL;
+        return res;
     }
+
     camera_dev->setPreviewFrameRate(mParameters.getPreviewFrameRate());
-    ALOGD("Starting camera: %dx%d -> %.4s(%s)",
-         width, height, reinterpret_cast<const char*>(&org_fmt), pix_fmt);
+    ALOGD("Starting camera: %dx%d -> %.4s",
+         width, height, reinterpret_cast<const char*>(&org_fmt));
     res = camera_dev->startDevice(width, height, org_fmt);
     if (res != NO_ERROR) {
         mPreviewWindow.stopPreview();

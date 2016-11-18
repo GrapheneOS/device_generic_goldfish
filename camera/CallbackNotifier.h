@@ -138,7 +138,7 @@ public:
      * Return:
      *  true if video recording is enabled, or false if it is disabled.
      */
-    inline bool isVideoRecordingEnabled()
+    inline bool isVideoRecordingEnabled() const
     {
         return mVideoRecEnabled;
     }
