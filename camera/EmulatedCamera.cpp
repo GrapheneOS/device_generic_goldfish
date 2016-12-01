@@ -151,9 +151,16 @@ status_t EmulatedCamera::Initialize()
     mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, "320");
     mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_HEIGHT, "240");
     mParameters.set(CameraParameters::KEY_JPEG_QUALITY, "90");
-    mParameters.set(CameraParameters::KEY_FOCAL_LENGTH, "4.31");
-    mParameters.set(CameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "54.8");
-    mParameters.set(CameraParameters::KEY_VERTICAL_VIEW_ANGLE, "42.5");
+    // Camera values for a Logitech B910 HD Webcam
+    //     Focal length: 4.90 mm (from specs)
+    //     Horizontal view angle: 61 degrees for 4:3 sizes,
+    //         70 degrees for 16:9 sizes (empirical)
+    //     Vertical view angle: 45.8 degrees (= 61 * 3 / 4)
+    // (The Mac has only "4:3" image sizes; the correct angle
+    //  is 51.0 degrees. [MacBook Pro (Retina, 15-inch, Mid 2014)])
+    mParameters.set(CameraParameters::KEY_FOCAL_LENGTH, "4.90");
+    mParameters.set(CameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "61.0");
+    mParameters.set(CameraParameters::KEY_VERTICAL_VIEW_ANGLE, "45.8");
     mParameters.set(CameraParameters::KEY_JPEG_THUMBNAIL_QUALITY, "90");
 
     /* Preview format settings used here are related to panoramic view only. It's
@@ -696,6 +703,20 @@ status_t EmulatedCamera::setParameters(const char* parms)
 static char lNoParam = '\0';
 char* EmulatedCamera::getParameters()
 {
+    // Read the image size and set the camera's Field of View.
+    // These values are valid for a Logitech B910 HD Webcam.
+    int width=0, height=0;
+    mParameters.getPictureSize(&width, &height);
+    if (height > 0) {
+        if (((double)width / height) < 1.55) {
+            // Closer to 4:3 (1.33), set the FOV to 61.0 degrees
+            mParameters.set(CameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "61.0");
+        } else {
+            // Closer to 16:9 (1.77), set the FOV to 70.0 degrees
+            mParameters.set(CameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "70.0");
+        }
+    }
+
     String8 params(mParameters.flatten());
     char* ret_str =
         reinterpret_cast<char*>(malloc(sizeof(char) * (params.length()+1)));
