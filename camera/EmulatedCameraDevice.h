@@ -179,7 +179,7 @@ public:
      */
     void setWhiteBalanceMode(const char* mode);
 
-    /* Gets current framebuffer in its raw format.
+    /* Gets current framebuffer in a selected format
      * This method must be called on a connected instance of this class with a
      * started camera device. If it is called on a disconnected instance, or
      * camera device has not been started, this method must return a failure.
@@ -188,7 +188,8 @@ public:
      * preview frame buffer. Typically, this method should be called from
      * onNextFrameAvailable callback. The method can perform some basic pixel
      * format conversion for the most efficient conversions. If a conversion
-     * is not supported the method will fail.
+     * is not supported the method will fail. Note that this does NOT require
+     * that the current frame be locked using a FrameLock object.
      *
      * Param:
      *  buffer - Buffer, large enough to contain the entire frame.
@@ -269,6 +270,23 @@ public:
     {
         ALOGE_IF(!isStarted(), "%s: Device is not started", __FUNCTION__);
         return mFrameBufferSize;
+    }
+
+    /* Get number of bytes required to store current video frame buffer. Note
+     * that this can be different from getFrameBufferSize depending on the pixel
+     * format and resolution. The video frames use a pixel format that is
+     * suitable for the encoding pipeline and this may have different alignment
+     * requirements than the pixel format used for regular frames.
+     */
+    inline size_t getVideoFrameBufferSize() const
+    {
+        ALOGE_IF(!isStarted(), "%s: Device is not started", __FUNCTION__);
+        // Currently the video format is always YUV 420 without any kind of
+        // alignment. So each pixel uses 12 bits, and then we divide by 8 to get
+        // the size in bytes. If additional pixel formats are supported this
+        // should be updated to take the selected video format into
+        // consideration.
+        return (mFrameWidth * mFrameHeight * 12) / 8;
     }
 
     /* Gets number of pixels in the current frame buffer.
@@ -391,7 +409,7 @@ protected:
      * if needed. This allows subclasses to easily use this method instead of
      * having to reimplement the conversion all over.
      */
-    status_t getCurrentFrameImpl(const void* source, void* dest,
+    status_t getCurrentFrameImpl(const uint8_t* source, uint8_t* dest,
                                  uint32_t pixelFormat) const;
 
     /****************************************************************************

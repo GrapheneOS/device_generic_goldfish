@@ -222,22 +222,25 @@ void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
 {
     if (isMessageEnabled(CAMERA_MSG_VIDEO_FRAME) && isVideoRecordingEnabled() &&
             isNewVideoFrameTime(timestamp)) {
-        camera_memory_t* cam_buff =
-            mGetMemoryCB(-1, camera_dev->getFrameBufferSize(), 1, NULL);
+        // This is the path for video frames, the format used here is not
+        // exposed to external users so it can be whatever the camera and the
+        // encoder can agree upon. The emulator system images use software
+        // encoders that expect a YUV420 format but the camera parameter
+        // constants cannot represent this. The closest we have is YV12 which is
+        // YVU420. So we produce YV12 frames so that we can serve those through
+        // the preview callback below and then we convert from YV12 to YUV420
+        // here. This is a pretty cheap conversion in most cases since we have
+        // to copy the frame here anyway. In the best (and most common) cases
+        // the conversion is just copying the U and V parts of the frame in
+        // different order. A slightly more expensive case is when the YV12
+        // frame has padding to ensure that rows are aligned to 16-byte
+        // boundaries. The YUV420 format expected by the encoders do not have
+        // this alignment so it has to be removed. This way the encoder gets the
+        // format it expects and the preview callback (or data callback) below
+        // gets the format that is configured in camera parameters.
+        const size_t frameSize = camera_dev->getVideoFrameBufferSize();
+        camera_memory_t* cam_buff = mGetMemoryCB(-1, frameSize, 1, NULL);
         if (NULL != cam_buff && NULL != cam_buff->data) {
-            // This is the path for video frames, the format used here is not
-            // exposed to external users so it can be whatever the camera and
-            // the encoder can agree upon. The emulator system images use
-            // software encoders that expect a YUV420 format but the camera
-            // parameter constants cannot represent this. The closest we have
-            // is YV12 which is YVU420. So we produce YV12 frames so that we
-            // can serve those through the preview callback below and then we
-            // convert from YV12 to YU12 here. This is a pretty cheap conversion
-            // since we have to copy the frame here anyway. The conversion is
-            // just copying the U and V parts of the frame in different order.
-            // This way the encoder gets the format it expects and the preview
-            // callback (or data callback) below gets the format that is
-            // configured in camera parameters.
             camera_dev->getCurrentFrame(cam_buff->data, V4L2_PIX_FMT_YUV420);
             mDataCBTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME,
                                cam_buff, 0, mCBOpaque);

@@ -236,7 +236,9 @@ status_t EmulatedQemuCameraDevice::getCurrentFrame(void* buffer,
         ALOGE("%s: No frame", __FUNCTION__);
         return EINVAL;
     }
-    return getCurrentFrameImpl(frame, buffer, pixelFormat);
+    return getCurrentFrameImpl(reinterpret_cast<const uint8_t*>(frame),
+                               reinterpret_cast<uint8_t*>(buffer),
+                               pixelFormat);
 }
 
 status_t EmulatedQemuCameraDevice::getCurrentPreviewFrame(void* buffer) {

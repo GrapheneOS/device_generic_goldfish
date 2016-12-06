@@ -170,26 +170,48 @@ void EmulatedCameraDevice::checkAutoFocusTrigger() {
     }
 }
 
-status_t EmulatedCameraDevice::getCurrentFrameImpl(const void* source,
-                                                   void* dest,
+status_t EmulatedCameraDevice::getCurrentFrameImpl(const uint8_t* source,
+                                                   uint8_t* dest,
                                                    uint32_t pixelFormat) const {
     if (pixelFormat == mPixelFormat) {
         memcpy(dest, source, mFrameBufferSize);
         return NO_ERROR;
     } else if (pixelFormat == V4L2_PIX_FMT_YUV420 &&
                mPixelFormat == V4L2_PIX_FMT_YVU420) {
-        // Convert from YV12 to YU12
+        // Convert from YV12 to YUV420 without alignment
         const int ySize = mYStride * mFrameHeight;
         const int uvSize = mUVStride * (mFrameHeight / 2);
-        // Copy Y straight up
-        memcpy(dest, source, ySize);
-        // Swap U and V
-        memcpy(reinterpret_cast<uint8_t*>(dest) + ySize,
-               reinterpret_cast<const uint8_t*>(source) + ySize + uvSize,
-               uvSize);
-        memcpy(reinterpret_cast<uint8_t*>(dest) + ySize + uvSize,
-               reinterpret_cast<const uint8_t*>(source) + ySize,
-               uvSize);
+        if (mYStride == mFrameWidth) {
+            // Copy Y straight up
+            memcpy(dest, source, ySize);
+        } else {
+            // Strip alignment
+            for (int y = 0; y < mFrameHeight; ++y) {
+                memcpy(dest + y * mFrameWidth,
+                       source + y * mYStride,
+                       mFrameWidth);
+            }
+        }
+
+        if (mUVStride == mFrameWidth / 2) {
+            // Swap U and V
+            memcpy(dest + ySize, source + ySize + uvSize, uvSize);
+            memcpy(dest + ySize + uvSize, source + ySize, uvSize);
+        } else {
+            // Strip alignment
+            uint8_t* uvDest = dest + mFrameWidth * mFrameHeight;
+            const uint8_t* uvSource = source + ySize + uvSize;
+
+            for (int i = 0; i < 2; ++i) {
+                for (int y = 0; y < mFrameHeight / 2; ++y) {
+                    memcpy(uvDest + y * (mFrameWidth / 2),
+                           uvSource + y * mUVStride,
+                           mFrameWidth / 2);
+                }
+                uvDest += (mFrameHeight / 2) * (mFrameWidth / 2);
+                uvSource -= uvSize;
+            }
+        }
         return NO_ERROR;
     }
     ALOGE("%s: Invalid pixel format conversion [%.4s to %.4s] requested",
@@ -216,8 +238,9 @@ status_t EmulatedCameraDevice::getCurrentFrame(void* buffer,
         ALOGE("%s: No framebuffer", __FUNCTION__);
         return EINVAL;
     }
-    return getCurrentFrameImpl(source, buffer, pixelFormat);
-    return NO_ERROR;
+    return getCurrentFrameImpl(reinterpret_cast<const uint8_t*>(source),
+                               reinterpret_cast<uint8_t*>(buffer),
+                               pixelFormat);
 }
 
 status_t EmulatedCameraDevice::getCurrentPreviewFrame(void* buffer)
