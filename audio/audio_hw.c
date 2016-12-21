@@ -749,7 +749,7 @@ static size_t get_input_buffer_size(uint32_t sample_rate, audio_format_t format,
     size_t size;
     size_t device_rate;
     int channel_count = popcount(channel_mask);
-    if (check_input_parameters(sample_rate, format, channel_count) != 0)
+    if (check_input_parameters(sample_rate, format, channel_mask) != 0)
         return 0;
 
     size = sample_rate*IN_PERIOD_MS/1000;
@@ -1287,9 +1287,7 @@ static int adev_get_mic_mute(const struct audio_hw_device *dev, bool *state)
 static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
                                          const struct audio_config *config)
 {
-    size_t size;
-    int channel_count = popcount(config->channel_mask);
-    return get_input_buffer_size(config->sample_rate, config->format, channel_count);
+    return get_input_buffer_size(config->sample_rate, config->format, config->channel_mask);
 }
 
 
