@@ -48,7 +48,7 @@ on boot
 # start essential services
 # These were written for the classic emulator, but are applicable to ranchu
     start goldfish-logcat
-    start goldfish-setup
+#    start goldfish-setup
 
 
 # enable Google-specific location features,
@@ -66,7 +66,14 @@ on property:sys.boot_completed=1
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
 
-service goldfish-setup /system/etc/init.goldfish.sh
+service ranchu-setup /system/bin/init.ranchu-core.sh
+    class core
+    user root
+    group root
+    oneshot
+
+service ranchu-net /system/bin/init.ranchu-net.sh
+    class late_start
     user root
     group root wakelock
     oneshot
