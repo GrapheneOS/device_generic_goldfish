@@ -54,7 +54,7 @@ on boot
 
 service goldfish-setup /system/etc/init.goldfish.sh
     user root
-    group root
+    group root wakelock
     oneshot
 
 # The qemu-props program is used to set various system
