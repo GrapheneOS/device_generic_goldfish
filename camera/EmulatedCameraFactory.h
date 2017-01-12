@@ -156,6 +156,9 @@ private:
      */
     void createQemuCameras();
 
+    /* Waits till qemu-props has done setup, timeout after 500ms */
+    void waitForQemuSfFakeCameraPropertyAvailable();
+
     /* Checks if fake camera emulation is on for the camera facing back. */
     bool isBackFakeCameraEmulationOn();
 

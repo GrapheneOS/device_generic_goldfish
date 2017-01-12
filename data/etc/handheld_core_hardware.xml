@@ -43,6 +43,7 @@
     <feature name="android.hardware.location.gps" />
     <feature name="android.hardware.location.network" />
     <feature name="android.hardware.sensor.accelerometer" />
+    <feature name="android.hardware.sensor.ambient_temperature" />
     <feature name="android.hardware.sensor.compass" />
     <feature name="android.hardware.sensor.barometer" />
     <feature name="android.hardware.sensor.light" />
