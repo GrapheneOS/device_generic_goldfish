@@ -308,17 +308,23 @@ void EmulatedFakeCameraDevice::drawCheckerboard(void* buffer)
     int squareY = mSquareY * mFrameHeight;
     if (squareX + squareSize > mFrameWidth) {
         mSquareXSpeed = -mSquareXSpeed;
-        squareX -= 2 * (squareX + squareSize - mFrameWidth);
+        double relativeWidth = static_cast<double>(squareSize) / mFrameWidth;
+        mSquareX -= 2.0 * (mSquareX + relativeWidth - 1.0);
+        squareX = mSquareX * mFrameWidth;
     } else if (squareX < 0) {
         mSquareXSpeed = -mSquareXSpeed;
-        squareX = -squareX;
+        mSquareX = -mSquareX;
+        squareX = mSquareX * mFrameWidth;
     }
     if (squareY + squareSize > mFrameHeight) {
         mSquareYSpeed = -mSquareYSpeed;
-        squareY -= 2 * (squareY + squareSize - mFrameHeight);
+        double relativeHeight = static_cast<double>(squareSize) / mFrameHeight;
+        mSquareY -= 2.0 * (mSquareY + relativeHeight - 1.0);
+        squareY = mSquareY * mFrameHeight;
     } else if (squareY < 0) {
         mSquareYSpeed = -mSquareYSpeed;
-        squareY = -squareY;
+        mSquareY = -mSquareY;
+        squareY = mSquareY * mFrameHeight;
     }
 
     if (now - mLastColorChange > kSquareColorChangeIntervalNs) {
