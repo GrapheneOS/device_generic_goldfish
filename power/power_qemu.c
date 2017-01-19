@@ -19,27 +19,27 @@
 
 #include <hardware/hardware.h>
 #include <hardware/power.h>
-#include <system/qemu_pipe.h>
+#include "qemud.h"
 #include <fcntl.h>
 #include <errno.h>
 
 static int qemud_fd;
 
-static void power_qemu_init(struct power_module * __unused module)
+static void power_qemu_init(struct power_module *module)
 {
-    qemud_fd = qemu_pipe_open("pipe:qemud:hw-control");
+    qemud_fd = qemud_channel_open("hw-control");
 
     if (qemud_fd < 0)
         ALOGE("Error connecting to qemud hw-control service\n");
 }
 
-static void power_qemu_set_interactive(struct power_module * __unused module,
-                                       int on)
+static void power_qemu_set_interactive(struct power_module *module, int on)
 {
-    const char* command = on ? "power:screen_state:wake" :
-            "power:screen_state:standby";
+    int r;
 
-    int r = qemu_pipe_frame_send(qemud_fd, command, strlen(command));
+    r = qemud_channel_send(qemud_fd, on ? "power:screen_state:wake"
+                           : "power:screen_state:standby", -1);
+
     if (r < 0)
         ALOGE("Error sending power command to qemud hw-control service\n");
 }

@@ -42,6 +42,7 @@ emulator_camera_c_includes := external/libjpeg-turbo \
 	external/libexif \
 	external/libyuv/files/include \
 	frameworks/native/include/media/hardware \
+	$(LOCAL_PATH)/../include \
 	$(LOCAL_PATH)/../../goldfish-opengl/system/OpenglSystemCommon \
 	$(call include-path-for, camera)
 

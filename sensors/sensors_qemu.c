@@ -23,9 +23,9 @@
  */
 
 
-/* we connect with the emulator through the "sensors" qemu pipe service
+/* we connect with the emulator through the "sensors" qemud service
  */
-#define  SENSORS_SERVICE_NAME "pipe:sensors"
+#define  SENSORS_SERVICE_NAME "sensors"
 
 #define LOG_TAG "QemuSensors"
 
@@ -45,7 +45,7 @@
 
 #define  E(...)  ALOGE(__VA_ARGS__)
 
-#include <system/qemu_pipe.h>
+#include "qemud.h"
 
 /** SENSOR IDS AND NAMES
  **/
@@ -152,9 +152,9 @@ typedef struct SensorDevice {
  * from different threads, and poll() is blocking.
  *
  * Note that the emulator's sensors service creates a new client for each
- * connection through qemu_pipe_open(), where each client has its own
+ * connection through qemud_channel_open(), where each client has its own
  * delay and set of activated sensors. This precludes calling
- * qemu_pipe_open() on each request, because a typical emulated system
+ * qemud_channel_open() on each request, because a typical emulated system
  * will do something like:
  *
  * 1) On a first thread, de-activate() all sensors first, then call poll(),
@@ -174,7 +174,7 @@ typedef struct SensorDevice {
 static int sensor_device_get_fd_locked(SensorDevice* dev) {
     /* Create connection to service on first call */
     if (dev->fd < 0) {
-        dev->fd = qemu_pipe_open(SENSORS_SERVICE_NAME);
+        dev->fd = qemud_channel_open(SENSORS_SERVICE_NAME);
         if (dev->fd < 0) {
             int ret = -errno;
             E("%s: Could not open connection to service: %s", __FUNCTION__,
@@ -196,7 +196,7 @@ static int sensor_device_send_command_locked(SensorDevice* dev,
     }
 
     int ret = 0;
-    if (qemu_pipe_frame_send(fd, cmd, strlen(cmd)) < 0) {
+    if (qemud_channel_send(fd, cmd, strlen(cmd)) < 0) {
         ret = -errno;
         E("%s(fd=%d): ERROR: %s", __FUNCTION__, fd, strerror(errno));
     }
@@ -267,7 +267,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
 
         /* read the next event */
         char buff[256];
-        int len = qemu_pipe_frame_recv(fd, buff, sizeof(buff) - 1U);
+        int len = qemud_channel_recv(fd, buff, sizeof(buff) - 1U);
         /* re-acquire the lock to modify the device state. */
         pthread_mutex_lock(&dev->lock);
 
@@ -333,7 +333,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         if (sscanf(buff, "temperature:%g", params+0) == 1) {
             new_sensors |= SENSORS_TEMPERATURE;
             events[ID_TEMPERATURE].temperature = params[0];
-            events[ID_TEMPERATURE].type = SENSOR_TYPE_TEMPERATURE;
+            events[ID_TEMPERATURE].type = SENSOR_TYPE_AMBIENT_TEMPERATURE;
             continue;
         }
  
@@ -540,6 +540,33 @@ static int sensor_device_activate(struct sensors_poll_device_t *dev0,
     return ret;
 }
 
+static int sensor_device_default_flush(
+        struct sensors_poll_device_1* dev0,
+        int handle) {
+
+    SensorDevice* dev = (void*)dev0;
+
+    D("%s: handle=%s (%d)", __FUNCTION__,
+        _sensorIdToName(handle), handle);
+
+    /* Sanity check */
+    if (!ID_CHECK(handle)) {
+        E("%s: bad handle ID", __FUNCTION__);
+        return -EINVAL;
+    }
+
+    pthread_mutex_lock(&dev->lock);
+    dev->sensors[handle].version = META_DATA_VERSION;
+    dev->sensors[handle].type = SENSOR_TYPE_META_DATA;
+    dev->sensors[handle].sensor = 0;
+    dev->sensors[handle].timestamp = 0;
+    dev->sensors[handle].meta_data.what = META_DATA_FLUSH_COMPLETE;
+    dev->pendingSensors |= (1U << handle);
+    pthread_mutex_unlock(&dev->lock);
+
+    return 0;
+}
+
 static int sensor_device_set_delay(struct sensors_poll_device_t *dev0,
                                    int handle __unused,
                                    int64_t ns)
@@ -559,6 +586,15 @@ static int sensor_device_set_delay(struct sensors_poll_device_t *dev0,
         E("%s: Could not send command: %s", __FUNCTION__, strerror(-ret));
     }
     return ret;
+}
+
+static int sensor_device_default_batch(
+     struct sensors_poll_device_1* dev,
+     int sensor_handle,
+     int flags,
+     int64_t sampling_period_ns,
+     int64_t max_report_latency_ns) {
+    return sensor_device_set_delay(dev, sensor_handle, sampling_period_ns);
 }
 
 /** MODULE REGISTRATION SUPPORT
@@ -588,6 +624,12 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 3.0f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
@@ -601,6 +643,12 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 6.7f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
@@ -614,6 +662,12 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 9.7f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
@@ -621,12 +675,18 @@ static const struct sensor_t sSensorListInit[] = {
           .vendor     = "The Android Open Source Project",
           .version    = 1,
           .handle     = ID_TEMPERATURE,
-          .type       = SENSOR_TYPE_TEMPERATURE,
+          .type       = SENSOR_TYPE_AMBIENT_TEMPERATURE,
           .maxRange   = 80.0f,
           .resolution = 1.0f,
           .power      = 0.0f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
@@ -640,6 +700,12 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 20.0f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
@@ -653,6 +719,12 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 20.0f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
@@ -666,6 +738,12 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 20.0f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
@@ -679,6 +757,12 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 20.0f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .fifoReservedEventCount = 0,
+          .fifoMaxEventCount =   0,
+          .stringType =         0,
+          .requiredPermission = 0,
+          .maxDelay =      200000,
+          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         }
 };
@@ -688,23 +772,22 @@ static struct sensor_t  sSensorList[MAX_NUM_SENSORS];
 static int sensors__get_sensors_list(struct sensors_module_t* module __unused,
         struct sensor_t const** list)
 {
-    int  fd = qemu_pipe_open(SENSORS_SERVICE_NAME);
+    int  fd = qemud_channel_open(SENSORS_SERVICE_NAME);
     char buffer[12];
     int  mask, nn, count;
     int  ret = 0;
 
     if (fd < 0) {
-        E("%s: no qemu pipe connection", __FUNCTION__);
+        E("%s: no qemud connection", __FUNCTION__);
         goto out;
     }
-    static const char kListSensors[] = "list-sensors";
-    ret = qemu_pipe_frame_send(fd, kListSensors, sizeof(kListSensors) - 1);
+    ret = qemud_channel_send(fd, "list-sensors", -1);
     if (ret < 0) {
         E("%s: could not query sensor list: %s", __FUNCTION__,
           strerror(errno));
         goto out;
     }
-    ret = qemu_pipe_frame_recv(fd, buffer, sizeof buffer-1);
+    ret = qemud_channel_recv(fd, buffer, sizeof buffer-1);
     if (ret < 0) {
         E("%s: could not receive sensor list: %s", __FUNCTION__,
           strerror(errno));
@@ -718,7 +801,6 @@ static int sensors__get_sensors_list(struct sensors_module_t* module __unused,
     for (nn = 0; nn < MAX_NUM_SENSORS; nn++) {
         if (((1 << nn) & mask) == 0)
             continue;
-
         sSensorList[count++] = sSensorListInit[nn];
     }
     D("%s: returned %d sensors (mask=%d)", __FUNCTION__, count, mask);
@@ -748,12 +830,16 @@ open_sensors(const struct hw_module_t* module,
         memset(dev, 0, sizeof(*dev));
 
         dev->device.common.tag     = HARDWARE_DEVICE_TAG;
-        dev->device.common.version = SENSORS_DEVICE_API_VERSION_1_0;
+        dev->device.common.version = SENSORS_DEVICE_API_VERSION_1_3;
         dev->device.common.module  = (struct hw_module_t*) module;
         dev->device.common.close   = sensor_device_close;
         dev->device.poll           = sensor_device_poll;
         dev->device.activate       = sensor_device_activate;
         dev->device.setDelay       = sensor_device_set_delay;
+
+        // Version 1.3-specific functions
+        dev->device.batch       = sensor_device_default_batch;
+        dev->device.flush       = sensor_device_default_flush;
 
         dev->fd = -1;
         pthread_mutex_init(&dev->lock, NULL);
@@ -773,7 +859,7 @@ struct sensors_module_t HAL_MODULE_INFO_SYM = {
     .common = {
         .tag = HARDWARE_MODULE_TAG,
         .version_major = 1,
-        .version_minor = 0,
+        .version_minor = 3,
         .id = SENSORS_HARDWARE_MODULE_ID,
         .name = "Goldfish SENSORS Module",
         .author = "The Android Open Source Project",

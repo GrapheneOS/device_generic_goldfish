@@ -27,22 +27,19 @@
  */
 #define LOG_TAG "FingerprintHal"
 
-#include <cutils/log.h>
-#include <hardware/hardware.h>
-#include <hardware/fingerprint.h>
-#include <system/qemu_pipe.h>
-
 #include <errno.h>
 #include <endian.h>
 #include <inttypes.h>
 #include <malloc.h>
-#include <poll.h>
-#include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
+#include <cutils/log.h>
+#include <hardware/hardware.h>
+#include <hardware/fingerprint.h>
+#include "qemud.h"
 
+#include <poll.h>
 
-#define FINGERPRINT_LISTEN_SERVICE_NAME "pipe:qemud:fingerprintlisten"
+#define FINGERPRINT_LISTEN_SERVICE_NAME "fingerprintlisten"
 #define FINGERPRINT_FILENAME "emufp.bin"
 #define AUTHENTICATOR_ID_FILENAME "emuauthid.bin"
 #define MAX_COMM_CHARS 128
@@ -661,7 +658,7 @@ static void* listenerFunction(void* data) {
     ALOGD("----------------> %s ----------------->", __FUNCTION__);
     qemu_fingerprint_device_t* qdev = (qemu_fingerprint_device_t*)data;
 
-    int fd = qemu_pipe_open(FINGERPRINT_LISTEN_SERVICE_NAME);
+    int fd = qemud_channel_open(FINGERPRINT_LISTEN_SERVICE_NAME);
     pthread_mutex_lock(&qdev->lock);
     qdev->qchanfd = fd;
     if (qdev->qchanfd < 0) {
@@ -672,9 +669,8 @@ static void* listenerFunction(void* data) {
     qdev->listener.state = STATE_IDLE;
     pthread_mutex_unlock(&qdev->lock);
 
-    static const char kListenCmd[] = "listen";
-    size_t kListenCmdSize = sizeof(kListenCmd) - 1U;
-    if (qemu_pipe_frame_send(qdev->qchanfd, kListenCmd, kListenCmdSize) < 0) {
+    const char* cmd = "listen";
+    if (qemud_channel_send(qdev->qchanfd, cmd, strlen(cmd)) < 0) {
         ALOGE("cannot write fingerprint 'listen' to host");
         goto done_quiet;
     }
@@ -729,8 +725,8 @@ static void* listenerFunction(void* data) {
         }
 
         // Shouldn't block since we were just notified of a POLLIN event
-        if ((size = qemu_pipe_frame_recv(qdev->qchanfd, buffer,
-                                         sizeof(buffer) - 1)) > 0) {
+        if ((size = qemud_channel_recv(qdev->qchanfd, buffer,
+                                       sizeof(buffer) - 1)) > 0) {
             buffer[size] = '\0';
             if (sscanf(buffer, "on:%d", &fid) == 1) {
                 if (fid > 0 && fid <= MAX_FID_VALUE) {

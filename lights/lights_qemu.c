@@ -26,6 +26,21 @@
 #define LOG_TAG "Lights"
 #endif
 
+/* we connect with the emulator through the "hw-control" qemud service */
+#define  LIGHTS_SERVICE_NAME "hw-control"
+
+#include <cutils/log.h>
+#include <stdint.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <hardware/lights.h>
+#include "qemud.h"
+
 /* Set to 1 to enable debug messages to the log */
 #define DEBUG 0
 #if DEBUG
@@ -35,26 +50,6 @@
 #endif
 
 #define  E(...)  ALOGE(__VA_ARGS__)
-
-/* we connect with the emulator through the "hw-control" qemud service */
-#define  LIGHTS_SERVICE_NAME "pipe:qemud:hw-control"
-
-#include <cutils/log.h>
-
-#define DEBUG_QEMU_PIPE D
-#include <system/qemu_pipe.h>
-
-#include <hardware/lights.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <stdlib.h>
 
 /* Get brightness(0~255) from state. */
 static int
@@ -67,13 +62,13 @@ rgb_to_brightness( struct light_state_t const* state )
 
 /* set backlight brightness by LIGHTS_SERVICE_NAME service. */
 static int
-set_light_backlight( struct light_device_t* __unused dev, struct light_state_t const* state )
+set_light_backlight( struct light_device_t* dev, struct light_state_t const* state )
 {
     /* Get Lights service. */
-    int  fd = qemu_pipe_open(LIGHTS_SERVICE_NAME);
+    int  fd = qemud_channel_open( LIGHTS_SERVICE_NAME );
 
     if (fd < 0) {
-        E( "%s: no qemu pipe connection", __FUNCTION__ );
+        E( "%s: no qemud connection", __FUNCTION__ );
         return -1;
     }
 
@@ -92,7 +87,7 @@ set_light_backlight( struct light_device_t* __unused dev, struct light_state_t c
     D( "%s: lcd_backlight command: %s", __FUNCTION__, buffer );
 
     /* send backlight command to perform the backlight setting. */
-    if (qemu_pipe_frame_send(fd, buffer, strlen(buffer)) < 0) {
+    if (qemud_channel_send( fd, buffer, -1 ) < 0) {
         E( "%s: could not query lcd_backlight: %s", __FUNCTION__, strerror(errno) );
         close( fd );
         return -1;
@@ -103,8 +98,7 @@ set_light_backlight( struct light_device_t* __unused dev, struct light_state_t c
 }
 
 static int
-set_light_buttons( struct light_device_t* __unused dev,
-                   struct light_state_t const* __unused state )
+set_light_buttons( struct light_device_t* dev, struct light_state_t const* state )
 {
     /* @Waiting for later implementation. */
     D( "%s: Not implemented.", __FUNCTION__ );
@@ -113,8 +107,7 @@ set_light_buttons( struct light_device_t* __unused dev,
 }
 
 static int
-set_light_battery( struct light_device_t* __unused dev,
-                   struct light_state_t const* __unused state )
+set_light_battery( struct light_device_t* dev, struct light_state_t const* state )
 {
     /* @Waiting for later implementation. */
     D( "%s: Not implemented.", __FUNCTION__ );
@@ -123,8 +116,7 @@ set_light_battery( struct light_device_t* __unused dev,
 }
 
 static int
-set_light_keyboard( struct light_device_t* __unused dev,
-                    struct light_state_t const* __unused state )
+set_light_keyboard( struct light_device_t* dev, struct light_state_t const* state )
 {
     /* @Waiting for later implementation. */
     D( "%s: Not implemented.", __FUNCTION__ );
@@ -133,8 +125,7 @@ set_light_keyboard( struct light_device_t* __unused dev,
 }
 
 static int
-set_light_notifications( struct light_device_t* __unused dev,
-                         struct light_state_t const* __unused state )
+set_light_notifications( struct light_device_t* dev, struct light_state_t const* state )
 {
     /* @Waiting for later implementation. */
     D( "%s: Not implemented.", __FUNCTION__ );
@@ -143,8 +134,7 @@ set_light_notifications( struct light_device_t* __unused dev,
 }
 
 static int
-set_light_attention( struct light_device_t* __unused dev,
-                     struct light_state_t const* __unused state )
+set_light_attention( struct light_device_t* dev, struct light_state_t const* state )
 {
     /* @Waiting for later implementation. */
     D( "%s: Not implemented.", __FUNCTION__ );

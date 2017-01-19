@@ -20,29 +20,23 @@
 #include <cutils/log.h>
 
 #define QEMU_HARDWARE
+#include "qemu.h"
 #include <hardware/hardware.h>
 #include <hardware/vibrator.h>
-#include <system/qemu_pipe.h>
 
 static int sendit(unsigned int timeout_ms)
 {
-    static int pipe_fd = -2;
-    if (pipe_fd < -1) {
-        pipe_fd = qemu_pipe_open("pipe:qemud:hw-control");
+    if (qemu_check()) {
+        if (qemu_control_command("vibrator:%u", timeout_ms) < 0) {
+            return -errno;
+        }
+        return 0;
     }
-    if (pipe_fd < 0) {
-        return -ENOSYS;
-    }
-    char buff[16];
-    snprintf(buff, sizeof(buff), "vibrator:%u", timeout_ms);
-    if (qemu_pipe_frame_send(pipe_fd, buff, strlen(buff)) < 0) {
-        return -errno;
-    }
-    return 0;
+
+    return -ENOSYS;
 }
 
-static int qemu_vibra_on(vibrator_device_t* vibradev __unused,
-                         unsigned int timeout_ms)
+static int qemu_vibra_on(vibrator_device_t* vibradev __unused, unsigned int timeout_ms)
 {
     return sendit(timeout_ms);
 }
