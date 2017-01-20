@@ -628,7 +628,6 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
@@ -647,7 +646,6 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
@@ -666,7 +664,6 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
@@ -685,7 +682,6 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
@@ -704,8 +700,7 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
-          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
+          .flags = SENSOR_FLAG_WAKE_UP | SENSOR_FLAG_ON_CHANGE_MODE,
           .reserved   = {}
         },
 
@@ -723,8 +718,7 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
-          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
+          .flags = SENSOR_FLAG_WAKE_UP | SENSOR_FLAG_ON_CHANGE_MODE,
           .reserved   = {}
         },
 
@@ -742,7 +736,6 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
@@ -761,7 +754,6 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .maxDelay =      200000,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         }
