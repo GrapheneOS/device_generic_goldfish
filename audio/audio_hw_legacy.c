@@ -33,7 +33,6 @@
 
 
 #define AUDIO_DEVICE_NAME "/dev/eac"
-#define OUT_SAMPLING_RATE 44100
 #define OUT_BUFFER_SIZE 4096
 #define OUT_LATENCY_MS 20
 #define IN_SAMPLING_RATE 8000
@@ -54,6 +53,7 @@ struct generic_stream_out {
     struct audio_stream_out stream;
     struct generic_audio_device *dev;
     audio_devices_t device;
+    uint32_t sample_rate;
 };
 
 struct generic_stream_in {
@@ -65,7 +65,8 @@ struct generic_stream_in {
 
 static uint32_t out_get_sample_rate(const struct audio_stream *stream)
 {
-    return OUT_SAMPLING_RATE;
+    struct generic_stream_out *out = (struct generic_stream_out *)stream;
+    return out->sample_rate;
 }
 
 static int out_set_sample_rate(struct audio_stream *stream, uint32_t rate)
@@ -376,6 +377,8 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
 {
     struct generic_audio_device *adev = (struct generic_audio_device *)dev;
     struct generic_stream_out *out;
+    static const uint32_t sample_rates [] = { 44100, 48000 };
+    static const int sample_rates_count = sizeof(sample_rates)/sizeof(sample_rates[0]);
     int ret = 0;
 
     pthread_mutex_lock(&adev->lock);
@@ -385,16 +388,31 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     }
 
     if ((config->format != AUDIO_FORMAT_PCM_16_BIT) ||
-        (config->channel_mask != AUDIO_CHANNEL_OUT_STEREO) ||
-        (config->sample_rate != OUT_SAMPLING_RATE)) {
-        ALOGE("Error opening output stream format %d, channel_mask %04x, sample_rate %u",
-              config->format, config->channel_mask, config->sample_rate);
+        (config->channel_mask != AUDIO_CHANNEL_OUT_STEREO) ) {
+        ALOGE("Error opening output stream, format %d, channel_mask %04x",
+              config->format, config->channel_mask);
         config->format = AUDIO_FORMAT_PCM_16_BIT;
         config->channel_mask = AUDIO_CHANNEL_OUT_STEREO;
-        config->sample_rate = OUT_SAMPLING_RATE;
         ret = -EINVAL;
-        goto error;
     }
+
+    for (int idx = 0; idx < sample_rates_count; idx++) {
+        if (config->sample_rate < sample_rates[idx]) {
+            config->sample_rate = sample_rates[idx];
+            ALOGE("Error opening output stream, sample_rate %u", config->sample_rate);
+            ret = -EINVAL;
+            break;
+        } else if (config->sample_rate == sample_rates[idx]) {
+            break;
+        } else if (idx == sample_rates_count-1) {
+            // Cap it to the highest rate we support
+            config->sample_rate = sample_rates[idx];
+            ALOGE("Error opening output stream, sample_rate %u", config->sample_rate);
+            ret = -EINVAL;
+        }
+    }
+
+    if (ret != 0) goto error;
 
     out = (struct generic_stream_out *)calloc(1, sizeof(struct generic_stream_out));
 
@@ -415,6 +433,7 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->stream.write = out_write;
     out->stream.get_render_position = out_get_render_position;
     out->stream.get_next_write_timestamp = out_get_next_write_timestamp;
+    out->sample_rate = config->sample_rate;
 
     out->dev = adev;
     out->device = devices;
