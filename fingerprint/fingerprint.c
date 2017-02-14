@@ -417,13 +417,21 @@ static int fingerprint_enumerate(struct fingerprint_device *device) {
     fingerprint_msg_t message = {0, {0}};
     message.type = FINGERPRINT_TEMPLATE_ENUMERATING;
     message.data.enumerated.finger.gid = qdev->group_id;
-    for (int i = 0; i < MAX_NUM_FINGERS; i++) {
-        if (qdev->listener.secureid[i] != 0 ||
-            qdev->listener.fingerid[i] != 0) {
-            template_count--;
-            message.data.enumerated.remaining_templates = template_count;
-            message.data.enumerated.finger.fid = qdev->listener.fingerid[i];
-            qdev->device.notify(&message);
+
+    if(template_count == 0) {
+        message.data.enumerated.remaining_templates = 0;
+        message.data.enumerated.finger.fid = 0;
+        qdev->device.notify(&message);
+    }
+    else {
+        for (int i = 0; i < MAX_NUM_FINGERS; i++) {
+            if (qdev->listener.secureid[i] != 0 ||
+                qdev->listener.fingerid[i] != 0) {
+                template_count--;
+                message.data.enumerated.remaining_templates = template_count;
+                message.data.enumerated.finger.fid = qdev->listener.fingerid[i];
+                qdev->device.notify(&message);
+            }
         }
     }
 
