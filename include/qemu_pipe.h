@@ -30,6 +30,30 @@
 #  define  D(...)   do{}while(0)
 #endif
 
+static bool ReadFully(int fd, void* data, size_t byte_count) {
+  uint8_t* p = (uint8_t*)(data);
+  size_t remaining = byte_count;
+  while (remaining > 0) {
+    ssize_t n = TEMP_FAILURE_RETRY(read(fd, p, remaining));
+    if (n <= 0) return false;
+    p += n;
+    remaining -= n;
+  }
+  return true;
+}
+
+static bool WriteFully(int fd, const void* data, size_t byte_count) {
+  const uint8_t* p = (const uint8_t*)(data);
+  size_t remaining = byte_count;
+  while (remaining > 0) {
+    ssize_t n = TEMP_FAILURE_RETRY(write(fd, p, remaining));
+    if (n == -1) return false;
+    p += n;
+    remaining -= n;
+  }
+  return true;
+}
+
 /* Try to open a new Qemu fast-pipe. This function returns a file descriptor
  * that can be used to communicate with a named service managed by the
  * emulator.
@@ -66,9 +90,9 @@ qemu_pipe_open(const char*  pipeName)
 
     snprintf(buff, sizeof buff, "pipe:%s", pipeName);
 
-    fd = open("/dev/qemu_pipe", O_RDWR);
+    fd = TEMP_FAILURE_RETRY(open("/dev/qemu_pipe", O_RDWR));
     if (fd < 0 && errno == ENOENT)
-        fd = open("/dev/goldfish_pipe", O_RDWR);
+        fd = TEMP_FAILURE_RETRY(open("/dev/goldfish_pipe", O_RDWR));
     if (fd < 0) {
         D("%s: Could not open /dev/qemu_pipe: %s", __FUNCTION__, strerror(errno));
         //errno = ENOSYS;
@@ -77,14 +101,8 @@ qemu_pipe_open(const char*  pipeName)
 
     buffLen = strlen(buff);
 
-    ret = TEMP_FAILURE_RETRY(write(fd, buff, buffLen+1));
-    if (ret != buffLen+1) {
+    if (!WriteFully(fd, buff, buffLen + 1)) {
         D("%s: Could not connect to %s pipe service: %s", __FUNCTION__, pipeName, strerror(errno));
-        if (ret == 0) {
-            errno = ECONNRESET;
-        } else if (ret > 0) {
-            errno = EINVAL;
-        }
         return -1;
     }
 

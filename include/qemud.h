@@ -39,26 +39,6 @@
 #  define  D(...) ((void)0)
 
 static __inline__ int
-qemud_fd_write(int  fd, const void*  buff, int  len)
-{
-    int  len2;
-    do {
-        len2 = write(fd, buff, len);
-    } while (len2 < 0 && errno == EINTR);
-    return len2;
-}
-
-static __inline__ int
-qemud_fd_read(int  fd, void*  buff, int  len)
-{
-    int  len2;
-    do {
-        len2 = read(fd, buff, len);
-    } while (len2 < 0 && errno == EINTR);
-    return len2;
-}
-
-static __inline__ int
 qemud_channel_open(const char*  name)
 {
     int  fd;
@@ -82,7 +62,7 @@ qemud_channel_open(const char*  name)
         }
 
         /* send service name to connect */
-        if (qemud_fd_write(fd, name, namelen) != namelen) {
+        if (!WriteFully(fd, name, namelen)) {
             D("can't send service name to qemud: %s",
                strerror(errno));
             close(fd);
@@ -90,7 +70,7 @@ qemud_channel_open(const char*  name)
         }
 
         /* read answer from daemon */
-        if (qemud_fd_read(fd, answer, 2) != 2 ||
+        if (!ReadFully(fd, answer, 2) ||
             answer[0] != 'O' || answer[1] != 'K') {
             D("cant' connect to %s service through qemud", name);
             close(fd);
@@ -112,12 +92,12 @@ qemud_channel_send(int  fd, const void*  msg, int  msglen)
         return 0;
 
     snprintf(header, sizeof header, "%04x", msglen);
-    if (qemud_fd_write(fd, header, 4) != 4) {
+    if (!WriteFully(fd, header, 4)) {
         D("can't write qemud frame header: %s", strerror(errno));
         return -1;
     }
 
-    if (qemud_fd_write(fd, msg, msglen) != msglen) {
+    if (!WriteFully(fd, msg, msglen)) {
         D("can4t write qemud frame payload: %s", strerror(errno));
         return -1;
     }
@@ -130,7 +110,7 @@ qemud_channel_recv(int  fd, void*  msg, int  msgsize)
     char  header[5];
     int   size, avail;
 
-    if (qemud_fd_read(fd, header, 4) != 4) {
+    if (!ReadFully(fd, header, 4)) {
         D("can't read qemud frame header: %s", strerror(errno));
         return -1;
     }
@@ -142,7 +122,7 @@ qemud_channel_recv(int  fd, void*  msg, int  msgsize)
     if (size > msgsize)
         return -1;
 
-    if (qemud_fd_read(fd, msg, size) != size) {
+    if (!ReadFully(fd, msg, size)) {
         D("can't read qemud frame payload: %s", strerror(errno));
         return -1;
     }
