@@ -228,7 +228,7 @@ status_t QemuClient::connectClient(const char* param)
     if (param == NULL || *param == '\0') {
         /* No parameters: connect to the factory service. */
         char pipe_name[512];
-        snprintf(pipe_name, sizeof(pipe_name), "pipe:qemud:%s",
+        snprintf(pipe_name, sizeof(pipe_name), "qemud:%s",
                  mCameraServiceName);
         mPipeFD = qemu_pipe_open(pipe_name);
     } else {
@@ -236,7 +236,7 @@ status_t QemuClient::connectClient(const char* param)
          * characters for 'pipe:qemud:'. This is required by pipe protocol. */
         char* connection_str = new char[strlen(mCameraServiceName) +
                                         strlen(param) + 8];
-        sprintf(connection_str, "pipe:qemud:%s:%s", mCameraServiceName, param);
+        sprintf(connection_str, "qemud:%s:%s", mCameraServiceName, param);
 
         mPipeFD = qemu_pipe_open(connection_str);
         delete[] connection_str;

@@ -36,7 +36,7 @@
 #  define  D(...)   ((void)0)
 #endif
 
-#include <system/qemu_pipe.h>
+#include "qemu_pipe.h"
 
 int
 qemu_check(void)
