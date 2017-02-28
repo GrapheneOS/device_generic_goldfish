@@ -21,6 +21,9 @@ LOCAL_MODULE := vibrator.goldfish
 # HAL module implemenation stored in
 # hw/<VIBRATOR_HARDWARE_MODULE_ID>.goldfish.so
 LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_C_INCLUDES := system/core/qemu_pipe/include
+LOCAL_STATIC_LIBRARIES := libqemu_pipe libbase
+
 LOCAL_SRC_FILES := vibrator_qemu.c
 LOCAL_SHARED_LIBRARIES := liblog libhardware
 LOCAL_MODULE_TAGS := optional

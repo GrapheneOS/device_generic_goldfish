@@ -45,7 +45,7 @@
 
 #define  E(...)  ALOGE(__VA_ARGS__)
 
-#include <system/qemu_pipe.h>
+#include <qemu_pipe.h>
 
 /** SENSOR IDS AND NAMES
  **/
