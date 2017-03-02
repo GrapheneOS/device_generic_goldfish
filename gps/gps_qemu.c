@@ -37,7 +37,7 @@
 #include "qemu_pipe.h"
 
 /* the name of the qemu-controlled pipe */
-#define  QEMU_CHANNEL_NAME  "pipe:qemud:gps"
+#define  QEMU_CHANNEL_NAME  "qemud:gps"
 
 #define  GPS_DEBUG  0
 
