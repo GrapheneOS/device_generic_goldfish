@@ -36,6 +36,7 @@ emulator_camera_shared_libraries := \
 
 emulator_camera_c_includes := external/jpeg \
 	frameworks/native/include/media/hardware \
+	system/core/qemu_pipe/include \
 	$(LOCAL_PATH)/../../goldfish-opengl/system/OpenglSystemCommon \
 	$(call include-path-for, camera)
 
@@ -70,6 +71,10 @@ LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
 LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
 
+LOCAL_STATIC_LIBRARIES := \
+    libqemu_pipe \
+    libbase
+
 LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
 LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
 LOCAL_SRC_FILES := ${emulator_camera_src}
@@ -91,6 +96,10 @@ include ${CLEAR_VARS}
 LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
 LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
+LOCAL_STATIC_LIBRARIES := \
+    libqemu_pipe \
+    libbase
+
 
 LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
 LOCAL_C_INCLUDES += ${emulator_camera_c_includes}

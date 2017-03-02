@@ -22,7 +22,7 @@
 #define QEMU_HARDWARE
 #include <hardware/hardware.h>
 #include <hardware/vibrator.h>
-#include <system/qemu_pipe.h>
+#include <qemu_pipe.h>
 
 static int sendit(unsigned int timeout_ms)
 {

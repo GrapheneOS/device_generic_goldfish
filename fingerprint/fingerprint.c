@@ -30,7 +30,7 @@
 #include <cutils/log.h>
 #include <hardware/hardware.h>
 #include <hardware/fingerprint.h>
-#include <system/qemu_pipe.h>
+#include <qemu_pipe.h>
 
 #include <errno.h>
 #include <endian.h>

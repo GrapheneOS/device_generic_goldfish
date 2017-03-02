@@ -19,7 +19,7 @@
 
 #include <hardware/hardware.h>
 #include <hardware/power.h>
-#include <system/qemu_pipe.h>
+#include <qemu_pipe.h>
 #include <fcntl.h>
 #include <errno.h>
 

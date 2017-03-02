@@ -23,6 +23,8 @@ LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_CFLAGS += -DQEMU_HARDWARE
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_SRC_FILES := power_qemu.c
+LOCAL_C_INCLUDES := system/core/qemu_pipe/include
+LOCAL_STATIC_LIBRARIES := libqemu_pipe libbase
 LOCAL_MODULE := power.goldfish
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)

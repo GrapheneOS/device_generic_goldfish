@@ -42,7 +42,7 @@
 #include <cutils/log.h>
 
 #define DEBUG_QEMU_PIPE D
-#include <system/qemu_pipe.h>
+#include <qemu_pipe.h>
 
 #include <hardware/lights.h>
 #include <errno.h>

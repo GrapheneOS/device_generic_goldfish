@@ -25,6 +25,9 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_C_INCLUDES := system/core/qemu_pipe/include
+LOCAL_STATIC_LIBRARIES := libqemu_pipe libbase
+
 LOCAL_CFLAGS += -DQEMU_HARDWARE
 LOCAL_SHARED_LIBRARIES := liblog libcutils libhardware
 LOCAL_SRC_FILES := gps_qemu.c
@@ -39,6 +42,9 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_C_INCLUDES := system/core/qemu_pipe/include
+LOCAL_STATIC_LIBRARIES := libqemu_pipe libbase
+
 LOCAL_CFLAGS += -DQEMU_HARDWARE
 LOCAL_SHARED_LIBRARIES := liblog libcutils libhardware
 LOCAL_SRC_FILES := gps_qemu.c

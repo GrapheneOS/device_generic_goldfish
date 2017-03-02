@@ -20,6 +20,8 @@ LOCAL_MODULE := fingerprint.goldfish
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SRC_FILES := fingerprint.c
 LOCAL_SHARED_LIBRARIES := liblog
+LOCAL_C_INCLUDES := system/core/qemu_pipe
+LOCAL_STATIC_LIBRARIES := libqemu_pipe libbase
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -27,7 +29,9 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := fingerprint.ranchu
 LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_C_INCLUDES := system/core/qemu_pipe
 LOCAL_SRC_FILES := fingerprint.c
 LOCAL_SHARED_LIBRARIES := liblog
+LOCAL_STATIC_LIBRARIES := libqemu_pipe libbase
 
 include $(BUILD_SHARED_LIBRARY)

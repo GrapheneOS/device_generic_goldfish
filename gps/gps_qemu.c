@@ -34,7 +34,7 @@
 #include <cutils/log.h>
 #include <cutils/sockets.h>
 #include <hardware/gps.h>
-#include <system/qemu_pipe.h>
+#include <qemu_pipe.h>
 
 /* the name of the qemu-controlled pipe */
 #define  QEMU_CHANNEL_NAME  "pipe:qemud:gps"

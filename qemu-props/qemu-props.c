@@ -34,7 +34,7 @@
 #endif
 
 #include <cutils/properties.h>
-#include <system/qemu_pipe.h>
+#include <qemu_pipe.h>
 #include <unistd.h>
 
 /* Name of the qemud service we want to connect to.
