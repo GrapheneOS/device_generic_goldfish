@@ -27,9 +27,8 @@
 
 #include "EmulatedFakeCamera2.h"
 #include "EmulatedCameraFactory.h"
-#include <ui/Rect.h>
-#include <ui/GraphicBufferMapper.h>
 #include "gralloc_cb.h"
+#include "GrallocModule.h"
 
 #define ERROR_CAMERA_NOT_PRESENT (-EPIPE)
 
@@ -1058,11 +1057,11 @@ bool EmulatedFakeCamera2::ConfigureThread::getBuffers() {
             }
 
             /* Lock the buffer from the perspective of the graphics mapper */
-            const Rect rect(s.width, s.height);
-
-            res = GraphicBufferMapper::get().lock(*(b.buffer),
+            res = GrallocModule::getInstance().lock(*(b.buffer),
                     GRALLOC_USAGE_HW_CAMERA_WRITE,
-                    rect, (void**)&(b.img) );
+                    0, 0, s.width, s.height,
+                    (void**)&(b.img));
+
 
             if (res != NO_ERROR) {
                 ALOGE("%s: grbuffer_mapper.lock failure: %s (%d)",
@@ -1086,11 +1085,10 @@ bool EmulatedFakeCamera2::ConfigureThread::getBuffers() {
             }
 
             /* Lock the buffer from the perspective of the graphics mapper */
-            const Rect rect(s.width, s.height);
-
-            res = GraphicBufferMapper::get().lock(*(b.buffer),
+            res = GrallocModule::getInstance().lock(*(b.buffer),
                     GRALLOC_USAGE_HW_CAMERA_READ,
-                    rect, (void**)&(b.img) );
+                    0, 0, s.width, s.height,
+                    (void**)&(b.img) );
             if (res != NO_ERROR) {
                 ALOGE("%s: grbuffer_mapper.lock failure: %s (%d)",
                         __FUNCTION__, strerror(-res), res);
@@ -1366,7 +1364,7 @@ bool EmulatedFakeCamera2::ReadoutThread::threadLoop() {
             } else {
                 ALOGV("Readout:    Sending image buffer %zu (%p) to output stream %d",
                         i, (void*)*(b.buffer), b.streamId);
-                GraphicBufferMapper::get().unlock(*(b.buffer));
+                GrallocModule::getInstance().unlock(*(b.buffer));
                 const Stream &s = mParent->getStreamInfo(b.streamId);
                 res = s.ops->enqueue_buffer(s.ops, captureTime, b.buffer);
                 if (res != OK) {
@@ -1410,7 +1408,7 @@ void EmulatedFakeCamera2::ReadoutThread::onJpegDone(
     ALOGV("%s: Compression complete, pushing to stream %d", __FUNCTION__,
             jpegBuffer.streamId);
 
-    GraphicBufferMapper::get().unlock(*(jpegBuffer.buffer));
+    GrallocModule::getInstance().unlock(*(jpegBuffer.buffer));
     const Stream &s = mParent->getStreamInfo(jpegBuffer.streamId);
     res = s.ops->enqueue_buffer(s.ops, mJpegTimestamp, jpegBuffer.buffer);
 }
@@ -1418,7 +1416,7 @@ void EmulatedFakeCamera2::ReadoutThread::onJpegDone(
 void EmulatedFakeCamera2::ReadoutThread::onJpegInputDone(
         const StreamBuffer &inputBuffer) {
     status_t res;
-    GraphicBufferMapper::get().unlock(*(inputBuffer.buffer));
+    GrallocModule::getInstance().unlock(*(inputBuffer.buffer));
     const ReprocessStream &s =
             mParent->getReprocessStreamInfo(-inputBuffer.streamId);
     res = s.ops->release_buffer(s.ops, inputBuffer.buffer);

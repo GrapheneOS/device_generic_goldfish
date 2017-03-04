@@ -18,7 +18,6 @@
 #define LOG_TAG "EmulatedCamera2_JpegCompressor"
 
 #include <utils/Log.h>
-#include <ui/GraphicBufferMapper.h>
 
 #include "JpegCompressor.h"
 #include "../EmulatedFakeCamera2.h"
