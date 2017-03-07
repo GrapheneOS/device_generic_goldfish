@@ -74,8 +74,11 @@ service qemu-props /system/bin/qemu-props
 # if it does, it redirects its output to the device
 # named by the androidboot.console kernel option
 # if not, is simply exits immediately
-
+# logd user added to prevent logcat from logging content.
+# log group added to support access to read logs socket.
 service goldfish-logcat /system/bin/logcat -Q
+    user logd
+    group log
     oneshot
 
 service fingerprintd /system/bin/fingerprintd
