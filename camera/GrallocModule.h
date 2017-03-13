@@ -1,6 +1,5 @@
-
-#ifndef EMU_CAMERA_GRALLOC_MODULE_
-#define EMU_CAMERA_GRALLOC_MODULE_
+#ifndef EMU_CAMERA_GRALLOC_MODULE_H
+#define EMU_CAMERA_GRALLOC_MODULE_H
 
 #include <hardware/gralloc.h>
 
@@ -17,11 +16,13 @@ public:
     return mModule->lock(mModule, handle, usage, l, t, w, h, vaddr);
   }
 
+#ifdef GRALLOC_MODULE_API_VERSION_0_2
   int lock_ycbcr(buffer_handle_t handle,
       int usage, int l, int t, int w, int h,
       struct android_ycbcr *ycbcr) {
     return mModule->lock_ycbcr(mModule, handle, usage, l, t, w, h, ycbcr);
   }
+#endif
 
   int unlock(buffer_handle_t handle) {
     return mModule->unlock(mModule, handle);
@@ -30,8 +31,9 @@ public:
 private:
   GrallocModule() {
     const hw_module_t *module = NULL;
-    if (!hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module)) {
-      ALOGE("%s: Failed to get gralloc module", __FUNCTION__);
+    int ret = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module);
+    if (ret) {
+      ALOGE("%s: Failed to get gralloc module: %d", __FUNCTION__, ret);
     }
     mModule = reinterpret_cast<const gralloc_module_t*>(module);
   }
