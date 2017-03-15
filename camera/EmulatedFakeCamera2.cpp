@@ -27,7 +27,6 @@
 
 #include "EmulatedFakeCamera2.h"
 #include "EmulatedCameraFactory.h"
-#include "gralloc_cb.h"
 #include "GrallocModule.h"
 
 #define ERROR_CAMERA_NOT_PRESENT (-EPIPE)
@@ -478,17 +477,6 @@ int EmulatedFakeCamera2::registerStreamBuffers(
                 __FUNCTION__, stream_id, num_buffers);
         return BAD_VALUE;
     }
-    const cb_handle_t *streamBuffer =
-            reinterpret_cast<const cb_handle_t*>(buffers[0]);
-
-    int finalFormat = streamBuffer->format;
-
-    if (finalFormat == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
-        ALOGE("%s: Stream %d: Bad final pixel format "
-                "HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED; "
-                "concrete pixel format required!", __FUNCTION__, stream_id);
-        return BAD_VALUE;
-    }
 
     ssize_t streamIndex = mStreams.indexOfKey(stream_id);
     if (streamIndex < 0) {
@@ -497,6 +485,12 @@ int EmulatedFakeCamera2::registerStreamBuffers(
     }
 
     Stream &stream = mStreams.editValueAt(streamIndex);
+
+    int finalFormat = stream.format;
+
+    if (finalFormat == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+        finalFormat = HAL_PIXEL_FORMAT_RGBA_8888;
+    }
 
     ALOGV("%s: Stream %d format set to %x, previously %x",
             __FUNCTION__, stream_id, finalFormat, stream.format);

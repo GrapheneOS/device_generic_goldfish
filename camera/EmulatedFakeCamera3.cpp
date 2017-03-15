@@ -30,7 +30,6 @@
 #include "EmulatedFakeCamera3.h"
 #include "EmulatedCameraFactory.h"
 #include <ui/Fence.h>
-#include "gralloc_cb.h"
 #include "GrallocModule.h"
 
 #include "fake-pipeline2/Sensor.h"
@@ -861,18 +860,15 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
     // structures for them, and lock them for writing.
     for (size_t i = 0; i < request->num_output_buffers; i++) {
         const camera3_stream_buffer &srcBuf = request->output_buffers[i];
-        const cb_handle_t *privBuffer =
-                static_cast<const cb_handle_t*>(*srcBuf.buffer);
-        if (!cb_handle_t::validate(privBuffer)) {
-          privBuffer = nullptr;
-        }
         StreamBuffer destBuf;
         destBuf.streamId = kGenericStreamId;
         destBuf.width    = srcBuf.stream->width;
         destBuf.height   = srcBuf.stream->height;
-        // If we have more specific format information, use it.
-        destBuf.format = (privBuffer) ? privBuffer->format : srcBuf.stream->format;
-        destBuf.stride   = srcBuf.stream->width; // TODO: query from gralloc
+        // For goldfish, IMPLEMENTATION_DEFINED is always RGBx_8888
+        destBuf.format = (srcBuf.stream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) ?
+                HAL_PIXEL_FORMAT_RGBA_8888 :
+                srcBuf.stream->format;
+        destBuf.stride   = srcBuf.stream->width;
         destBuf.dataSpace = srcBuf.stream->data_space;
         destBuf.buffer   = srcBuf.buffer;
 
