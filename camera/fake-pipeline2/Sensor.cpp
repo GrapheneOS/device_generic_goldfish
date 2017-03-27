@@ -200,9 +200,8 @@ bool Sensor::waitForNewFrame(nsecs_t reltime,
             ALOGE("Error waiting for sensor readout signal: %d", res);
             return false;
         }
-    } else {
-        mReadoutComplete.signal();
     }
+    mReadoutComplete.signal();
 
     *captureTime = mCaptureTime;
     mCapturedBuffers = NULL;
@@ -350,7 +349,7 @@ bool Sensor::threadLoop() {
                         captureDepthCloud(b.img);
                     }
                     break;
-                case HAL_PIXEL_FORMAT_YCrCb_420_SP:
+                case HAL_PIXEL_FORMAT_YCbCr_420_888:
                     captureNV21(b.img, gain, b.stride);
                     break;
                 case HAL_PIXEL_FORMAT_YV12:

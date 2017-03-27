@@ -897,7 +897,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         if (res == OK) {
             // Lock buffer for writing
             if (srcBuf.stream->format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-                if (destBuf.format == HAL_PIXEL_FORMAT_YCrCb_420_SP) {
+                if (destBuf.format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
                     android_ycbcr ycbcr = android_ycbcr();
                     res = GrallocModule::getInstance().lock_ycbcr(
                         *(destBuf.buffer),
