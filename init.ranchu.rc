@@ -9,6 +9,9 @@ on init
     symlink /dev/goldfish_pipe /dev/android_pipe
     symlink /dev/goldfish_pipe /dev/qemu_pipe
 
+on post-fs-data
+    setprop vold.post_fs_data_done 1
+
 on boot
     setprop net.eth0.gw 10.0.2.2
     setprop net.eth0.dns1 10.0.2.3
