@@ -59,6 +59,7 @@ on boot
 on property:sys.boot_completed=1
     setprop sys.usb.config adb
     start adbd
+    start goldfish-logcat
 
 service goldfish-setup /system/etc/init.goldfish.sh
     user root
@@ -76,6 +77,9 @@ service qemu-props /system/bin/qemu-props
     user root
     group root
     oneshot
+
+on property:qemu.logcat=start
+    start goldfish-logcat
 
 # -Q is a special logcat option that forces the
 # program to check wether it runs on the emulator
