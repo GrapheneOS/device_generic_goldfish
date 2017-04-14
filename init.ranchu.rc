@@ -62,6 +62,11 @@ on property:sys.boot_completed=1
     start adbd
     start goldfish-logcat
 
+on property:qemu.adbd=start
+    setprop sys.usb.config adb
+    start adbd
+    start goldfish-logcat
+
 # allow goldfish-setup to take wake lock
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
