@@ -355,7 +355,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
             events[ID_TEMPERATURE].type = SENSOR_TYPE_AMBIENT_TEMPERATURE;
             continue;
         }
- 
+
         /* "proximity:<value>" */
         if (sscanf(buff, "proximity:%g", params+0) == 1) {
             new_sensors |= SENSORS_PROXIMITY;
@@ -742,7 +742,7 @@ static const struct sensor_t sSensorListInit[] = {
           .fifoMaxEventCount =   0,
           .stringType =         0,
           .requiredPermission = 0,
-          .flags = SENSOR_FLAG_WAKE_UP | SENSOR_FLAG_ON_CHANGE_MODE,
+          .flags = SENSOR_FLAG_ON_CHANGE_MODE,
           .reserved   = {}
         },
 
