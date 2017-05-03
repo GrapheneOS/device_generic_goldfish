@@ -285,6 +285,10 @@ ExifData* createExifData(const CameraParameters& params) {
     // set the current date and time in the tag so just do that.
     createEntry(exifData, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
 
+    // Make and model
+    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MAKE, "Emulator-Goldfish");
+    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MODEL, "Emulator-Goldfish");
+
     // Picture size
     int width = -1, height = -1;
     params.getPictureSize(&width, &height);
