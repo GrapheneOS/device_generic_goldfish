@@ -30,9 +30,8 @@
 #include "EmulatedFakeCamera3.h"
 #include "EmulatedCameraFactory.h"
 #include <ui/Fence.h>
-#include <ui/Rect.h>
-#include <ui/GraphicBufferMapper.h>
 #include "gralloc_cb.h"
+#include "GrallocModule.h"
 
 #include "fake-pipeline2/Sensor.h"
 #include "fake-pipeline2/JpegCompressor.h"
@@ -97,7 +96,6 @@ EmulatedFakeCamera3::EmulatedFakeCamera3(int cameraId, bool facingBack,
     for (size_t i = 0; i < CAMERA3_TEMPLATE_COUNT; i++) {
         mDefaultTemplates[i] = NULL;
     }
-
 }
 
 EmulatedFakeCamera3::~EmulatedFakeCamera3() {
@@ -891,13 +889,13 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         }
         if (res == OK) {
             // Lock buffer for writing
-            const Rect rect(destBuf.width, destBuf.height);
             if (srcBuf.stream->format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
                 if (destBuf.format == HAL_PIXEL_FORMAT_YCrCb_420_SP) {
                     android_ycbcr ycbcr = android_ycbcr();
-                    res = GraphicBufferMapper::get().lockYCbCr(
+                    res = GrallocModule::getInstance().lock_ycbcr(
                         *(destBuf.buffer),
-                        GRALLOC_USAGE_HW_CAMERA_WRITE, rect,
+                        GRALLOC_USAGE_HW_CAMERA_WRITE,
+                        0, 0, destBuf.width, destBuf.height,
                         &ycbcr);
                     // This is only valid because we know that emulator's
                     // YCbCr_420_888 is really contiguous NV21 under the hood
@@ -908,9 +906,12 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
                     res = INVALID_OPERATION;
                 }
             } else {
-                res = GraphicBufferMapper::get().lock(*(destBuf.buffer),
-                        GRALLOC_USAGE_HW_CAMERA_WRITE, rect,
-                        (void**)&(destBuf.img));
+                res = GrallocModule::getInstance().lock(
+                    *(destBuf.buffer),
+                    GRALLOC_USAGE_HW_CAMERA_WRITE,
+                    0, 0, destBuf.width, destBuf.height,
+                    (void**)&(destBuf.img));
+
             }
             if (res != OK) {
                 ALOGE("%s: Request %d: Buffer %zu: Unable to lock buffer",
@@ -922,7 +923,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
             // Either waiting or locking failed. Unlock locked buffers and bail
             // out.
             for (size_t j = 0; j < i; j++) {
-                GraphicBufferMapper::get().unlock(
+                GrallocModule::getInstance().unlock(
                         *(request->output_buffers[i].buffer));
             }
             delete sensorBuffers;
@@ -2387,7 +2388,7 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
                         __FUNCTION__, strerror(-res), res);
             // fallthrough for cleanup
         }
-        GraphicBufferMapper::get().unlock(*(buf->buffer));
+        GrallocModule::getInstance().unlock(*(buf->buffer));
 
         buf->status = goodBuffer ? CAMERA3_BUFFER_STATUS_OK :
                 CAMERA3_BUFFER_STATUS_ERROR;
@@ -2489,7 +2490,7 @@ void EmulatedFakeCamera3::ReadoutThread::onJpegDone(
         const StreamBuffer &jpegBuffer, bool success) {
     Mutex::Autolock jl(mJpegLock);
 
-    GraphicBufferMapper::get().unlock(*(jpegBuffer.buffer));
+    GrallocModule::getInstance().unlock(*(jpegBuffer.buffer));
 
     mJpegHalBuffer.status = success ?
             CAMERA3_BUFFER_STATUS_OK : CAMERA3_BUFFER_STATUS_ERROR;

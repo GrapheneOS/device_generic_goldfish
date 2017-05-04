@@ -32,8 +32,9 @@ emulator_camera_shared_libraries := \
     libcamera_client \
     libui \
     libdl \
-	libjpeg \
-	libcamera_metadata
+    libjpeg \
+    libcamera_metadata \
+    libhardware
 
 emulator_camera_static_libraries := \
 	libyuv_static
