@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "common.h"
 #include "wpa_supplicant_i.h"
 

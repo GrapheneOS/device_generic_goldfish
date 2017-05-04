@@ -36,6 +36,7 @@
 #include "wpa_supplicant_i.h"
 #include "config.h"
 #include "android_drv.h"
+#include "linux_ioctl.h"
 
 
 int wpa_driver_nl80211_driver_cmd(
