@@ -44,6 +44,10 @@
 NAMESPACE="router"
 rm -rf /var/run/netns/${NAMESPACE}
 rm -rf /var/run/wifi.pid
+# We need to fake a mac address to pass CTS
+# And the kernel only accept mac addresses with some special format
+# (Like, begin with 02)
+ip link set dev wlan0 address 02:00:00:44:55:66
 ip netns add ${NAMESPACE}
 ip link set eth0 netns ${NAMESPACE}
 ip link add radio0 type veth peer name radio0-peer
