@@ -50,7 +50,7 @@ ip link add radio0 type veth peer name radio0-peer
 ip link set radio0-peer netns ${NAMESPACE}
 # Enable privacy addresses for radio0, this is done by the framework for wlan0
 sysctl -wq net.ipv6.conf.radio0.use_tempaddr=2
-ip addr add 192.168.200.2/24 dev radio0
+ip addr add 192.168.200.2/24 broadcast 192.168.200.255 dev radio0
 execns ${NAMESPACE} ip addr add 192.168.200.1/24 dev radio0-peer
 execns ${NAMESPACE} sysctl -wq net.ipv6.conf.all.forwarding=1
 execns ${NAMESPACE} ip link set radio0-peer up
