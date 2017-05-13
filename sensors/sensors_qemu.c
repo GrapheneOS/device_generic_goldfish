@@ -216,9 +216,20 @@ static int sensor_device_pick_pending_event_locked(SensorDevice* d,
     if (mask) {
         uint32_t i = 31 - __builtin_clz(mask);
         d->pendingSensors &= ~(1U << i);
+        // Copy the structure
         *event = d->sensors[i];
-        event->sensor = i;
-        event->version = sizeof(*event);
+
+        if (d->sensors[i].type == SENSOR_TYPE_META_DATA) {
+            // sensor_device_poll_event_locked() will leave
+            // the meta-data in place until we have it.
+            // Set |type| to something other than META_DATA
+            // so sensor_device_poll_event_locked() can
+            // continue.
+            d->sensors[i].type = SENSOR_TYPE_META_DATA + 1;
+        } else {
+            event->sensor = i;
+            event->version = sizeof(*event);
+        }
 
         D("%s: %d [%f, %f, %f]", __FUNCTION__,
                 i,
@@ -290,10 +301,15 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
 
         float params[3];
 
+        // If the existing entry for this sensor is META_DATA,
+        // do not overwrite it. We can resume saving sensor
+        // values after that meta data has been received.
+
         /* "acceleration:<x>:<y>:<z>" corresponds to an acceleration event */
         if (sscanf(buff, "acceleration:%g:%g:%g", params+0, params+1, params+2)
                 == 3) {
             new_sensors |= SENSORS_ACCELERATION;
+            if (events[ID_ACCELERATION].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_ACCELERATION].acceleration.x = params[0];
             events[ID_ACCELERATION].acceleration.y = params[1];
             events[ID_ACCELERATION].acceleration.z = params[2];
@@ -306,6 +322,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         if (sscanf(buff, "orientation:%g:%g:%g", params+0, params+1, params+2)
                 == 3) {
             new_sensors |= SENSORS_ORIENTATION;
+            if (events[ID_ORIENTATION].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_ORIENTATION].orientation.azimuth = params[0];
             events[ID_ORIENTATION].orientation.pitch   = params[1];
             events[ID_ORIENTATION].orientation.roll    = params[2];
@@ -320,6 +337,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         if (sscanf(buff, "magnetic:%g:%g:%g", params+0, params+1, params+2)
                 == 3) {
             new_sensors |= SENSORS_MAGNETIC_FIELD;
+            if (events[ID_MAGNETIC_FIELD].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_MAGNETIC_FIELD].magnetic.x = params[0];
             events[ID_MAGNETIC_FIELD].magnetic.y = params[1];
             events[ID_MAGNETIC_FIELD].magnetic.z = params[2];
@@ -332,6 +350,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         /* "temperature:<celsius>" */
         if (sscanf(buff, "temperature:%g", params+0) == 1) {
             new_sensors |= SENSORS_TEMPERATURE;
+            if (events[ID_TEMPERATURE].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_TEMPERATURE].temperature = params[0];
             events[ID_TEMPERATURE].type = SENSOR_TYPE_AMBIENT_TEMPERATURE;
             continue;
@@ -340,6 +359,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         /* "proximity:<value>" */
         if (sscanf(buff, "proximity:%g", params+0) == 1) {
             new_sensors |= SENSORS_PROXIMITY;
+            if (events[ID_PROXIMITY].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_PROXIMITY].distance = params[0];
             events[ID_PROXIMITY].type = SENSOR_TYPE_PROXIMITY;
             continue;
@@ -347,6 +367,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         /* "light:<lux>" */
         if (sscanf(buff, "light:%g", params+0) == 1) {
             new_sensors |= SENSORS_LIGHT;
+            if (events[ID_LIGHT].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_LIGHT].light = params[0];
             events[ID_LIGHT].type = SENSOR_TYPE_LIGHT;
             continue;
@@ -355,6 +376,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         /* "pressure:<hpa>" */
         if (sscanf(buff, "pressure:%g", params+0) == 1) {
             new_sensors |= SENSORS_PRESSURE;
+            if (events[ID_PRESSURE].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_PRESSURE].pressure = params[0];
             events[ID_PRESSURE].type = SENSOR_TYPE_PRESSURE;
             continue;
@@ -363,6 +385,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         /* "humidity:<percent>" */
         if (sscanf(buff, "humidity:%g", params+0) == 1) {
             new_sensors |= SENSORS_HUMIDITY;
+            if (events[ID_HUMIDITY].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_HUMIDITY].relative_humidity = params[0];
             events[ID_HUMIDITY].type = SENSOR_TYPE_RELATIVE_HUMIDITY;
             continue;
@@ -560,6 +583,7 @@ static int sensor_device_default_flush(
     dev->sensors[handle].type = SENSOR_TYPE_META_DATA;
     dev->sensors[handle].sensor = 0;
     dev->sensors[handle].timestamp = 0;
+    dev->sensors[handle].meta_data.sensor = handle;
     dev->sensors[handle].meta_data.what = META_DATA_FLUSH_COMPLETE;
     dev->pendingSensors |= (1U << handle);
     pthread_mutex_unlock(&dev->lock);
@@ -828,6 +852,12 @@ open_sensors(const struct hw_module_t* module,
         dev->device.poll           = sensor_device_poll;
         dev->device.activate       = sensor_device_activate;
         dev->device.setDelay       = sensor_device_set_delay;
+
+        // (dev->sensors[i].type == SENSOR_TYPE_META_DATA) is
+        // sticky. Don't start off with that setting.
+        for (int idx = 0; idx < MAX_NUM_SENSORS; idx++) {
+            dev->sensors[idx].type = SENSOR_TYPE_META_DATA + 1;
+        }
 
         // Version 1.3-specific functions
         dev->device.batch       = sensor_device_default_batch;
