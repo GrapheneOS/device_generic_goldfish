@@ -688,6 +688,17 @@ gps_state_thread( void*  arg )
     int         started    = 0;
     int         gps_fd     = state->fd;
     int         control_fd = state->control[1];
+    GpsStatus gps_status;
+    gps_status.size = sizeof(gps_status);
+    GpsSvStatus  gps_sv_status;
+    memset(&gps_sv_status, 0, sizeof(gps_sv_status));
+    gps_sv_status.size = sizeof(gps_sv_status);
+    gps_sv_status.num_svs = 1;
+    gps_sv_status.sv_list[0].size = sizeof(gps_sv_status.sv_list[0]);
+    gps_sv_status.sv_list[0].prn = 17;
+    gps_sv_status.sv_list[0].snr = 60.0;
+    gps_sv_status.sv_list[0].elevation = 30.0;
+    gps_sv_status.sv_list[0].azimuth = 30.0;
 
     nmea_reader_init( reader );
 
@@ -702,7 +713,15 @@ gps_state_thread( void*  arg )
         struct epoll_event   events[2];
         int                  ne, nevents;
 
-        nevents = epoll_wait( epoll_fd, events, 2, -1 );
+        int timeout = -1;
+        if (gps_status.status == GPS_STATUS_SESSION_BEGIN) {
+            timeout = 10 * 1000; // 10 seconds
+        }
+        nevents = epoll_wait( epoll_fd, events, 2, timeout );
+        if (state->callbacks.sv_status_cb) {
+            state->callbacks.sv_status_cb(&gps_sv_status);
+        }
+        // update satilite info
         if (nevents < 0) {
             if (errno != EINTR)
                 ALOGE("epoll_wait() unexpected error: %s", strerror(errno));
@@ -735,6 +754,10 @@ gps_state_thread( void*  arg )
                             D("gps thread starting  location_cb=%p", state->callbacks.location_cb);
                             started = 1;
                             nmea_reader_set_callback( reader, state->callbacks.location_cb );
+                            gps_status.status = GPS_STATUS_SESSION_BEGIN;
+                            if (state->callbacks.status_cb) {
+                                state->callbacks.status_cb(&gps_status);
+                            }
                         }
                     }
                     else if (cmd == CMD_STOP) {
@@ -742,6 +765,10 @@ gps_state_thread( void*  arg )
                             D("gps thread stopping");
                             started = 0;
                             nmea_reader_set_callback( reader, NULL );
+                            gps_status.status = GPS_STATUS_SESSION_END;
+                            if (state->callbacks.status_cb) {
+                                state->callbacks.status_cb(&gps_status);
+                            }
                         }
                     }
                 }
