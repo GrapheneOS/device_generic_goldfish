@@ -240,7 +240,6 @@ nmea_reader_set_callback( NmeaReader*  r, gps_location_callback  cb )
     if (cb != NULL && r->fix.flags != 0) {
         D("%s: sending latest fix to new callback", __FUNCTION__);
         r->callback( &r->fix );
-        r->fix.flags = 0;
     }
 }
 
@@ -466,6 +465,7 @@ nmea_reader_parse( NmeaReader*  r )
         Token  tok_altitude      = nmea_tokenizer_get(tzer,9);
         Token  tok_altitudeUnits = nmea_tokenizer_get(tzer,10);
 
+        r->fix.flags = 0;
         nmea_reader_update_time(r, tok_time);
         nmea_reader_update_latlong(r, tok_latitude,
                                       tok_latitudeHemi.p[0],
@@ -489,6 +489,7 @@ nmea_reader_parse( NmeaReader*  r )
         D("in RMC, fixStatus=%c", tok_fixStatus.p[0]);
         if (tok_fixStatus.p[0] == 'A')
         {
+            r->fix.flags = 0;
             nmea_reader_update_date( r, tok_date, tok_time );
 
             nmea_reader_update_latlong( r, tok_latitude,
@@ -536,7 +537,6 @@ nmea_reader_parse( NmeaReader*  r )
 #endif
         if (r->callback) {
             r->callback( &r->fix );
-            r->fix.flags = 0;
         }
         else {
             D("no callback, keeping data until needed !");
