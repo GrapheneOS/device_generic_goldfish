@@ -5,4 +5,5 @@
 /dev/block/vda                                          /system             ext4      ro                                                   wait
 /dev/block/vdb                                          /cache              ext4      noatime,nosuid,nodev,nomblk_io_submit,errors=panic   wait
 /dev/block/vdc                                          /data               ext4      noatime,nosuid,nodev,nomblk_io_submit,errors=panic   wait,check,quota,forceencrypt=/dev/block/vdd
-/devices/*/block/vde                                    auto                auto      defaults                                             voldmanaged=sdcard:auto,encryptable=userdata
+/dev/block/vde                                          /vendor             ext4      ro                                                   wait
+/devices/*/block/vdf                                    auto                auto      defaults                                             voldmanaged=sdcard:auto,encryptable=userdata
