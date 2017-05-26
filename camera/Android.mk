@@ -78,6 +78,7 @@ emulator_camera_src := \
 
 # Emulated camera - goldfish / vbox_x86 build###################################
 
+LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
 LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
@@ -101,6 +102,7 @@ include $(BUILD_SHARED_LIBRARY)
 
 include ${CLEAR_VARS}
 
+LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
 LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}

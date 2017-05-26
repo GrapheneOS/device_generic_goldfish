@@ -15,6 +15,7 @@
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
+LOCAL_VENDOR_MODULE := true
 ifeq ($(USE_32_BIT_KEYSTORE), true)
 LOCAL_MULTILIB := 32
 endif
@@ -32,6 +33,7 @@ include $(BUILD_SHARED_LIBRARY)
 # Emulated keymaster - ranchu build##########################################
 
 include $(CLEAR_VARS)
+LOCAL_VENDOR_MODULE := true
 ifeq ($(USE_32_BIT_KEYSTORE), true)
 LOCAL_MULTILIB := 32
 endif
