@@ -160,9 +160,5 @@
             <name>IRadio</name>
             <instance>slot1</instance>
         </interface>
-        <interface>
-            <name>ISap</name>
-            <instance>slot1</instance>
-        </interface>
     </hal>
 </manifest>
