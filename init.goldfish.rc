@@ -68,6 +68,12 @@ on boot
 on fs
         mount_all /fstab.goldfish
 
+#emulator is not much useful before boot complete
+#start it later
+on property:sys.boot_completed=1
+    setprop sys.usb.config adb
+    start adbd
+
 service goldfish-setup /system/etc/init.goldfish.sh
     user root
     group root
@@ -104,3 +110,10 @@ service goldfish-logcat /system/bin/logcat -Q
 service fingerprintd /system/bin/fingerprintd
     class late_start
     user system
+
+service bugreport /system/bin/dumpstate -d -p -B \
+        -o /data/data/com.android.shell/files/bugreports/bugreport
+    class main
+    disabled
+    oneshot
+    keycodes 114 115 116
