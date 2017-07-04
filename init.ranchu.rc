@@ -71,13 +71,13 @@ on property:qemu.adbd=start
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
 
-service ranchu-setup /system/bin/init.ranchu-core.sh
+service ranchu-setup /vendor/bin/init.ranchu-core.sh
     class core
     user root
     group root
     oneshot
 
-service ranchu-net /system/bin/init.ranchu-net.sh
+service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
     user root
     group root wakelock
