@@ -17,8 +17,8 @@
 #include "log.h"
 
 #ifndef ANDROID
-#ifdef USE_LOG_TIMESTAMPS
 #include <stdarg.h>
+#ifdef USE_LOG_TIMESTAMPS
 #include <time.h>
 #endif  // USE_LOG_TIMESTAMPS
 

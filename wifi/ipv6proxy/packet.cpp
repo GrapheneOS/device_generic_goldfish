@@ -84,7 +84,6 @@ Packet::Packet(Message& message)
 
 std::string Packet::description() const {
     char buffer[256];
-    const char* type = nullptr;
     switch (mType) {
         case Type::NeighborSolicitation: {
                 auto ns = reinterpret_cast<const nd_neighbor_solicit*>(icmp());

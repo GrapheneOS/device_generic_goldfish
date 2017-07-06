@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <linux/if_ether.h>
 #include <net/if.h>
+#include <string.h>
 #include <sys/ioctl.h>
 
 #include "log.h"

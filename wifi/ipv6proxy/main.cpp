@@ -16,6 +16,8 @@
 
 #include <vector>
 
+#include <string.h>
+
 #include "log.h"
 #include "namespace.h"
 #include "proxy.h"
@@ -48,7 +50,6 @@ void usage(const char* program) {
 
 static std::vector<const char*> splitString(char* str, char delimiter) {
     std::vector<const char*> parts;
-    size_t pos = 0;
     char* part = nullptr;
     do {
         parts.push_back(str);

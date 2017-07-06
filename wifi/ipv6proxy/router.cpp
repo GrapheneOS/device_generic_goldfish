@@ -17,6 +17,8 @@
 #include "router.h"
 
 #include <linux/rtnetlink.h>
+#include <stddef.h>
+#include <string.h>
 
 #include "address.h"
 #include "log.h"

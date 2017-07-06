@@ -22,6 +22,7 @@
 #include <linux/if_packet.h>
 #include <netdb.h>
 #include <net/if.h>
+#include <string.h>
 #include <sys/ioctl.h>
 
 #include "socket.h"
