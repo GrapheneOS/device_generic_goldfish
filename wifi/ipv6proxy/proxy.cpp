@@ -19,8 +19,8 @@
 #include <errno.h>
 #include <linux/if_packet.h>
 #include <poll.h>
+#include <signal.h>
 
-#include "eintr.h"
 #include "log.h"
 #include "message.h"
 #include "packet.h"
@@ -47,6 +47,17 @@ static void rewriteLinkAddressOption(Packet& packet,
 }
 
 int Proxy::run() {
+    sigset_t blockMask, originalMask;
+    int status = ::sigfillset(&blockMask);
+    if (status != 0) {
+        loge("Unable to fill signal set: %s\n", strerror(errno));
+        return 1;
+    }
+    status = ::sigprocmask(SIG_SETMASK, &blockMask, &originalMask);
+    if (status != 0) {
+        loge("Unable to set signal mask: %s\n", strerror(errno));
+        return 1;
+    }
     // Init outer interface and router
     if (!mOuterIf.init() || !mRouter.init()) {
         return 1;
@@ -68,16 +79,20 @@ int Proxy::run() {
     }
 
     Message message;
-    while (HANDLE_EINTR(::poll(fds.data(), fds.size(), -1)) != -1) {
-        for (const struct pollfd& fd : fds) {
-            if (receiveIfPossible(fd, mOuterIf.ipSocket(), &message)) {
-                // Received a message on the outer interface
-                handleOuterMessage(message);
-            } else {
-                for (auto& inner : mInnerIfs) {
-                    if (receiveIfPossible(fd, inner.ipSocket(), &message)) {
-                        // Received a message on the inner interface
-                        handleInnerMessage(inner, message);
+    while (status >= 0) {
+        status = ::ppoll(fds.data(), fds.size(), nullptr, &originalMask);
+        if (status > 0) {
+            // Something available to read
+            for (const struct pollfd& fd : fds) {
+                if (receiveIfPossible(fd, mOuterIf.ipSocket(), &message)) {
+                    // Received a message on the outer interface
+                    handleOuterMessage(message);
+                } else {
+                    for (auto& inner : mInnerIfs) {
+                        if (receiveIfPossible(fd, inner.ipSocket(), &message)) {
+                            // Received a message on the inner interface
+                            handleInnerMessage(inner, message);
+                        }
                     }
                 }
             }

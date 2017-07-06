@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include <linux/in6.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -26,7 +27,6 @@
 #include <unistd.h>
 
 #include "address.h"
-#include "eintr.h"
 #include "message.h"
 
 Socket::Socket() : mState(State::New), mSocket(-1) {
@@ -61,7 +61,7 @@ Result Socket::open(int domain, int type, int protocol) {
     if (mState != State::New) {
         return Result::error("open called on socket in invalid state");
     }
-    mSocket = HANDLE_EINTR(::socket(domain, type | SOCK_CLOEXEC, protocol));
+    mSocket = ::socket(domain, type | SOCK_CLOEXEC, protocol);
     if (mSocket == -1) {
         return Result::error(strerror(errno));
     }
@@ -115,9 +115,7 @@ Result Socket::bind(const Address& address) {
         return Result::error("bind called on socket in invalid state");
     }
 
-    int res = HANDLE_EINTR(::bind(mSocket,
-                                  address.get<sockaddr>(),
-                                  address.size()));
+    int res = ::bind(mSocket, address.get<sockaddr>(), address.size());
     if (res == -1) {
         return Result::error(strerror(errno));
     }
@@ -134,10 +132,10 @@ Result Socket::receive(Message* receivingMessage) {
         return Result::error("Attempt to receive on a socket that isn't bound");
     }
 
-    ssize_t rxBytes = HANDLE_EINTR(::recv(mSocket,
-                                          receivingMessage->data(),
-                                          receivingMessage->capacity(),
-                                          0));
+    ssize_t rxBytes = ::recv(mSocket,
+                             receivingMessage->data(),
+                             receivingMessage->capacity(),
+                             0);
     if (rxBytes < 0) {
         return Result::error(strerror(errno));
     }
@@ -160,12 +158,12 @@ Result Socket::receiveFrom(Message* receivingMessage, Address* from) {
     from->reset();
     sockaddr* source = from->get<sockaddr>();
     socklen_t sourceLen = from->size();
-    ssize_t rxBytes = HANDLE_EINTR(::recvfrom(mSocket,
-                                              receivingMessage->data(),
-                                              receivingMessage->capacity(),
-                                              0,
-                                              source,
-                                              &sourceLen));
+    ssize_t rxBytes = ::recvfrom(mSocket,
+                                 receivingMessage->data(),
+                                 receivingMessage->capacity(),
+                                 0,
+                                 source,
+                                 &sourceLen);
     if (rxBytes < 0) {
         return Result::error(strerror(errno));
     }
@@ -179,7 +177,7 @@ Result Socket::send(const void* data, size_t size) {
         return Result::error("Attempt to send on a socket in invalid state");
     }
 
-    int res = HANDLE_EINTR(::send(mSocket, data, size, 0));
+    int res = ::send(mSocket, data, size, 0);
     if (res == -1) {
         return Result::error(strerror(errno));
     }
@@ -194,9 +192,7 @@ Result Socket::sendTo(const sockaddr& destination,
         return Result::error("Attempt to send on a socket in invalid state");
     }
 
-    int res = HANDLE_EINTR(::sendto(mSocket, data, size, 0,
-                                    &destination,
-                                    destinationSize));
+    int res = ::sendto(mSocket, data, size, 0, &destination, destinationSize);
     if (res == -1) {
         return Result::error(strerror(errno));
     }
@@ -250,7 +246,7 @@ Result Socket::sendFrom(const struct in6_addr& fromAddress,
     auto packetInfo = reinterpret_cast<struct in6_pktinfo*>(packetInfoData);
     packetInfo->ipi6_addr = fromAddress;
 
-    int res = HANDLE_EINTR(::sendmsg(mSocket, &messageHeader, 0));
+    int res = ::sendmsg(mSocket, &messageHeader, 0);
     if (res == -1) {
         int error = errno;
         printf("sendmsg failed: %d\n", error);
