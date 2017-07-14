@@ -834,6 +834,16 @@ gps_state_init( GpsState*  state, GpsCallbacks* callbacks )
 
     state->callbacks = *callbacks;
 
+    // Explicitly initialize capabilities
+    state->callbacks.set_capabilities_cb(0);
+
+
+    // Setup system info, we are pre 2016 hardware.
+    GnssSystemInfo sysinfo;
+    sysinfo.size = sizeof(GnssSystemInfo);
+    sysinfo.year_of_hw = 2015;
+    state->callbacks.set_system_info_cb(&sysinfo);
+
     D("gps state initialized");
     return;
 
