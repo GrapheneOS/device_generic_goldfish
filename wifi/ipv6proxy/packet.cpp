@@ -76,7 +76,7 @@ Packet::Packet(Message& message)
     if (options + sizeof(nd_opt_hdr) < data + size) {
         nd_opt_hdr* option = reinterpret_cast<nd_opt_hdr*>(options);
         // Option length is in units of 8 bytes, multiply by 8 to get bytes
-        if (options + option->nd_opt_len * 8u < data + size) {
+        if (options + option->nd_opt_len * 8u <= data + size) {
             mFirstOpt = option;
         }
     }

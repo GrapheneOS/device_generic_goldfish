@@ -47,7 +47,8 @@ private:
         kRewriteTargetLink = (1 << 0),
         kRewriteSourceLink = (1 << 1),
         kSpoofSource = (1 << 2),
-        kAddRoute = (1 << 3)
+        kAddRoute = (1 << 3),
+        kSetDefaultGateway = (1 << 4)
     };
 
     bool receiveIfPossible(const pollfd&, Socket& socket, Message* message);

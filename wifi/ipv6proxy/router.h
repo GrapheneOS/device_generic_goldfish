@@ -37,6 +37,12 @@ public:
     bool addRoute(const struct in6_addr& address,
                   uint8_t bits,
                   uint32_t interfaceIndex);
+
+    // Set the default gateway route to |address| on interface with index
+    // |interfaceIndex|. Overwrites any existing default gateway with the same
+    // address.
+    bool setDefaultGateway(const struct in6_addr& address,
+                           unsigned int interfaceIndex);
 private:
     bool sendNetlinkMessage(const void* data, size_t size);
 

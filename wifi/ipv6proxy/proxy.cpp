@@ -128,13 +128,13 @@ void Proxy::handleOuterMessage(Message& message) {
     uint32_t options = kForwardOnly;
     switch (packet.type()) {
         case Packet::Type::RouterAdvertisement:
-            options = kRewriteSourceLink;
+            options = kRewriteSourceLink | kSetDefaultGateway;
             break;
         case Packet::Type::NeighborSolicitation:
             options = kSpoofSource;
             break;
         case Packet::Type::NeighborAdvertisement:
-            options = kRewriteTargetLink | kSpoofSource;
+            options = kRewriteTargetLink;
             break;
         default:
             return;
@@ -149,7 +149,7 @@ void Proxy::handleInnerMessage(const Interface& inner, Message& message) {
     uint32_t options = kForwardOnly;
     switch (packet.type()) {
         case Packet::Type::RouterSolicitation:
-            options = kForwardOnly;
+            options = kSpoofSource;
             break;
         case Packet::Type::NeighborSolicitation:
             options = kSpoofSource | kAddRoute;
@@ -175,7 +175,7 @@ void Proxy::forward(const Interface& from,
     }
 
     if (options & kRewriteTargetLink) {
-        rewriteLinkAddressOption(packet, from, ND_OPT_TARGET_LINKADDR);
+        rewriteLinkAddressOption(packet, to, ND_OPT_TARGET_LINKADDR);
     }
     if (options & kRewriteSourceLink) {
         rewriteLinkAddressOption(packet, to, ND_OPT_SOURCE_LINKADDR);
@@ -203,6 +203,16 @@ void Proxy::forward(const Interface& from,
 
     if (options & kAddRoute) {
         mRouter.addRoute(packet.ip()->ip6_src, kNodePrefixLength, from.index());
+    }
+    if (packet.type() == Packet::Type::RouterAdvertisement &&
+        options & kSetDefaultGateway) {
+        // Set the default gateway from this router advertisement. This is
+        // needed so that packets that are forwarded as a result of proxying
+        // actually have somewhere to go.
+        if (!mRouter.setDefaultGateway(packet.ip()->ip6_src, from.index())) {
+            loge("Failed to set default gateway %s\n",
+                 addrToStr(packet.ip()->ip6_src).c_str());
+        }
     }
 }
 

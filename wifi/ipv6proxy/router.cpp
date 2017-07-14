@@ -93,17 +93,49 @@ bool Router::addRoute(const struct in6_addr& address,
     // Set up a request to create a new route
     request.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(request.msg));
     request.hdr.nlmsg_type = RTM_NEWROUTE;
-    request.hdr.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL;
+    request.hdr.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
 
     request.msg.rtm_family = AF_INET6;
     request.msg.rtm_dst_len = bits;
     request.msg.rtm_table = RT_TABLE_MAIN;
-    request.msg.rtm_protocol = RTPROT_BOOT;
+    request.msg.rtm_protocol = RTPROT_RA;
     request.msg.rtm_scope = RT_SCOPE_UNIVERSE;
     request.msg.rtm_type = RTN_UNICAST;
 
     addRouterAttribute(request, RTA_DST, &address, sizeof(address));
     addRouterAttribute(request, RTA_OIF, &ifaceIndex, sizeof(ifaceIndex));
+
+    return sendNetlinkMessage(&request, request.hdr.nlmsg_len);
+}
+
+bool Router::setDefaultGateway(const struct in6_addr& address,
+                               unsigned int ifaceIndex) {
+    struct Request {
+        struct nlmsghdr hdr;
+        struct rtmsg msg;
+        char buf[256];
+    } request;
+
+    memset(&request, 0, sizeof(request));
+
+    // Set up a request to create a new route
+    request.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(request.msg));
+    request.hdr.nlmsg_type = RTM_NEWROUTE;
+    request.hdr.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
+
+    request.msg.rtm_family = AF_INET6;
+    request.msg.rtm_dst_len = 0;
+    request.msg.rtm_src_len = 0;
+    request.msg.rtm_table = RT_TABLE_MAIN;
+    request.msg.rtm_protocol = RTPROT_RA;
+    request.msg.rtm_scope = RT_SCOPE_UNIVERSE;
+    request.msg.rtm_type = RTN_UNICAST;
+
+    struct in6_addr anyAddress;
+    memset(&anyAddress, 0, sizeof(anyAddress));
+    addRouterAttribute(request, RTA_GATEWAY, &address, sizeof(address));
+    addRouterAttribute(request, RTA_OIF, &ifaceIndex, sizeof(ifaceIndex));
+    addRouterAttribute(request, RTA_SRC, &anyAddress, sizeof(anyAddress));
 
     return sendNetlinkMessage(&request, request.hdr.nlmsg_len);
 }
