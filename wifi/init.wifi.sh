@@ -53,12 +53,10 @@ sysctl -wq net.ipv6.conf.radio0.use_tempaddr=2
 ip addr add 192.168.200.2/24 dev radio0
 execns ${NAMESPACE} ip addr add 192.168.200.1/24 dev radio0-peer
 execns ${NAMESPACE} sysctl -wq net.ipv6.conf.all.forwarding=1
-execns ${NAMESPACE} sysctl -wq net.ipv6.conf.all.proxy_ndp=1
 execns ${NAMESPACE} ip link set radio0-peer up
-execns ${NAMESPACE} ip addr add 10.0.2.15/24 dev eth0
-execns ${NAMESPACE} ip link set eth0 up
-execns ${NAMESPACE} ip route add default via 10.0.2.2
-execns ${NAMESPACE} iptables -t nat -A POSTROUTING -s 192.168.100.0/24 -o eth0 -j MASQUERADE
+# Start the dhcp client for eth0 to acquire an address
+setprop ctl.start dhcpclient_rtr
+execns ${NAMESPACE} iptables -t nat -A POSTROUTING -s 192.168.232.0/21 -o eth0 -j MASQUERADE
 execns ${NAMESPACE} iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -o eth0 -j MASQUERADE
 # Create a file containg the PID of a process running in the namespace, this is
 # needed when moving the wifi phy into the namespace below
@@ -67,14 +65,13 @@ execns ${NAMESPACE} sh -c 'echo $$ > /var/run/wifi.pid; while :; do sleep 500000
 while [ ! -f /var/run/wifi.pid ]; do false; done
 PID=$(cat /var/run/wifi.pid)
 iw phy phy1 set netns $PID
-execns ${NAMESPACE} ip addr add 192.168.100.1/24 dev wlan1
+execns ${NAMESPACE} ip addr add 192.168.232.1/21 dev wlan1
 execns ${NAMESPACE} ip link set wlan1 up
 # Start the IPv6 proxy that will enable use of IPv6 in the main namespace
 setprop ctl.start ipv6proxy
 execns ${NAMESPACE} sysctl -wq net.ipv4.ip_forward=1
-execns ${NAMESPACE} ip -6 route add default via fe80::2 dev eth0
 # Start hostapd, the access point software
 setprop ctl.start emu_hostapd
-# Start dnsmasq which is used as a DHCP server for the wifi interface
-setprop ctl.start emu_dnsmasq
+# Start DHCP server for the wifi interface
+setprop ctl.start dhcpserver
 ip link set radio0 up

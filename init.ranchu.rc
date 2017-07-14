@@ -19,9 +19,6 @@ on boot && property:ro.debuggable=1
 on boot
     setprop debug.hwui.renderer opengl
     setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
-    setprop net.eth0.gw 10.0.2.2
-    setprop net.eth0.dns1 10.0.2.3
-    setprop net.gprs.local-ip 10.0.2.15
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
     setprop ro.radio.use-ppp no
@@ -94,7 +91,17 @@ service emu_hostapd /system/bin/execns router /system/bin/hostapd /system/etc/si
     group root
     disabled
 
-service emu_dnsmasq /system/bin/execns router /system/bin/dnsmasq --dhcp-range=192.168.100.100,192.168.100.200,4h --dhcp-option=3,192.168.100.1 --dhcp-option=6,10.0.2.3 -a 192.168.100.1 -p 0 -K --pid-file -k
+service dhcpserver /system/bin/execns router /system/bin/dhcpserver --range 192.168.232.2,192.168.239.254 --gateway 192.168.232.1 --netmask 255.255.248.0 --exclude-interface eth0
+    user root
+    group root
+    disabled
+
+service dhcpclient_rtr /system/bin/execns router /system/bin/dhcpclient -i eth0
+    user root
+    group root
+    disabled
+
+service dhcpclient_def /system/bin/dhcpclient -i eth0
     user root
     group root
     disabled
