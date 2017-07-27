@@ -323,10 +323,11 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
             continue;
         }
 
-        /* "gyroscope:<x>:<y>:<z>" corresponds to an gyroscope event */
+        /* "gyroscope:<x>:<y>:<z>" corresponds to a gyroscope event */
         if (sscanf(buff, "gyroscope:%g:%g:%g", params+0, params+1, params+2)
                 == 3) {
             new_sensors |= SENSORS_GYROSCOPE;
+            if (events[ID_GYROSCOPE].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_GYROSCOPE].gyro.x = params[0];
             events[ID_GYROSCOPE].gyro.y = params[1];
             events[ID_GYROSCOPE].gyro.z = params[2];
@@ -367,6 +368,7 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
         if (sscanf(buff, "magnetic-uncalibrated:%g:%g:%g", params+0, params+1, params+2)
                 == 3) {
             new_sensors |= SENSORS_MAGNETIC_FIELD_UNCALIBRATED;
+            if (events[ID_MAGNETIC_FIELD_UNCALIBRATED].type == SENSOR_TYPE_META_DATA) continue;
             events[ID_MAGNETIC_FIELD_UNCALIBRATED].magnetic.x = params[0];
             events[ID_MAGNETIC_FIELD_UNCALIBRATED].magnetic.y = params[1];
             events[ID_MAGNETIC_FIELD_UNCALIBRATED].magnetic.z = params[2];
