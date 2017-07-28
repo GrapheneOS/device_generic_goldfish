@@ -81,7 +81,8 @@ const nsecs_t EmulatedFakeCamera3::kNormalExposureTime       = 10 * MSEC;
 const nsecs_t EmulatedFakeCamera3::kFacePriorityExposureTime = 30 * MSEC;
 const int     EmulatedFakeCamera3::kNormalSensitivity        = 100;
 const int     EmulatedFakeCamera3::kFacePrioritySensitivity  = 400;
-const float   EmulatedFakeCamera3::kExposureTrackRate        = 0.1;
+//CTS requires 8 frames timeout in waitForAeStable
+const float   EmulatedFakeCamera3::kExposureTrackRate        = 0.2;
 const int     EmulatedFakeCamera3::kPrecaptureMinFrames      = 10;
 const int     EmulatedFakeCamera3::kStableAeMaxFrames        = 100;
 const float   EmulatedFakeCamera3::kExposureWanderMin        = -2;
@@ -1985,8 +1986,10 @@ status_t EmulatedFakeCamera3::doFakeAE(CameraMetadata &settings) {
     } else if (!aeLocked) {
         // Run standard occasional AE scan
         switch (mAeState) {
-            case ANDROID_CONTROL_AE_STATE_CONVERGED:
             case ANDROID_CONTROL_AE_STATE_INACTIVE:
+                mAeState = ANDROID_CONTROL_AE_STATE_SEARCHING;
+                break;
+            case ANDROID_CONTROL_AE_STATE_CONVERGED:
                 mAeCounter++;
                 if (mAeCounter > kStableAeMaxFrames) {
                     mAeTargetExposureTime =
