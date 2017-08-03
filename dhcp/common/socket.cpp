@@ -287,12 +287,11 @@ Result Socket::receiveRawUdp(uint16_t expectedPort,
         *isValid = false;
         return Result::success();
     }
-    if (ip.version != IPVERSION) *isValid = false;
-    if (ip.ihl != (sizeof(ip) >> 2)) *isValid = false;
-    if (ip.protocol != IPPROTO_UDP) *isValid = false;
-    if (udp.dest != htons(expectedPort)) *isValid = false;
+    *isValid = ip.version == IPVERSION &&
+               ip.ihl == (sizeof(ip) >> 2) &&
+               ip.protocol == IPPROTO_UDP &&
+               udp.dest == htons(expectedPort);
 
-    *isValid = true;
     message->setSize(bytesRead - sizeof(ip) - sizeof(udp));
     return Result::success();
 }
