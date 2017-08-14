@@ -1,3 +1,5 @@
+ifneq ($(filter generic_x86 generic_x86_64 generic generic_arm64 generic_mips generic_mips64, $(TARGET_DEVICE)),)
+
 LOCAL_PATH := $(call my-dir)
 
 VNDK_SP_LIBRARIES := \
@@ -52,3 +54,5 @@ endef
 
 $(foreach lib,$(VNDK_SP_LIBRARIES),\
     $(eval $(call add-vndk-sp-lib,$(lib))))
+
+endif
