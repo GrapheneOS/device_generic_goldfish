@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifneq ($(filter generic_x86 generic_x86_64 generic generic_arm64 generic_mips generic_mips64, $(TARGET_DEVICE)),)
 
 LOCAL_PATH := $(call my-dir)
 
@@ -119,3 +120,4 @@ include $(BUILD_SHARED_LIBRARY)
 # Build all subdirectories #####################################################
 include $(call all-makefiles-under,$(LOCAL_PATH))
 
+endif
