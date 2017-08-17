@@ -33,7 +33,7 @@ jpeg_shared_libraries := \
     libexif \
     libjpeg \
     liblog \
-    libandroid_runtime
+
 jpeg_c_includes := external/libjpeg-turbo \
                    external/libexif \
                    frameworks/native/include

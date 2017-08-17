@@ -25,6 +25,7 @@ LOCAL_C_INCLUDES := system/security/keystore \
                     $(LOCAL_PATH)/../include
 LOCAL_CFLAGS = -fvisibility=hidden -Wall -Werror
 LOCAL_SHARED_LIBRARIES := libcrypto liblog libkeystore_binder
+LOCAL_HEADER_LIBRARIES := libhardware_headers
 LOCAL_MODULE_TAGS := optional
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
@@ -43,5 +44,6 @@ LOCAL_SRC_FILES := module.cpp
 LOCAL_C_INCLUDES := system/security/keystore
 LOCAL_CFLAGS = -fvisibility=hidden -Wall -Werror
 LOCAL_SHARED_LIBRARIES := libcrypto liblog libkeystore_binder libgoldfishkeymaster
+LOCAL_HEADER_LIBRARIES := libhardware_headers
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
