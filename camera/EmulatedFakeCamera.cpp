@@ -75,16 +75,16 @@ status_t EmulatedFakeCamera::Initialize()
    /* 352x288, 320x240 and 176x144 frame dimensions are required by
      * the framework for video mode preview and video recording. */
     mParameters.set(CameraParameters::KEY_SUPPORTED_PICTURE_SIZES,
-                    "1920x1440,640x480,352x288,320x240");
+                    "1280x720,640x480,352x288,320x240");
     mParameters.set(CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES,
-                    "1920x1440,640x480,352x288,320x240,176x144");
+                    "1280x720,640x480,352x288,320x240,176x144");
     mParameters.set(CameraParameters::KEY_SUPPORTED_VIDEO_SIZES,
-                    "1920x1440,640x480,352x288,320x240,176x144");
+                    "1280x720,640x480,352x288,320x240,176x144");
     mParameters.set(CameraParameters::KEY_PREFERRED_PREVIEW_SIZE_FOR_VIDEO,
-                    "1920x1440");
+                    "1280x720");
 
-    mParameters.setPreviewSize(1920, 1440);
-    mParameters.setPictureSize(1920, 1440);
+    mParameters.setPictureSize(1280, 720);
+    mParameters.setPictureSize(1280, 720);
 
     return NO_ERROR;
 }
