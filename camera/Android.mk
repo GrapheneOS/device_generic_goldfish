@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifneq ($(filter generic_x86 generic_x86_64 generic generic_arm64 generic_mips generic_mips64, $(TARGET_DEVICE)),)
 
 LOCAL_PATH := $(call my-dir)
 
@@ -32,8 +33,9 @@ emulator_camera_shared_libraries := \
     libcamera_client \
     libui \
     libdl \
-	libjpeg \
-	libcamera_metadata
+    libjpeg \
+    libcamera_metadata \
+    libhardware
 
 emulator_camera_static_libraries := \
 	libyuv_static
@@ -77,6 +79,7 @@ emulator_camera_src := \
 
 # Emulated camera - goldfish / vbox_x86 build###################################
 
+LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
 LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
@@ -100,6 +103,7 @@ include $(BUILD_SHARED_LIBRARY)
 
 include ${CLEAR_VARS}
 
+LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
 LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
@@ -116,3 +120,4 @@ include $(BUILD_SHARED_LIBRARY)
 # Build all subdirectories #####################################################
 include $(call all-makefiles-under,$(LOCAL_PATH))
 
+endif
