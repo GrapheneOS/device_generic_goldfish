@@ -139,10 +139,11 @@ private:
     // no concept of a stream id.
     static const uint32_t kGenericStreamId = 1;
     static const int32_t  kAvailableFormats[];
-
+    static const uint32_t kAvailableRawSizes[];
     static const int64_t  kSyncWaitTimeout     = 10000000; // 10 ms
     static const int32_t  kMaxSyncTimeoutCount = 1000; // 1000 kSyncWaitTimeouts
     static const uint32_t kFenceTimeoutMs      = 2000; // 2 s
+    static const nsecs_t  kJpegTimeoutNs       = 5000000000l; // 5 s
 
     /****************************************************************************
      * Data members.
@@ -153,6 +154,8 @@ private:
 
     /* Facing back (true) or front (false) switch. */
     bool               mFacingBack;
+    int32_t            mSensorWidth;
+    int32_t            mSensorHeight;
 
     SortedVector<AvailableCapabilities> mCapabilities;
 
