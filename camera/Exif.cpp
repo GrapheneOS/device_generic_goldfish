@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include "Exif.h"
-
 #define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_Exif"
 #include <cutils/log.h>
@@ -24,7 +22,13 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <camera/CameraParameters.h>
+#include <CameraParameters.h>
+
+using ::android::hardware::camera::common::V1_0::helper::CameraParameters;
+using ::android::hardware::camera::common::V1_0::helper::Size;
+
+#include "Exif.h"
+
 #include <libexif/exif-data.h>
 #include <libexif/exif-entry.h>
 #include <libexif/exif-ifd.h>
