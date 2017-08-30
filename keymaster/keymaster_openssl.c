@@ -22,7 +22,7 @@
 #include <string.h>
 
 #define LOG_TAG "OpenSSLKeyMaster"
-#include <cutils/log.h>
+#include <log/log.h>
 
 #ifdef DEBUG
 #   define D(...)   ALOGD(__VA_ARGS__)

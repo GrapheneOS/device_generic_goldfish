@@ -21,7 +21,8 @@ LOCAL_MODULE := fingerprint.goldfish
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
 LOCAL_SRC_FILES := fingerprint.c
-LOCAL_SHARED_LIBRARIES := liblog
+LOCAL_SHARED_LIBRARIES := liblog libcutils
+LOCAL_HEADER_LIBRARIES := libhardware_headers
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -32,6 +33,7 @@ LOCAL_MODULE := fingerprint.ranchu
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
 LOCAL_SRC_FILES := fingerprint.c
-LOCAL_SHARED_LIBRARIES := liblog
+LOCAL_SHARED_LIBRARIES := liblog libcutils
+LOCAL_HEADER_LIBRARIES := libhardware_headers
 
 include $(BUILD_SHARED_LIBRARY)
