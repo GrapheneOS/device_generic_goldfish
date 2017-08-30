@@ -34,6 +34,7 @@ LOCAL_SHARED_LIBRARIES += \
 			libtinyalsa
 
 LOCAL_CFLAGS := -Wno-unused-parameter
+LOCAL_HEADER_LIBRARIES := libhardware_headers
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -52,5 +53,6 @@ LOCAL_SHARED_LIBRARIES += \
 			libdl
 
 LOCAL_CFLAGS := -Wno-unused-parameter
+LOCAL_HEADER_LIBRARIES := libhardware_headers
 
 include $(BUILD_SHARED_LIBRARY)

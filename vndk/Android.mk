@@ -2,6 +2,7 @@ ifneq ($(filter generic_x86 generic_x86_64 generic generic_arm64 generic_mips ge
 
 LOCAL_PATH := $(call my-dir)
 
+ifndef BOARD_VNDK_VERSION
 VNDK_SP_LIBRARIES := \
     android.hardware.renderscript@1.0\
     android.hardware.graphics.allocator@2.0\
@@ -25,7 +26,8 @@ VNDK_SP_LIBRARIES := \
     libcompiler_rt\
     libbacktrace\
     libunwind\
-    liblzma\
+    liblzma
+endif
 
 define add-vndk-sp-lib
 include $$(CLEAR_VARS)
