@@ -30,7 +30,6 @@ emulator_camera_shared_libraries := \
     liblog \
     libutils \
     libcutils \
-    libcamera_client \
     libui \
     libdl \
     libjpeg \
@@ -38,6 +37,7 @@ emulator_camera_shared_libraries := \
     libhardware
 
 emulator_camera_static_libraries := \
+	android.hardware.camera.common@1.0-helper \
 	libyuv_static
 
 emulator_camera_c_includes := external/libjpeg-turbo \

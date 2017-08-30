@@ -27,10 +27,12 @@
 #include "fake-pipeline2/Base.h"
 #include "fake-pipeline2/Sensor.h"
 #include "fake-pipeline2/JpegCompressor.h"
-#include <camera/CameraMetadata.h>
+#include <CameraMetadata.h>
 #include <utils/SortedVector.h>
 #include <utils/List.h>
 #include <utils/Mutex.h>
+
+using ::android::hardware::camera::common::V1_0::helper::CameraMetadata;
 
 namespace android {
 
