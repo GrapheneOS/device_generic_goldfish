@@ -5,7 +5,7 @@
 # all the networking.
 wifi=`getprop ro.kernel.qemu.wifi`
 case "$wifi" in
-    1) /system/bin/init.wifi.sh
+    1) /vendor/bin/init.wifi.sh
        ;;
     *) setprop ctl.start dhcpclient_def
        ;;

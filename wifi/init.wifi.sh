@@ -1,4 +1,4 @@
-#!/system/bin/sh
+#!/vendor/bin/sh
 
 # Do all the setup required for WiFi.
 # The kernel driver mac80211_hwsim has already created two virtual wifi devices
@@ -47,30 +47,30 @@ rm -rf /var/run/wifi.pid
 # We need to fake a mac address to pass CTS
 # And the kernel only accept mac addresses with some special format
 # (Like, begin with 02)
-ip link set dev wlan0 address 02:00:00:44:55:66
-ip netns add ${NAMESPACE}
-ip link set eth0 netns ${NAMESPACE}
-ip link add radio0 type veth peer name radio0-peer
-ip link set radio0-peer netns ${NAMESPACE}
+/system/bin/ip link set dev wlan0 address 02:00:00:44:55:66
+/system/bin/ip netns add ${NAMESPACE}
+/system/bin/ip link set eth0 netns ${NAMESPACE}
+/system/bin/ip link add radio0 type veth peer name radio0-peer
+/system/bin/ip link set radio0-peer netns ${NAMESPACE}
 # Enable privacy addresses for radio0, this is done by the framework for wlan0
 sysctl -wq net.ipv6.conf.radio0.use_tempaddr=2
-ip addr add 192.168.200.2/24 broadcast 192.168.200.255 dev radio0
-execns ${NAMESPACE} ip addr add 192.168.200.1/24 dev radio0-peer
+/system/bin/ip addr add 192.168.200.2/24 broadcast 192.168.200.255 dev radio0
+execns ${NAMESPACE} /system/bin/ip addr add 192.168.200.1/24 dev radio0-peer
 execns ${NAMESPACE} sysctl -wq net.ipv6.conf.all.forwarding=1
-execns ${NAMESPACE} ip link set radio0-peer up
+execns ${NAMESPACE} /system/bin/ip link set radio0-peer up
 # Start the dhcp client for eth0 to acquire an address
 setprop ctl.start dhcpclient_rtr
-execns ${NAMESPACE} iptables -t nat -A POSTROUTING -s 192.168.232.0/21 -o eth0 -j MASQUERADE
-execns ${NAMESPACE} iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -o eth0 -j MASQUERADE
+execns ${NAMESPACE} /system/bin/iptables -t nat -A POSTROUTING -s 192.168.232.0/21 -o eth0 -j MASQUERADE
+execns ${NAMESPACE} /system/bin/iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -o eth0 -j MASQUERADE
 # Create a file containg the PID of a process running in the namespace, this is
 # needed when moving the wifi phy into the namespace below
 execns ${NAMESPACE} sh -c 'echo $$ > /var/run/wifi.pid; while :; do sleep 500000; done' &
 # Wait for the pid file to be created
 while [ ! -f /var/run/wifi.pid ]; do false; done
 PID=$(cat /var/run/wifi.pid)
-iw phy phy1 set netns $PID
-execns ${NAMESPACE} ip addr add 192.168.232.1/21 dev wlan1
-execns ${NAMESPACE} ip link set wlan1 up
+/system/bin/iw phy phy1 set netns $PID
+execns ${NAMESPACE} /system/bin/ip addr add 192.168.232.1/21 dev wlan1
+execns ${NAMESPACE} /system/bin/ip link set wlan1 up
 # Start the IPv6 proxy that will enable use of IPv6 in the main namespace
 setprop ctl.start ipv6proxy
 execns ${NAMESPACE} sysctl -wq net.ipv4.ip_forward=1
@@ -78,4 +78,4 @@ execns ${NAMESPACE} sysctl -wq net.ipv4.ip_forward=1
 setprop ctl.start emu_hostapd
 # Start DHCP server for the wifi interface
 setprop ctl.start dhcpserver
-ip link set radio0 up
+/system/bin/ip link set radio0 up
