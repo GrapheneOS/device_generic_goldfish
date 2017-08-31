@@ -16,7 +16,9 @@
 
 #define LOG_TAG "audio_hw_generic"
 
+#include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -286,7 +288,7 @@ static int out_dump(const struct audio_stream *stream, int fd)
     pthread_mutex_lock(&out->lock);
     dprintf(fd, "\tout_dump:\n"
                 "\t\tsample rate: %u\n"
-                "\t\tbuffer size: %u\n"
+                "\t\tbuffer size: %zu\n"
                 "\t\tchannel mask: %08x\n"
                 "\t\tformat: %d\n"
                 "\t\tdevice: %08x\n"
@@ -476,7 +478,8 @@ static void get_current_output_position(struct generic_stream_out *out,
     // The device will reuse the same output stream leading to periods of
     // underrun.
     if (*position > out->frames_written) {
-        ALOGW("Not supplying enough data to HAL, expected position %lld , only wrote %lld",
+        ALOGW("Not supplying enough data to HAL, expected position %" PRIu64 " , only wrote "
+              "%" PRIu64,
               *position, out->frames_written);
 
         *position = out->frames_written;
@@ -547,7 +550,7 @@ static ssize_t out_write(struct audio_stream_out *stream, const void *buffer,
     }
 
     if (frames_written < frames) {
-        ALOGW("Hardware backing HAL too slow, could only write %d of %zu frames", frames_written, frames);
+        ALOGW("Hardware backing HAL too slow, could only write %zu of %zu frames", frames_written, frames);
     }
 
     /* Always consume all bytes */
@@ -795,7 +798,7 @@ static int in_dump(const struct audio_stream *stream, int fd)
     pthread_mutex_lock(&in->lock);
     dprintf(fd, "\tin_dump:\n"
                 "\t\tsample rate: %u\n"
-                "\t\tbuffer size: %u\n"
+                "\t\tbuffer size: %zu\n"
                 "\t\tchannel mask: %08x\n"
                 "\t\tformat: %d\n"
                 "\t\tdevice: %08x\n"
@@ -1027,8 +1030,9 @@ static ssize_t in_read(struct audio_stream_in *stream, void* buffer,
     }
 
     const int64_t frames_available = current_position - in->standby_position - in->standby_frames_read;
+    assert(frames_available >= 0);
 
-    const size_t frames_wait = (frames_available > frames) ? 0 : frames - frames_available;
+    const size_t frames_wait = ((uint64_t)frames_available > frames) ? 0 : frames - frames_available;
 
     int64_t sleep_time_us  = frames_wait * 1000000LL /
                              in_get_sample_rate(&stream->common);
