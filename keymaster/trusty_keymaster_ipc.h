@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <keystore/keystore.h>
 
-#include <hardware/hardware.h>
-#include <hardware/keymaster0.h>
+#ifndef TRUSTY_KEYMASTER_TRUSTY_KEYMASTER_IPC_H_
+#define TRUSTY_KEYMASTER_TRUSTY_KEYMASTER_IPC_H_
 
-extern struct keystore_module goldfishkeymaster_module;
-struct keystore_module HAL_MODULE_INFO_SYM __attribute__((visibility("default")))
-    = goldfishkeymaster_module;
+__BEGIN_DECLS
+
+int trusty_keymaster_connect(void);
+int trusty_keymaster_call(uint32_t cmd, void* in, uint32_t in_size, uint8_t* out,
+                          uint32_t* out_size);
+void trusty_keymaster_disconnect(void);
+
+__END_DECLS
+
+#endif  // TRUSTY_KEYMASTER_TRUSTY_KEYMASTER_IPC_H_
