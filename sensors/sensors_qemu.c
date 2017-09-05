@@ -75,7 +75,7 @@
 #define  SENSORS_LIGHT                        (1 << ID_LIGHT)
 #define  SENSORS_PRESSURE                     (1 << ID_PRESSURE)
 #define  SENSORS_HUMIDITY                     (1 << ID_HUMIDITY)
-#define  SENSORS_MAGNETIC_FIELD_UNCALIBRATED  (1 << ID_MAGNETIC_FIELD)
+#define  SENSORS_MAGNETIC_FIELD_UNCALIBRATED  (1 << ID_MAGNETIC_FIELD_UNCALIBRATED)
 
 #define  ID_CHECK(x)  ((unsigned)((x) - ID_BASE) < MAX_NUM_SENSORS)
 
