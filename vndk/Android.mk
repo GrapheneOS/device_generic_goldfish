@@ -26,6 +26,7 @@ VNDK_SP_LIBRARIES := \
     libcompiler_rt\
     libbacktrace\
     libunwind\
+    libunwindstack\
     liblzma
 endif
 
