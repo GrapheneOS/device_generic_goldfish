@@ -15,5 +15,6 @@ LOCAL_C_INCLUDES := system/security/keystore \
                     $(LOCAL_PATH)/../include
 LOCAL_CFLAGS = -fvisibility=hidden -Wall -Werror
 LOCAL_SHARED_LIBRARIES := libcrypto liblog libsoftkeymasterdevice libkeymaster_messages libcutils
+LOCAL_HEADER_LIBRARIES := libhardware_headers
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
