@@ -150,7 +150,7 @@ public:
      */
     int getFakeCameraOrientation() {
         // TODO: Have a boot property that controls that.
-        return 0;
+        return 90;
     }
 
     /*
@@ -158,7 +158,7 @@ public:
      */
     int getQemuCameraOrientation() {
         // TODO: Have a boot property that controls that.
-        return 0;
+        return 90;
     }
 
     /*
