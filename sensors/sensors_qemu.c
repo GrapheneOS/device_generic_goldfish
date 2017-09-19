@@ -147,6 +147,7 @@ typedef struct SensorDevice {
     int64_t                       timeOffset;
     uint32_t                      active_sensors;
     int                           fd;
+    int                           flush_count[MAX_NUM_SENSORS];
     pthread_mutex_t               lock;
 } SensorDevice;
 
@@ -226,12 +227,21 @@ static int sensor_device_pick_pending_event_locked(SensorDevice* d,
         *event = d->sensors[i];
 
         if (d->sensors[i].type == SENSOR_TYPE_META_DATA) {
-            // sensor_device_poll_event_locked() will leave
-            // the meta-data in place until we have it.
-            // Set |type| to something other than META_DATA
-            // so sensor_device_poll_event_locked() can
-            // continue.
-            d->sensors[i].type = SENSOR_TYPE_META_DATA + 1;
+            if (d->flush_count[i] > 0) {
+                // Another 'flush' is queued after this one.
+                // Don't clear this event; just decrement the count.
+                (d->flush_count[i])--;
+                // And re-mark it as pending
+                d->pendingSensors |= (1U << i);
+            } else {
+                // We are done flushing
+                // sensor_device_poll_event_locked() will leave
+                // the meta-data in place until we have it.
+                // Set |type| to something other than META_DATA
+                // so sensor_device_poll_event_locked() can
+                // continue.
+                d->sensors[i].type = SENSOR_TYPE_META_DATA + 1;
+            }
         } else {
             event->sensor = i;
             event->version = sizeof(*event);
@@ -610,13 +620,21 @@ static int sensor_device_default_flush(
     }
 
     pthread_mutex_lock(&dev->lock);
-    dev->sensors[handle].version = META_DATA_VERSION;
-    dev->sensors[handle].type = SENSOR_TYPE_META_DATA;
-    dev->sensors[handle].sensor = 0;
-    dev->sensors[handle].timestamp = 0;
-    dev->sensors[handle].meta_data.sensor = handle;
-    dev->sensors[handle].meta_data.what = META_DATA_FLUSH_COMPLETE;
-    dev->pendingSensors |= (1U << handle);
+    if ((dev->pendingSensors & (1U << handle)) &&
+        dev->sensors[handle].type == SENSOR_TYPE_META_DATA)
+    {
+        // A 'flush' operation is already pending. Just increment the count.
+        (dev->flush_count[handle])++;
+    } else {
+        dev->flush_count[handle] = 0;
+        dev->sensors[handle].version = META_DATA_VERSION;
+        dev->sensors[handle].type = SENSOR_TYPE_META_DATA;
+        dev->sensors[handle].sensor = 0;
+        dev->sensors[handle].timestamp = 0;
+        dev->sensors[handle].meta_data.sensor = handle;
+        dev->sensors[handle].meta_data.what = META_DATA_FLUSH_COMPLETE;
+        dev->pendingSensors |= (1U << handle);
+    }
     pthread_mutex_unlock(&dev->lock);
 
     return 0;
@@ -914,6 +932,7 @@ open_sensors(const struct hw_module_t* module,
         // sticky. Don't start off with that setting.
         for (int idx = 0; idx < MAX_NUM_SENSORS; idx++) {
             dev->sensors[idx].type = SENSOR_TYPE_META_DATA + 1;
+            dev->flush_count[idx] = 0;
         }
 
         // Version 1.3-specific functions
