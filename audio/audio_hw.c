@@ -331,7 +331,7 @@ static char * out_get_parameters(const struct audio_stream *stream, const char *
 {
     struct generic_stream_out *out = (struct generic_stream_out *)stream;
     struct str_parms *query = str_parms_create_str(keys);
-    char *str;
+    char *str = NULL;
     char value[256];
     struct str_parms *reply = str_parms_create();
     int ret;
@@ -342,8 +342,6 @@ static char * out_get_parameters(const struct audio_stream *stream, const char *
         str_parms_add_int(reply, AUDIO_PARAMETER_STREAM_ROUTING, out->device);
         pthread_mutex_unlock(&out->lock);
         str = strdup(str_parms_to_str(reply));
-    } else {
-        str = strdup(keys);
     }
 
     str_parms_destroy(query);
@@ -834,7 +832,7 @@ static char * in_get_parameters(const struct audio_stream *stream,
 {
     struct generic_stream_in *in = (struct generic_stream_in *)stream;
     struct str_parms *query = str_parms_create_str(keys);
-    char *str;
+    char *str = NULL;
     char value[256];
     struct str_parms *reply = str_parms_create();
     int ret;
@@ -843,8 +841,6 @@ static char * in_get_parameters(const struct audio_stream *stream,
     if (ret >= 0) {
         str_parms_add_int(reply, AUDIO_PARAMETER_STREAM_ROUTING, in->device);
         str = strdup(str_parms_to_str(reply));
-    } else {
-        str = strdup(keys);
     }
 
     str_parms_destroy(query);
