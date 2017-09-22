@@ -444,11 +444,20 @@ CameraQemuClient::~CameraQemuClient()
 
 }
 
-status_t CameraQemuClient::queryConnect()
+status_t CameraQemuClient::queryConnect(char* halVersion)
 {
     ALOGV("%s", __FUNCTION__);
 
-    QemuQuery query(mQueryConnect);
+    char query_str[256];
+    if (halVersion == NULL) {
+        return EINVAL;
+    }
+    if (strncmp(halVersion, "HAL", 3) != 0) {
+        return EINVAL;
+    }
+    halVersion += 3;
+    snprintf(query_str, sizeof(query_str), "%s hal=%s", mQueryConnect, halVersion);
+    QemuQuery query(query_str);
     doQuery(&query);
     const status_t res = query.getCompletionStatus();
     ALOGE_IF(res != NO_ERROR, "%s: Query failed: %s",
