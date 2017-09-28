@@ -1547,10 +1547,10 @@ fallback_init(void)
 
     ALOGD("Emulator without host-side ALSA audio emulation detected.");
 #if __LP64__
-    module = dlopen("/system/lib64/hw/audio.primary.goldfish_legacy.so",
+    module = dlopen("/vendor/lib64/hw/audio.primary.goldfish_legacy.so",
                     RTLD_LAZY|RTLD_LOCAL);
 #else
-    module = dlopen("/system/lib/hw/audio.primary.goldfish_legacy.so",
+    module = dlopen("/vendor/lib/hw/audio.primary.goldfish_legacy.so",
                     RTLD_LAZY|RTLD_LOCAL);
 #endif
     if (module != NULL) {
