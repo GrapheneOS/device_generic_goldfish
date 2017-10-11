@@ -327,14 +327,14 @@ status_t EmulatedFakeCamera3::configureStreams(
         newStream->max_buffers = kMaxBufferCount;
         switch (newStream->stream_type) {
             case CAMERA3_STREAM_OUTPUT:
-                newStream->usage = GRALLOC_USAGE_HW_CAMERA_WRITE;
+                newStream->usage |= GRALLOC_USAGE_HW_CAMERA_WRITE;
                 break;
             case CAMERA3_STREAM_INPUT:
-                newStream->usage = GRALLOC_USAGE_HW_CAMERA_READ;
+                newStream->usage |= GRALLOC_USAGE_HW_CAMERA_READ;
                 break;
             case CAMERA3_STREAM_BIDIRECTIONAL:
-                newStream->usage = GRALLOC_USAGE_HW_CAMERA_READ |
-                        GRALLOC_USAGE_HW_CAMERA_WRITE;
+                newStream->usage |= (GRALLOC_USAGE_HW_CAMERA_READ |
+                        GRALLOC_USAGE_HW_CAMERA_WRITE);
                 break;
         }
     }
@@ -876,10 +876,24 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
         destBuf.streamId = kGenericStreamId;
         destBuf.width    = srcBuf.stream->width;
         destBuf.height   = srcBuf.stream->height;
-        // For goldfish, IMPLEMENTATION_DEFINED is always RGBx_8888
-        destBuf.format = (srcBuf.stream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) ?
-                HAL_PIXEL_FORMAT_RGBA_8888 :
-                srcBuf.stream->format;
+        // inline with goldfish gralloc
+        if (srcBuf.stream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+            if (srcBuf.stream->usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
+                if (srcBuf.stream->usage & GRALLOC_USAGE_HW_TEXTURE) {
+                    destBuf.format = HAL_PIXEL_FORMAT_RGBA_8888;
+                }
+                else if (srcBuf.stream->usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
+                    destBuf.format = HAL_PIXEL_FORMAT_YCbCr_420_888;
+                }
+                else if ((srcBuf.stream->usage & GRALLOC_USAGE_HW_CAMERA_MASK)
+                         == GRALLOC_USAGE_HW_CAMERA_ZSL) {
+                    destBuf.format = HAL_PIXEL_FORMAT_RGB_888;
+                }
+            }
+        }
+        else {
+            destBuf.format = srcBuf.stream->format;
+        }
         destBuf.stride   = srcBuf.stream->width;
         destBuf.dataSpace = srcBuf.stream->data_space;
         destBuf.buffer   = srcBuf.buffer;
@@ -1558,7 +1572,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     }
 
     static const int32_t availableTargetFpsRanges[] = {
-            5, 30, 15, 30, 15, 15, 30, 30
+            5, 30, 15, 30, 15, 15, 24, 24, 30, 30
     };
     ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES,
             availableTargetFpsRanges,
