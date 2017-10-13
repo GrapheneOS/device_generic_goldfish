@@ -114,11 +114,11 @@
     <CamcorderProfiles cameraId="1">
 
         <EncoderProfile quality="qvga" fileFormat="mp4" duration="60">
-            <Video codec="m4v"
+            <Video codec="h264"
                    bitRate="128000"
                    width="320"
                    height="240"
-                   frameRate="15" />
+                   frameRate="30" />
             <Audio codec="amrnb"
                    bitRate="12200"
                    sampleRate="8000"
@@ -130,7 +130,7 @@
                    bitRate="12000000"
                    width="1280"
                    height="720"
-                   frameRate="24" />
+                   frameRate="30" />
             <Audio codec="amrnb"
                    bitRate="12200"
                    sampleRate="8000"

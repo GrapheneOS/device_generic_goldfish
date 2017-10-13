@@ -551,7 +551,7 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
         settings.update(ANDROID_JPEG_QUALITY, &jpegQuality, 1);
 
         static const int32_t thumbnailSize[2] = {
-            640, 480
+            320, 240
         };
         settings.update(ANDROID_JPEG_THUMBNAIL_SIZE, thumbnailSize, 2);
 
@@ -622,7 +622,7 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
     settings.update(ANDROID_CONTROL_MODE, &controlMode, 1);
 
     int32_t aeTargetFpsRange[2] = {
-        5, 30
+        15, 30
     };
     if (type == CAMERA3_TEMPLATE_VIDEO_RECORD || type == CAMERA3_TEMPLATE_VIDEO_SNAPSHOT) {
         aeTargetFpsRange[0] = 30;
@@ -1195,7 +1195,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
 
     // android.lens
 
-    static const float focalLength = 3.30f; // mm
+    static const float focalLength = 5.0f; // mm
     ADD_STATIC_ENTRY(ANDROID_LENS_INFO_AVAILABLE_FOCAL_LENGTHS,
             &focalLength, 1);
 
@@ -1572,7 +1572,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     }
 
     static const int32_t availableTargetFpsRanges[] = {
-            5, 30, 15, 30, 15, 15, 24, 24, 30, 30
+        15, 30, 15, 15, 30, 30
     };
     ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES,
             availableTargetFpsRanges,
@@ -2467,7 +2467,7 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
             if (goodBuffer) {
                 // Compressor takes ownership of sensorBuffers here
                 res = mParent->mJpegCompressor->start(mCurrentRequest.sensorBuffers,
-                        this);
+                        this, &(mCurrentRequest.settings));
                 goodBuffer = (res == OK);
             }
             if (goodBuffer) {

@@ -1690,7 +1690,7 @@ bool EmulatedQemuCamera3::ReadoutThread::threadLoop() {
             if (goodBuffer) {
                 // Compressor takes ownership of sensorBuffers here.
                 res = mParent->mJpegCompressor->start(mCurrentRequest.sensorBuffers,
-                        this);
+                        this, &(mCurrentRequest.settings));
                 goodBuffer = (res == OK);
             }
             if (goodBuffer) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_Exif"
 #include <cutils/log.h>
 
@@ -22,13 +22,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <CameraParameters.h>
-
-using ::android::hardware::camera::common::V1_0::helper::CameraParameters;
-using ::android::hardware::camera::common::V1_0::helper::Size;
-
 #include "Exif.h"
-
 #include <libexif/exif-data.h>
 #include <libexif/exif-entry.h>
 #include <libexif/exif-ifd.h>
@@ -271,7 +265,58 @@ static bool convertTimestampToTimeAndDate(int64_t timestamp,
     return true;
 }
 
-ExifData* createExifData(const CameraParameters& params) {
+// Convert and store key values in CameraMetadata
+static void convertToMetadata(const CameraParameters& src, CameraMetadata& dst) {
+    int64_t longValue;
+    float floatValue, floatGps[3];
+    const char* stringValue;
+
+    // Orientation
+    if (getCameraParam(src,
+                       CameraParameters::KEY_ROTATION,
+                       &longValue)) {
+        int32_t degrees = (int32_t)longValue;
+        dst.update(ANDROID_JPEG_ORIENTATION, &degrees, 1);
+    }
+    // Focal length
+    if (getCameraParam(src,
+                       CameraParameters::KEY_FOCAL_LENGTH,
+                       &floatValue)) {
+        dst.update(ANDROID_LENS_FOCAL_LENGTH, &floatValue, 1);
+    }
+    // GPS latitude longitude and altitude
+    if (getCameraParam(src,
+                       CameraParameters::KEY_GPS_LATITUDE,
+                       &floatGps[0]) &&
+        getCameraParam(src,
+                       CameraParameters::KEY_GPS_LONGITUDE,
+                       &floatGps[1]) &&
+        getCameraParam(src,
+                       CameraParameters::KEY_GPS_ALTITUDE,
+                       &floatGps[2])) {
+        double gps[3];
+        gps[0] = (double)floatGps[0];
+        gps[1] = (double)floatGps[1];
+        gps[2] = (double)floatGps[2];
+        dst.update(ANDROID_JPEG_GPS_COORDINATES, gps, 3);
+    }
+    // GPS timestamp and datestamp
+    if (getCameraParam(src,
+                       CameraParameters::KEY_GPS_TIMESTAMP,
+                       &longValue)) {
+        dst.update(ANDROID_JPEG_GPS_TIMESTAMP, &longValue, 1);
+    }
+    // GPS processing method
+    if (getCameraParam(src,
+                       CameraParameters::KEY_GPS_PROCESSING_METHOD,
+                       &stringValue)) {
+        dst.update(ANDROID_JPEG_GPS_PROCESSING_METHOD, (unsigned char*)stringValue,
+                   strlen(stringValue));
+    }
+}
+
+// Create Exif data common for both HAL1 and HAL3
+static ExifData* createExifDataCommon(const CameraMetadata& params, int width, int height) {
     ExifData* exifData = exif_data_new();
 
     exif_data_set_option(exifData, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
@@ -282,9 +327,9 @@ ExifData* createExifData(const CameraParameters& params) {
     exif_data_fix(exifData);
 
     float triplet[3];
-    float floatValue = 0.0f;
     const char* stringValue;
-    int64_t degrees;
+    int32_t degrees;
+    float focalLength;
 
     // Datetime, creating and initializing a datetime tag will automatically
     // set the current date and time in the tag so just do that.
@@ -294,89 +339,73 @@ ExifData* createExifData(const CameraParameters& params) {
     createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MAKE, "Emulator-Goldfish");
     createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MODEL, "Emulator-Goldfish");
 
-    // Picture size
-    int width = -1, height = -1;
-    params.getPictureSize(&width, &height);
-    if (width >= 0 && height >= 0) {
+    // Width and height
+    if (width > 0 && height > 0) {
         createEntry(exifData, EXIF_IFD_EXIF,
                     EXIF_TAG_PIXEL_X_DIMENSION, width);
         createEntry(exifData, EXIF_IFD_EXIF,
                     EXIF_TAG_PIXEL_Y_DIMENSION, height);
     }
-    // Orientation
-    if (getCameraParam(params,
-                       CameraParameters::KEY_ROTATION,
-                       &degrees)) {
-        // Exif orientation values, please refer to
-        // http://www.exif.org/Exif2-2.PDF, Section 4.6.4-A-Orientation
-        // Or these websites:
-        // http://sylvana.net/jpegcrop/exif_orientation.html
-        // http://www.impulseadventure.com/photo/exif-orientation.html
-        enum {
-            EXIF_ROTATE_CAMERA_CW0 = 1,
-            EXIF_ROTATE_CAMERA_CW90 = 6,
-            EXIF_ROTATE_CAMERA_CW180 = 3,
-            EXIF_ROTATE_CAMERA_CW270 = 8,
-        };
-        uint16_t exifOrien = 1;
-        switch (degrees) {
-            case 0:
-                exifOrien = EXIF_ROTATE_CAMERA_CW0;
-                break;
-            case 90:
-                exifOrien = EXIF_ROTATE_CAMERA_CW90;
-                break;
-            case 180:
-                exifOrien = EXIF_ROTATE_CAMERA_CW180;
-                break;
-            case 270:
-                exifOrien = EXIF_ROTATE_CAMERA_CW270;
-                break;
-        }
-        createEntry(exifData, EXIF_IFD_0, EXIF_TAG_ORIENTATION, exifOrien);
+
+    camera_metadata_ro_entry_t entry;
+    entry = params.find(ANDROID_LENS_FOCAL_LENGTH);
+    focalLength = (entry.count > 0) ? entry.data.f[0] : 5.0f;
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH, focalLength);
+    entry = params.find(ANDROID_JPEG_ORIENTATION);
+    degrees = (entry.count > 0) ? entry.data.i32[0] : 0;
+    ALOGV("degrees %d focalLength %f", degrees, focalLength);
+    enum {
+        EXIF_ROTATE_CAMERA_CW0 = 1,
+        EXIF_ROTATE_CAMERA_CW90 = 6,
+        EXIF_ROTATE_CAMERA_CW180 = 3,
+        EXIF_ROTATE_CAMERA_CW270 = 8,
+    };
+    uint16_t exifOrien = 1;
+    switch (degrees) {
+        case 0:
+            exifOrien = EXIF_ROTATE_CAMERA_CW0;
+            break;
+        case 90:
+            exifOrien = EXIF_ROTATE_CAMERA_CW90;
+            break;
+        case 180:
+            exifOrien = EXIF_ROTATE_CAMERA_CW180;
+            break;
+        case 270:
+            exifOrien = EXIF_ROTATE_CAMERA_CW270;
+            break;
     }
-    // Focal length
-    if (getCameraParam(params,
-                       CameraParameters::KEY_FOCAL_LENGTH,
-                       &floatValue)) {
-        createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH, floatValue);
-    }
-    // GPS latitude and reference, reference indicates sign, store unsigned
-    if (getCameraParam(params,
-                       CameraParameters::KEY_GPS_LATITUDE,
-                       &floatValue)) {
-        convertGpsCoordinate(floatValue, &triplet);
+    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_ORIENTATION, exifOrien);
+
+    // GPS information
+    entry = params.find(ANDROID_JPEG_GPS_COORDINATES);
+    if (entry.count > 0) {
+        ALOGV("Latitude %f Longitude %f Altitude %f", entry.data.d[0], entry.data.d[1], entry.data.d[2]);
+        convertGpsCoordinate(entry.data.d[0], &triplet);
         createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE, triplet);
 
-        const char* ref = floatValue < 0.0f ? "S" : "N";
+        const char* ref = entry.data.d[0] < 0.0f ? "S" : "N";
         createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE_REF, ref);
-    }
-    // GPS longitude and reference, reference indicates sign, store unsigned
-    if (getCameraParam(params,
-                       CameraParameters::KEY_GPS_LONGITUDE,
-                       &floatValue)) {
-        convertGpsCoordinate(floatValue, &triplet);
+
+        // GPS longitude and reference, reference indicates sign, store unsigned
+        convertGpsCoordinate(entry.data.d[1], &triplet);
         createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE, triplet);
 
-        const char* ref = floatValue < 0.0f ? "W" : "E";
+        ref = entry.data.d[1] < 0.0f ? "W" : "E";
         createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE_REF, ref);
-    }
-    // GPS altitude and reference, reference indicates sign, store unsigned
-    if (getCameraParam(params,
-                       CameraParameters::KEY_GPS_ALTITUDE,
-                       &floatValue)) {
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE,
-                    static_cast<float>(fabs(floatValue)));
 
+        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE,
+                    static_cast<float>(fabs(entry.data.d[2])));
+        int ref1;
         // 1 indicated below sea level, 0 indicates above sea level
-        uint8_t ref = floatValue < 0.0f ? 1 : 0;
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE_REF, ref);
+        ref1 = entry.data.d[2] < 0.0f ? 1 : 0;
+        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE_REF, ref1);
     }
-    // GPS timestamp and datestamp
+
     int64_t timestamp = 0;
-    if (getCameraParam(params,
-                       CameraParameters::KEY_GPS_TIMESTAMP,
-                       &timestamp)) {
+    entry = params.find(ANDROID_JPEG_GPS_TIMESTAMP);
+    if (entry.count > 0) {
+        timestamp = entry.data.i64[0];
         std::string date;
         if (convertTimestampToTimeAndDate(timestamp, &triplet, &date)) {
             createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP,
@@ -387,9 +416,10 @@ ExifData* createExifData(const CameraParameters& params) {
     }
 
     // GPS processing method
-    if (getCameraParam(params,
-                       CameraParameters::KEY_GPS_PROCESSING_METHOD,
-                       &stringValue)) {
+    entry = params.find(ANDROID_JPEG_GPS_PROCESSING_METHOD);
+    if (entry.count > 0) {
+        stringValue = (const char*)entry.data.u8;
+        ALOGV("ANDROID_JPEG_GPS_PROCESSING_METHOD(len=%d) %s", entry.count, stringValue);
         std::vector<unsigned char> data;
         // Because this is a tag with an undefined format it has to be prefixed
         // with the encoding type. Insert an ASCII prefix first, then the
@@ -401,7 +431,21 @@ ExifData* createExifData(const CameraParameters& params) {
         createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_PROCESSING_METHOD,
                     &data[0], data.size());
     }
+    return exifData;
+}
 
+ExifData* createExifData(const CameraMetadata& params, int width, int height) {
+    ExifData* exifData = createExifDataCommon(params, width, height);
+    // TODO: add more HAL3 information
+    return exifData;
+}
+
+ExifData* createExifData(const CameraParameters& params) {
+    int width = -1, height = -1;
+    CameraMetadata cameraMetadata;
+    convertToMetadata(params, cameraMetadata);
+    params.getPictureSize(&width, &height);
+    ExifData* exifData =  createExifDataCommon(cameraMetadata, width, height);
     return exifData;
 }
 

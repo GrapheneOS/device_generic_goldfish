@@ -339,7 +339,7 @@ bool Sensor::threadLoop() {
                         bAux.streamId = 0;
                         bAux.width = b.width;
                         bAux.height = b.height;
-                        bAux.format = HAL_PIXEL_FORMAT_RGB_888;
+                        bAux.format = HAL_PIXEL_FORMAT_YCbCr_420_888;
                         bAux.stride = b.width;
                         bAux.buffer = NULL;
                         // TODO: Reuse these
