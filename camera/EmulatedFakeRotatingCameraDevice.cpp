@@ -178,10 +178,11 @@ void EmulatedFakeRotatingCameraDevice::create_texture_dotx(int width, int height
     glGenTextures(1, &mTexture);
     glBindTexture(GL_TEXTURE_2D, mTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, width, 0, GL_RGBA, GL_UNSIGNED_BYTE, myrgba2);
-    glGenerateMipmapOES(GL_TEXTURE_2D);
-    // need to use mipmap, otherwise the dots will have sharp edges
-    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    //glGenerateMipmapOES does not work on mac, dont use it.
+    //glGenerateMipmapOES(GL_TEXTURE_2D);
+    // need to use linear, otherwise the dots will have sharp edges
+    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexEnvx(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     delete[] myrgba;
     delete[] myrgba2;
