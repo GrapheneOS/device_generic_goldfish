@@ -81,9 +81,9 @@
 
         <EncoderProfile quality="qvga" fileFormat="mp4" duration="60">
             <Video codec="h264"
-                   bitRate="12000000"
-                   width="1280"
-                   height="720"
+                   bitRate="128000"
+                   width="320"
+                   height="240"
                    frameRate="24" />
             <Audio codec="amrnb"
                    bitRate="12200"
@@ -119,6 +119,18 @@
                    width="320"
                    height="240"
                    frameRate="15" />
+            <Audio codec="amrnb"
+                   bitRate="12200"
+                   sampleRate="8000"
+                   channels="1" />
+        </EncoderProfile>
+
+        <EncoderProfile quality="720p" fileFormat="mp4" duration="60">
+            <Video codec="h264"
+                   bitRate="12000000"
+                   width="1280"
+                   height="720"
+                   frameRate="24" />
             <Audio codec="amrnb"
                    bitRate="12200"
                    sampleRate="8000"
