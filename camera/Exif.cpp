@@ -17,6 +17,7 @@
 //#define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_Exif"
 #include <cutils/log.h>
+#include <cutils/properties.h>
 
 #include <inttypes.h>
 #include <math.h>
@@ -30,6 +31,8 @@
 
 #include <string>
 #include <vector>
+
+#include "fake-pipeline2/Sensor.h"
 
 // For GPS timestamping we want to ensure we use a 64-bit time_t, 32-bit
 // platforms have time64_t but 64-bit platforms do not.
@@ -186,6 +189,23 @@ static bool createEntry(ExifData* exifData,
     return true;
 }
 
+// Create an entry with a single EXIF SHORT (16-bit value) and place it in
+// |exifData|.
+static bool createEntry(ExifData* exifData,
+                        ExifIfd ifd,
+                        int tag,
+                        uint16_t value) {
+    removeExistingEntry(exifData, ifd, tag);
+    ExifByteOrder byteOrder = exif_data_get_byte_order(exifData);
+    ExifEntry* entry = allocateEntry(tag, EXIF_FORMAT_SHORT, 1);
+    exif_content_add_entry(exifData->ifd[ifd], entry);
+    exif_set_short(entry->data, byteOrder, value);
+
+    // Unref entry after changing owner to the ExifData struct
+    exif_entry_unref(entry);
+    return true;
+}
+
 static bool getCameraParam(const CameraParameters& parameters,
                            const char* parameterKey,
                            const char** outValue) {
@@ -336,8 +356,11 @@ static ExifData* createExifDataCommon(const CameraMetadata& params, int width, i
     createEntry(exifData, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
 
     // Make and model
-    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MAKE, "Emulator-Goldfish");
-    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MODEL, "Emulator-Goldfish");
+    std::vector<char> prop(PROPERTY_VALUE_MAX);
+    property_get("ro.product.manufacturer", &prop[0], "");
+    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MAKE, &prop[0]);
+    property_get("ro.product.model", &prop[0], "");
+    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MODEL, &prop[0]);
 
     // Width and height
     if (width > 0 && height > 0) {
@@ -436,7 +459,41 @@ static ExifData* createExifDataCommon(const CameraMetadata& params, int width, i
 
 ExifData* createExifData(const CameraMetadata& params, int width, int height) {
     ExifData* exifData = createExifDataCommon(params, width, height);
-    // TODO: add more HAL3 information
+    // Exposure Time
+    camera_metadata_ro_entry entry;
+    entry= params.find(ANDROID_SENSOR_EXPOSURE_TIME);
+    int64_t exposureTimesNs =
+        (entry.count > 0) ? entry.data.i64[0] : Sensor::kExposureTimeRange[0];
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME,
+                exposureTimesNs/1000000000.0f, 1000000000);
+    // Aperture
+    entry = params.find(ANDROID_LENS_APERTURE);
+    float aperture = (entry.count > 0) ? entry.data.f[0] : 2.8;
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER, aperture);
+    // Flash, 0 for off
+    entry = params.find(ANDROID_FLASH_MODE);
+    uint16_t flash = (entry.count > 0) ? entry.data.i32[0] : 0;
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_FLASH, flash);
+    // White balance, 0 for auto, 1 for manual.
+    entry = params.find(ANDROID_CONTROL_AWB_MODE);
+    uint16_t awb = 1;
+    if (entry.count > 0 && entry.data.i32[0] == ANDROID_CONTROL_AWB_MODE_AUTO) {
+        awb = 0;
+    }
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_WHITE_BALANCE, awb);
+    // ISO
+    entry = params.find(ANDROID_SENSOR_SENSITIVITY);
+    int isoSpeedRating = (entry.count > 0) ?
+        entry.data.i32[0] : Sensor::kSensitivityRange[0];
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS,
+                (uint16_t)isoSpeedRating);
+    // Date and time
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
+    // Sub second time
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME, "0");
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME_ORIGINAL, "0");
+    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME_DIGITIZED, "0");
+
     return exifData;
 }
 
