@@ -20,6 +20,8 @@
 #include "EmulatedBaseCamera.h"
 #include "QemuClient.h"
 
+#include <cutils/properties.h>
+
 #include <utils/RefBase.h>
 #include <vector>
 
@@ -149,16 +151,18 @@ public:
      * Gets fake camera orientation.
      */
     int getFakeCameraOrientation() {
-        // TODO: Have a boot property that controls that.
-        return 90;
+        const char *key = "qemu.camera.fake.orientation";
+        int degree = property_get_int32(key, 90);
+        return degree;
     }
 
     /*
      * Gets qemu camera orientation.
      */
     int getQemuCameraOrientation() {
-        // TODO: Have a boot property that controls that.
-        return 90;
+        const char *key = "qemu.camera.webcam.orientation";
+        int degree = property_get_int32(key, 90);
+        return degree;
     }
 
     /*
