@@ -715,7 +715,10 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
         static const uint8_t lensShadingMapMode = ANDROID_STATISTICS_LENS_SHADING_MAP_MODE_OFF;
         settings.update(ANDROID_STATISTICS_LENS_SHADING_MAP_MODE, &lensShadingMapMode, 1);
 
-        static const uint8_t aberrationMode = ANDROID_COLOR_CORRECTION_ABERRATION_MODE_FAST;
+        uint8_t aberrationMode = ANDROID_COLOR_CORRECTION_ABERRATION_MODE_FAST;
+        if (type == CAMERA3_TEMPLATE_STILL_CAPTURE) {
+            aberrationMode = ANDROID_COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY;
+        }
         settings.update(ANDROID_COLOR_CORRECTION_ABERRATION_MODE, &aberrationMode, 1);
 
         static const int32_t testPatternMode = ANDROID_SENSOR_TEST_PATTERN_MODE_OFF;
