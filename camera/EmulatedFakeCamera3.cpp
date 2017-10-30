@@ -337,6 +337,20 @@ status_t EmulatedFakeCamera3::configureStreams(
                         GRALLOC_USAGE_HW_CAMERA_WRITE);
                 break;
         }
+        // Set the buffer format, inline with gralloc implementation
+        if (newStream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+            if (newStream->usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
+                if (newStream->usage & GRALLOC_USAGE_HW_TEXTURE) {
+                    newStream->format = HAL_PIXEL_FORMAT_RGBA_8888;
+                }
+                else if (newStream->usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
+                    newStream->format = HAL_PIXEL_FORMAT_YCbCr_420_888;
+                }
+                else {
+                    newStream->format = HAL_PIXEL_FORMAT_RGB_888;
+                }
+            }
+        }
     }
 
     /**
