@@ -1085,7 +1085,9 @@ status_t EmulatedFakeCamera3::getCameraCapabilities() {
     // Default to FULL_LEVEL plus RAW if nothing is defined
     if (mCapabilities.size() == 0) {
         mCapabilities.add(FULL_LEVEL);
-        mCapabilities.add(RAW);
+        // "RAW" causes several CTS failures: b/68723953, disable it so far.
+        // TODO: add "RAW" back when all failures are resolved.
+        //mCapabilities.add(RAW);
     }
 
     // Add level-based caps
@@ -1169,6 +1171,15 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         ADD_STATIC_ENTRY(ANDROID_SENSOR_MAX_ANALOG_SENSITIVITY,
                 &Sensor::kSensitivityRange[1], 1);
     }
+
+    static const int32_t sensorBlackLevelPattern[4] = {0, 0, 0, 0};
+    ADD_STATIC_ENTRY(ANDROID_SENSOR_BLACK_LEVEL_PATTERN,
+            sensorBlackLevelPattern, 4);
+
+    static const uint8_t sensorColorFilterArrangement =
+        ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB;
+    ADD_STATIC_ENTRY(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,
+            &sensorColorFilterArrangement, 1);
 
     static const float sensorPhysicalSize[2] = {3.20f, 2.40f}; // mm
     ADD_STATIC_ENTRY(ANDROID_SENSOR_INFO_PHYSICAL_SIZE,
@@ -1577,12 +1588,12 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 availableAeModes, sizeof(availableAeModes));
 
         static const camera_metadata_rational exposureCompensationStep = {
-            1, 3
+            0, 3
         };
         ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_COMPENSATION_STEP,
                 &exposureCompensationStep, 1);
 
-        int32_t exposureCompensationRange[] = {-9, 9};
+        int32_t exposureCompensationRange[] = {0, 0};
         ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_COMPENSATION_RANGE,
                 exposureCompensationRange,
                 sizeof(exposureCompensationRange)/sizeof(int32_t));
