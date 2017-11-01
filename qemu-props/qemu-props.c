@@ -43,6 +43,11 @@
 
 #define  MAX_TRIES      5
 
+#define QEMU_MISC_PIPE "QemuMiscPipe"
+
+int s_QemuMiscPipe = -1;
+void static notifyHostBootComplete();
+
 int  main(void)
 {
     int  qemud_fd, count = 0;
@@ -108,23 +113,47 @@ int  main(void)
         }
     }
 
-
-    /* HACK start adbd periodically every minute, if adbd is already running, this is a no-op */
-    for(;;) {
-        usleep(60000000);
-        char  temp[BUFF_SIZE];
+    char temp[BUFF_SIZE];
+    for (;;) {
+        usleep(5000000); /* 5 seconds */
         property_get("sys.boot_completed", temp, "");
         int is_boot_completed = (strncmp(temp, "1", 1) == 0) ? 1 : 0;
         if (is_boot_completed) {
-            DD("start adbd ...");
-            property_set("qemu.adbd", "start");
-        } else {
-            DD("skip starting adbd ...");
+            notifyHostBootComplete();
+            break;
         }
     }
 
+    /* HACK start adbd periodically every minute, if adbd is already running, this is a no-op */
+    for(;;) {
+        usleep(60000000); /* 1 minute */
+        property_set("qemu.adbd", "start");
+    }
+
     /* finally, close the channel and exit */
+    if (s_QemuMiscPipe >= 0) {
+        close(s_QemuMiscPipe);
+        s_QemuMiscPipe = -1;
+    }
     close(qemud_fd);
     DD("exiting (%d properties set).", count);
     return 0;
+}
+
+void notifyHostBootComplete() {
+   if (s_QemuMiscPipe < 0) {
+        s_QemuMiscPipe = qemu_pipe_open(QEMU_MISC_PIPE);
+        if (s_QemuMiscPipe < 0) {
+            ALOGE("failed to open %s", QEMU_MISC_PIPE);
+            return;
+        }
+    }
+    char set[] = "bootcomplete";
+    int pipe_command_length = sizeof(set);
+    WriteFully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
+    WriteFully(s_QemuMiscPipe, set, pipe_command_length);
+    ReadFully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
+    if (pipe_command_length > sizeof(set) || pipe_command_length <= 0)
+        return;
+    ReadFully(s_QemuMiscPipe, set, pipe_command_length);
 }
