@@ -795,6 +795,11 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
     exposureTime = (entry.count > 0) ?
             entry.data.i64[0] :
             QemuSensor::kExposureTimeRange[0];
+
+    // Note: Camera consumers may rely on there being an exposure
+    //       time set in the camera metadata.
+    settings.update(ANDROID_SENSOR_EXPOSURE_TIME, &exposureTime, 1);
+
     entry = settings.find(ANDROID_SENSOR_FRAME_DURATION);
     frameDuration = (entry.count > 0) ?
             entry.data.i64[0] :
@@ -804,6 +809,29 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
         frameDuration = exposureTime + QemuSensor::kMinVerticalBlank;
         settings.update(ANDROID_SENSOR_FRAME_DURATION, &frameDuration, 1);
     }
+
+    static const int32_t sensitivity = 100;
+    settings.update(ANDROID_SENSOR_SENSITIVITY, &sensitivity, 1);
+
+    static const uint8_t colorMode  = ANDROID_COLOR_CORRECTION_MODE_FAST;
+    settings.update(ANDROID_COLOR_CORRECTION_MODE, &colorMode, 1);
+
+    static const float colorGains[4] = {
+        1.0f, 1.0f, 1.0f, 1.0f
+    };
+    settings.update(ANDROID_COLOR_CORRECTION_GAINS, colorGains, 4);
+
+    static const camera_metadata_rational colorTransform[9] = {
+        {1,1}, {0,1}, {0,1},
+        {0,1}, {1,1}, {0,1},
+        {0,1}, {0,1}, {1,1}
+    };
+    settings.update(ANDROID_COLOR_CORRECTION_TRANSFORM, colorTransform, 9);
+
+    static const camera_metadata_rational neutralColorPoint[3] = {
+        {1,1}, {1,1}, {1,1},
+    };
+    settings.update(ANDROID_SENSOR_NEUTRAL_COLOR_POINT, neutralColorPoint, 3);
 
     Buffers *sensorBuffers = new Buffers();
     HalBufferVector *buffers = new HalBufferVector();
