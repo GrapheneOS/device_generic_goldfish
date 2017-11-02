@@ -19,8 +19,9 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <unistd.h>
 
-#include <cutils/log.h>
+#include <log/log.h>
 #include <hardware/hwcomposer.h>
 #include <sync/sync.h>
 

@@ -33,7 +33,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-#include <cutils/log.h>
+#include <log/log.h>
 #include <cutils/sockets.h>
 #include <hardware/sensors.h>
 
