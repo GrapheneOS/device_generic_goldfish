@@ -37,6 +37,7 @@
 #include <cmath>
 
 #include <vector>
+#include <algorithm>
 
 #if defined(LOG_NNDEBUG) && LOG_NNDEBUG == 0
 #define ALOGVV ALOGV
@@ -866,7 +867,6 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
     uint32_t sensitivity;
     bool     needJpeg = false;
     camera_metadata_entry_t entry;
-
     entry = settings.find(ANDROID_SENSOR_EXPOSURE_TIME);
     exposureTime = (entry.count > 0) ? entry.data.i64[0] : Sensor::kExposureTimeRange[0];
     entry = settings.find(ANDROID_SENSOR_FRAME_DURATION);
@@ -1172,10 +1172,6 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 &Sensor::kSensitivityRange[1], 1);
     }
 
-    static const int32_t sensorBlackLevelPattern[4] = {0, 0, 0, 0};
-    ADD_STATIC_ENTRY(ANDROID_SENSOR_BLACK_LEVEL_PATTERN,
-            sensorBlackLevelPattern, 4);
-
     static const uint8_t sensorColorFilterArrangement =
         ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB;
     ADD_STATIC_ENTRY(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,
@@ -1198,10 +1194,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     static const uint8_t timestampSource = ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME;
     ADD_STATIC_ENTRY(ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE, &timestampSource, 1);
 
-    if (hasCapability(RAW)) {
-        ADD_STATIC_ENTRY(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,
-                &Sensor::kColorFilterArrangement, 1);
-
+    if (hasCapability(RAW) || hasCapability(MANUAL_SENSOR)) {
         ADD_STATIC_ENTRY(ANDROID_SENSOR_INFO_WHITE_LEVEL,
                 (int32_t*)&Sensor::kMaxRawValue, 1);
 
@@ -1211,6 +1204,11 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         };
         ADD_STATIC_ENTRY(ANDROID_SENSOR_BLACK_LEVEL_PATTERN,
                 blackLevelPattern, sizeof(blackLevelPattern)/sizeof(int32_t));
+    }
+
+    if (hasCapability(RAW)) {
+        ADD_STATIC_ENTRY(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT,
+                &Sensor::kColorFilterArrangement, 1);
     }
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
@@ -2318,6 +2316,39 @@ status_t EmulatedFakeCamera3::doFakeAWB(CameraMetadata &settings) {
     return OK;
 }
 
+// Update the 3A Region by calculating the intersection of AE/AF/AWB and CROP
+// regions
+static void update3ARegion(uint32_t tag, CameraMetadata &settings) {
+    if (tag != ANDROID_CONTROL_AE_REGIONS &&
+        tag != ANDROID_CONTROL_AF_REGIONS &&
+        tag != ANDROID_CONTROL_AWB_REGIONS) {
+        return;
+    }
+    camera_metadata_entry_t entry;
+    entry = settings.find(ANDROID_SCALER_CROP_REGION);
+    if (entry.count > 0) {
+        int32_t cropRegion[4];
+        cropRegion[0] =  entry.data.i32[0];
+        cropRegion[1] =  entry.data.i32[1];
+        cropRegion[2] =  entry.data.i32[2] + cropRegion[0];
+        cropRegion[3] =  entry.data.i32[3] + cropRegion[1];
+        entry = settings.find(tag);
+        if (entry.count > 0) {
+            int32_t* ARegion = entry.data.i32;
+            // calculate the intersection of AE/AF/AWB and CROP regions
+            if (ARegion[0] < cropRegion[2] && cropRegion[0] < ARegion[2] &&
+                ARegion[1] < cropRegion[3] && cropRegion[1] < ARegion[3]) {
+                int32_t interSect[5];
+                interSect[0] = std::max(ARegion[0], cropRegion[0]);
+                interSect[1] = std::max(ARegion[1], cropRegion[1]);
+                interSect[2] = std::min(ARegion[2], cropRegion[2]);
+                interSect[3] = std::min(ARegion[3], cropRegion[3]);
+                interSect[4] = ARegion[4];
+                settings.update(tag, &interSect[0], 5);
+            }
+        }
+    }
+}
 
 void EmulatedFakeCamera3::update3A(CameraMetadata &settings) {
     if (mAeMode != ANDROID_CONTROL_AE_MODE_OFF) {
@@ -2350,7 +2381,9 @@ void EmulatedFakeCamera3::update3A(CameraMetadata &settings) {
             break;
     }
     settings.update(ANDROID_LENS_STATE, &lensState, 1);
-
+    update3ARegion(ANDROID_CONTROL_AE_REGIONS, settings);
+    update3ARegion(ANDROID_CONTROL_AF_REGIONS, settings);
+    update3ARegion(ANDROID_CONTROL_AWB_REGIONS, settings);
 }
 
 void EmulatedFakeCamera3::signalReadoutIdle() {
