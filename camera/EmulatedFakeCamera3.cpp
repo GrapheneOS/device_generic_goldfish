@@ -279,6 +279,22 @@ status_t EmulatedFakeCamera3::configureStreams(
             inputStream = newStream;
         }
 
+        if (newStream->stream_type != CAMERA3_STREAM_INPUT) {
+            if (newStream->rotation < CAMERA3_STREAM_ROTATION_0 ||
+                newStream->rotation > CAMERA3_STREAM_ROTATION_270) {
+                ALOGE("%s: Unsupported stream rotation 0x%x requested",
+                      __FUNCTION__, newStream->rotation);
+                return BAD_VALUE;
+            }
+        }
+
+        if (newStream->width <= 0 || newStream->width > mSensorWidth ||
+            newStream->height <= 0 || newStream->height > mSensorHeight) {
+            ALOGE("%s: Unsupported stream width 0x%x height 0x%x",
+                  __FUNCTION__, newStream->width, newStream->height);
+            return BAD_VALUE;
+        }
+
         bool validFormat = false;
         for (size_t f = 0;
              f < sizeof(kAvailableFormats)/sizeof(kAvailableFormats[0]);
