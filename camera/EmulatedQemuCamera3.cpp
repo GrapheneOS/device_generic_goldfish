@@ -369,15 +369,29 @@ status_t EmulatedQemuCamera3::configureStreams(
         newStream->max_buffers = kMaxBufferCount;
         switch (newStream->stream_type) {
             case CAMERA3_STREAM_OUTPUT:
-                newStream->usage = GRALLOC_USAGE_HW_CAMERA_WRITE;
+                newStream->usage |= GRALLOC_USAGE_HW_CAMERA_WRITE;
                 break;
             case CAMERA3_STREAM_INPUT:
-                newStream->usage = GRALLOC_USAGE_HW_CAMERA_READ;
+                newStream->usage |= GRALLOC_USAGE_HW_CAMERA_READ;
                 break;
             case CAMERA3_STREAM_BIDIRECTIONAL:
-                newStream->usage = GRALLOC_USAGE_HW_CAMERA_READ |
+                newStream->usage |= GRALLOC_USAGE_HW_CAMERA_READ |
                         GRALLOC_USAGE_HW_CAMERA_WRITE;
                 break;
+        }
+        // Set the buffer format, inline with gralloc implementation
+        if (newStream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+            if (newStream->usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
+                if (newStream->usage & GRALLOC_USAGE_HW_TEXTURE) {
+                    newStream->format = HAL_PIXEL_FORMAT_RGBA_8888;
+                }
+                else if (newStream->usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
+                    newStream->format = HAL_PIXEL_FORMAT_YCbCr_420_888;
+                }
+                else {
+                    newStream->format = HAL_PIXEL_FORMAT_RGB_888;
+                }
+            }
         }
     }
 
@@ -498,7 +512,7 @@ const camera_metadata_t* EmulatedQemuCamera3::constructDefaultRequestSettings(
         settings.update(ANDROID_JPEG_QUALITY, &jpegQuality, 1);
 
         static const int32_t thumbnailSize[2] = {
-            640, 480
+            320, 240
         };
         settings.update(ANDROID_JPEG_THUMBNAIL_SIZE, thumbnailSize, 2);
 
@@ -810,7 +824,7 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
         settings.update(ANDROID_SENSOR_FRAME_DURATION, &frameDuration, 1);
     }
 
-    static const int32_t sensitivity = 100;
+    static const int32_t sensitivity = QemuSensor::kSensitivityRange[0];
     settings.update(ANDROID_SENSOR_SENSITIVITY, &sensitivity, 1);
 
     static const uint8_t colorMode  = ANDROID_COLOR_CORRECTION_MODE_FAST;
@@ -849,11 +863,25 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
         destBuf.streamId = kGenericStreamId;
         destBuf.width = srcBuf.stream->width;
         destBuf.height = srcBuf.stream->height;
-        // For goldfish, IMPLEMENTATION_DEFINED is always RGBx_8888.
-        destBuf.format = (srcBuf.stream->format ==
-                          HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) ?
-                HAL_PIXEL_FORMAT_RGBA_8888 :
-                srcBuf.stream->format;
+        // inline with goldfish gralloc
+        if (srcBuf.stream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+            if (srcBuf.stream->usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
+                if (srcBuf.stream->usage & GRALLOC_USAGE_HW_TEXTURE) {
+                    destBuf.format = HAL_PIXEL_FORMAT_RGBA_8888;
+                }
+                else if (srcBuf.stream->usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
+                    destBuf.format = HAL_PIXEL_FORMAT_YCbCr_420_888;
+                }
+                else if ((srcBuf.stream->usage & GRALLOC_USAGE_HW_CAMERA_MASK)
+                         == GRALLOC_USAGE_HW_CAMERA_ZSL) {
+                    destBuf.format = HAL_PIXEL_FORMAT_RGB_888;
+                }
+            }
+        }
+        else {
+            destBuf.format = srcBuf.stream->format;
+        }
+
         destBuf.stride = srcBuf.stream->width;
         destBuf.dataSpace = srcBuf.stream->data_space;
         destBuf.buffer = srcBuf.buffer;

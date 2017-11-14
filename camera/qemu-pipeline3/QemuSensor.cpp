@@ -297,7 +297,7 @@ bool QemuSensor::threadLoop() {
                         bAux.streamId = 0;
                         bAux.width = b.width;
                         bAux.height = b.height;
-                        bAux.format = HAL_PIXEL_FORMAT_RGB_888;
+                        bAux.format = HAL_PIXEL_FORMAT_YCbCr_420_888;
                         bAux.stride = b.width;
                         bAux.buffer = nullptr;
                         // TODO: Reuse these.
@@ -340,8 +340,8 @@ void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
         uint32_t stride) {
     status_t res;
     if (width != mLastRequestWidth || height != mLastRequestHeight) {
-        ALOGI("%s: Dimensions for the current request (%dx%d) differ from "
-                "the previous request (%dx%d). Restarting camera",
+        ALOGI("%s: Dimensions for the current request (%dx%d) differ "
+              "from the previous request (%dx%d). Restarting camera",
                 __FUNCTION__, width, height, mLastRequestWidth,
                 mLastRequestHeight);
 
@@ -361,12 +361,11 @@ void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
         }
 
         /*
-         * Pixel format doesn't matter if we're only using preview frames, since
-         * the camera service always converts them to V4L2_PIX_FMT_RGB32, so we
-         * use the pixel format below, because it causes errors if you request
-         * V4L2_PIX_FMT_RGB32 (should be fixed in the future).
+         * Host Camera always assumes V4L2_PIX_FMT_RGB32 as the preview format,
+         * and asks for the video format from the pixFmt parameter, which is
+         * V4L2_PIX_FMT_NV21 in our implementation.
          */
-        uint32_t pixFmt = V4L2_PIX_FMT_YUV420;
+        uint32_t pixFmt = V4L2_PIX_FMT_NV21;
         res = mCameraQemuClient.queryStart(pixFmt, width, height);
         if (res == NO_ERROR) {
             mLastRequestWidth = width;
@@ -383,6 +382,10 @@ void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
                     mWidth, mHeight);
             return;
         }
+    }
+    if (width != stride) {
+        ALOGW("%s: expect stride (%d), actual stride (%d)", __FUNCTION__,
+              width, stride);
     }
 
     // Since the format is V4L2_PIX_FMT_RGB32, we need 4 bytes per pixel.
@@ -403,7 +406,67 @@ void QemuSensor::captureRGB(uint8_t *img, uint32_t width, uint32_t height, uint3
 }
 
 void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride) {
-    ALOGE("%s: Not implemented", __FUNCTION__);
+    status_t res;
+    if (width != mLastRequestWidth || height != mLastRequestHeight) {
+        ALOGI("%s: Dimensions for the current request (%dx%d) differ "
+              "from the previous request (%dx%d). Restarting camera",
+                __FUNCTION__, width, height, mLastRequestWidth,
+                mLastRequestHeight);
+
+        if (mLastRequestWidth != -1 || mLastRequestHeight != -1) {
+            // We only need to stop the camera if this isn't the first request.
+
+            // Stop the camera device.
+            res = mCameraQemuClient.queryStop();
+            if (res == NO_ERROR) {
+                mState = ECDS_CONNECTED;
+                ALOGV("%s: Qemu camera device '%s' is stopped",
+                        __FUNCTION__, (const char*) mDeviceName);
+            } else {
+                ALOGE("%s: Unable to stop device '%s'",
+                        __FUNCTION__, (const char*) mDeviceName);
+            }
+        }
+
+        /*
+         * Host Camera always assumes V4L2_PIX_FMT_RGB32 as the preview format,
+         * and asks for the video format from the pixFmt parameter, which is
+         * V4L2_PIX_FMT_NV21 in our implementation.
+         */
+        uint32_t pixFmt = V4L2_PIX_FMT_NV21;
+        res = mCameraQemuClient.queryStart(pixFmt, width, height);
+        if (res == NO_ERROR) {
+            mLastRequestWidth = width;
+            mLastRequestHeight = height;
+            ALOGV("%s: Qemu camera device '%s' is started for %.4s[%dx%d] frames",
+                    __FUNCTION__, (const char*) mDeviceName,
+                    reinterpret_cast<const char*>(&pixFmt),
+                    mWidth, mHeight);
+            mState = ECDS_STARTED;
+        } else {
+            ALOGE("%s: Unable to start device '%s' for %.4s[%dx%d] frames",
+                    __FUNCTION__, (const char*) mDeviceName,
+                    reinterpret_cast<const char*>(&pixFmt),
+                    mWidth, mHeight);
+            return;
+        }
+    }
+    if (width != stride) {
+        ALOGW("%s: expect stride (%d), actual stride (%d)", __FUNCTION__,
+              width, stride);
+    }
+
+    // Calculate the buffer size for NV21.
+    size_t bufferSize = (width * height * 12) / 8;
+    // Apply no white balance or exposure compensation.
+    float whiteBalance[] = {1.0f, 1.0f, 1.0f};
+    float exposureCompensation = 1.0f;
+    // Read video frame from webcam.
+    mCameraQemuClient.queryFrame(img, nullptr, bufferSize, 0, whiteBalance[0],
+            whiteBalance[1], whiteBalance[2],
+            exposureCompensation);
+
+    ALOGVV("NV21 sensor image captured");
 }
 
 }; // end of namespace android

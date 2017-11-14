@@ -64,6 +64,7 @@ EmulatedCameraFactory::EmulatedCameraFactory() :
         emulatedCamerasSize += qemuCameras.size();
     }
 
+    waitForQemuSfFakeCameraPropertyAvailable();
     // Fake Cameras
     if (isFakeCameraEmulationOn(/* backCamera */ true)) {
         mFakeCameraNum++;
@@ -85,8 +86,6 @@ EmulatedCameraFactory::EmulatedCameraFactory() :
     }
 
     createQemuCameras(qemuCameras);
-
-    waitForQemuSfFakeCameraPropertyAvailable();
 
     // Create fake cameras, if enabled.
     if (isFakeCameraEmulationOn(/* backCamera */ true)) {
