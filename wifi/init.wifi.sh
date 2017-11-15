@@ -60,8 +60,13 @@ execns ${NAMESPACE} sysctl -wq net.ipv6.conf.all.forwarding=1
 execns ${NAMESPACE} /system/bin/ip link set radio0-peer up
 # Start the dhcp client for eth0 to acquire an address
 setprop ctl.start dhcpclient_rtr
-execns ${NAMESPACE} /system/bin/iptables -t nat -A POSTROUTING -s 192.168.232.0/21 -o eth0 -j MASQUERADE
-execns ${NAMESPACE} /system/bin/iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -o eth0 -j MASQUERADE
+# Create iptables entries. -w will cause an indefinite wait for the exclusive
+# lock. Without this flag iptables can sporadically fail if something else is
+# modifying the iptables at the same time. -W indicates the number of micro-
+# seconds between each retry. The default is one second which seems like a long
+# time. Keep this short so we don't slow down startup too much.
+execns ${NAMESPACE} /system/bin/iptables -w -W 50000 -t nat -A POSTROUTING -s 192.168.232.0/21 -o eth0 -j MASQUERADE
+execns ${NAMESPACE} /system/bin/iptables -w -W 50000 -t nat -A POSTROUTING -s 192.168.200.0/24 -o eth0 -j MASQUERADE
 # Create a file containg the PID of a process running in the namespace, this is
 # needed when moving the wifi phy into the namespace below
 execns ${NAMESPACE} sh -c 'echo $$ > /var/run/wifi.pid; while :; do sleep 500000; done' &
