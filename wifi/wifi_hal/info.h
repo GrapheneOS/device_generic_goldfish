@@ -21,15 +21,17 @@
 
 #include <wifi_hal.h>
 
+#include <functional>
 #include <vector>
 
 class Info {
 public:
+    using StopHandler = std::function<void ()>;
     Info();
 
     bool init();
     void eventLoop();
-    void stop();
+    void stop(StopHandler stopHandler);
     wifi_error getInterfaces(int* num, wifi_interface_handle** interfaces);
 
 private:

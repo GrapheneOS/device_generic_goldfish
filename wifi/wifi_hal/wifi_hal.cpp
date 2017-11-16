@@ -69,11 +69,9 @@ void wifi_cleanup(wifi_handle handle, wifi_cleaned_up_handler handler) {
     }
 
     auto info = asInfo(handle);
-    info->stop();
-    delete info;
-
-    // Notify callback that clean-up is complete
-    handler(handle);
+    // When the stop completes it will call this lambda which in turn notifies
+    // the provided handler and then cleans up the object.
+    info->stop([=] { handler(handle); delete info; });
 }
 
 void wifi_event_loop(wifi_handle handle) {

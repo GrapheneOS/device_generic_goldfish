@@ -40,8 +40,8 @@ void Info::eventLoop() {
     mNetlink.eventLoop();
 }
 
-void Info::stop() {
-    mNetlink.stop();
+void Info::stop(StopHandler stopHandler) {
+    mNetlink.stop(stopHandler);
 }
 
 wifi_error Info::getInterfaces(int* num, wifi_interface_handle** interfaces) {

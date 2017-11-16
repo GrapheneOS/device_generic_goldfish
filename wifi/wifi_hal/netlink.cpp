@@ -81,8 +81,15 @@ bool Netlink::init() {
     return true;
 }
 
-void Netlink::stop() {
+void Netlink::stop(StopHandler handler) {
     char stop = 1;
+    // Set the handler before writing so that it's guaranteed to be available
+    // when the event loop reads from the control pipe.
+    {
+        // No need to keep the lock while writing so make it scoped
+        std::unique_lock<std::mutex> lock(mStopHandlerMutex);
+        mStopHandler = handler;
+    }
     ::write(mControlPipe[kControlWrite], &stop, sizeof(stop));
 }
 
@@ -116,6 +123,24 @@ bool Netlink::eventLoop() {
             } else if (fd.fd == mControlPipe[kControlRead]) {
                 if (readControlMessage()) {
                     ALOGE("Received request to stop event loop, quitting");
+                    // Make a copy of the stop handler while holding the lock
+                    // and then call it after releasing the lock. This prevents
+                    // the potential deadlock of someone calling stop from the
+                    // stop callback. The drawback of this is that if someone
+                    // calls stop again with a new stop handler that new stop
+                    // handler might not be called if the timing is wrong.
+                    // Both of these scenarios indicate highly questionable
+                    // behavior on the callers part but at least this way the
+                    // event loop will terminate which seems better than a
+                    // total deadlock.
+                    StopHandler handler;
+                    {
+                        std::unique_lock<std::mutex> lock(mStopHandlerMutex);
+                        handler = mStopHandler;
+                    }
+                    if (handler) {
+                        handler();
+                    }
                     return true;
                 }
             }

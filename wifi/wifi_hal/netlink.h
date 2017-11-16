@@ -27,11 +27,12 @@ class NetlinkMessage;
 class Netlink {
 public:
     using ReplyHandler = std::function<void (const NetlinkMessage&)>;
+    using StopHandler = std::function<void ()>;
     Netlink();
     ~Netlink();
 
     bool init();
-    void stop();
+    void stop(StopHandler stopHandler);
 
     bool eventLoop();
 
@@ -53,5 +54,7 @@ private:
     // Map sequence number to reply handler
     std::unordered_map<uint32_t, ReplyHandler> mHandlers;
     std::mutex mHandlersMutex;
+    std::mutex mStopHandlerMutex;
+    StopHandler mStopHandler;
 };
 
