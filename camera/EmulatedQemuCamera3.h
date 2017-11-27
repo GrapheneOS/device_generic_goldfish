@@ -102,6 +102,13 @@ private:
      */
     status_t constructStaticInfo();
 
+    status_t process3A(CameraMetadata &settings);
+
+    status_t doFakeAE(CameraMetadata &settings);
+    status_t doFakeAF(CameraMetadata &settings);
+    status_t doFakeAWB(CameraMetadata &settings);
+    void     update3A(CameraMetadata &settings);
+
     /*
      * Signal from readout thread that it doesn't have anything to do.
      */
@@ -241,6 +248,43 @@ private:
     };
 
     sp<ReadoutThread> mReadoutThread;
+
+    /** Fake 3A constants */
+
+    static const nsecs_t kNormalExposureTime;
+    static const nsecs_t kFacePriorityExposureTime;
+    static const int     kNormalSensitivity;
+    static const int     kFacePrioritySensitivity;
+    // Rate of converging AE to new target value, as fraction of difference between
+    // current and target value.
+    static const float   kExposureTrackRate;
+    // Minimum duration for precapture state. May be longer if slow to converge
+    // to target exposure
+    static const int     kPrecaptureMinFrames;
+    // How often to restart AE 'scanning'
+    static const int     kStableAeMaxFrames;
+    // Maximum stop below 'normal' exposure time that we'll wander to while
+    // pretending to converge AE. In powers of 2. (-2 == 1/4 as bright)
+    static const float   kExposureWanderMin;
+    // Maximum stop above 'normal' exposure time that we'll wander to while
+    // pretending to converge AE. In powers of 2. (2 == 4x as bright)
+    static const float   kExposureWanderMax;
+
+    /** Fake 3A state */
+
+    uint8_t mControlMode;
+    bool    mFacePriority;
+    uint8_t mAeState;
+    uint8_t mAfState;
+    uint8_t mAwbState;
+    uint8_t mAeMode;
+    uint8_t mAfMode;
+    uint8_t mAwbMode;
+
+    int     mAeCounter;
+    nsecs_t mAeCurrentExposureTime;
+    nsecs_t mAeTargetExposureTime;
+    int     mAeCurrentSensitivity;
 };
 
 }; // end of namespace android

@@ -65,6 +65,22 @@ const int32_t EmulatedQemuCamera3::kAvailableFormats[] = {
     HAL_PIXEL_FORMAT_YCbCr_420_888
 };
 
+/**
+ * 3A constants
+ */
+
+// Default exposure and gain targets for different scenarios
+const nsecs_t EmulatedQemuCamera3::kNormalExposureTime       = 10 * MSEC;
+const nsecs_t EmulatedQemuCamera3::kFacePriorityExposureTime = 30 * MSEC;
+const int     EmulatedQemuCamera3::kNormalSensitivity        = 100;
+const int     EmulatedQemuCamera3::kFacePrioritySensitivity  = 400;
+//CTS requires 8 frames timeout in waitForAeStable
+const float   EmulatedQemuCamera3::kExposureTrackRate        = 0.2;
+const int     EmulatedQemuCamera3::kPrecaptureMinFrames      = 10;
+const int     EmulatedQemuCamera3::kStableAeMaxFrames        = 100;
+const float   EmulatedQemuCamera3::kExposureWanderMin        = -2;
+const float   EmulatedQemuCamera3::kExposureWanderMax        = 1;
+
 /*****************************************************************************
  * Constructor/Destructor
  ****************************************************************************/
@@ -795,10 +811,14 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
         settings = request->settings;
     }
 
+    res = process3A(settings);
+    if (res != OK) {
+        return res;
+    }
+
     /*
      * Get ready for sensor config.
      */
-
     // TODO: We shouldn't need exposureTime or frameDuration for webcams.
     nsecs_t exposureTime;
     nsecs_t frameDuration;
@@ -1117,13 +1137,13 @@ status_t EmulatedQemuCamera3::constructStaticInfo() {
             &focalLength, 1);
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
-        // 5 cm min focus distance for back camera; infinity (fixed focus) for front
-        const float minFocusDistance = mFacingBack ? 1.0 / 0.05 : 0.0;
+        // infinity (fixed focus)
+        const float minFocusDistance = 0.0;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_MINIMUM_FOCUS_DISTANCE,
                 &minFocusDistance, 1);
 
-        // 5 m hyperfocal distance for back camera; infinity (fixed focus) for front
-        const float hyperFocalDistance = mFacingBack ? 1.0 / 5.0 : 0.0;
+        // (fixed focus)
+        const float hyperFocalDistance = 0.0;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_HYPERFOCAL_DISTANCE,
                 &minFocusDistance, 1);
 
@@ -1402,11 +1422,7 @@ status_t EmulatedQemuCamera3::constructStaticInfo() {
             &awbLockAvailable, 1);
 
     static const uint8_t availableAfModesBack[] = {
-        ANDROID_CONTROL_AF_MODE_OFF,
-        ANDROID_CONTROL_AF_MODE_AUTO,
-        ANDROID_CONTROL_AF_MODE_MACRO,
-        ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO,
-        ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE
+        ANDROID_CONTROL_AF_MODE_OFF
     };
 
     static const uint8_t availableAfModesFront[] = {
@@ -1596,6 +1612,241 @@ status_t EmulatedQemuCamera3::constructStaticInfo() {
 
 #undef ADD_STATIC_ENTRY
     return OK;
+}
+
+status_t EmulatedQemuCamera3::process3A(CameraMetadata &settings) {
+    /**
+     * Extract top-level 3A controls
+     */
+    status_t res;
+
+    bool facePriority = false;
+
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_MODE);
+    if (e.count == 0) {
+        ALOGE("%s: No control mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t controlMode = e.data.u8[0];
+
+    if (controlMode == ANDROID_CONTROL_MODE_OFF) {
+        mAeMode   = ANDROID_CONTROL_AE_MODE_OFF;
+        mAfMode   = ANDROID_CONTROL_AF_MODE_OFF;
+        mAwbMode  = ANDROID_CONTROL_AWB_MODE_OFF;
+        mAeState  = ANDROID_CONTROL_AE_STATE_INACTIVE;
+        mAfState  = ANDROID_CONTROL_AF_STATE_INACTIVE;
+        mAwbState = ANDROID_CONTROL_AWB_STATE_INACTIVE;
+        update3A(settings);
+        return OK;
+    } else if (controlMode == ANDROID_CONTROL_MODE_USE_SCENE_MODE) {
+        if (!hasCapability(BACKWARD_COMPATIBLE)) {
+            ALOGE("%s: Can't use scene mode when BACKWARD_COMPATIBLE not supported!",
+                  __FUNCTION__);
+            return BAD_VALUE;
+        }
+
+        e = settings.find(ANDROID_CONTROL_SCENE_MODE);
+        if (e.count == 0) {
+            ALOGE("%s: No scene mode entry!", __FUNCTION__);
+            return BAD_VALUE;
+        }
+        uint8_t sceneMode = e.data.u8[0];
+
+        switch(sceneMode) {
+            case ANDROID_CONTROL_SCENE_MODE_FACE_PRIORITY:
+                mFacePriority = true;
+                break;
+            default:
+                ALOGE("%s: Emulator doesn't support scene mode %d",
+                        __FUNCTION__, sceneMode);
+                return BAD_VALUE;
+        }
+    } else {
+        mFacePriority = false;
+    }
+
+    // controlMode == AUTO or sceneMode = FACE_PRIORITY
+    // Process individual 3A controls
+
+    res = doFakeAE(settings);
+    if (res != OK) return res;
+
+    res = doFakeAF(settings);
+    if (res != OK) return res;
+
+    res = doFakeAWB(settings);
+    if (res != OK) return res;
+
+    update3A(settings);
+    return OK;
+}
+
+status_t EmulatedQemuCamera3::doFakeAE(CameraMetadata &settings) {
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_AE_MODE);
+    if (e.count == 0 && hasCapability(BACKWARD_COMPATIBLE)) {
+        ALOGE("%s: No AE mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t aeMode = (e.count > 0) ? e.data.u8[0] : (uint8_t)ANDROID_CONTROL_AE_MODE_ON;
+    mAeMode = aeMode;
+
+    switch (aeMode) {
+        case ANDROID_CONTROL_AE_MODE_OFF:
+            // AE is OFF
+            mAeState = ANDROID_CONTROL_AE_STATE_INACTIVE;
+            return OK;
+        case ANDROID_CONTROL_AE_MODE_ON:
+            // OK for AUTO modes
+            break;
+        default:
+            // Mostly silently ignore unsupported modes
+            ALOGV("%s: Emulator doesn't support AE mode %d, assuming ON",
+                    __FUNCTION__, aeMode);
+            break;
+    }
+
+    e = settings.find(ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER);
+    bool precaptureTrigger = false;
+    if (e.count != 0) {
+        precaptureTrigger =
+                (e.data.u8[0] == ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER_START);
+    }
+
+    if (precaptureTrigger) {
+        ALOGV("%s: Pre capture trigger = %d", __FUNCTION__, precaptureTrigger);
+    } else if (e.count > 0) {
+        ALOGV("%s: Pre capture trigger was present? %zu",
+              __FUNCTION__, e.count);
+    }
+
+    if (precaptureTrigger || mAeState == ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
+        // Run precapture sequence
+        if (mAeState != ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
+            mAeCounter = 0;
+        }
+
+        if (mFacePriority) {
+            mAeTargetExposureTime = kFacePriorityExposureTime;
+        } else {
+            mAeTargetExposureTime = kNormalExposureTime;
+        }
+
+        if (mAeCounter > kPrecaptureMinFrames &&
+                (mAeTargetExposureTime - mAeCurrentExposureTime) <
+                mAeTargetExposureTime / 10) {
+            // Done with precapture
+            mAeCounter = 0;
+            mAeState = ANDROID_CONTROL_AE_STATE_CONVERGED;
+        } else {
+            // Converge some more
+            mAeCurrentExposureTime +=
+                    (mAeTargetExposureTime - mAeCurrentExposureTime) *
+                    kExposureTrackRate;
+            mAeCounter++;
+            mAeState = ANDROID_CONTROL_AE_STATE_PRECAPTURE;
+        }
+    }
+    else {
+        mAeState = ANDROID_CONTROL_AE_STATE_CONVERGED;
+    }
+
+    return OK;
+}
+
+status_t EmulatedQemuCamera3::doFakeAF(CameraMetadata &settings) {
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_AF_MODE);
+    if (e.count == 0 && hasCapability(BACKWARD_COMPATIBLE)) {
+        ALOGE("%s: No AF mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t afMode = (e.count > 0) ? e.data.u8[0] : (uint8_t)ANDROID_CONTROL_AF_MODE_OFF;
+
+    switch (afMode) {
+        case ANDROID_CONTROL_AF_MODE_OFF:
+        case ANDROID_CONTROL_AF_MODE_AUTO:
+        case ANDROID_CONTROL_AF_MODE_MACRO:
+        case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
+        case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
+            // Always report INACTIVE for Qemu Camera
+            mAfState = ANDROID_CONTROL_AF_STATE_INACTIVE;
+            break;
+         default:
+            ALOGE("%s: Emulator doesn't support AF mode %d",
+                    __FUNCTION__, afMode);
+            return BAD_VALUE;
+    }
+
+    return OK;
+}
+
+status_t EmulatedQemuCamera3::doFakeAWB(CameraMetadata &settings) {
+    camera_metadata_entry e;
+
+    e = settings.find(ANDROID_CONTROL_AWB_MODE);
+    if (e.count == 0 && hasCapability(BACKWARD_COMPATIBLE)) {
+        ALOGE("%s: No AWB mode entry!", __FUNCTION__);
+        return BAD_VALUE;
+    }
+    uint8_t awbMode = (e.count > 0) ? e.data.u8[0] : (uint8_t)ANDROID_CONTROL_AWB_MODE_AUTO;
+
+    // TODO: Add white balance simulation
+
+    switch (awbMode) {
+        case ANDROID_CONTROL_AWB_MODE_OFF:
+        case ANDROID_CONTROL_AWB_MODE_AUTO:
+        case ANDROID_CONTROL_AWB_MODE_INCANDESCENT:
+        case ANDROID_CONTROL_AWB_MODE_FLUORESCENT:
+        case ANDROID_CONTROL_AWB_MODE_DAYLIGHT:
+        case ANDROID_CONTROL_AWB_MODE_SHADE:
+            // Always magically right for Qemu Camera
+            mAwbState =  ANDROID_CONTROL_AWB_STATE_CONVERGED;
+            break;
+        default:
+            ALOGE("%s: Emulator doesn't support AWB mode %d",
+                    __FUNCTION__, awbMode);
+            return BAD_VALUE;
+    }
+
+    return OK;
+}
+
+void EmulatedQemuCamera3::update3A(CameraMetadata &settings) {
+    if (mAeMode != ANDROID_CONTROL_AE_MODE_OFF) {
+        settings.update(ANDROID_SENSOR_EXPOSURE_TIME,
+                &mAeCurrentExposureTime, 1);
+        settings.update(ANDROID_SENSOR_SENSITIVITY,
+                &mAeCurrentSensitivity, 1);
+    }
+
+    settings.update(ANDROID_CONTROL_AE_STATE,
+            &mAeState, 1);
+    settings.update(ANDROID_CONTROL_AF_STATE,
+            &mAfState, 1);
+    settings.update(ANDROID_CONTROL_AWB_STATE,
+            &mAwbState, 1);
+
+    uint8_t lensState;
+    switch (mAfState) {
+        case ANDROID_CONTROL_AF_STATE_PASSIVE_SCAN:
+        case ANDROID_CONTROL_AF_STATE_ACTIVE_SCAN:
+            lensState = ANDROID_LENS_STATE_MOVING;
+            break;
+        case ANDROID_CONTROL_AF_STATE_INACTIVE:
+        case ANDROID_CONTROL_AF_STATE_PASSIVE_FOCUSED:
+        case ANDROID_CONTROL_AF_STATE_FOCUSED_LOCKED:
+        case ANDROID_CONTROL_AF_STATE_NOT_FOCUSED_LOCKED:
+        case ANDROID_CONTROL_AF_STATE_PASSIVE_UNFOCUSED:
+        default:
+            lensState = ANDROID_LENS_STATE_STATIONARY;
+            break;
+    }
+    settings.update(ANDROID_LENS_STATE, &lensState, 1);
 }
 
 void EmulatedQemuCamera3::signalReadoutIdle() {
