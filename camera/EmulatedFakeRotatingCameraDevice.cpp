@@ -520,7 +520,8 @@ status_t EmulatedFakeRotatingCameraDevice::stopDevice()
  * Worker thread management overrides.
  ***************************************************************************/
 
-bool EmulatedFakeRotatingCameraDevice::produceFrame(void* buffer)
+bool EmulatedFakeRotatingCameraDevice::produceFrame(void* buffer,
+                                                    int64_t* timestamp)
 {
     if (mOpenglReady == false) {
         init_gl_surface(mFrameWidth, mFrameHeight);

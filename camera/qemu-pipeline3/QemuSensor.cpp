@@ -266,10 +266,8 @@ bool QemuSensor::threadLoop() {
     mNextCapturedBuffers = nextBuffers;
 
     if (mNextCapturedBuffers != nullptr) {
-        if (listener != nullptr) {
-            listener->onQemuSensorEvent(frameNumber, QemuSensorListener::EXPOSURE_START,
-                                        mNextCaptureTime);
-        }
+
+        int64_t timestamp = 0L;
 
         // Might be adding more buffers, so size isn't constant.
         for (size_t i = 0; i < mNextCapturedBuffers->size(); ++i) {
@@ -280,10 +278,10 @@ bool QemuSensor::threadLoop() {
                     b.buffer, b.img);
             switch (b.format) {
                 case HAL_PIXEL_FORMAT_RGB_888:
-                    captureRGB(b.img, b.width, b.height, b.stride);
+                    captureRGB(b.img, b.width, b.height, b.stride, &timestamp);
                     break;
                 case HAL_PIXEL_FORMAT_RGBA_8888:
-                    captureRGBA(b.img, b.width, b.height, b.stride);
+                    captureRGBA(b.img, b.width, b.height, b.stride, &timestamp);
                     break;
                 case HAL_PIXEL_FORMAT_BLOB:
                     if (b.dataSpace == HAL_DATASPACE_DEPTH) {
@@ -306,13 +304,22 @@ bool QemuSensor::threadLoop() {
                     }
                     break;
                 case HAL_PIXEL_FORMAT_YCbCr_420_888:
-                    captureNV21(b.img, b.width, b.height, b.stride);
+                    captureNV21(b.img, b.width, b.height, b.stride, &timestamp);
                     break;
                 default:
                     ALOGE("%s: Unknown/unsupported format %x, no output",
                             __FUNCTION__, b.format);
                     break;
             }
+        }
+        if (timestamp != 0UL) {
+          mNextCaptureTime = timestamp;
+        }
+        // Note: we have to do this after the actual capture so that the
+        // capture time is accurate as reported from QEMU.
+        if (listener != nullptr) {
+            listener->onQemuSensorEvent(frameNumber, QemuSensorListener::EXPOSURE_START,
+                                        mNextCaptureTime);
         }
     }
 
@@ -337,7 +344,7 @@ bool QemuSensor::threadLoop() {
 };
 
 void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
-        uint32_t stride) {
+        uint32_t stride, int64_t *timestamp) {
     status_t res;
     if (width != mLastRequestWidth || height != mLastRequestHeight) {
         ALOGI("%s: Dimensions for the current request (%dx%d) differ "
@@ -396,16 +403,16 @@ void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
     // Read from webcam.
     mCameraQemuClient.queryFrame(nullptr, img, 0, bufferSize, whiteBalance[0],
             whiteBalance[1], whiteBalance[2],
-            exposureCompensation);
+            exposureCompensation, timestamp);
 
     ALOGVV("RGBA sensor image captured");
 }
 
-void QemuSensor::captureRGB(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride) {
+void QemuSensor::captureRGB(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride, int64_t *timestamp) {
     ALOGE("%s: Not implemented", __FUNCTION__);
 }
 
-void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride) {
+void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride, int64_t *timestamp) {
     status_t res;
     if (width != mLastRequestWidth || height != mLastRequestHeight) {
         ALOGI("%s: Dimensions for the current request (%dx%d) differ "
@@ -464,7 +471,7 @@ void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint
     // Read video frame from webcam.
     mCameraQemuClient.queryFrame(img, nullptr, bufferSize, 0, whiteBalance[0],
             whiteBalance[1], whiteBalance[2],
-            exposureCompensation);
+            exposureCompensation, timestamp);
 
     ALOGVV("NV21 sensor image captured");
 }
