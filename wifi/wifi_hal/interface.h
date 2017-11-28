@@ -40,6 +40,37 @@ public:
     wifi_error resetAlertHandler(wifi_request_id id);
     wifi_error getFirmwareVersion(char* buffer, size_t size);
     wifi_error getDriverVersion(char* buffer, size_t size);
+    wifi_error setScanningMacOui(oui scan_oui);
+    wifi_error clearLinkStats(u32 requestMask,
+                              u32* responseMask,
+                              u8 request,
+                              u8* response);
+    wifi_error getValidChannels(int band,
+                                int maxChannels,
+                                wifi_channel* channels,
+                                int* numChannels);
+    wifi_error startLogging(u32 verboseLevel,
+                            u32 flags,
+                            u32 maxIntervalSec,
+                            u32 minDataSize,
+                            char* ringName);
+    wifi_error setCountryCode(const char* countryCode);
+    wifi_error setLogHandler(wifi_request_id id,
+                             wifi_ring_buffer_data_handler handler);
+    wifi_error getRingBuffersStatus(u32* numRings,
+                                    wifi_ring_buffer_status* status);
+    wifi_error getLoggerSupportedFeatureSet(unsigned int* support);
+    wifi_error getRingData(char* ringName);
+    wifi_error configureNdOffload(u8 enable);
+    wifi_error startPacketFateMonitoring();
+    wifi_error getTxPacketFates(wifi_tx_report* txReportBuffers,
+                                size_t numRequestedFates,
+                                size_t* numProvidedFates);
+    wifi_error getRxPacketFates(wifi_rx_report* rxReportBuffers,
+                                size_t numRequestedFates,
+                                size_t* numProvidedFates);
+    wifi_error getPacketFilterCapabilities(u32* version, u32* maxLength);
+    wifi_error getWakeReasonStats(WLAN_DRIVER_WAKE_REASON_CNT* wakeReasonCount);
 private:
     Interface(const Interface&) = delete;
     Interface& operator=(const Interface&) = delete;

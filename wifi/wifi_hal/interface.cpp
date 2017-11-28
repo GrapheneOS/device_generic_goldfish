@@ -26,6 +26,29 @@
 static const char kFirmwareVersion[] = "1.0";
 static const char kDriverVersion[] = "1.0";
 
+// A list of supported channels in the 2.4 GHz band, values in MHz
+static const wifi_channel k2p4Channels[] = {
+    2412,
+    2417,
+    2422,
+    2427,
+    2432,
+    2437,
+    2442,
+    2447,
+    2452,
+    2457,
+    2462,
+    2467,
+    2472,
+    2484
+};
+
+template<typename T, size_t N>
+constexpr size_t arraySize(const T (&)[N]) {
+    return N;
+}
+
 Interface::Interface(Netlink& netlink, const char* name)
     : mNetlink(netlink)
     , mName(name)
@@ -109,6 +132,128 @@ wifi_error Interface::getDriverVersion(char* buffer, size_t size) {
         return WIFI_ERROR_INVALID_ARGS;
     }
     strcpy(buffer, kDriverVersion);
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::setScanningMacOui(oui /*scan_oui*/) {
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::clearLinkStats(u32 /*requestMask*/,
+                                     u32* responseMask,
+                                     u8 /*request*/,
+                                     u8* response) {
+    if (responseMask == nullptr || response == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::getValidChannels(int band,
+                                       int maxChannels,
+                                       wifi_channel* channels,
+                                       int* numChannels) {
+    if (channels == nullptr || numChannels == nullptr || maxChannels < 0) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+    switch (band) {
+        case WIFI_BAND_BG: // 2.4 GHz
+            *numChannels = std::min<int>(maxChannels,
+                                         arraySize(k2p4Channels));
+            memcpy(channels, k2p4Channels, *numChannels);
+
+            return WIFI_SUCCESS;
+        default:
+            return WIFI_ERROR_NOT_SUPPORTED;
+    }
+}
+
+wifi_error Interface::startLogging(u32 /*verboseLevel*/,
+                                   u32 /*flags*/,
+                                   u32 /*maxIntervalSec*/,
+                                   u32 /*minDataSize*/,
+                                   char* /*ringName*/) {
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::setCountryCode(const char* /*countryCode*/) {
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::setLogHandler(wifi_request_id /*id*/,
+                                    wifi_ring_buffer_data_handler /*handler*/) {
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::getRingBuffersStatus(u32* numRings,
+                                           wifi_ring_buffer_status* status) {
+    if (numRings == nullptr || status == nullptr || *numRings == 0) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+
+    memset(status, 0, sizeof(*status));
+    strlcpy(reinterpret_cast<char*>(status->name),
+            "ring0",
+            sizeof(status->name));
+    *numRings = 1;
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::getLoggerSupportedFeatureSet(unsigned int* support) {
+    if (support == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+    *support = 0;
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::getRingData(char* /*ringName*/) {
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::configureNdOffload(u8 /*enable*/) {
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::startPacketFateMonitoring() {
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::getTxPacketFates(wifi_tx_report* /*txReportBuffers*/,
+                                       size_t /*numRequestedFates*/,
+                                       size_t* numProvidedFates) {
+    if (numProvidedFates == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+    *numProvidedFates = 0;
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::getRxPacketFates(wifi_rx_report* /*rxReportBuffers*/,
+                                       size_t /*numRequestedFates*/,
+                                       size_t* numProvidedFates) {
+    if (numProvidedFates == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+    *numProvidedFates = 0;
+    return WIFI_SUCCESS;
+}
+
+wifi_error Interface::getPacketFilterCapabilities(u32* version,
+                                                  u32* maxLength) {
+    if (version == nullptr || maxLength == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+    *version = 0;
+    *maxLength = 0;
+    return WIFI_SUCCESS;
+}
+
+wifi_error
+Interface::getWakeReasonStats(WLAN_DRIVER_WAKE_REASON_CNT* wakeReasonCount) {
+    if (wakeReasonCount == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
     return WIFI_SUCCESS;
 }
 

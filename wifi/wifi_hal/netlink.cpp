@@ -122,7 +122,6 @@ bool Netlink::eventLoop() {
                 readNetlinkMessage(fd.fd);
             } else if (fd.fd == mControlPipe[kControlRead]) {
                 if (readControlMessage()) {
-                    ALOGE("Received request to stop event loop, quitting");
                     // Make a copy of the stop handler while holding the lock
                     // and then call it after releasing the lock. This prevents
                     // the potential deadlock of someone calling stop from the
