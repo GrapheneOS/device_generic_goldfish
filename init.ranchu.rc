@@ -14,6 +14,8 @@ on post-fs-data
 
 
 on boot
+    #grab wake_lock
+    echo "emulator_wake_lock" > /sys/power/wake_lock
     setprop net.eth0.gw 10.0.2.2
     setprop net.eth0.dns1 10.0.2.3
     setprop net.gprs.local-ip 10.0.2.15

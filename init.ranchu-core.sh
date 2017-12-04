@@ -1,4 +1,4 @@
-#!/system/bin/sh
+#!/vendor/bin/sh
 
 
 # ro.kernel.android.qemud is normally set when we
@@ -43,4 +43,4 @@ esac
 
 
 # take the wake lock
-echo "emulator_wake_lock" > /sys/power/wake_lock
+#echo "emulator_wake_lock" > /sys/power/wake_lock
