@@ -532,7 +532,7 @@ int EmulatedCameraFactory::getCameraHalVersion(bool backCamera) {
         // Badly formatted property. It should just be a number.
         ALOGE("qemu.sf.back_camera_hal is not a number: %s", prop);
     }
-    return 1;
+    return 3;
 }
 
 void EmulatedCameraFactory::onStatusChanged(int cameraId, int newStatus) {
