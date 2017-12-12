@@ -1,4 +1,4 @@
-service vendor.keymaster-4-0 /vendor/bin/hw/android.hardware.keymaster@4.0-strongbox-service
+service vendor.keymaster-4-0-strongbox /vendor/bin/hw/android.hardware.keymaster@4.0-strongbox-service
     class early_hal
     user system
     group system drmrpc
