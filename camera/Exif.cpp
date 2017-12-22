@@ -450,7 +450,7 @@ static ExifData* createExifDataCommon(const CameraMetadata& params, int width, i
         data.insert(data.end(),
                     std::begin(kAsciiPrefix),
                     std::end(kAsciiPrefix));
-        data.insert(data.end(), stringValue, stringValue + strlen(stringValue));
+        data.insert(data.end(), stringValue, stringValue + entry.count);
         createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_PROCESSING_METHOD,
                     &data[0], data.size());
     }
