@@ -14,11 +14,8 @@ on post-fs-data
 
 
 on boot
-    #grab wake_lock
-    echo "emulator_wake_lock" > /sys/power/wake_lock
-    setprop net.eth0.gw 10.0.2.2
-    setprop net.eth0.dns1 10.0.2.3
-    setprop net.gprs.local-ip 10.0.2.15
+    chown root system /sys/power/wake_lock
+    chown root system /sys/power/wake_unlock
     setprop ro.radio.use-ppp no
     setprop ro.build.product generic
     setprop ro.product.device generic
@@ -69,10 +66,6 @@ on property:qemu.adbd=start
     setprop sys.usb.config adb
     start adbd
     start goldfish-logcat
-
-# allow goldfish-setup to take wake lock
-    chown root system /sys/power/wake_lock
-    chown root system /sys/power/wake_unlock
 
 service ranchu-setup /vendor/bin/init.ranchu-core.sh
     class core
