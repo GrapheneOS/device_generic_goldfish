@@ -14,6 +14,9 @@ on post-fs-data
 
 
 on boot
+    setprop net.eth0.gw 10.0.2.2
+    setprop net.eth0.dns1 10.0.2.3
+    setprop net.gprs.local-ip 10.0.2.15
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
     setprop ro.radio.use-ppp no
