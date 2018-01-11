@@ -67,8 +67,9 @@ const int32_t EmulatedFakeCamera3::kAvailableFormats[] = {
         HAL_PIXEL_FORMAT_Y16
 };
 
-const uint32_t EmulatedFakeCamera3::kAvailableRawSizes[2] = {
-    640, 480
+const uint32_t EmulatedFakeCamera3::kAvailableRawSizes[4] = {
+    640, 480,
+    1280, 720
     //    mSensorWidth, mSensorHeight
 };
 
@@ -264,10 +265,13 @@ status_t EmulatedFakeCamera3::configureStreams(
             return BAD_VALUE;
         }
 
-        ALOGV("%s: Stream %p (id %zu), type %d, usage 0x%x, format 0x%x",
+        ALOGV("%s: Stream %p (id %zu), type %d, usage 0x%x, format 0x%x "
+              "width %d, height %d",
                 __FUNCTION__, newStream, i, newStream->stream_type,
                 newStream->usage,
-                newStream->format);
+                newStream->format,
+                newStream->width,
+                newStream->height);
 
         if (newStream->stream_type == CAMERA3_STREAM_INPUT ||
             newStream->stream_type == CAMERA3_STREAM_BIDIRECTIONAL) {
@@ -971,6 +975,10 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
             if (res != OK) {
                 ALOGE("%s: Request %d: Buffer %zu: Unable to lock buffer",
                         __FUNCTION__, frameNumber, i);
+            } else {
+                ALOGV("%s, stream format 0x%x width %d height %d buffer 0x%p img 0x%p",
+                  __FUNCTION__, destBuf.format, destBuf.width, destBuf.height,
+                  destBuf.buffer, destBuf.img);
             }
         }
 
@@ -1349,10 +1357,12 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 320, 240, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_YCbCr_420_888, 320, 240, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_BLOB, 320, 240, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
-        HAL_PIXEL_FORMAT_BLOB, width, height, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_YCbCr_420_888, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_BLOB, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_BLOB, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
     };
 
     // Always need to include 640x480 in basic formats
@@ -1409,6 +1419,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 176, 144, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_YCbCr_420_888, 176, 144, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_BLOB, 176, 144, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_BLOB, 1280, 720, Sensor::kFrameDurationRange[0],
     };
 
     // Always need to include 640x480 in basic formats
@@ -1465,6 +1478,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 176, 144, 0,
         HAL_PIXEL_FORMAT_YCbCr_420_888, 176, 144, 0,
         HAL_PIXEL_FORMAT_RGBA_8888, 176, 144, 0,
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, 0,
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, 0,
+        HAL_PIXEL_FORMAT_RGBA_8888, 1280, 720, 0,
     };
 
     // Always need to include 640x480 in basic formats
@@ -1528,6 +1544,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         static const int32_t jpegThumbnailSizes[] = {
             0, 0,
             160, 120,
+            320, 180,
             320, 240
         };
         ADD_STATIC_ENTRY(ANDROID_JPEG_AVAILABLE_THUMBNAIL_SIZES,

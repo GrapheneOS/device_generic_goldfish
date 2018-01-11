@@ -78,8 +78,7 @@
 <MediaSettings>
     <!-- Each camcorder profile defines a set of predefined configuration parameters -->
     <CamcorderProfiles cameraId="0">
-
-        <EncoderProfile quality="cif" fileFormat="mp4" duration="60">
+        <EncoderProfile quality="qvga" fileFormat="mp4" duration="60">
             <Video codec="h264"
                    bitRate="128000"
                    width="320"
@@ -91,7 +90,7 @@
                    channels="1" />
         </EncoderProfile>
 
-        <EncoderProfile quality="qvga" fileFormat="mp4" duration="60">
+        <EncoderProfile quality="720p " fileFormat="mp4" duration="60">
             <Video codec="h264"
                    bitRate="12000000"
                    width="1280"
