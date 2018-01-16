@@ -445,9 +445,19 @@ void EmulatedCameraFactory::createFakeCamera(bool backCamera) {
                             &HAL_MODULE_INFO_SYM.common);
             break;
         case 3:
-            mEmulatedCameras[mEmulatedCameraNum] =
-                    new EmulatedFakeCamera3(mEmulatedCameraNum, backCamera,
-                            &HAL_MODULE_INFO_SYM.common);
+            {
+                const char *key = "ro.kernel.qemu.camera.fake.rotating";
+                char prop[PROPERTY_VALUE_MAX];
+                if (property_get(key, prop, nullptr) > 0) {
+                    mEmulatedCameras[mEmulatedCameraNum] =
+                        new EmulatedFakeCamera(mEmulatedCameraNum, backCamera,
+                                &HAL_MODULE_INFO_SYM.common);
+                } else {
+                    mEmulatedCameras[mEmulatedCameraNum] =
+                        new EmulatedFakeCamera3(mEmulatedCameraNum, backCamera,
+                                &HAL_MODULE_INFO_SYM.common);
+                }
+            }
             break;
         default:
             ALOGE("%s: Unknown %s camera hal version requested: %d",
