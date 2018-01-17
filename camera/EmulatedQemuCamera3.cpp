@@ -2040,7 +2040,7 @@ bool EmulatedQemuCamera3::ReadoutThread::threadLoop() {
         mCurrentRequest.settings.update(ANDROID_FLASH_STATE,
                 &flashState, 1);
 
-        nsecs_t rollingShutterSkew = QemuSensor::kFrameDurationRange[0];
+        nsecs_t rollingShutterSkew = 0;
         mCurrentRequest.settings.update(ANDROID_SENSOR_ROLLING_SHUTTER_SKEW,
                 &rollingShutterSkew, 1);
 
