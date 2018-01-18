@@ -21,11 +21,25 @@
 
 #include <AndroidKeymaster4Device.h>
 
+
 int main() {
-    auto keymaster = ::keymaster::V4_0::ng::CreateKeymasterDevice();
-    auto status = keymaster->registerAsService("strongbox");
+    using android::hardware::keymaster::V4_0::SecurityLevel;
+    using ::keymaster::V4_0::ng::CreateKeymasterDevice;
+
+    /*
+     * Create two software keymaster devices claiming different security levels for testing
+     * purposes. They do not have the certificates of real TEE or Strongbox keymaster devices.
+     */
+    auto keymaster = CreateKeymasterDevice(SecurityLevel::TRUSTED_ENVIRONMENT);
+    auto status = keymaster->registerAsService("default");
     if (status != android::OK) {
-        LOG(FATAL) << "Could not register service for Keymaster 4.0 (" << status << ")";
+        LOG(FATAL) << "Could not register default service for Keymaster 4.0 (" << status << ")";
+    }
+
+    auto strongbox = CreateKeymasterDevice(SecurityLevel::STRONGBOX);
+    status = strongbox->registerAsService("strongbox");
+    if (status != android::OK) {
+        LOG(FATAL) << "Could not register strongbox service for Keymaster 4.0 (" << status << ")";
     }
 
     android::hardware::joinRpcThreadpool();
