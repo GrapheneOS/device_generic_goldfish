@@ -593,10 +593,10 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
         static const uint8_t thumbnailQuality = 80;
         settings.update(ANDROID_JPEG_THUMBNAIL_QUALITY, &thumbnailQuality, 1);
 
-        static const double gpsCoordinates[2] = {
-            0, 0
+        static const double gpsCoordinates[3] = {
+            0, 0, 0
         };
-        settings.update(ANDROID_JPEG_GPS_COORDINATES, gpsCoordinates, 2);
+        settings.update(ANDROID_JPEG_GPS_COORDINATES, gpsCoordinates, 3);
 
         static const uint8_t gpsProcessingMethod[32] = "None";
         settings.update(ANDROID_JPEG_GPS_PROCESSING_METHOD, gpsProcessingMethod, 32);
