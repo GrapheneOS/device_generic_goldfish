@@ -1289,18 +1289,15 @@ status_t EmulatedQemuCamera3::constructStaticInfo() {
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
         static const uint8_t availableFaceDetectModes[] = {
-            ANDROID_STATISTICS_FACE_DETECT_MODE_OFF,
-            ANDROID_STATISTICS_FACE_DETECT_MODE_SIMPLE,
-            ANDROID_STATISTICS_FACE_DETECT_MODE_FULL
+            ANDROID_STATISTICS_FACE_DETECT_MODE_OFF
         };
         ADD_STATIC_ENTRY(ANDROID_STATISTICS_INFO_AVAILABLE_FACE_DETECT_MODES,
                 availableFaceDetectModes,
                 sizeof(availableFaceDetectModes));
 
-        static const int32_t maxFaceCount = 8;
+        static const int32_t maxFaceCount = 0;
         ADD_STATIC_ENTRY(ANDROID_STATISTICS_INFO_MAX_FACE_COUNT,
                 &maxFaceCount, 1);
-
 
         static const uint8_t availableShadingMapModes[] = {
             ANDROID_STATISTICS_LENS_SHADING_MAP_MODE_OFF
@@ -1394,9 +1391,7 @@ status_t EmulatedQemuCamera3::constructStaticInfo() {
                 availableAntibandingModes, sizeof(availableAntibandingModes));
     }
 
-    static const uint8_t aeLockAvailable = hasCapability(BACKWARD_COMPATIBLE) ?
-            ANDROID_CONTROL_AE_LOCK_AVAILABLE_TRUE :
-            ANDROID_CONTROL_AE_LOCK_AVAILABLE_FALSE;
+    static const uint8_t aeLockAvailable = ANDROID_CONTROL_AE_LOCK_AVAILABLE_FALSE;
 
     ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_LOCK_AVAILABLE,
             &aeLockAvailable, 1);
@@ -1414,9 +1409,7 @@ status_t EmulatedQemuCamera3::constructStaticInfo() {
                 availableAwbModes, sizeof(availableAwbModes));
     }
 
-    static const uint8_t awbLockAvailable = hasCapability(BACKWARD_COMPATIBLE) ?
-            ANDROID_CONTROL_AWB_LOCK_AVAILABLE_TRUE :
-            ANDROID_CONTROL_AWB_LOCK_AVAILABLE_FALSE;
+    static const uint8_t awbLockAvailable = ANDROID_CONTROL_AWB_LOCK_AVAILABLE_FALSE;
 
     ADD_STATIC_ENTRY(ANDROID_CONTROL_AWB_LOCK_AVAILABLE,
             &awbLockAvailable, 1);
