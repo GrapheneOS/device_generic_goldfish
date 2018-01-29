@@ -72,8 +72,6 @@ emulator_camera_src := \
 		fake-pipeline2/JpegCompressor.cpp \
 	EmulatedCamera3.cpp \
 		EmulatedFakeCamera3.cpp \
-		EmulatedQemuCamera3.cpp \
-		qemu-pipeline3/QemuSensor.cpp \
 	Exif.cpp \
 	Thumbnail.cpp \
 	WorkerThread.cpp \
