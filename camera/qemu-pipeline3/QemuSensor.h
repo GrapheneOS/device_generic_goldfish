@@ -186,8 +186,12 @@ class QemuSensor: private Thread, public virtual RefBase {
     nsecs_t mNextCaptureTime;
     Buffers *mNextCapturedBuffers;
 
-    void captureFrame(uint8_t *img, uint32_t width, uint32_t height,
-            uint32_t stride, uint32_t pixFmt);
+    void captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
+            uint32_t stride);
+    void captureRGB(uint8_t *img, uint32_t width, uint32_t height,
+            uint32_t stride);
+    void captureNV21(uint8_t *img, uint32_t width, uint32_t height,
+            uint32_t stride);
 };
 
 }; // end of namespace android

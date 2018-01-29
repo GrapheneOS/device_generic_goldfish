@@ -87,7 +87,7 @@ status_t QemuSensor::startUp() {
         return res;
     }
 
-    res = mCameraQemuClient.queryConnect("HAL3");
+    res = mCameraQemuClient.queryConnect();
     if (res == NO_ERROR) {
         ALOGV("%s: Connected to device '%s'",
                 __FUNCTION__, (const char*) mDeviceName);
@@ -280,10 +280,10 @@ bool QemuSensor::threadLoop() {
                     b.buffer, b.img);
             switch (b.format) {
                 case HAL_PIXEL_FORMAT_RGB_888:
-                    captureFrame(b.img, b.width, b.height, b.stride, V4L2_PIX_FMT_RGB24);
+                    captureRGB(b.img, b.width, b.height, b.stride);
                     break;
                 case HAL_PIXEL_FORMAT_RGBA_8888:
-                    captureFrame(b.img, b.width, b.height, b.stride, V4L2_PIX_FMT_RGB32);
+                    captureRGBA(b.img, b.width, b.height, b.stride);
                     break;
                 case HAL_PIXEL_FORMAT_BLOB:
                     if (b.dataSpace == HAL_DATASPACE_DEPTH) {
@@ -306,7 +306,7 @@ bool QemuSensor::threadLoop() {
                     }
                     break;
                 case HAL_PIXEL_FORMAT_YCbCr_420_888:
-                    captureFrame(b.img, b.width, b.height, b.stride, V4L2_PIX_FMT_NV21);
+                    captureNV21(b.img, b.width, b.height, b.stride);
                     break;
                 default:
                     ALOGE("%s: Unknown/unsupported format %x, no output",
@@ -336,28 +336,8 @@ bool QemuSensor::threadLoop() {
     return true;
 };
 
-bool calculateFrameSize(uint32_t width, uint32_t height, uint32_t pixFmt,
-        size_t* size) {
-    switch (pixFmt) {
-        case V4L2_PIX_FMT_NV12:
-        case V4L2_PIX_FMT_NV21:
-            *size = (width * height * 12) / 8;
-            return true;
-        case V4L2_PIX_FMT_RGB32:
-            *size = width * height * 4;
-            return true;
-        case V4L2_PIX_FMT_RGB24:
-            *size = width * height * 3;
-            return true;
-        default:
-            ALOGE("pixel format %.4s not supported",
-                  reinterpret_cast<const char*>(&pixFmt));
-            return false;
-    }
-}
-
-void QemuSensor::captureFrame(uint8_t *img, uint32_t width, uint32_t height,
-        uint32_t stride, uint32_t pixFmt) {
+void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
+        uint32_t stride) {
     status_t res;
     if (width != mLastRequestWidth || height != mLastRequestHeight) {
         ALOGI("%s: Dimensions for the current request (%dx%d) differ from "
@@ -380,6 +360,13 @@ void QemuSensor::captureFrame(uint8_t *img, uint32_t width, uint32_t height,
             }
         }
 
+        /*
+         * Pixel format doesn't matter if we're only using preview frames, since
+         * the camera service always converts them to V4L2_PIX_FMT_RGB32, so we
+         * use the pixel format below, because it causes errors if you request
+         * V4L2_PIX_FMT_RGB32 (should be fixed in the future).
+         */
+        uint32_t pixFmt = V4L2_PIX_FMT_YUV420;
         res = mCameraQemuClient.queryStart(pixFmt, width, height);
         if (res == NO_ERROR) {
             mLastRequestWidth = width;
@@ -398,10 +385,8 @@ void QemuSensor::captureFrame(uint8_t *img, uint32_t width, uint32_t height,
         }
     }
 
-    size_t bufferSize = 0;
-    if (!calculateFrameSize(width, height, pixFmt, &bufferSize)) {
-        return;
-    }
+    // Since the format is V4L2_PIX_FMT_RGB32, we need 4 bytes per pixel.
+    size_t bufferSize = width * height * 4;
     // Apply no white balance or exposure compensation.
     float whiteBalance[] = {1.0f, 1.0f, 1.0f};
     float exposureCompensation = 1.0f;
@@ -410,7 +395,15 @@ void QemuSensor::captureFrame(uint8_t *img, uint32_t width, uint32_t height,
             whiteBalance[1], whiteBalance[2],
             exposureCompensation);
 
-    ALOGVV("%.4s sensor image captured", reinterpret_cast<const char*>(&pixFmt));
+    ALOGVV("RGBA sensor image captured");
+}
+
+void QemuSensor::captureRGB(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride) {
+    ALOGE("%s: Not implemented", __FUNCTION__);
+}
+
+void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride) {
+    ALOGE("%s: Not implemented", __FUNCTION__);
 }
 
 }; // end of namespace android

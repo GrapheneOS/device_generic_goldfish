@@ -364,12 +364,10 @@ public:
 
 public:
     /* Queries camera connection.
-     * Param:
-     *  halVersion -  Camera HAL version string, "HAL1" or "HAL3"
      * Return:
      *  NO_ERROR on success, or an appropriate error status on failure.
      */
-    status_t queryConnect(char* halVersion);
+    status_t queryConnect();
 
     /* Queries camera disconnection.
      * Return:

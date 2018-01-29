@@ -84,7 +84,7 @@ status_t EmulatedQemuCameraDevice::connectDevice()
     }
 
     /* Connect to the camera device via emulator. */
-    const status_t res = mQemuClient.queryConnect("HAL1");
+    const status_t res = mQemuClient.queryConnect();
     if (res == NO_ERROR) {
         ALOGV("%s: Connected to device '%s'",
              __FUNCTION__, (const char*)mDeviceName);
