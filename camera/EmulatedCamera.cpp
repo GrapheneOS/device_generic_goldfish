@@ -545,26 +545,14 @@ status_t EmulatedCamera::takePicture()
         }
         return NO_ERROR;
     } else {
-        /* Start camera device for the picture frame. */
-        res = camera_dev->startDevice(width, height, org_fmt);
-        if (res != NO_ERROR) {
-            return res;
-        }
-
-        /* Deliver one frame only. */
-        mCallbackNotifier.setTakingPicture(true);
-        res = camera_dev->startDeliveringFrames(true);
-        if (res != NO_ERROR) {
-            mCallbackNotifier.setTakingPicture(false);
-        }
-        return res;
+        ALOGE("%s: preview has not been enabled", __FUNCTION__);
+        return EINVAL;
     }
 }
 
 status_t EmulatedCamera::cancelPicture()
 {
     ALOGV("%s", __FUNCTION__);
-
     return NO_ERROR;
 }
 
