@@ -288,6 +288,10 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
     int64_t event_time = -1;
     int ret = 0;
 
+    int64_t guest_event_time = -1;
+    int has_guest_event_time = 0;
+
+
     for (;;) {
         /* Release the lock since we're going to block on recv() */
         pthread_mutex_unlock(&dev->lock);
@@ -432,6 +436,15 @@ static int sensor_device_poll_event_locked(SensorDevice* dev)
             continue;
         }
 
+        /* "guest-sync:<time>" is sent after a series of sensor events.
+         * where 'time' is expressed in micro-seconds and corresponds
+         * to the VM time when the real poll occured.
+         */
+        if (sscanf(buff, "guest-sync:%lld", &guest_event_time) == 1) {
+            has_guest_event_time = 1;
+            continue;
+        }
+
         /* "sync:<time>" is sent after a series of sensor events.
          * where 'time' is expressed in micro-seconds and corresponds
          * to the VM time when the real poll occured.
@@ -477,7 +490,8 @@ out:
         while (new_sensors) {
             uint32_t i = 31 - __builtin_clz(new_sensors);
             new_sensors &= ~(1U << i);
-            dev->sensors[i].timestamp = t;
+            dev->sensors[i].timestamp =
+                    has_guest_event_time ? guest_event_time : t;
         }
     }
     return ret;
@@ -941,6 +955,11 @@ open_sensors(const struct hw_module_t* module,
 
         dev->fd = -1;
         pthread_mutex_init(&dev->lock, NULL);
+
+        int64_t now = now_ns();
+        char command[64];
+        sprintf(command, "time:%lld", now);
+        sensor_device_send_command_locked(dev, command);
 
         *device = &dev->device.common;
         status  = 0;
