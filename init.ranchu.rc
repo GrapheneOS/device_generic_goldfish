@@ -31,6 +31,8 @@ on boot
     setprop status.battery.level_raw  50
     setprop status.battery.level_scale 9
 
+    start adbd
+
 # set up the GPU caching
     setprop ro.hwui.texture_cache_size 72
     setprop ro.hwui.layer_cache_size 48
