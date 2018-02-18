@@ -28,24 +28,12 @@ using keymaster::TrustyKeymasterDevice;
 /*
  * Generic device handling
  */
-static int trusty_keymaster_open(const hw_module_t* module, const char* name, hw_device_t** device) {
+static int trusty_keymaster_open(const hw_module_t* module __unused, const char* name, hw_device_t** device) {
     if (strcmp(name, KEYSTORE_KEYMASTER) != 0) {
         return -EINVAL;
     }
-
-    int rc = trusty_keymaster_connect();
-    if (rc < 0) {
-        *device = reinterpret_cast<hw_device_t*>((new keymaster::SoftKeymasterDevice())->keymaster2_device());
-        return 0;
-    }
-
-    TrustyKeymasterDevice* dev = new TrustyKeymasterDevice(module);
-    if (dev == NULL) {
-        return -ENOMEM;
-    }
-    *device = dev->hw_device();
-    // Do not delete dev; it will get cleaned up when the caller calls device->close(), and must
-    // exist until then.
+    // Use softkeymaster in guest instead of connecting to host implementation of softkeymaster
+    *device = reinterpret_cast<hw_device_t*>((new keymaster::SoftKeymasterDevice())->keymaster2_device());
     return 0;
 }
 
