@@ -79,6 +79,9 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
     group root
     oneshot
 
+on property:qemu.timezone=*
+    setprop persist.sys.timezone ${qemu.timezone}
+
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
     user root
