@@ -1336,6 +1336,16 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     static const uint8_t flashAvailable = 0;
     ADD_STATIC_ENTRY(ANDROID_FLASH_INFO_AVAILABLE, &flashAvailable, 1);
 
+    // android.hotPixel
+
+    if (hasCapability(MANUAL_POST_PROCESSING)) {
+        static const uint8_t availableHotPixelModes[] = {
+            ANDROID_HOT_PIXEL_MODE_FAST, ANDROID_HOT_PIXEL_MODE_HIGH_QUALITY
+        };
+        ADD_STATIC_ENTRY(ANDROID_HOT_PIXEL_AVAILABLE_HOT_PIXEL_MODES,
+                availableHotPixelModes, sizeof(availableHotPixelModes));
+    }
+
     // android.tonemap
 
     if (hasCapability(MANUAL_POST_PROCESSING)) {
