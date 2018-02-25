@@ -14,6 +14,8 @@ on post-fs-data
 
 
 on boot
+    setprop debug.hwui.renderer opengl
+    setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
     setprop net.eth0.gw 10.0.2.2
     setprop net.eth0.dns1 10.0.2.3
     setprop net.gprs.local-ip 10.0.2.15
