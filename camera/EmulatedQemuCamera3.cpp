@@ -819,30 +819,8 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
     /*
      * Get ready for sensor config.
      */
-    // TODO: We shouldn't need exposureTime or frameDuration for webcams.
-    nsecs_t exposureTime;
-    nsecs_t frameDuration;
     bool needJpeg = false;
     camera_metadata_entry_t entry;
-
-    entry = settings.find(ANDROID_SENSOR_EXPOSURE_TIME);
-    exposureTime = (entry.count > 0) ?
-            entry.data.i64[0] :
-            QemuSensor::kExposureTimeRange[0];
-
-    // Note: Camera consumers may rely on there being an exposure
-    //       time set in the camera metadata.
-    settings.update(ANDROID_SENSOR_EXPOSURE_TIME, &exposureTime, 1);
-
-    entry = settings.find(ANDROID_SENSOR_FRAME_DURATION);
-    frameDuration = (entry.count > 0) ?
-            entry.data.i64[0] :
-            QemuSensor::kFrameDurationRange[0];
-
-    if (exposureTime > frameDuration) {
-        frameDuration = exposureTime + QemuSensor::kMinVerticalBlank;
-        settings.update(ANDROID_SENSOR_FRAME_DURATION, &frameDuration, 1);
-    }
 
     static const int32_t sensitivity = QemuSensor::kSensitivityRange[0];
     settings.update(ANDROID_SENSOR_SENSITIVITY, &sensitivity, 1);
@@ -1024,7 +1002,6 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
     /*
      * Configure sensor and queue up the request to the readout thread.
      */
-    mSensor->setFrameDuration(frameDuration);
     mSensor->setDestinationBuffers(sensorBuffers);
     mSensor->setFrameNumber(request->frame_number);
 
@@ -1701,51 +1678,7 @@ status_t EmulatedQemuCamera3::doFakeAE(CameraMetadata &settings) {
                     __FUNCTION__, aeMode);
             break;
     }
-
-    e = settings.find(ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER);
-    bool precaptureTrigger = false;
-    if (e.count != 0) {
-        precaptureTrigger =
-                (e.data.u8[0] == ANDROID_CONTROL_AE_PRECAPTURE_TRIGGER_START);
-    }
-
-    if (precaptureTrigger) {
-        ALOGV("%s: Pre capture trigger = %d", __FUNCTION__, precaptureTrigger);
-    } else if (e.count > 0) {
-        ALOGV("%s: Pre capture trigger was present? %zu",
-              __FUNCTION__, e.count);
-    }
-
-    if (precaptureTrigger || mAeState == ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
-        // Run precapture sequence
-        if (mAeState != ANDROID_CONTROL_AE_STATE_PRECAPTURE) {
-            mAeCounter = 0;
-        }
-
-        if (mFacePriority) {
-            mAeTargetExposureTime = kFacePriorityExposureTime;
-        } else {
-            mAeTargetExposureTime = kNormalExposureTime;
-        }
-
-        if (mAeCounter > kPrecaptureMinFrames &&
-                (mAeTargetExposureTime - mAeCurrentExposureTime) <
-                mAeTargetExposureTime / 10) {
-            // Done with precapture
-            mAeCounter = 0;
-            mAeState = ANDROID_CONTROL_AE_STATE_CONVERGED;
-        } else {
-            // Converge some more
-            mAeCurrentExposureTime +=
-                    (mAeTargetExposureTime - mAeCurrentExposureTime) *
-                    kExposureTrackRate;
-            mAeCounter++;
-            mAeState = ANDROID_CONTROL_AE_STATE_PRECAPTURE;
-        }
-    }
-    else {
-        mAeState = ANDROID_CONTROL_AE_STATE_CONVERGED;
-    }
+    mAeState = ANDROID_CONTROL_AE_STATE_CONVERGED;
 
     return OK;
 }
@@ -1810,13 +1743,6 @@ status_t EmulatedQemuCamera3::doFakeAWB(CameraMetadata &settings) {
 }
 
 void EmulatedQemuCamera3::update3A(CameraMetadata &settings) {
-    if (mAeMode != ANDROID_CONTROL_AE_MODE_OFF) {
-        settings.update(ANDROID_SENSOR_EXPOSURE_TIME,
-                &mAeCurrentExposureTime, 1);
-        settings.update(ANDROID_SENSOR_SENSITIVITY,
-                &mAeCurrentSensitivity, 1);
-    }
-
     settings.update(ANDROID_CONTROL_AE_STATE,
             &mAeState, 1);
     settings.update(ANDROID_CONTROL_AF_STATE,
