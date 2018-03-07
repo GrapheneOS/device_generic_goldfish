@@ -12,6 +12,8 @@ on init
 on post-fs-data
     setprop vold.post_fs_data_done 1
 
+on boot && property:ro.debuggable=1
+    setprop ro.adb.secure 0
 
 on boot
     setprop debug.hwui.renderer opengl
@@ -22,8 +24,6 @@ on boot
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
     setprop ro.radio.use-ppp no
-    setprop ro.build.product generic
-    setprop ro.product.device generic
     setprop ro.hardware.audio.primary goldfish
     setprop ro.setupwizard.mode EMULATOR
 
