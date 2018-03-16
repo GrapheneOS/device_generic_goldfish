@@ -713,7 +713,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.accelerometer",
           .requiredPermission = 0,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
@@ -729,6 +729,7 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 3.0f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .stringType = "android.sensor.gyroscope",
           .reserved   = {}
         },
 
@@ -744,7 +745,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.magnetic_field",
           .requiredPermission = 0,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
@@ -762,13 +763,13 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.orientation",
           .requiredPermission = 0,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
         },
 
-        { .name       = "Goldfish Temperature sensor",
+        { .name       = "Goldfish Ambient Temperature sensor",
           .vendor     = "The Android Open Source Project",
           .version    = 1,
           .handle     = ID_TEMPERATURE,
@@ -780,9 +781,9 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.ambient_temperature",
           .requiredPermission = 0,
-          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
+          .flags = SENSOR_FLAG_ON_CHANGE_MODE,
           .reserved   = {}
         },
 
@@ -798,7 +799,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.proximity",
           .requiredPermission = 0,
           .flags = SENSOR_FLAG_WAKE_UP | SENSOR_FLAG_ON_CHANGE_MODE,
           .reserved   = {}
@@ -816,7 +817,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.light",
           .requiredPermission = 0,
           .flags = SENSOR_FLAG_ON_CHANGE_MODE,
           .reserved   = {}
@@ -834,7 +835,7 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.pressure",
           .requiredPermission = 0,
           .flags = SENSOR_FLAG_CONTINUOUS_MODE,
           .reserved   = {}
@@ -852,9 +853,9 @@ static const struct sensor_t sSensorListInit[] = {
           .maxDelay   = 60 * 1000 * 1000,
           .fifoReservedEventCount = 0,
           .fifoMaxEventCount =   0,
-          .stringType =         0,
+          .stringType = "android.sensor.relative_humidity",
           .requiredPermission = 0,
-          .flags = SENSOR_FLAG_CONTINUOUS_MODE,
+          .flags = SENSOR_FLAG_ON_CHANGE_MODE,
           .reserved   = {}
         },
 
@@ -868,6 +869,7 @@ static const struct sensor_t sSensorListInit[] = {
           .power      = 6.7f,
           .minDelay   = 10000,
           .maxDelay   = 60 * 1000 * 1000,
+          .stringType = "android.sensor.magnetic_field_uncalibrated",
           .reserved   = {}
         },
 };
