@@ -20,6 +20,8 @@
 
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 size_t getSpaceForMessageType(uint16_t type) {
     switch (type) {

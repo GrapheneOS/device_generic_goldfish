@@ -25,6 +25,7 @@
 #include <linux/netlink.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 static const size_t kControlRead = 0;
 static const size_t kControlWrite = 1;

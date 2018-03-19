@@ -14,32 +14,20 @@
 
 LOCAL_PATH := $(call my-dir)
 
-# Make the HAL library
-# ============================================================
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -Wall -Wextra -Werror
-
-LOCAL_C_INCLUDES += \
-	$(call include-path-for, libhardware_legacy)/hardware_legacy \
-
-
 LOCAL_SRC_FILES := \
-	halstate.cpp \
-	info.cpp \
-	interface.cpp \
-	netlink.cpp \
-	netlinkmessage.cpp \
-	wifi_hal.cpp \
+	createns.cpp
 
-LOCAL_SHARED_LIBRARIES += \
-	liblog \
-
-LOCAL_HEADER_LIBRARIES += \
-	libcutils_headers \
-
-LOCAL_MODULE := libwifi-hal-emu
+LOCAL_CFLAGS := -Wall -Wextra -Werror
+LOCAL_LDFLAGS := 
+LOCAL_SHARED_LIBRARIES := libcutils liblog
+LOCAL_MODULE_TAGS := debug
 LOCAL_PROPRIETARY_MODULE := true
+LOCAL_MODULE := createns
 
-include $(BUILD_STATIC_LIBRARY)
+LOCAL_MODULE_CLASS := EXECUTABLES
+
+include $(BUILD_EXECUTABLE)
+
 

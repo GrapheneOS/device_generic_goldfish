@@ -8,13 +8,12 @@ on init
 
     symlink /dev/goldfish_pipe /dev/android_pipe
     symlink /dev/goldfish_pipe /dev/qemu_pipe
-    symlink /data/var /var
 
 on post-fs-data
     setprop vold.post_fs_data_done 1
-    mkdir /data/var 0755 root root
-    mkdir /data/var/run 0755 root root
-    mkdir /data/var/run/netns 0755 root root
+    mkdir /data/vendor/var 0755 root root
+    mkdir /data/vendor/var/run 0755 root root
+    mkdir /data/vendor/var/run/netns 0755 root root
     mkdir /data/misc/wifi 0770 wifi wifi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
     mkdir /data/misc/dhcp 0770 dhcp dhcp
@@ -59,11 +58,6 @@ on boot
 # like NetworkLocationProvider and LocationCollector
     setprop ro.com.google.locationfeatures 1
 
-#emulator is not much useful before boot complete
-#start it later
-on property:sys.boot_completed=1
-    start ranchu-net
-
 service ranchu-setup /vendor/bin/init.ranchu-core.sh
     class core
     user root
@@ -84,9 +78,9 @@ service ipv6proxy /vendor/bin/execns router /vendor/bin/ipv6proxy -o eth0 -i wla
     group root
     disabled
 
-service emu_hostapd /vendor/bin/execns router /vendor/bin/hostapd /vendor/etc/simulated_hostapd.conf
+service emu_hostapd /vendor/bin/execns router /vendor/bin/hw/hostapd /vendor/etc/simulated_hostapd.conf
     user root
-    group root
+    group root wifi
     disabled
 
 service dhcpserver /vendor/bin/execns router /vendor/bin/dhcpserver --range 192.168.232.2,192.168.239.254 --gateway 192.168.232.1 --netmask 255.255.248.0 --exclude-interface eth0

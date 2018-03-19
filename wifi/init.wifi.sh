@@ -42,16 +42,21 @@
 #
 
 NAMESPACE="router"
-rm -rf /var/run/netns/${NAMESPACE}
-rm -rf /var/run/wifi.pid
+rm -rf /data/vendor/var/run/netns/${NAMESPACE}
+rm -rf /data/vendor/var/run/netns/${NAMESPACE}.pid
 # We need to fake a mac address to pass CTS
 # And the kernel only accept mac addresses with some special format
 # (Like, begin with 02)
 /system/bin/ip link set dev wlan0 address 02:00:00:44:55:66
-/system/bin/ip netns add ${NAMESPACE}
-/system/bin/ip link set eth0 netns ${NAMESPACE}
+
+createns ${NAMESPACE}
+# createns will have created a file that contains the process id (pid) of a
+# process running in the network namespace. This pid is needed for some commands
+# to access the namespace.
+PID=$(cat /data/vendor/var/run/netns/${NAMESPACE}.pid)
+/system/bin/ip link set eth0 netns ${PID}
 /system/bin/ip link add radio0 type veth peer name radio0-peer
-/system/bin/ip link set radio0-peer netns ${NAMESPACE}
+/system/bin/ip link set radio0-peer netns ${PID}
 # Enable privacy addresses for radio0, this is done by the framework for wlan0
 sysctl -wq net.ipv6.conf.radio0.use_tempaddr=2
 /system/bin/ip addr add 192.168.200.2/24 broadcast 192.168.200.255 dev radio0
@@ -67,12 +72,6 @@ setprop ctl.start dhcpclient_rtr
 # time. Keep this short so we don't slow down startup too much.
 execns ${NAMESPACE} /system/bin/iptables -w -W 50000 -t nat -A POSTROUTING -s 192.168.232.0/21 -o eth0 -j MASQUERADE
 execns ${NAMESPACE} /system/bin/iptables -w -W 50000 -t nat -A POSTROUTING -s 192.168.200.0/24 -o eth0 -j MASQUERADE
-# Create a file containg the PID of a process running in the namespace, this is
-# needed when moving the wifi phy into the namespace below
-execns ${NAMESPACE} sh -c 'echo $$ > /var/run/wifi.pid; while :; do sleep 500000; done' &
-# Wait for the pid file to be created
-while [ ! -f /var/run/wifi.pid ]; do false; done
-PID=$(cat /var/run/wifi.pid)
 /system/bin/iw phy phy1 set netns $PID
 execns ${NAMESPACE} /system/bin/ip addr add 192.168.232.1/21 dev wlan1
 execns ${NAMESPACE} /system/bin/ip link set wlan1 up

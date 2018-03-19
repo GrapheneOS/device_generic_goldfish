@@ -27,7 +27,7 @@
 
 #include "log.h"
 
-static const char kNetNsDir[] = "/var/run/netns";
+static const char kNetNsDir[] = "/data/vendor/var/run/netns";
 
 // Set the current namespace to that of the /proc/<pid>/ns/net provided in
 // |path|. This may be a link or mount point for that same file, anything that
