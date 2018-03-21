@@ -1,5 +1,5 @@
 on fs
-    mount_all /fstab.ranchu
+    mount_all /vendor/etc/fstab.ranchu
 
 on early-init
     mount debugfs debugfs /sys/kernel/debug mode=755
