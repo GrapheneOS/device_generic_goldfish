@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-/**
- * Copyright (c) 2015, The Android Open Source Project
+/*
+ * Copyright 2017, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
--->
 
-<resources>
-    <bool name="def_lockscreen_disabled">true</bool>
-    <bool name="def_wifi_on">true</bool>
+#include "utils.h"
 
-    <!-- Allow users to use both the on-screen keyboard, as well as a real
-         keyboard -->
-    <bool name="def_show_ime_with_hard_keyboard">true</bool>
-</resources>
+std::string addrToStr(in_addr_t address) {
+    char buffer[INET_ADDRSTRLEN];
+    if (::inet_ntop(AF_INET, &address, buffer, sizeof(buffer)) == nullptr) {
+        return "[unknown]";
+    }
+    return buffer;
+}
+
