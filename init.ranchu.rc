@@ -19,6 +19,7 @@ on post-fs-data
     mkdir /data/misc/dhcp 0770 dhcp dhcp
     chown system system /data/misc/wifi/WifiConfigStore.xml
     chown dhcp dhcp /data/misc/dhcp
+    setprop persist.traced.enable 1
 
 on boot && property:ro.debuggable=1
     setprop ro.adb.secure 0
