@@ -300,27 +300,47 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
     struct str_parms *parms;
     char value[32];
     int ret;
+    int success;
     long val;
     char *end;
 
+    if (kvpairs == NULL || kvpairs[0] == 0) {
+        return 0;
+    }
     pthread_mutex_lock(&out->lock);
     if (!out->standby) {
         //Do not support changing params while stream running
         ret = -ENOSYS;
     } else {
+        ret = -EINVAL;
         parms = str_parms_create_str(kvpairs);
-        ret = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
+        success = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
                                 value, sizeof(value));
-        if (ret >= 0) {
+        if (success >= 0) {
             errno = 0;
             val = strtol(value, &end, 10);
             if (errno == 0 && (end != NULL) && (*end == '\0') && ((int)val == val)) {
                 out->device = (int)val;
                 ret = 0;
-            } else {
-                ret = -EINVAL;
             }
         }
+
+        // NO op for AUDIO_PARAMETER_DEVICE_CONNECT and AUDIO_PARAMETER_DEVICE_DISCONNECT
+        success = str_parms_get_str(parms, AUDIO_PARAMETER_DEVICE_CONNECT,
+                                value, sizeof(value));
+        if (success >= 0) {
+            ret = 0;
+        }
+        success = str_parms_get_str(parms, AUDIO_PARAMETER_DEVICE_DISCONNECT,
+                                value, sizeof(value));
+        if (success >= 0) {
+            ret = 0;
+        }
+
+        if (ret != 0) {
+            ALOGD("Unsupported parameter %s", kvpairs);
+        }
+
         str_parms_destroy(parms);
     }
     pthread_mutex_unlock(&out->lock);
@@ -799,26 +819,44 @@ static int in_set_parameters(struct audio_stream *stream, const char *kvpairs)
     struct str_parms *parms;
     char value[32];
     int ret;
+    int success;
     long val;
     char *end;
 
+    if (kvpairs == NULL || kvpairs[0] == 0) {
+        return 0;
+    }
     pthread_mutex_lock(&in->lock);
     if (!in->standby) {
         ret = -ENOSYS;
     } else {
+        ret = -EINVAL;
         parms = str_parms_create_str(kvpairs);
 
-        ret = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
+        success = str_parms_get_str(parms, AUDIO_PARAMETER_STREAM_ROUTING,
                                 value, sizeof(value));
-        if (ret >= 0) {
+        if (success >= 0) {
             errno = 0;
             val = strtol(value, &end, 10);
             if ((errno == 0) && (end != NULL) && (*end == '\0') && ((int)val == val)) {
                 in->device = (int)val;
                 ret = 0;
-            } else {
-                ret = -EINVAL;
             }
+        }
+        // NO op for AUDIO_PARAMETER_DEVICE_CONNECT and AUDIO_PARAMETER_DEVICE_DISCONNECT
+        success = str_parms_get_str(parms, AUDIO_PARAMETER_DEVICE_CONNECT,
+                                value, sizeof(value));
+        if (success >= 0) {
+            ret = 0;
+        }
+        success = str_parms_get_str(parms, AUDIO_PARAMETER_DEVICE_DISCONNECT,
+                                value, sizeof(value));
+        if (success >= 0) {
+            ret = 0;
+        }
+
+        if (ret != 0) {
+            ALOGD("Unsupported parameter %s", kvpairs);
         }
 
         str_parms_destroy(parms);
