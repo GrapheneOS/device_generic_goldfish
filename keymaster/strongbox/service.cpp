@@ -23,6 +23,8 @@
 
 
 int main() {
+    ::android::hardware::configureRpcThreadpool(1, true /* willJoinThreadpool */);
+
     using android::hardware::keymaster::V4_0::SecurityLevel;
     using ::keymaster::V4_0::ng::CreateKeymasterDevice;
 
