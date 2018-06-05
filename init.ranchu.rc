@@ -14,15 +14,6 @@ on post-fs-data
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
     mkdir /data/vendor/var/run/netns 0755 root root
-    mkdir /data/misc/wifi 0770 wifi wifi
-    mkdir /data/misc/wifi/sockets 0770 wifi wifi
-    mkdir /data/misc/dhcp 0770 dhcp dhcp
-    chown system system /data/misc/wifi/WifiConfigStore.xml
-    chown dhcp dhcp /data/misc/dhcp
-    setprop persist.traced.enable 1
-
-on boot && property:ro.debuggable=1
-    setprop ro.adb.secure 0
 
 on boot
     setprop debug.hwui.renderer opengl
@@ -32,35 +23,10 @@ on boot
     setprop dalvik.vm.heapsize ${ro.kernel.qemu.dalvik.vm.heapsize}
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
-    setprop ro.radio.use-ppp no
     setprop ro.hardware.audio.primary goldfish
-    setprop ro.setupwizard.mode EMULATOR
-
-# fake some battery state
-    setprop status.battery.state Slow
-    setprop status.battery.level 5
-    setprop status.battery.level_raw  50
-    setprop status.battery.level_scale 9
-
-
-# set up the GPU caching
-    setprop ro.hwui.texture_cache_size 72
-    setprop ro.hwui.layer_cache_size 48
-    setprop ro.hwui.r_buffer_cache_size 8
-    setprop ro.hwui.path_cache_size 32
-    setprop ro.hwui.gradient_cache_size 1
-    setprop ro.hwui.drop_shadow_cache_size 6
-    setprop ro.hwui.texture_cache_flushrate 0.4
-    setprop ro.hwui.text_small_cache_width 1024
-    setprop ro.hwui.text_small_cache_height 1024
-    setprop ro.hwui.text_large_cache_width 2048
-    setprop ro.hwui.text_large_cache_height 1024
 
     setprop wifi.interface wlan0
 
-# enable Google-specific location features,
-# like NetworkLocationProvider and LocationCollector
-    setprop ro.com.google.locationfeatures 1
 
 service ranchu-setup /vendor/bin/init.ranchu-core.sh
     class core
@@ -70,6 +36,9 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
 
 on property:qemu.timezone=*
     setprop persist.sys.timezone ${qemu.timezone}
+
+on property:ro.kernel.android.bootanim=0
+    setprop debug.sf.nobootanimation 1
 
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
@@ -128,10 +97,6 @@ service goldfish-logcat /system/bin/logcat -Q
     user logd
     group log
     oneshot
-
-service fingerprintd /system/bin/fingerprintd
-    class late_start
-    user system
 
 service bugreport /system/bin/dumpstate -d -p -B -z \
         -o /data/user_de/0/com.android.shell/files/bugreports/bugreport
