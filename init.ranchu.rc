@@ -27,6 +27,8 @@ on boot
 
     setprop wifi.interface wlan0
 
+    start goldfish-logcat
+
 
 service ranchu-setup /vendor/bin/init.ranchu-core.sh
     class core
@@ -34,11 +36,14 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
     group root
     oneshot
 
-on property:qemu.timezone=*
-    setprop persist.sys.timezone ${qemu.timezone}
+on property:vendor.qemu.timezone=*
+    setprop persist.sys.timezone ${vendor.qemu.timezone}
 
-on property:ro.kernel.android.bootanim=0
+on property:vendor.qemu.android.bootanim=0
     setprop debug.sf.nobootanimation 1
+
+on property:dev.bootcomplete=1
+    setprop vendor.qemu.dev.bootcomplete 1
 
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
@@ -82,9 +87,6 @@ service qemu-props /vendor/bin/qemu-props
     user root
     group root
     oneshot
-
-on property:qemu.logcat=start
-    start goldfish-logcat
 
 # -Q is a special logcat option that forces the
 # program to check wether it runs on the emulator
