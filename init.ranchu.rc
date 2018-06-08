@@ -37,7 +37,7 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
 on property:qemu.timezone=*
     setprop persist.sys.timezone ${qemu.timezone}
 
-on property:ro.kernel.android.bootanim=0
+on property:vendor.qemu.android.bootanim=0
     setprop debug.sf.nobootanimation 1
 
 service ranchu-net /vendor/bin/init.ranchu-net.sh
