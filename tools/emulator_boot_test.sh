@@ -47,6 +47,12 @@ which emulator
 emulator -version
 emulator -accel-check
 
+{
+    sleep 600
+    echo "kill emulator after 10 minutes"
+    pkill -9 qemu-system
+} &
+
 emulator -gpu swiftshader_indirect -no-window -show-kernel -verbose -quit-after-boot $time_out \
              -wipe-data -no-snapshot $op_no_accel -skin 480x800x32 -logcat *:I -no-boot-anim
 
