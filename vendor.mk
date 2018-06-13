@@ -112,6 +112,7 @@ PRODUCT_PACKAGES += \
 	dhcpserver \
 	execns \
 	hostapd \
+	hostapd_nohidl \
 	ipv6proxy \
 	wpa_supplicant \
 
