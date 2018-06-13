@@ -15,6 +15,12 @@ on post-fs-data
     mkdir /data/vendor/var/run 0755 root root
     mkdir /data/vendor/var/run/netns 0755 root root
 
+on zygote-start
+    # Create the directories used by the Wireless subsystem
+    mkdir /data/vendor/wifi 0771 wifi wifi
+    mkdir /data/vendor/wifi/wpa 0770 wifi wifi
+    mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
+
 on boot
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
@@ -26,6 +32,7 @@ on boot
     setprop ro.hardware.audio.primary goldfish
 
     setprop wifi.interface wlan0
+    setprop wifi.direct.interface p2p-dev-wlan0
 
     start goldfish-logcat
 
