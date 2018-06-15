@@ -780,6 +780,27 @@ error:
     at_response_free(p_response);
 }
 
+static void setNetworkSelectionAutomatic(RIL_Token t)
+{
+    int err;
+    ATResponse *p_response = NULL;
+
+    if (getSIMStatus() == SIM_ABSENT) {
+        RIL_onRequestComplete(t, RIL_E_RADIO_NOT_AVAILABLE, NULL, 0);
+        return;
+    }
+
+    err = at_send_command("AT+COPS=0", &p_response);
+
+    if (err < 0 || p_response == NULL || p_response->success == 0) {
+        RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+    } else {
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
+    }
+
+    at_response_free(p_response);
+}
+
 static void requestQueryNetworkSelectionMode(
                 void *data __unused, size_t datalen __unused, RIL_Token t)
 {
@@ -2585,11 +2606,7 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             break;
 
         case RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC:
-            if (getSIMStatus() == SIM_ABSENT) {
-                RIL_onRequestComplete(t, RIL_E_RADIO_NOT_AVAILABLE, NULL, 0);
-            } else {
-                at_send_command("AT+COPS=0", NULL);
-            }
+            setNetworkSelectionAutomatic(t);
             break;
 
         case RIL_REQUEST_DATA_CALL_LIST:
