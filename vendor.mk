@@ -32,6 +32,7 @@ PRODUCT_PACKAGES += \
     libEGL_swiftshader \
     libGLESv1_CM_swiftshader \
     libGLESv2_swiftshader \
+    libgoldfish-ril \
     qemu-props \
     camera.goldfish \
     camera.goldfish.jpeg \
