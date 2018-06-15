@@ -112,7 +112,8 @@ void at_response_free(ATResponse *p_response);
 typedef enum {
     CME_ERROR_NON_CME = -1,
     CME_SUCCESS = 0,
-    CME_SIM_NOT_INSERTED = 10
+    CME_SIM_NOT_INSERTED = 10,
+    CME_INVALID_INDEX = 21,
 } AT_CME_Error;
 
 AT_CME_Error at_get_cme_error(const ATResponse *p_response);
