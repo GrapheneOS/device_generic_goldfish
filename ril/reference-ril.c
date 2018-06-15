@@ -1878,9 +1878,14 @@ static void requestSimCloseChannel(void *data, size_t datalen, RIL_Token t)
     err = at_send_command_singleline(cmd, "+CCHC", &p_response);
 
     if (err < 0 || p_response == NULL || p_response->success == 0) {
+        AT_CME_Error cme = p_response ? at_get_cme_error(p_response) :
+                                        CME_ERROR_NON_CME;
+        RIL_Errno ril_e = (cme == CME_INVALID_INDEX) ? RIL_E_INVALID_ARGUMENTS :
+                                                       RIL_E_GENERIC_FAILURE;
+
         ALOGE("Error %d closing logical channel %d: %d",
               err, session_id, p_response ? p_response->success : 0);
-        RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+        RIL_onRequestComplete(t, ril_e, NULL, 0);
         at_response_free(p_response);
         return;
     }
