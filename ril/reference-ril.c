@@ -410,6 +410,21 @@ static RIL_Errno setInterfaceState(const char* interfaceName,
     return RIL_E_SUCCESS;
 }
 
+static void parseAuthResponse(char* line, RIL_SIM_IO_Response* response) {
+    // example string +CSIM=number, "<base64string>9000"
+    // get the status first
+    int len = strlen(line);
+    char* first_double_quote = strchr(line, '"');
+    if (first_double_quote == NULL) {
+        RLOGE("%s bad response %s", __func__, line);
+        return;
+    }
+    char* data_ptr = first_double_quote + 1;
+    sscanf(line + (len -5), "%2x%2x", &(response->sw1), &(response->sw2));
+    line[len-5] = '\0';
+    response->simResponse = strdup(data_ptr);
+}
+
 /** do post-AT+CFUN=1 initialization */
 static void onRadioPowerOn()
 {
@@ -2353,6 +2368,52 @@ static void requestGetMute(void *data, size_t datalen, RIL_Token t)
    RIL_onRequestComplete(t, RIL_E_SUCCESS, &muteResponse, sizeof(muteResponse));
 }
 
+static void requestGetSimAuthentication(void *data, size_t datalen __unused, RIL_Token t)
+{
+    // TODO - hook this up with real query/info from radio.
+    RIL_SimAuthentication* auth = (RIL_SimAuthentication*)data;
+
+    RIL_SIM_IO_Response auth_response = {
+        0x90,
+        0x00,
+        ""
+    };
+
+    // special case: empty authData, should return empty response
+    if (auth->authData == NULL || strlen(auth->authData) == 0) {
+        char reply[] = "";
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, &auth_response, sizeof(auth_response));
+        RLOGD("%s empty data in", __func__);
+        return;
+    }
+
+    //talk to modem
+    ATResponse *p_response = NULL;
+    memset(&auth_response, 0, sizeof(auth_response));
+    int err;
+    char *cmd = NULL;
+    int auth_len = strlen(auth->authData);
+    int total_len = auth_len + 12;
+    asprintf(&cmd, "AT+CSIM=%d, \"008800%02x%02x%s00\"", total_len, auth->authContext,
+            auth_len, auth->authData);
+
+    err = at_send_command_singleline(cmd, "+CSIM:", &p_response);
+    if (err < 0 || p_response == NULL || p_response->success == 0) {
+        ALOGE("%s Error %d transmitting CSIM: %d", __func__,
+              err, p_response ? p_response->success : 0);
+        RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+        at_response_free(p_response);
+        return;
+    }
+
+    char* line = p_response->p_intermediates->line;
+
+    parseAuthResponse(line, &auth_response);
+    RIL_onRequestComplete(t, RIL_E_SUCCESS, &auth_response, sizeof(auth_response));
+    free(auth_response.simResponse);
+    free(p_response);
+}
+
 /*** Callback methods from the RIL library to us ***/
 
 /**
@@ -2746,6 +2807,10 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
         case RIL_REQUEST_SET_TTY_MODE:
         case RIL_REQUEST_CDMA_SET_PREFERRED_VOICE_PRIVACY_MODE:
             RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
+            break;
+
+        case RIL_REQUEST_SIM_AUTHENTICATION:
+            requestGetSimAuthentication(data, datalen, t);
             break;
 
         case RIL_REQUEST_BASEBAND_VERSION:
