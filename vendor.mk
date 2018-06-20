@@ -84,9 +84,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.0-strongbox-service
 
+ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
 PRODUCT_PACKAGES += \
     android.hardware.gnss@1.0-service \
     android.hardware.gnss@1.0-impl
+endif
 
 PRODUCT_PACKAGES += \
     android.hardware.sensors@1.0-impl \
