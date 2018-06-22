@@ -2414,6 +2414,44 @@ static void requestGetSimAuthentication(void *data, size_t datalen __unused, RIL
     free(p_response);
 }
 
+static void requestModemActivityInfo(RIL_Token t)
+{
+    int err;
+    char *line;
+    ATResponse *p_response = NULL;
+    RIL_ActivityStatsInfo info;
+
+    err = at_send_command_singleline("AT+MAI", "+MAI:", &p_response);
+    if (err < 0 || p_response == NULL || p_response->success == 0) {
+        ALOGE("Error transmitting AT+MAI, err=%d, success=%d",
+            err, (p_response ? p_response->success : 0));
+        goto error;
+    }
+
+    memset(&info, 0, sizeof(info));
+    if (sscanf(p_response->p_intermediates->line,
+               "+MAI: sleep=%u idle=%u rx=%u tx0=%u tx1=%u tx2=%u tx3=%u tx4=%u",
+               &info.sleep_mode_time_ms,
+               &info.idle_mode_time_ms,
+               &info.rx_mode_time_ms,
+               &info.tx_mode_time_ms[0],
+               &info.tx_mode_time_ms[1],
+               &info.tx_mode_time_ms[2],
+               &info.tx_mode_time_ms[3],
+               &info.tx_mode_time_ms[4]) == 8) {
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, &info, sizeof(info));
+        at_response_free(p_response);
+        return;
+    } else {
+        ALOGE("Unexpected response for AT+MAI: '%s'",
+            p_response->p_intermediates->line);
+    }
+
+error:
+    at_response_free(p_response);
+    RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+}
+
 /*** Callback methods from the RIL library to us ***/
 
 /**
@@ -2872,6 +2910,10 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
                 // VTS tests expect us to silently do nothing
                 RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
             }
+            break;
+
+        case RIL_REQUEST_GET_ACTIVITY_INFO:
+            requestModemActivityInfo(t);
             break;
 
         default:
