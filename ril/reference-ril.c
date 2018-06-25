@@ -167,18 +167,24 @@ typedef enum {
     SIM_PIN = 3,
     SIM_PUK = 4,
     SIM_NETWORK_PERSONALIZATION = 5,
-    RUIM_ABSENT = 6,
-    RUIM_NOT_READY = 7,
-    RUIM_READY = 8,
-    RUIM_PIN = 9,
-    RUIM_PUK = 10,
-    RUIM_NETWORK_PERSONALIZATION = 11,
-    ISIM_ABSENT = 12,
-    ISIM_NOT_READY = 13,
-    ISIM_READY = 14,
-    ISIM_PIN = 15,
-    ISIM_PUK = 16,
-    ISIM_NETWORK_PERSONALIZATION = 17,
+    SIM_RESTRICTED = 6,
+
+    RUIM_ABSENT = 7,
+    RUIM_NOT_READY = 8,
+    RUIM_READY = 9,
+    RUIM_PIN = 10,
+    RUIM_PUK = 11,
+    RUIM_NETWORK_PERSONALIZATION = 12,
+    RUIM_RESTRICTED = 13,
+
+    ISIM_ABSENT = 14,
+    ISIM_NOT_READY = 15,
+    ISIM_READY = 16,
+    ISIM_PIN = 17,
+    ISIM_PUK = 18,
+    ISIM_NETWORK_PERSONALIZATION = 19,
+    ISIM_RESTRICTED = 20
+
 } SIM_Status;
 
 static void onRequest (int request, void *data, size_t datalen, RIL_Token t);
@@ -2452,6 +2458,29 @@ error:
     RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
 }
 
+static void requestSetCarrierRestrictions(const RIL_CarrierRestrictions *restrictions __unused, RIL_Token t)
+{
+    ATResponse *p_response = NULL;
+    int success;
+    int err;
+    char cmd[32];
+
+    snprintf(cmd, sizeof(cmd), "AT+CRRSTR=%d,%d",
+        restrictions->len_allowed_carriers,
+        restrictions->len_excluded_carriers);
+
+    err = at_send_command_singleline(cmd, "+CRRSTR:", &p_response);
+    success = p_response ? p_response->success : 0;
+    at_response_free(p_response);
+
+    if (err == 0 && success) {
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
+    } else {
+        ALOGE("'%s' failed with err=%d success=%d", cmd, err, success);
+        RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+    }
+}
+
 /*** Callback methods from the RIL library to us ***/
 
 /**
@@ -2916,6 +2945,15 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             requestModemActivityInfo(t);
             break;
 
+        case RIL_REQUEST_SET_CARRIER_RESTRICTIONS:
+            if (datalen == sizeof(RIL_CarrierRestrictions)) {
+                requestSetCarrierRestrictions((const RIL_CarrierRestrictions *)data, t);
+            } else {
+                /* unexpected sizeof */
+                RIL_onRequestComplete(t, RIL_E_REQUEST_NOT_SUPPORTED, NULL, 0);
+            }
+            break;
+
         default:
             RLOGD("Request not supported. Tech: %d",TECH(sMdmInfo));
             RIL_onRequestComplete(t, RIL_E_REQUEST_NOT_SUPPORTED, NULL, 0);
@@ -3108,7 +3146,7 @@ getSIMStatus()
 {
     ATResponse *p_response = NULL;
     int err;
-    int ret;
+    SIM_Status ret;
     char *cpinLine;
     char *cpinResult;
 
@@ -3152,23 +3190,18 @@ getSIMStatus()
 
     if (0 == strcmp (cpinResult, "SIM PIN")) {
         ret = SIM_PIN;
-        goto done;
     } else if (0 == strcmp (cpinResult, "SIM PUK")) {
         ret = SIM_PUK;
-        goto done;
     } else if (0 == strcmp (cpinResult, "PH-NET PIN")) {
-        return SIM_NETWORK_PERSONALIZATION;
-    } else if (0 != strcmp (cpinResult, "READY"))  {
+        ret = SIM_NETWORK_PERSONALIZATION;
+    } else if (0 == strcmp (cpinResult, "RESTRICTED"))  {
+        ret = SIM_RESTRICTED;
+    } else if (0 == strcmp (cpinResult, "READY"))  {
+        ret = (sState == RADIO_STATE_ON) ? SIM_READY : SIM_NOT_READY;
+    } else {
         /* we're treating unsupported lock types as "sim absent" */
         ret = SIM_ABSENT;
-        goto done;
     }
-
-    at_response_free(p_response);
-    p_response = NULL;
-    cpinResult = NULL;
-
-    ret = (sState == RADIO_STATE_ON) ? SIM_READY : SIM_NOT_READY;
 
 done:
     at_response_free(p_response);
@@ -3183,7 +3216,7 @@ done:
  * @return: On success returns RIL_E_SUCCESS
  */
 static int getCardStatus(RIL_CardStatus_v6 **pp_card_status) {
-    static RIL_AppStatus app_status_array[] = {
+    static const RIL_AppStatus app_status_array[] = {
         // SIM_ABSENT = 0
         { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
@@ -3202,54 +3235,74 @@ static int getCardStatus(RIL_CardStatus_v6 **pp_card_status) {
         // SIM_NETWORK_PERSONALIZATION = 5
         { RIL_APPTYPE_USIM, RIL_APPSTATE_SUBSCRIPTION_PERSO, RIL_PERSOSUBSTATE_SIM_NETWORK,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // RUIM_ABSENT = 6
+        // SIM_RESTRICTED = 6
         { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // RUIM_NOT_READY = 7
+
+        // RUIM_ABSENT = 7
+        { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
+          NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
+        // RUIM_NOT_READY = 8
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_DETECTED, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // RUIM_READY = 8
+        // RUIM_READY = 9
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_READY, RIL_PERSOSUBSTATE_READY,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // RUIM_PIN = 9
+        // RUIM_PIN = 10
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_PIN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // RUIM_PUK = 10
+        // RUIM_PUK = 11
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_PUK, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_BLOCKED, RIL_PINSTATE_UNKNOWN },
-        // RUIM_NETWORK_PERSONALIZATION = 11
+        // RUIM_NETWORK_PERSONALIZATION = 12
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_SUBSCRIPTION_PERSO, RIL_PERSOSUBSTATE_SIM_NETWORK,
            NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // ISIM_ABSENT = 12
+        // RUIM_RESTRICTED = 13
         { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // ISIM_NOT_READY = 13
+
+        // ISIM_ABSENT = 14
+        { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
+          NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
+        // ISIM_NOT_READY = 15
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_DETECTED, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // ISIM_READY = 14
+        // ISIM_READY = 16
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_READY, RIL_PERSOSUBSTATE_READY,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // ISIM_PIN = 15
+        // ISIM_PIN = 17
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_PIN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // ISIM_PUK = 16
+        // ISIM_PUK = 18
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_PUK, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_BLOCKED, RIL_PINSTATE_UNKNOWN },
-        // ISIM_NETWORK_PERSONALIZATION = 17
+        // ISIM_NETWORK_PERSONALIZATION = 19
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_SUBSCRIPTION_PERSO, RIL_PERSOSUBSTATE_SIM_NETWORK,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-
+        // ISIM_RESTRICTED = 20
+        { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
+          NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
     };
+
     RIL_CardState card_state;
     int num_apps;
 
-    int sim_status = getSIMStatus();
-    if (sim_status == SIM_ABSENT) {
-        card_state = RIL_CARDSTATE_ABSENT;
-        num_apps = 0;
-    } else {
-        card_state = RIL_CARDSTATE_PRESENT;
-        num_apps = 3;
+    SIM_Status sim_status = getSIMStatus();
+    switch (sim_status) {
+        case SIM_ABSENT:
+            card_state = RIL_CARDSTATE_ABSENT;
+            num_apps = 0;
+            break;
+
+        case SIM_RESTRICTED:
+            card_state = RIL_CARDSTATE_RESTRICTED;
+            num_apps = 0;
+            break;
+
+        default:
+            card_state = RIL_CARDSTATE_PRESENT;
+            num_apps = 3;
+            break;
     }
 
     // Allocate and initialize base card status.
