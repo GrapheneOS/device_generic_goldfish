@@ -82,9 +82,6 @@ PRODUCT_PACKAGES += \
     android.hardware.keymaster@3.0-service
 
 PRODUCT_PACKAGES += \
-    android.hardware.keymaster@4.0-strongbox-service
-
-PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
