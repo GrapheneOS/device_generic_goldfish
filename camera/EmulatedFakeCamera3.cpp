@@ -441,8 +441,8 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
     static const uint8_t metadataMode = ANDROID_REQUEST_METADATA_MODE_FULL;
     settings.update(ANDROID_REQUEST_METADATA_MODE, &metadataMode, 1);
 
-    static const int32_t id = 0;
-    settings.update(ANDROID_REQUEST_ID, &id, 1);
+    static const int32_t requestId = 0;
+    settings.update(ANDROID_REQUEST_ID, &requestId, 1);
 
     static const int32_t frameCount = 0;
     settings.update(ANDROID_REQUEST_FRAME_COUNT, &frameCount, 1);
@@ -473,13 +473,13 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
     /** android.sensor */
 
     if (hasCapability(MANUAL_SENSOR)) {
-        static const int64_t exposureTime = 10 * MSEC;
+        const int64_t exposureTime = 10 * MSEC;
         settings.update(ANDROID_SENSOR_EXPOSURE_TIME, &exposureTime, 1);
 
-        static const int64_t frameDuration = 33333333L; // 1/30 s
+        const int64_t frameDuration = 33333333L; // 1/30 s
         settings.update(ANDROID_SENSOR_FRAME_DURATION, &frameDuration, 1);
 
-        static const int32_t sensitivity = 100;
+        const int32_t sensitivity = 100;
         settings.update(ANDROID_SENSOR_SENSITIVITY, &sensitivity, 1);
     }
 
@@ -574,7 +574,7 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
 
     /** android.scaler */
     if (hasCapability(BACKWARD_COMPATIBLE)) {
-        static const int32_t cropRegion[4] = {
+        const int32_t cropRegion[4] = {
             0, 0, mSensorWidth, mSensorHeight
         };
         settings.update(ANDROID_SCALER_CROP_REGION, cropRegion, 4);
@@ -669,7 +669,7 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
         static const uint8_t effectMode = ANDROID_CONTROL_EFFECT_MODE_OFF;
         settings.update(ANDROID_CONTROL_EFFECT_MODE, &effectMode, 1);
 
-        static const uint8_t sceneMode = ANDROID_CONTROL_SCENE_MODE_FACE_PRIORITY;
+        const uint8_t sceneMode = ANDROID_CONTROL_SCENE_MODE_FACE_PRIORITY;
         settings.update(ANDROID_CONTROL_SCENE_MODE, &sceneMode, 1);
 
         const uint8_t aeMode = (type == CAMERA3_TEMPLATE_MANUAL) ?
@@ -737,7 +737,7 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
 
         settings.update(ANDROID_CONTROL_AF_REGIONS, controlRegions, 5);
 
-        static const uint8_t afTrigger = ANDROID_CONTROL_AF_TRIGGER_IDLE;
+        const uint8_t afTrigger = ANDROID_CONTROL_AF_TRIGGER_IDLE;
         settings.update(ANDROID_CONTROL_AF_TRIGGER, &afTrigger, 1);
 
         static const uint8_t vstabMode =
@@ -1244,10 +1244,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     }
 
     // android.lens
-
-    static const float focalLength = 5.0f; // mm
+    static const float focalLengths = 5.0f;
     ADD_STATIC_ENTRY(ANDROID_LENS_INFO_AVAILABLE_FOCAL_LENGTHS,
-            &focalLength, 1);
+            &focalLengths, 1);
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
         // 5 cm min focus distance for back camera, infinity (fixed focus) for front
@@ -1258,14 +1257,14 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         // 5 m hyperfocal distance for back camera, infinity (fixed focus) for front
         const float hyperFocalDistance = mFacingBack ? 1.0/5.0 : 0.0;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_HYPERFOCAL_DISTANCE,
-                &minFocusDistance, 1);
+                &hyperFocalDistance, 1);
 
-        static const float aperture = 2.8f;
+        static const float apertures = 2.8f;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_AVAILABLE_APERTURES,
-                &aperture, 1);
-        static const float filterDensity = 0;
+                &apertures, 1);
+        static const float filterDensities = 0;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_AVAILABLE_FILTER_DENSITIES,
-                &filterDensity, 1);
+                &filterDensities, 1);
         static const uint8_t availableOpticalStabilization =
                 ANDROID_LENS_OPTICAL_STABILIZATION_MODE_OFF;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION,
@@ -1307,8 +1306,8 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 sizeof(lensPoseTranslation)/sizeof(float));
 
         // Intrinsics are 'ideal' (f_x, f_y, c_x, c_y, s) match focal length and active array size
-        float f_x = focalLength * mSensorWidth / sensorPhysicalSize[0];
-        float f_y = focalLength * mSensorHeight / sensorPhysicalSize[1];
+        float f_x = focalLengths * mSensorWidth / sensorPhysicalSize[0];
+        float f_y = focalLengths * mSensorHeight / sensorPhysicalSize[1];
         float c_x = mSensorWidth / 2.f;
         float c_y = mSensorHeight / 2.f;
         float s = 0.f;
@@ -1327,7 +1326,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     }
 
 
-    static const uint8_t lensFacing = mFacingBack ?
+    const uint8_t lensFacing = mFacingBack ?
             ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT;
     ADD_STATIC_ENTRY(ANDROID_LENS_FACING, &lensFacing, 1);
 
@@ -1597,20 +1596,20 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.control
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
-        static const uint8_t availableControlModes[] = {
+        const uint8_t availableControlModes[] = {
             ANDROID_CONTROL_MODE_OFF, ANDROID_CONTROL_MODE_AUTO, ANDROID_CONTROL_MODE_USE_SCENE_MODE
         };
         ADD_STATIC_ENTRY(ANDROID_CONTROL_AVAILABLE_MODES,
                 availableControlModes, sizeof(availableControlModes));
     } else {
-        static const uint8_t availableControlModes[] = {
+        const uint8_t availableControlModes[] = {
             ANDROID_CONTROL_MODE_AUTO
         };
         ADD_STATIC_ENTRY(ANDROID_CONTROL_AVAILABLE_MODES,
                 availableControlModes, sizeof(availableControlModes));
     }
 
-    static const uint8_t availableSceneModes[] = {
+    const uint8_t availableSceneModes[] = {
         hasCapability(BACKWARD_COMPATIBLE) ?
             ANDROID_CONTROL_SCENE_MODE_FACE_PRIORITY :
             ANDROID_CONTROL_SCENE_MODE_DISABLED
@@ -1644,7 +1643,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_COMPENSATION_STEP,
                 &exposureCompensationStep, 1);
 
-        int32_t exposureCompensationRange[] = {0, 0};
+        static const int32_t exposureCompensationRange[] = {0, 0};
         ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_COMPENSATION_RANGE,
                 exposureCompensationRange,
                 sizeof(exposureCompensationRange)/sizeof(int32_t));
@@ -1666,7 +1665,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 availableAntibandingModes, sizeof(availableAntibandingModes));
     }
 
-    static const uint8_t aeLockAvailable = hasCapability(BACKWARD_COMPATIBLE) ?
+    const uint8_t aeLockAvailable = hasCapability(BACKWARD_COMPATIBLE) ?
             ANDROID_CONTROL_AE_LOCK_AVAILABLE_TRUE : ANDROID_CONTROL_AE_LOCK_AVAILABLE_FALSE;
 
     ADD_STATIC_ENTRY(ANDROID_CONTROL_AE_LOCK_AVAILABLE,
@@ -1685,7 +1684,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 availableAwbModes, sizeof(availableAwbModes));
     }
 
-    static const uint8_t awbLockAvailable = hasCapability(BACKWARD_COMPATIBLE) ?
+    const uint8_t awbLockAvailable = hasCapability(BACKWARD_COMPATIBLE) ?
             ANDROID_CONTROL_AWB_LOCK_AVAILABLE_TRUE : ANDROID_CONTROL_AWB_LOCK_AVAILABLE_FALSE;
 
     ADD_STATIC_ENTRY(ANDROID_CONTROL_AWB_LOCK_AVAILABLE,
@@ -1720,7 +1719,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.colorCorrection
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
-        static const uint8_t availableAberrationModes[] = {
+        const uint8_t availableAberrationModes[] = {
             ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF,
             ANDROID_COLOR_CORRECTION_ABERRATION_MODE_FAST,
             ANDROID_COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY
@@ -1728,7 +1727,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         ADD_STATIC_ENTRY(ANDROID_COLOR_CORRECTION_AVAILABLE_ABERRATION_MODES,
                 availableAberrationModes, sizeof(availableAberrationModes));
     } else {
-        static const uint8_t availableAberrationModes[] = {
+        const uint8_t availableAberrationModes[] = {
             ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF,
         };
         ADD_STATIC_ENTRY(ANDROID_COLOR_CORRECTION_AVAILABLE_ABERRATION_MODES,
@@ -1737,13 +1736,13 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.edge
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
-        static const uint8_t availableEdgeModes[] = {
+        const uint8_t availableEdgeModes[] = {
             ANDROID_EDGE_MODE_OFF, ANDROID_EDGE_MODE_FAST, ANDROID_EDGE_MODE_HIGH_QUALITY
         };
         ADD_STATIC_ENTRY(ANDROID_EDGE_AVAILABLE_EDGE_MODES,
                 availableEdgeModes, sizeof(availableEdgeModes));
     } else {
-        static const uint8_t availableEdgeModes[] = {
+        const uint8_t availableEdgeModes[] = {
             ANDROID_EDGE_MODE_OFF
         };
         ADD_STATIC_ENTRY(ANDROID_EDGE_AVAILABLE_EDGE_MODES,
@@ -1752,7 +1751,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
 
     // android.info
 
-    static const uint8_t supportedHardwareLevel =
+    const uint8_t supportedHardwareLevel =
             hasCapability(FULL_LEVEL) ? ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_FULL :
                     ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED;
     ADD_STATIC_ENTRY(ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL,
@@ -1762,7 +1761,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.noiseReduction
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
-        static const uint8_t availableNoiseReductionModes[] = {
+        const uint8_t availableNoiseReductionModes[] = {
             ANDROID_NOISE_REDUCTION_MODE_OFF,
             ANDROID_NOISE_REDUCTION_MODE_FAST,
             ANDROID_NOISE_REDUCTION_MODE_HIGH_QUALITY
@@ -1770,7 +1769,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         ADD_STATIC_ENTRY(ANDROID_NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES,
                 availableNoiseReductionModes, sizeof(availableNoiseReductionModes));
     } else {
-        static const uint8_t availableNoiseReductionModes[] = {
+        const uint8_t availableNoiseReductionModes[] = {
             ANDROID_NOISE_REDUCTION_MODE_OFF,
         };
         ADD_STATIC_ENTRY(ANDROID_NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES,
@@ -1809,7 +1808,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 availableDepthStallDurations,
                 sizeof(availableDepthStallDurations)/sizeof(int64_t));
 
-        uint8_t depthIsExclusive = ANDROID_DEPTH_DEPTH_IS_EXCLUSIVE_FALSE;
+        static const uint8_t depthIsExclusive = ANDROID_DEPTH_DEPTH_IS_EXCLUSIVE_FALSE;
         ADD_STATIC_ENTRY(ANDROID_DEPTH_DEPTH_IS_EXCLUSIVE,
                 &depthIsExclusive, 1);
     }
@@ -1817,13 +1816,13 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     // android.shading
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
-        static const uint8_t availableShadingModes[] = {
+        const uint8_t availableShadingModes[] = {
             ANDROID_SHADING_MODE_OFF, ANDROID_SHADING_MODE_FAST, ANDROID_SHADING_MODE_HIGH_QUALITY
         };
         ADD_STATIC_ENTRY(ANDROID_SHADING_AVAILABLE_MODES, availableShadingModes,
                 sizeof(availableShadingModes));
     } else {
-        static const uint8_t availableShadingModes[] = {
+        const uint8_t availableShadingModes[] = {
             ANDROID_SHADING_MODE_OFF
         };
         ADD_STATIC_ENTRY(ANDROID_SHADING_AVAILABLE_MODES, availableShadingModes,
@@ -2154,11 +2153,10 @@ status_t EmulatedFakeCamera3::doFakeAF(CameraMetadata &settings) {
         case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
         case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
             if (!mFacingBack) {
-                ALOGE("%s: Front camera doesn't support AF mode %d",
-                        __FUNCTION__, afMode);
-                return BAD_VALUE;
+                // Always report INACTIVE for front Emulated Camera
+                mAfState = ANDROID_CONTROL_AF_STATE_INACTIVE;
+                return OK;
             }
-            // OK, handle transitions lower on
             break;
         default:
             ALOGE("%s: Emulator doesn't support AF mode %d",
