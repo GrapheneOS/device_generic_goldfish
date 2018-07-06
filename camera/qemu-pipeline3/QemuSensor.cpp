@@ -341,7 +341,7 @@ bool QemuSensor::threadLoop() {
             (int) ((endRealTime - startRealTime) / 1000000),
             (int) (frameDuration / 1000000));
     return true;
-};
+}
 
 void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
         uint32_t stride, int64_t *timestamp) {

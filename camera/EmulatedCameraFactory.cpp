@@ -312,8 +312,7 @@ void EmulatedCameraFactory::findQemuCameras(
     size_t lineBegin = 0;
     size_t lineEnd = cameraListStr.find('\n');
     while (lineEnd != std::string::npos) {
-        std::string cameraStr = cameraListStr.substr(lineBegin, lineEnd);
-
+        std::string cameraStr = cameraListStr.substr(lineBegin, lineEnd - lineBegin);
         // Parse the 'name', 'framedims', and 'dir' tokens.
         char *name, *frameDims, *dir;
         if (getTokenValue(kListNameToken, cameraStr, &name) &&
