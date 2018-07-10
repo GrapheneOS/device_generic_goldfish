@@ -25,7 +25,7 @@
 //#define LOG_NNDEBUG 0
 #define LOG_TAG "EmulatedCamera_FakeCamera3"
 #include <cutils/properties.h>
-#include <utils/Log.h>
+#include <log/log.h>
 
 #include "EmulatedFakeCamera3.h"
 #include "EmulatedCameraFactory.h"
@@ -53,7 +53,6 @@ namespace android {
 
 const int64_t USEC = 1000LL;
 const int64_t MSEC = USEC * 1000LL;
-const int64_t SEC = MSEC * 1000LL;
 
 const int32_t EmulatedFakeCamera3::kAvailableFormats[] = {
         HAL_PIXEL_FORMAT_RAW16,
@@ -292,8 +291,10 @@ status_t EmulatedFakeCamera3::configureStreams(
             }
         }
 
-        if (newStream->width <= 0 || newStream->width > mSensorWidth ||
-            newStream->height <= 0 || newStream->height > mSensorHeight) {
+        if (newStream->width <= 0 ||
+            (int32_t)newStream->width > mSensorWidth ||
+            newStream->height <= 0 ||
+            (int32_t)newStream->height > mSensorHeight) {
             ALOGE("%s: Unsupported stream width 0x%x height 0x%x",
                   __FUNCTION__, newStream->width, newStream->height);
             return BAD_VALUE;
@@ -1158,8 +1159,8 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
     int32_t width = 0, height = 0;
     size_t rawSizeCount = sizeof(kAvailableRawSizes)/sizeof(kAvailableRawSizes[0]);
     for (size_t index = 0; index + 1 < rawSizeCount; index += 2) {
-        if (width <= kAvailableRawSizes[index] &&
-            height <= kAvailableRawSizes[index+1]) {
+        if (width <= (int32_t)kAvailableRawSizes[index] &&
+            height <= (int32_t)kAvailableRawSizes[index+1]) {
             width = kAvailableRawSizes[index];
             height = kAvailableRawSizes[index+1];
         }
@@ -1939,8 +1940,6 @@ status_t EmulatedFakeCamera3::process3A(CameraMetadata &settings) {
      * Extract top-level 3A controls
      */
     status_t res;
-
-    bool facePriority = false;
 
     camera_metadata_entry e;
 

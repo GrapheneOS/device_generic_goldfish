@@ -42,7 +42,7 @@
 #include <inttypes.h>
 #include <sstream>
 #include <ui/Fence.h>
-#include <utils/Log.h>
+#include <log/log.h>
 #include <vector>
 
 namespace android {
@@ -53,7 +53,6 @@ namespace android {
 
 const int64_t USEC = 1000LL;
 const int64_t MSEC = USEC * 1000LL;
-const int64_t SEC = MSEC * 1000LL;
 
 const int32_t EmulatedQemuCamera3::kAvailableFormats[] = {
     HAL_PIXEL_FORMAT_BLOB,
@@ -165,7 +164,8 @@ void EmulatedQemuCamera3::parseResolutions(const char *frameDims) {
 
     // Remove any resolution with a dimension exceeding the sensor size.
     for (auto res = mResolutions.begin(); res != mResolutions.end(); ) {
-        if (res->first > mSensorWidth || res->second > mSensorHeight) {
+        if (res->first > (int32_t)mSensorWidth ||
+            res->second > (int32_t)mSensorHeight) {
             // Width and/or height larger than sensor. Remove it.
             res = mResolutions.erase(res);
         } else {
@@ -1629,8 +1629,6 @@ status_t EmulatedQemuCamera3::process3A(CameraMetadata &settings) {
      * Extract top-level 3A controls
      */
     status_t res;
-
-    bool facePriority = false;
 
     camera_metadata_entry e;
 
