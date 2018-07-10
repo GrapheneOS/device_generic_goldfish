@@ -271,7 +271,8 @@ static void* hwc_vsync_thread(void* data) {
         int64_t timestamp = int64_t(rt.tv_sec) * 1e9 + rt.tv_nsec;
         pdev->procs->vsync(pdev->procs, 0, timestamp);
         if (rt.tv_sec - last_logged >= log_interval) {
-            ALOGD("hw_composer sent %d syncs in %ds", sent - last_sent, rt.tv_sec - last_logged);
+            ALOGD("hw_composer sent %d syncs in %ds", (uint32_t)(sent - last_sent),
+                  (uint32_t)(rt.tv_sec - last_logged));
             last_logged = rt.tv_sec;
             last_sent = sent;
         }
@@ -345,17 +346,17 @@ static int hwc_open(const struct hw_module_t* module, const char* name,
 
 
 static struct hw_module_methods_t hwc_module_methods = {
-    open: hwc_open,
+    .open = hwc_open,
 };
 
 hwc_module_t HAL_MODULE_INFO_SYM = {
-    common: {
-        tag: HARDWARE_MODULE_TAG,
-        module_api_version: HWC_MODULE_API_VERSION_0_1,
-        hal_api_version: HARDWARE_HAL_API_VERSION,
-        id: HWC_HARDWARE_MODULE_ID,
-        name: "Android Emulator hwcomposer module",
-        author: "The Android Open Source Project",
-        methods: &hwc_module_methods,
+    .common = {
+        .tag = HARDWARE_MODULE_TAG,
+        .module_api_version = HWC_MODULE_API_VERSION_0_1,
+        .hal_api_version = HARDWARE_HAL_API_VERSION,
+        .id = HWC_HARDWARE_MODULE_ID,
+        .name = "Android Emulator hwcomposer module",
+        .author = "The Android Open Source Project",
+        .methods = &hwc_module_methods,
     }
 };

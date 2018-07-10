@@ -30,7 +30,7 @@
 #include "EmulatedQemuCamera.h"
 #include "EmulatedQemuCamera3.h"
 
-#include <cutils/log.h>
+#include <log/log.h>
 #include <cutils/properties.h>
 
 extern camera_module_t HAL_MODULE_INFO_SYM;
@@ -580,7 +580,7 @@ void EmulatedCameraFactory::onStatusChanged(int cameraId, int newStatus) {
 
 // Entry point for camera HAL API.
 struct hw_module_methods_t EmulatedCameraFactory::mCameraModuleMethods = {
-    open: EmulatedCameraFactory::device_open
+    .open = EmulatedCameraFactory::device_open
 };
 
 }; // end of namespace android
