@@ -1113,6 +1113,7 @@ status_t EmulatedFakeCamera3::getCameraCapabilities() {
         // "RAW" causes several CTS failures: b/68723953, disable it so far.
         // TODO: add "RAW" back when all failures are resolved.
         //mCapabilities.add(RAW);
+        mCapabilities.add(MOTION_TRACKING);
     }
 
     // Add level-based caps
@@ -1876,6 +1877,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 break;
             case CONSTRAINED_HIGH_SPEED_VIDEO:
                 caps.add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO);
+                break;
+            case MOTION_TRACKING:
+                caps.add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_MOTION_TRACKING);
                 break;
             default:
                 // Ignore LEVELs
