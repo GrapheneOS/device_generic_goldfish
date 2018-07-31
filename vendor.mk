@@ -17,8 +17,7 @@
 # This file is to configure vendor/data partitions of emulator-related products
 #
 
-PRODUCT_SHIPPING_API_LEVEL := 28
-TARGET_USES_MKE2FS := true
+PRODUCT_SHIPPING_API_LEVEL := 24
 
 # Device modules
 PRODUCT_PACKAGES += \
