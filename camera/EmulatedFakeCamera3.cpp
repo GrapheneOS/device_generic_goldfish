@@ -265,7 +265,7 @@ status_t EmulatedFakeCamera3::configureStreams(
         }
 
         ALOGV("%s: Stream %p (id %zu), type %d, usage 0x%x, format 0x%x "
-              "width %d, height %d",
+              "width 0x%x, height 0x%x",
                 __FUNCTION__, newStream, i, newStream->stream_type,
                 newStream->usage,
                 newStream->format,
@@ -291,10 +291,9 @@ status_t EmulatedFakeCamera3::configureStreams(
             }
         }
 
-        if (newStream->width <= 0 ||
-            (int32_t)newStream->width > mSensorWidth ||
-            newStream->height <= 0 ||
-            (int32_t)newStream->height > mSensorHeight) {
+        if (newStream->width == 0 || newStream->height == 0 ||
+            newStream->width > (uint32_t)mSensorWidth ||
+            newStream->height > (uint32_t)mSensorHeight) {
             ALOGE("%s: Unsupported stream width 0x%x height 0x%x",
                   __FUNCTION__, newStream->width, newStream->height);
             return BAD_VALUE;
