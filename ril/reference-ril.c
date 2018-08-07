@@ -1899,7 +1899,7 @@ static void requestSimOpenChannel(void *data, size_t datalen, RIL_Token t)
         return;
     }
 
-    RIL_onRequestComplete(t, RIL_E_SUCCESS, &session_id, sizeof(&session_id));
+    RIL_onRequestComplete(t, RIL_E_SUCCESS, &session_id, sizeof(session_id));
     at_response_free(p_response);
 }
 
