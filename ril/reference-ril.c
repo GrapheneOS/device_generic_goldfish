@@ -2415,7 +2415,7 @@ static void requestGetSimAuthentication(void *data, size_t datalen __unused, RIL
     char* line = p_response->p_intermediates->line;
 
     parseAuthResponse(line, &auth_response);
-    RIL_onRequestComplete(t, RIL_E_SUCCESS, &auth_response, sizeof(auth_response));
+    RIL_onRequestComplete(t, auth_response.sw2, &auth_response, sizeof(auth_response));
     free(auth_response.simResponse);
     free(p_response);
 }
