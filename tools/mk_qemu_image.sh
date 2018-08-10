@@ -19,7 +19,7 @@ src_magic=`xxd -p -l 4 $srcimg`
 
 if [[ $src_magic == $magic ]]; then
 echo "Unsparsing ${srcimg}"
-tmpfile=$(mktemp)
+tmpfile=$(mktemp -t unsparse_image.XXXXXX)
 ${SIMG2IMG:-simg2img} $srcimg $tmpfile
 srcimg="$tmpfile"
 fi
