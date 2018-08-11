@@ -41,6 +41,7 @@
 
 #define  GPS_DEBUG  0
 
+#undef D
 #if GPS_DEBUG
 #  define  D(...)   ALOGD(__VA_ARGS__)
 #else
@@ -71,7 +72,6 @@ static int
 nmea_tokenizer_init( NmeaTokenizer*  t, const char*  p, const char*  end )
 {
     int    count = 0;
-    char*  q;
 
     // the initial '$' is optional
     if (p < end && p[0] == '$')
@@ -154,7 +154,6 @@ Fail:
 static double
 str2float( const char*  p, const char*  end )
 {
-    int   result = 0;
     int   len    = end - p;
     char  temp[16];
 
@@ -336,6 +335,8 @@ nmea_reader_update_latlong( NmeaReader*  r,
     double   lat, lon;
     Token    tok;
 
+    r->fix.flags &= ~GPS_LOCATION_HAS_LAT_LONG;
+
     tok = latitude;
     if (tok.p + 6 > tok.end) {
         D("latitude is too short: '%.*s'", tok.end-tok.p, tok.p);
@@ -366,8 +367,9 @@ nmea_reader_update_altitude( NmeaReader* r,
                              Token altitude,
                              Token __unused units )
 {
-    double  alt;
     Token   tok = altitude;
+
+    r->fix.flags &= ~GPS_LOCATION_HAS_ALTITUDE;
 
     if (tok.p >= tok.end)
         return -1;
@@ -382,8 +384,9 @@ static int
 nmea_reader_update_bearing( NmeaReader*  r,
                             Token        bearing )
 {
-    double  alt;
     Token   tok = bearing;
+
+    r->fix.flags &= ~GPS_LOCATION_HAS_BEARING;
 
     if (tok.p >= tok.end)
         return -1;
@@ -398,8 +401,9 @@ static int
 nmea_reader_update_speed( NmeaReader*  r,
                           Token        speed )
 {
-    double  alt;
     Token   tok = speed;
+
+    r->fix.flags &= ~GPS_LOCATION_HAS_SPEED;
 
     if (tok.p >= tok.end)
         return -1;
@@ -465,7 +469,6 @@ nmea_reader_parse( NmeaReader*  r )
         Token  tok_altitude      = nmea_tokenizer_get(tzer,9);
         Token  tok_altitudeUnits = nmea_tokenizer_get(tzer,10);
 
-        r->fix.flags = 0;
         nmea_reader_update_time(r, tok_time);
         nmea_reader_update_latlong(r, tok_latitude,
                                       tok_latitudeHemi.p[0],
@@ -489,7 +492,6 @@ nmea_reader_parse( NmeaReader*  r )
         D("in RMC, fixStatus=%c", tok_fixStatus.p[0]);
         if (tok_fixStatus.p[0] == 'A')
         {
-            r->fix.flags = 0;
             nmea_reader_update_date( r, tok_date, tok_time );
 
             nmea_reader_update_latlong( r, tok_latitude,
@@ -665,15 +667,15 @@ epoll_register( int  epoll_fd, int  fd )
 }
 
 
-static int
-epoll_deregister( int  epoll_fd, int  fd )
-{
-    int  ret;
-    do {
-        ret = epoll_ctl( epoll_fd, EPOLL_CTL_DEL, fd, NULL );
-    } while (ret < 0 && errno == EINTR);
-    return ret;
-}
+// static int
+// epoll_deregister( int  epoll_fd, int  fd )
+// {
+//     int  ret;
+//     do {
+//         ret = epoll_ctl( epoll_fd, EPOLL_CTL_DEL, fd, NULL );
+//     } while (ret < 0 && errno == EINTR);
+//     return ret;
+// }
 
 /* this is the main thread, it waits for commands from gps_state_start/stop and,
  * when started, messages from the QEMU GPS daemon. these are simple NMEA sentences
@@ -738,7 +740,7 @@ gps_state_thread( void*  arg )
 
                 if (fd == control_fd)
                 {
-                    char  cmd = 255;
+                    char  cmd = 0xFF;
                     int   ret;
                     D("gps control fd event");
                     do {
