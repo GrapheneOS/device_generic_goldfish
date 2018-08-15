@@ -38,14 +38,11 @@ PRODUCT_PACKAGES += \
     camera.ranchu \
     camera.ranchu.jpeg \
     gatekeeper.ranchu \
-    lights.goldfish \
     gps.goldfish \
     gps.ranchu \
     fingerprint.goldfish \
-    sensors.goldfish \
     audio.primary.goldfish \
     audio.primary.goldfish_legacy \
-    vibrator.goldfish \
     power.goldfish \
     power.ranchu \
     fingerprint.ranchu \
