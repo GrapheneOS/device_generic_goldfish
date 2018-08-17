@@ -101,8 +101,9 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.1-service.widevine
 
 PRODUCT_PACKAGES += \
-    android.hardware.power@1.0-service \
-    android.hardware.power@1.0-impl
+    android.hardware.power@1.1-service.ranchu \
+
+PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
 
 PRODUCT_PACKAGES += \
     camera.device@1.0-impl \
