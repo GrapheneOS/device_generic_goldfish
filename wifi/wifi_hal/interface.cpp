@@ -74,7 +74,7 @@ wifi_error Interface::getSupportedFeatureSet(feature_set* set) {
     if (set == nullptr) {
         return WIFI_ERROR_INVALID_ARGS;
     }
-    *set = WIFI_FEATURE_LINK_LAYER_STATS;
+    *set = 0;
     return WIFI_SUCCESS;
 }
 
