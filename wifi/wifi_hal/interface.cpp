@@ -55,7 +55,7 @@ Interface::Interface(Netlink& netlink, const char* name)
     , mInterfaceIndex(0) {
 }
 
-Interface::Interface(Interface&& other)
+Interface::Interface(Interface&& other) noexcept
     : mNetlink(other.mNetlink)
     , mName(std::move(other.mName))
     , mInterfaceIndex(other.mInterfaceIndex) {
