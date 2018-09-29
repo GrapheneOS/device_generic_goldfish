@@ -40,6 +40,7 @@
 /vendor/lib(64)?/libEGL_swiftshader\.so          u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/libGLESv1_CM_swiftshader\.so    u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/libGLESv2_swiftshader\.so       u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/libOpenglCodecCommon\.so       u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/libOpenglSystemCommon\.so       u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/lib_renderControl_enc\.so       u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/libGLESv1_enc\.so       u:object_r:same_process_hal_file:s0
