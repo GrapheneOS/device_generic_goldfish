@@ -57,7 +57,7 @@ on property:dev.bootcomplete=1
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
     user root
-    group root wakelock
+    group root wakelock wifi
     oneshot
 
 service ipv6proxy /vendor/bin/execns router /vendor/bin/ipv6proxy -o eth0 -i wlan1,radio0-peer
@@ -65,14 +65,19 @@ service ipv6proxy /vendor/bin/execns router /vendor/bin/ipv6proxy -o eth0 -i wla
     group root
     disabled
 
-service emu_hostapd /vendor/bin/execns -u wifi -g wifi router /vendor/bin/hostapd_nohidl /vendor/etc/simulated_hostapd.conf
+service emu_hostapd /vendor/bin/execns -u wifi -g wifi router /vendor/bin/hostapd_nohidl /data/vendor/wifi/hostapd/hostapd.conf
     user root
     group root wifi net_raw net_admin
     disabled
 
-service dhcpserver /vendor/bin/execns router /vendor/bin/dhcpserver --range 192.168.232.2,192.168.239.254 --gateway 192.168.232.1 --netmask 255.255.248.0 --exclude-interface eth0
+service dhcpserver /vendor/bin/execns router /vendor/bin/dhcpserver --exclude-interface eth0
     user root
     group root
+    disabled
+
+service netmgr /vendor/bin/execns router /vendor/bin/netmgr --if-prefix wlan1_ --network 192.168.232.9/29
+    user root
+    group root wifi
     disabled
 
 service dhcpclient_rtr /vendor/bin/execns router /vendor/bin/dhcpclient -i eth0

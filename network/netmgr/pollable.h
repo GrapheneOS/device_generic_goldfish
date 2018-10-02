@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright 2018, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
-#ifdef ANDROID
+#include <chrono>
 
-#define LOG_TAG "ipv6proxy"
-#include <log/log.h>
+class Pollable {
+public:
+    using Clock = std::chrono::steady_clock;
+    using Timestamp = Clock::time_point;
+    struct Data {
+        int fd;
+        Timestamp deadline;
+    };
+    virtual ~Pollable() = default;
 
-#define loge(...) ALOGE(__VA_ARGS__)
-#define logd(...) ALOGD(__VA_ARGS__)
+    virtual Data data() const = 0;
+    virtual void onReadAvailable() = 0;
+    virtual void onClose() = 0;
+    virtual void onTimeout() = 0;
+};
 
-#else
-#include <stdio.h>
-
-void loge(const char* fmt, ...);
-void logd(const char* fmt, ...);
-
-#endif

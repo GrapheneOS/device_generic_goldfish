@@ -50,6 +50,19 @@ rm -rf /data/vendor/var/run/netns/${NAMESPACE}.pid
 /system/bin/ip link set dev wlan0 address 02:00:00:44:55:66
 
 createns ${NAMESPACE}
+
+# If this is a clean boot we need to copy the hostapd configuration file to the
+# data partition where netmgr can change it if needed. If it already exists we
+# need to preserve the existing settings.
+if [ ! -f /data/vendor/wifi/hostapd/hostapd.conf ]; then
+    cp /vendor/etc/simulated_hostapd.conf /data/vendor/wifi/hostapd/hostapd.conf
+    chown wifi:wifi /data/vendor/wifi/hostapd/hostapd.conf
+    chmod 660 /data/vendor/wifi/hostapd/hostapd.conf
+fi
+# Start the network manager as soon as possible after the namespace is available.
+# This ensures that anything that follows is properly managed and monitored.
+setprop ctl.start netmgr
+
 # createns will have created a file that contains the process id (pid) of a
 # process running in the network namespace. This pid is needed for some commands
 # to access the namespace.

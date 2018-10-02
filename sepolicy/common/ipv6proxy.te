@@ -9,6 +9,7 @@ net_domain(ipv6proxy)
 domain_auto_trans(execns, ipv6proxy_exec, ipv6proxy);
 allow ipv6proxy execns:fd use;
 
+set_prop(ipv6proxy, net_eth0_prop);
 allow ipv6proxy self:capability { sys_admin sys_module net_admin net_raw };
 allow ipv6proxy self:packet_socket { bind create read };
 allow ipv6proxy self:netlink_route_socket nlmsg_write;
