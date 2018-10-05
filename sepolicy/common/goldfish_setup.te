@@ -31,7 +31,7 @@ allow goldfish_setup kernel:system module_request;
 set_prop(goldfish_setup, qemu_prop);
 get_prop(goldfish_setup, net_share_prop);
 # Allow goldfish_setup to run /system/bin/ip and /system/bin/iw
-allow goldfish_setup system_file:file execute_no_trans;
+allow goldfish_setup system_file:file rx_file_perms;
 # Allow goldfish_setup to run init.wifi.sh
 allow goldfish_setup goldfish_setup_exec:file execute_no_trans;
 #Allow goldfish_setup to run createns in its own domain
@@ -39,7 +39,6 @@ domain_auto_trans(goldfish_setup, createns_exec, createns);
 # iw
 allow goldfish_setup sysfs:file { read open };
 # iptables
-allow goldfish_setup system_file:file lock;
 allow goldfish_setup self:rawip_socket { create getopt setopt };
 # Allow goldfish_setup to read createns proc file to get the namespace file
 allow goldfish_setup createns:file { read };
