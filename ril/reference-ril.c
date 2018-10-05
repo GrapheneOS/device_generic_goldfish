@@ -41,8 +41,10 @@
 #include <sys/wait.h>
 #include <stdbool.h>
 #include <net/if.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include "if_monitor.h"
 #include "ril.h"
 
 #define LOG_TAG "RIL"
@@ -58,6 +60,11 @@ static void *noopRemoveWarning( void *a ) { return a; }
 #define PPP_TTY_PATH_ETH0 "eth0"
 // This is used if Wifi is supported to separate radio and wifi interface
 #define PPP_TTY_PATH_RADIO0 "radio0"
+
+// This is the IP address to provide for radio0 when WiFi is enabled
+// When WiFi is not enabled the RIL should provide the address given by
+// the modem.
+#define RADIO0_IPV4_ADDRESS "192.168.200.2/24"
 
 // Default MTU value
 #define DEFAULT_MTU 1500
@@ -167,18 +174,24 @@ typedef enum {
     SIM_PIN = 3,
     SIM_PUK = 4,
     SIM_NETWORK_PERSONALIZATION = 5,
-    RUIM_ABSENT = 6,
-    RUIM_NOT_READY = 7,
-    RUIM_READY = 8,
-    RUIM_PIN = 9,
-    RUIM_PUK = 10,
-    RUIM_NETWORK_PERSONALIZATION = 11,
-    ISIM_ABSENT = 12,
-    ISIM_NOT_READY = 13,
-    ISIM_READY = 14,
-    ISIM_PIN = 15,
-    ISIM_PUK = 16,
-    ISIM_NETWORK_PERSONALIZATION = 17,
+    SIM_RESTRICTED = 6,
+
+    RUIM_ABSENT = 7,
+    RUIM_NOT_READY = 8,
+    RUIM_READY = 9,
+    RUIM_PIN = 10,
+    RUIM_PUK = 11,
+    RUIM_NETWORK_PERSONALIZATION = 12,
+    RUIM_RESTRICTED = 13,
+
+    ISIM_ABSENT = 14,
+    ISIM_NOT_READY = 15,
+    ISIM_READY = 16,
+    ISIM_PIN = 17,
+    ISIM_PUK = 18,
+    ISIM_NETWORK_PERSONALIZATION = 19,
+    ISIM_RESTRICTED = 20
+
 } SIM_Status;
 
 static void onRequest (int request, void *data, size_t datalen, RIL_Token t);
@@ -259,6 +272,10 @@ static int s_mcc = 0;
 static int s_mnc = 0;
 static int s_lac = 0;
 static int s_cid = 0;
+
+// A string containing all the IPv6 addresses of the radio interface
+static char s_ipv6_addresses[8192];
+static pthread_mutex_t s_ipv6_addresses_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void pollSIMState (void *param);
 static void setRadioState(RIL_RadioState newState);
@@ -408,6 +425,21 @@ static RIL_Errno setInterfaceState(const char* interfaceName,
 
     close(sock);
     return RIL_E_SUCCESS;
+}
+
+static void parseAuthResponse(char* line, RIL_SIM_IO_Response* response) {
+    // example string +CSIM=number, "<base64string>9000"
+    // get the status first
+    int len = strlen(line);
+    char* first_double_quote = strchr(line, '"');
+    if (first_double_quote == NULL) {
+        RLOGE("%s bad response %s", __func__, line);
+        return;
+    }
+    char* data_ptr = first_double_quote + 1;
+    sscanf(line + (len -5), "%2x%2x", &(response->sw1), &(response->sw2));
+    line[len-5] = '\0';
+    response->simResponse = strdup(data_ptr);
 }
 
 /** do post-AT+CFUN=1 initialization */
@@ -695,13 +727,32 @@ static void requestOrSendDataCallList(RIL_Token *t)
         responses[i].ifname = alloca(ifname_size);
         strlcpy(responses[i].ifname, radioInterfaceName, ifname_size);
 
+        // The next token is the IPv4 address provided by the emulator, only use
+        // it if WiFi is not enabled. When WiFi is enabled the network setup is
+        // specific to the system image and the emulator only provides the
+        // IP address for the external interface in the router namespace.
         err = at_tok_nextstr(&line, &out);
         if (err < 0)
             goto error;
 
-        int addresses_size = strlen(out) + 1;
+        pthread_mutex_lock(&s_ipv6_addresses_mutex);
+
+        // Extra space for null terminator and separating space
+        int addresses_size = strlen(out) + strlen(s_ipv6_addresses) + 2;
         responses[i].addresses = alloca(addresses_size);
-        strlcpy(responses[i].addresses, out, addresses_size);
+        if (*s_ipv6_addresses) {
+            // IPv6 addresses exist, add them
+            snprintf(responses[i].addresses, addresses_size,
+                     "%s %s",
+                     hasWifi ? RADIO0_IPV4_ADDRESS : out,
+                     s_ipv6_addresses);
+        } else {
+            // Only provide the IPv4 address
+            strlcpy(responses[i].addresses,
+                    hasWifi ? RADIO0_IPV4_ADDRESS : out,
+                    addresses_size);
+        }
+        pthread_mutex_unlock(&s_ipv6_addresses_mutex);
 
         if (isInEmulator()) {
             /* We are in the emulator - the dns servers are listed
@@ -712,16 +763,16 @@ static void requestOrSendDataCallList(RIL_Token *t)
                 *  - net.eth0.dns3
                 *  - net.eth0.dns4
                 */
-            const int   dnslist_sz = 128;
+            const int   dnslist_sz = 256;
             char*       dnslist = alloca(dnslist_sz);
             const char* separator = "";
             int         nn;
+            char  propName[PROP_NAME_MAX];
+            char  propValue[PROP_VALUE_MAX];
 
             dnslist[0] = 0;
             for (nn = 1; nn <= 4; nn++) {
                 /* Probe net.eth0.dns<n> */
-                char  propName[PROP_NAME_MAX];
-                char  propValue[PROP_VALUE_MAX];
 
                 snprintf(propName, sizeof propName, "net.eth0.dns%d", nn);
 
@@ -735,6 +786,18 @@ static void requestOrSendDataCallList(RIL_Token *t)
                 strlcat(dnslist, propValue, dnslist_sz);
                 separator = " ";
             }
+            for (nn = 1; nn <= 4; ++nn) {
+                /* Probe net.eth0.ipv6dns<n> for IPv6 DNS servers */
+                snprintf(propName, sizeof propName, "net.eth0.ipv6dns%d", nn);
+                /* Ignore if undefined */
+                if (property_get(propName, propValue, "") <= 0) {
+                    continue;
+                }
+                strlcat(dnslist, separator, dnslist_sz);
+                strlcat(dnslist, propValue, dnslist_sz);
+                separator = " ";
+            }
+
             responses[i].dnses = dnslist;
 
             /* There is only one gateway in the emulator. If WiFi is
@@ -776,6 +839,27 @@ error:
     else
         RIL_onUnsolicitedResponse(RIL_UNSOL_DATA_CALL_LIST_CHANGED,
                                   NULL, 0);
+
+    at_response_free(p_response);
+}
+
+static void setNetworkSelectionAutomatic(RIL_Token t)
+{
+    int err;
+    ATResponse *p_response = NULL;
+
+    if (getSIMStatus() == SIM_ABSENT) {
+        RIL_onRequestComplete(t, RIL_E_RADIO_NOT_AVAILABLE, NULL, 0);
+        return;
+    }
+
+    err = at_send_command("AT+COPS=0", &p_response);
+
+    if (err < 0 || p_response == NULL || p_response->success == 0) {
+        RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+    } else {
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
+    }
 
     at_response_free(p_response);
 }
@@ -1857,7 +1941,7 @@ static void requestSimOpenChannel(void *data, size_t datalen, RIL_Token t)
         return;
     }
 
-    RIL_onRequestComplete(t, RIL_E_SUCCESS, &session_id, sizeof(&session_id));
+    RIL_onRequestComplete(t, RIL_E_SUCCESS, &session_id, sizeof(session_id));
     at_response_free(p_response);
 }
 
@@ -2332,6 +2416,113 @@ static void requestGetMute(void *data, size_t datalen, RIL_Token t)
    RIL_onRequestComplete(t, RIL_E_SUCCESS, &muteResponse, sizeof(muteResponse));
 }
 
+static void requestGetSimAuthentication(void *data, size_t datalen __unused, RIL_Token t)
+{
+    // TODO - hook this up with real query/info from radio.
+    RIL_SimAuthentication* auth = (RIL_SimAuthentication*)data;
+
+    RIL_SIM_IO_Response auth_response = {
+        0x90,
+        0x00,
+        ""
+    };
+
+    // special case: empty authData, should return empty response
+    if (auth->authData == NULL || strlen(auth->authData) == 0) {
+        char reply[] = "";
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, &auth_response, sizeof(auth_response));
+        RLOGD("%s empty data in", __func__);
+        return;
+    }
+
+    //talk to modem
+    ATResponse *p_response = NULL;
+    memset(&auth_response, 0, sizeof(auth_response));
+    int err;
+    char *cmd = NULL;
+    int auth_len = strlen(auth->authData);
+    int total_len = auth_len + 12;
+    asprintf(&cmd, "AT+CSIM=%d, \"008800%02x%02x%s00\"", total_len, auth->authContext,
+            auth_len, auth->authData);
+
+    err = at_send_command_singleline(cmd, "+CSIM:", &p_response);
+    if (err < 0 || p_response == NULL || p_response->success == 0) {
+        ALOGE("%s Error %d transmitting CSIM: %d", __func__,
+              err, p_response ? p_response->success : 0);
+        RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+        at_response_free(p_response);
+        return;
+    }
+
+    char* line = p_response->p_intermediates->line;
+
+    parseAuthResponse(line, &auth_response);
+    RIL_onRequestComplete(t, auth_response.sw2, &auth_response, sizeof(auth_response));
+    free(auth_response.simResponse);
+    free(p_response);
+}
+
+static void requestModemActivityInfo(RIL_Token t)
+{
+    int err;
+    char *line;
+    ATResponse *p_response = NULL;
+    RIL_ActivityStatsInfo info;
+
+    err = at_send_command_singleline("AT+MAI", "+MAI:", &p_response);
+    if (err < 0 || p_response == NULL || p_response->success == 0) {
+        ALOGE("Error transmitting AT+MAI, err=%d, success=%d",
+            err, (p_response ? p_response->success : 0));
+        goto error;
+    }
+
+    memset(&info, 0, sizeof(info));
+    if (sscanf(p_response->p_intermediates->line,
+               "+MAI: sleep=%u idle=%u rx=%u tx0=%u tx1=%u tx2=%u tx3=%u tx4=%u",
+               &info.sleep_mode_time_ms,
+               &info.idle_mode_time_ms,
+               &info.rx_mode_time_ms,
+               &info.tx_mode_time_ms[0],
+               &info.tx_mode_time_ms[1],
+               &info.tx_mode_time_ms[2],
+               &info.tx_mode_time_ms[3],
+               &info.tx_mode_time_ms[4]) == 8) {
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, &info, sizeof(info));
+        at_response_free(p_response);
+        return;
+    } else {
+        ALOGE("Unexpected response for AT+MAI: '%s'",
+            p_response->p_intermediates->line);
+    }
+
+error:
+    at_response_free(p_response);
+    RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+}
+
+static void requestSetCarrierRestrictions(const RIL_CarrierRestrictions *restrictions __unused, RIL_Token t)
+{
+    ATResponse *p_response = NULL;
+    int success;
+    int err;
+    char cmd[32];
+
+    snprintf(cmd, sizeof(cmd), "AT+CRRSTR=%d,%d",
+        restrictions->len_allowed_carriers,
+        restrictions->len_excluded_carriers);
+
+    err = at_send_command_singleline(cmd, "+CRRSTR:", &p_response);
+    success = p_response ? p_response->success : 0;
+    at_response_free(p_response);
+
+    if (err == 0 && success) {
+        RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
+    } else {
+        ALOGE("'%s' failed with err=%d success=%d", cmd, err, success);
+        RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
+    }
+}
+
 /*** Callback methods from the RIL library to us ***/
 
 /**
@@ -2585,11 +2776,7 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             break;
 
         case RIL_REQUEST_SET_NETWORK_SELECTION_AUTOMATIC:
-            if (getSIMStatus() == SIM_ABSENT) {
-                RIL_onRequestComplete(t, RIL_E_RADIO_NOT_AVAILABLE, NULL, 0);
-            } else {
-                at_send_command("AT+COPS=0", NULL);
-            }
+            setNetworkSelectionAutomatic(t);
             break;
 
         case RIL_REQUEST_DATA_CALL_LIST:
@@ -2731,6 +2918,10 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
             break;
 
+        case RIL_REQUEST_SIM_AUTHENTICATION:
+            requestGetSimAuthentication(data, datalen, t);
+            break;
+
         case RIL_REQUEST_BASEBAND_VERSION:
             requestCdmaBaseBandVersion(request, data, datalen, t);
             break;
@@ -2789,6 +2980,19 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             } else {
                 // VTS tests expect us to silently do nothing
                 RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
+            }
+            break;
+
+        case RIL_REQUEST_GET_ACTIVITY_INFO:
+            requestModemActivityInfo(t);
+            break;
+
+        case RIL_REQUEST_SET_CARRIER_RESTRICTIONS:
+            if (datalen == sizeof(RIL_CarrierRestrictions)) {
+                requestSetCarrierRestrictions((const RIL_CarrierRestrictions *)data, t);
+            } else {
+                /* unexpected sizeof */
+                RIL_onRequestComplete(t, RIL_E_REQUEST_NOT_SUPPORTED, NULL, 0);
             }
             break;
 
@@ -2984,7 +3188,7 @@ getSIMStatus()
 {
     ATResponse *p_response = NULL;
     int err;
-    int ret;
+    SIM_Status ret;
     char *cpinLine;
     char *cpinResult;
 
@@ -3028,23 +3232,18 @@ getSIMStatus()
 
     if (0 == strcmp (cpinResult, "SIM PIN")) {
         ret = SIM_PIN;
-        goto done;
     } else if (0 == strcmp (cpinResult, "SIM PUK")) {
         ret = SIM_PUK;
-        goto done;
     } else if (0 == strcmp (cpinResult, "PH-NET PIN")) {
-        return SIM_NETWORK_PERSONALIZATION;
-    } else if (0 != strcmp (cpinResult, "READY"))  {
+        ret = SIM_NETWORK_PERSONALIZATION;
+    } else if (0 == strcmp (cpinResult, "RESTRICTED"))  {
+        ret = SIM_RESTRICTED;
+    } else if (0 == strcmp (cpinResult, "READY"))  {
+        ret = (sState == RADIO_STATE_ON) ? SIM_READY : SIM_NOT_READY;
+    } else {
         /* we're treating unsupported lock types as "sim absent" */
         ret = SIM_ABSENT;
-        goto done;
     }
-
-    at_response_free(p_response);
-    p_response = NULL;
-    cpinResult = NULL;
-
-    ret = (sState == RADIO_STATE_ON) ? SIM_READY : SIM_NOT_READY;
 
 done:
     at_response_free(p_response);
@@ -3059,7 +3258,7 @@ done:
  * @return: On success returns RIL_E_SUCCESS
  */
 static int getCardStatus(RIL_CardStatus_v6 **pp_card_status) {
-    static RIL_AppStatus app_status_array[] = {
+    static const RIL_AppStatus app_status_array[] = {
         // SIM_ABSENT = 0
         { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
@@ -3078,54 +3277,74 @@ static int getCardStatus(RIL_CardStatus_v6 **pp_card_status) {
         // SIM_NETWORK_PERSONALIZATION = 5
         { RIL_APPTYPE_USIM, RIL_APPSTATE_SUBSCRIPTION_PERSO, RIL_PERSOSUBSTATE_SIM_NETWORK,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // RUIM_ABSENT = 6
+        // SIM_RESTRICTED = 6
         { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // RUIM_NOT_READY = 7
+
+        // RUIM_ABSENT = 7
+        { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
+          NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
+        // RUIM_NOT_READY = 8
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_DETECTED, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // RUIM_READY = 8
+        // RUIM_READY = 9
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_READY, RIL_PERSOSUBSTATE_READY,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // RUIM_PIN = 9
+        // RUIM_PIN = 10
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_PIN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // RUIM_PUK = 10
+        // RUIM_PUK = 11
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_PUK, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_BLOCKED, RIL_PINSTATE_UNKNOWN },
-        // RUIM_NETWORK_PERSONALIZATION = 11
+        // RUIM_NETWORK_PERSONALIZATION = 12
         { RIL_APPTYPE_RUIM, RIL_APPSTATE_SUBSCRIPTION_PERSO, RIL_PERSOSUBSTATE_SIM_NETWORK,
            NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // ISIM_ABSENT = 12
+        // RUIM_RESTRICTED = 13
         { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // ISIM_NOT_READY = 13
+
+        // ISIM_ABSENT = 14
+        { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
+          NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
+        // ISIM_NOT_READY = 15
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_DETECTED, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // ISIM_READY = 14
+        // ISIM_READY = 16
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_READY, RIL_PERSOSUBSTATE_READY,
           NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
-        // ISIM_PIN = 15
+        // ISIM_PIN = 17
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_PIN, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-        // ISIM_PUK = 16
+        // ISIM_PUK = 18
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_PUK, RIL_PERSOSUBSTATE_UNKNOWN,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_BLOCKED, RIL_PINSTATE_UNKNOWN },
-        // ISIM_NETWORK_PERSONALIZATION = 17
+        // ISIM_NETWORK_PERSONALIZATION = 19
         { RIL_APPTYPE_ISIM, RIL_APPSTATE_SUBSCRIPTION_PERSO, RIL_PERSOSUBSTATE_SIM_NETWORK,
           NULL, NULL, 0, RIL_PINSTATE_ENABLED_NOT_VERIFIED, RIL_PINSTATE_UNKNOWN },
-
+        // ISIM_RESTRICTED = 20
+        { RIL_APPTYPE_UNKNOWN, RIL_APPSTATE_UNKNOWN, RIL_PERSOSUBSTATE_UNKNOWN,
+          NULL, NULL, 0, RIL_PINSTATE_UNKNOWN, RIL_PINSTATE_UNKNOWN },
     };
+
     RIL_CardState card_state;
     int num_apps;
 
-    int sim_status = getSIMStatus();
-    if (sim_status == SIM_ABSENT) {
-        card_state = RIL_CARDSTATE_ABSENT;
-        num_apps = 0;
-    } else {
-        card_state = RIL_CARDSTATE_PRESENT;
-        num_apps = 3;
+    SIM_Status sim_status = getSIMStatus();
+    switch (sim_status) {
+        case SIM_ABSENT:
+            card_state = RIL_CARDSTATE_ABSENT;
+            num_apps = 0;
+            break;
+
+        case SIM_RESTRICTED:
+            card_state = RIL_CARDSTATE_RESTRICTED;
+            num_apps = 0;
+            break;
+
+        default:
+            card_state = RIL_CARDSTATE_PRESENT;
+            num_apps = 3;
+            break;
     }
 
     // Allocate and initialize base card status.
@@ -3706,15 +3925,78 @@ static void usage(char *s __unused)
 #endif
 }
 
+static void onInterfaceAddressChange(unsigned int ifIndex,
+                                     const struct ifAddress* addresses,
+                                     size_t numAddresses) {
+    char ifName[IF_NAMESIZE];
+    size_t i;
+    bool hasWifi = hasWifiCapability();
+    const char* radioIfName = getRadioInterfaceName(hasWifi);
+    char* currentLoc;
+    size_t remaining;
+
+    if (if_indextoname(ifIndex, ifName) == NULL) {
+        RLOGE("Unable to get interface name for interface %u", ifIndex);
+        return;
+    }
+    if (strcmp(radioIfName, ifName) != 0) {
+        // This is not for the radio interface, ignore it
+        return;
+    }
+
+    pthread_mutex_lock(&s_ipv6_addresses_mutex);
+    // Clear out any existing addresses, we receive a full set of addresses
+    // that are going to replace the existing ones.
+    s_ipv6_addresses[0] = '\0';
+    currentLoc = s_ipv6_addresses;
+    remaining = sizeof(s_ipv6_addresses);
+    for (i = 0; i < numAddresses; ++i) {
+        if (addresses[i].family != AF_INET6) {
+            // Only care about IPv6 addresses
+            continue;
+        }
+        char address[INET6_ADDRSTRLEN];
+        if (inet_ntop(addresses[i].family, &addresses[i].addr,
+                      address, sizeof(address))) {
+            int printed = 0;
+            if (s_ipv6_addresses[0]) {
+                // We've already printed something, separate them
+                if (remaining < 1) {
+                    continue;
+                }
+                *currentLoc++ = ' ';
+                --remaining;
+            }
+            printed = snprintf(currentLoc, remaining, "%s/%d",
+                               address, addresses[i].prefix);
+            if (printed > 0) {
+                remaining -= (size_t)printed;
+                currentLoc += printed;
+            }
+        } else {
+            RLOGE("Unable to convert address to string for if %s", ifName);
+        }
+    }
+    pthread_mutex_unlock(&s_ipv6_addresses_mutex);
+
+    // Send unsolicited call list change to notify upper layers about the new
+    // addresses
+    requestOrSendDataCallList(NULL);
+}
+
 static void *
 mainLoop(void *param __unused)
 {
     int fd;
     int ret;
+    struct ifMonitor* monitor = ifMonitorCreate();
 
     AT_DUMP("== ", "entering mainLoop()", -1 );
     at_set_on_reader_closed(onATReaderClosed);
     at_set_on_timeout(onATTimeout);
+
+    ifMonitorSetCallback(monitor, &onInterfaceAddressChange);
+    ifMonitorRunAsync(monitor);
 
     for (;;) {
         fd = -1;
@@ -3739,19 +4021,20 @@ mainLoop(void *param __unused)
             }
 
             if (fd < 0) {
-                perror ("opening AT interface. retrying...");
+                RLOGE("Error opening AT interface, retrying...");
                 sleep(10);
                 /* never returns */
             }
         }
 
         s_closed = 0;
-        ret = at_open(fd, onUnsolicited);
 
+        ret = at_open(fd, onUnsolicited);
         if (ret < 0) {
             RLOGE ("AT error %d on at_open\n", ret);
-            return 0;
+            break;
         }
+
 
         RIL_requestTimedCallback(initializeCallback, NULL, &TIMEVAL_0);
 
@@ -3762,6 +4045,11 @@ mainLoop(void *param __unused)
         waitForClose();
         RLOGI("Re-opening after close");
     }
+
+    ifMonitorStop(monitor);
+    ifMonitorFree(monitor);
+
+    return NULL;
 }
 
 #ifdef RIL_SHLIB

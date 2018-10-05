@@ -22,6 +22,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <ctype.h>
+#include <poll.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
