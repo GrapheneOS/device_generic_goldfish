@@ -1,52 +1,28 @@
 #!/bin/bash
 
 if [ $# -ne 3 ]; then
-  echo "Usage: mk_verified_boot_params.sh <system.img> <system-qemu.img> <VerifiedBootParams.textproto>"
+  echo "Usage: mk_verified_boot_params.sh <vbmeta.img> <system-qemu.img> <VerifiedBootParams.textproto>"
   exit 1
 fi
 
-# TODO(mattwach): After avbtool calc_kernel_cmdline (or equiv) is ready, we
-# should change this script to use that subcommand instead.  The benefit
-# will be more stable parsing.
-
-# Example Output From avbtool info_image --image system.img
+# Example Output from 'avbtool calculate_kernel_cmdline --image vbmeta.img':
+# (actual output is on a single line)
 #
-# Footer version:           1.0
-# Image size:               2684354560 bytes
-# Original image size:      2641915904 bytes
-# VBMeta offset:            2683781120
-# VBMeta size:              1024 bytes
-# --
-# Minimum libavb version:   1.0
-# Header Block:             256 bytes
-# Authentication Block:     0 bytes
-# Auxiliary Block:          768 bytes
-# Algorithm:                NONE
-# Rollback Index:           0
-# Flags:                    0
-# Release String:           'avbtool 1.1.0'
-# Descriptors:
-#     Hashtree descriptor:
-#       Version of dm-verity:  1
-#       Image Size:            2641915904 bytes
-#       Tree Offset:           2641915904
-#       Tree Size:             20811776 bytes
-#       Data Block Size:       4096 bytes
-#       Hash Block Size:       4096 bytes
-#       FEC num roots:         2
-#       FEC offset:            2662727680
-#       FEC size:              21053440 bytes
-#       Hash Algorithm:        sha1
-#       Partition Name:        system
-#       Salt:                  27e6b2075f9a47160d21f824b923f4ebdb755c3f
-#       Root Digest:           07e8da3c6ffe2ea52d14ad342beb6bb15060cd45
-#       Flags:                 0
-#     Kernel Cmdline descriptor:
-#       Flags:                 1
-#       Kernel Cmdline:        'dm="1 vroot none ro 1,0 5159992 verity 1 PARTUUID=$(ANDROID_SYSTEM_PARTUUID) PARTUUID=$(ANDROID_SYSTEM_PARTUUID) 4096 4096 644999 644999 sha1 07e8da3c6ffe2ea52d14ad342beb6bb15060cd45 27e6b2075f9a47160d21f824b923f4ebdb755c3f 10 $(ANDROID_VERITY_MODE) ignore_zero_blocks use_fec_from_device PARTUUID=$(ANDROID_SYSTEM_PARTUUID) fec_roots 2 fec_blocks 650080 fec_start 650080" root=/dev/dm-0'
-#     Kernel Cmdline descriptor:
-#       Flags:                 2
-#       Kernel Cmdline:        'root=PARTUUID=$(ANDROID_SYSTEM_PARTUUID)'
+# dm="1 vroot none ro 1,0 4666872 verity 1 \
+#     PARTUUID=$(ANDROID_SYSTEM_PARTUUID) \
+#     PARTUUID=$(ANDROID_SYSTEM_PARTUUID) \
+#     4096 4096 583359 583359 sha1 \
+#     d3462e6b89750e3f6bca242551bc5ded22843c8f \
+#     930e57fa675c2e9f4b8bbc960ee165cbabbe651c \
+#     10 $(ANDROID_VERITY_MODE) ignore_zero_blocks \
+#     use_fec_from_device PARTUUID=$(ANDROID_SYSTEM_PARTUUID) \
+#     fec_roots 2 fec_blocks 587954 fec_start 587954" \
+# root=/dev/dm-0
+#
+# The emulator can not use every parameter (for example fec args require a
+# minimum kernel level).  Some parameters must also be substituted.  Therefore
+# this script selects arguments from the tool's output to build the actual
+# kernel commandline as a textproto file.
 
 set -e
 
@@ -64,24 +40,16 @@ readonly MAJOR_VERSION=1
 readonly SRCIMG=$1
 readonly QEMU_IMG=$2
 readonly TARGET=$3
-readonly INFO_IMAGE=$(dirname $TARGET)/SrcImgInfo.txt
 
 # Use sgdisk to determine the partition UUID
 [[ $(${SGDISK:-sgdisk} --info 1 $QEMU_IMG | grep "Partition name:" | awk '{print $3}') == "'system'" ]] || die "Partition 1 is not named 'system'."
 readonly GUID=$(${SGDISK:-sgdisk} --info 1 $QEMU_IMG | grep "Partition unique GUID:" | awk '{print $4}')
 [[ $GUID =~ [[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12} ]] || die "GUID looks incorrect: $GUID"
 
+# Extract the commandline
+readonly CMDLINE=$(${AVBTOOL:-avbtool} calculate_kernel_cmdline --image $SRCIMG)
 
-# Get the information and discard all but the "Kernel Cmdline: " parameters
-${AVBTOOL:-avbtool} info_image --image $SRCIMG > $INFO_IMAGE
-readonly CMDLINE=$(cat $INFO_IMAGE | grep -e grep -e "Kernel Cmdline: \+'dm=" | head -1)
-
-# At this point, CMDLINE is a single line, similar to
-#
-# Kernel Cmdline:  'dm="1 vroot none ro 1,0 5159992 verity 1 ...
-#
-# The rest of the script extracts params from this line to create a
-# commandline usable by the emulator.
+# Extracts params from CMDLINE to create a commandline usable by the emulator.
 #
 # TODO: fec options do not work yet because they require a kernel of >=4.5.
 # The emulator is running a 4.4 kernel.  This script ignores options
