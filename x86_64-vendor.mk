@@ -1,6 +1,6 @@
 
 PRODUCT_PROPERTY_OVERRIDES += \
-       vendor.rild.libpath=/vendor/lib64/libreference-ril.so
+       vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
 
 # This is a build configuration for a full-featured build of the
 # Open-Source part of the tree. It's geared toward a US-centric

@@ -25,8 +25,8 @@
 
 #define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_Camera"
-#include <cutils/log.h>
- #include <stdio.h>
+#include <log/log.h>
+#include <stdio.h>
 #include "EmulatedCamera.h"
 //#include "EmulatedFakeCameraDevice.h"
 #include "Converters.h"
@@ -56,17 +56,6 @@ static void PrintParamDiff(const CameraParameters& current, const char* new_par)
 #else
 #define PrintParamDiff(current, new_par)   (void(0))
 #endif  /* DEBUG_PARAM */
-
-/* A helper routine that adds a value to the camera parameter.
- * Param:
- *  param - Camera parameter to add a value to.
- *  val - Value to add.
- * Return:
- *  A new string containing parameter with the added value on success, or NULL on
- *  a failure. If non-NULL string is returned, the caller is responsible for
- *  freeing it with 'free'.
- */
-static char* AddValue(const char* param, const char* val);
 
 /*
  * Check if a given string |value| equals at least one of the strings in |list|
@@ -495,7 +484,6 @@ status_t EmulatedCamera::takePicture()
 {
     ALOGV("%s", __FUNCTION__);
 
-    status_t res;
     int width, height;
     uint32_t org_fmt;
 
@@ -1234,25 +1222,6 @@ const char EmulatedCamera::RECORDING_HINT_KEY[] = "recording-hint";
 
 const char EmulatedCamera::FACING_BACK[]      = "back";
 const char EmulatedCamera::FACING_FRONT[]     = "front";
-
-/****************************************************************************
- * Helper routines
- ***************************************************************************/
-
-static char* AddValue(const char* param, const char* val)
-{
-    const size_t len1 = strlen(param);
-    const size_t len2 = strlen(val);
-    char* ret = reinterpret_cast<char*>(malloc(len1 + len2 + 2));
-    ALOGE_IF(ret == NULL, "%s: Memory failure", __FUNCTION__);
-    if (ret != NULL) {
-        memcpy(ret, param, len1);
-        ret[len1] = ',';
-        memcpy(ret + len1 + 1, val, len2);
-        ret[len1 + len2 + 1] = '\0';
-    }
-    return ret;
-}
 
 /****************************************************************************
  * Parameter debugging helpers
