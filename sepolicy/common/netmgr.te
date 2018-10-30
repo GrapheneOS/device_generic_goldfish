@@ -23,6 +23,8 @@ allowxperm netmgr self:udp_socket ioctl { SIOCSIFADDR SIOCSIFNETMASK SIOCSIFBRDA
 allowxperm netmgr self:packet_socket ioctl { SIOCGIFINDEX SIOCGIFHWADDR };
 
 # Allow netmgr to run iptables to block and unblock network traffic
+# TODO(b/113124961): clean up this Treble violation.
+typeattribute netmgr vendor_executes_system_violators;
 allow netmgr system_file:file execute_no_trans;
 allow netmgr system_file:file lock;
 # Packet socket for wifi forwarding
