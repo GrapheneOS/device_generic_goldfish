@@ -26,6 +26,7 @@ PRODUCT_PACKAGES += \
     lib_renderControl_enc \
     libEGL_emulation \
     libGLESv2_enc \
+    libvulkan_enc \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
     libGLESv2_emulation \
