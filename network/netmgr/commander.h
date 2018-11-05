@@ -33,10 +33,11 @@ public:
 
     void registerCommand(const char* commandStr, Command* command);
 
-    Pollable::Data data() const override;
-    void onReadAvailable() override;
-    void onClose() override;
-    void onTimeout() override;
+    void getPollData(std::vector<pollfd>* fds) const override;
+    Timestamp getTimeout() const override;
+    bool onReadAvailable(int fd, int* status) override;
+    bool onClose(int fd, int* status) override;
+    bool onTimeout(int* status) override;
 private:
     void openPipe();
     void closePipe();

@@ -1,11 +1,11 @@
 /*
- * Copyright 2018, The Android Open Source Project
+ * Copyright (C) 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,26 +16,23 @@
 
 #pragma once
 
-#include "interface_state.h"
+#include "macaddress.h"
 #include "pollable.h"
 #include "result.h"
 
-const char* interfaceStateToStr(InterfaceState state);
+#include <string>
+#include <unordered_set>
 
-/** Monitor network interfaces and provide notifications of changes to those
- *  interfaces.
- */
-class Monitor : public Pollable {
+struct Ieee80211Header;
+struct pcap;
+typedef struct pcap pcap_t;
+
+class WifiForwarder : public Pollable {
 public:
-    using OnInterfaceStateCallback = std::function<void (unsigned int index,
-                                                         const char* name,
-                                                         InterfaceState state)>;
-    Monitor();
-    ~Monitor();
+    explicit WifiForwarder(const char* monitorInterfaceName);
+    ~WifiForwarder();
 
     Result init();
-
-    void setOnInterfaceState(OnInterfaceStateCallback callback);
 
     // Pollable interface
     void getPollData(std::vector<pollfd>* fds) const override;
@@ -43,13 +40,14 @@ public:
     bool onReadAvailable(int fd, int* status) override;
     bool onClose(int fd, int* status) override;
     bool onTimeout(int* status) override;
-
 private:
-    Result openSocket();
-    void closeSocket();
-    void handleNewLink(const struct nlmsghdr* hdr);
+    void forwardFromPcap();
+    void injectFromPipe();
+    void cleanup();
 
-    int mSocketFd;
-    OnInterfaceStateCallback mOnInterfaceStateCallback;
+    std::string mInterfaceName;
+    Pollable::Timestamp mDeadline;
+    std::vector<unsigned char> mMonitorBuffer;
+    pcap_t* mMonitorPcap;
+    int mPipeFd;
 };
-
