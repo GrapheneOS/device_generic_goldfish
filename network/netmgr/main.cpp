@@ -20,11 +20,14 @@
 #include "log.h"
 #include "monitor.h"
 #include "poller.h"
+#include "wifi_forwarder.h"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
 #include <functional>
+
+static const char kWifiMonitorInterface[] = "hwsim0";
 
 static void usage(const char* name) {
     LOGE("Usage: %s --if-prefix <prefix> --network <ip/mask>", name);
@@ -131,9 +134,17 @@ int main(int argc, char* argv[]) {
     WifiCommand wifiCommand;
     commander.registerCommand("wifi", &wifiCommand);
 
+    WifiForwarder forwarder(kWifiMonitorInterface);
+    res = forwarder.init();
+    if (!res) {
+        LOGE("%s", res.c_str());
+        return 1;
+    }
+
     Poller poller;
     poller.addPollable(&monitor);
     poller.addPollable(&commander);
+    poller.addPollable(&forwarder);
     return poller.run();
 }
 

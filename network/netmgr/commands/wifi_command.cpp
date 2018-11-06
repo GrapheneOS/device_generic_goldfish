@@ -91,7 +91,7 @@ WifiCommand::WifiCommand() : mLowestInterfaceNumber(1) {
     readConfig();
 }
 
-Result WifiCommand::onCommand(const char* command, const char* args) {
+Result WifiCommand::onCommand(const char* /*command*/, const char* args) {
     const char* divider = ::strchr(args, ' ');
     if (divider == nullptr) {
         // Unknown command, every command needs an argument

@@ -24,14 +24,23 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <unordered_map>
 #include <vector>
 
 using std::chrono::duration_cast;
 
-static struct timespec* getTimeout(Pollable::Timestamp deadline,
-                                   struct timespec* ts) {
+static struct timespec* calculateTimeout(Pollable::Timestamp deadline,
+                                         struct timespec* ts) {
+    Pollable::Timestamp now = Pollable::Clock::now();
     if (deadline < Pollable::Timestamp::max()) {
-        auto timeout = deadline - Pollable::Clock::now();
+        if (deadline <= now) {
+            LOGE("Poller found past due deadline, setting to zero");
+            ts->tv_sec = 0;
+            ts->tv_nsec = 0;
+            return ts;
+        }
+
+        auto timeout = deadline - now;
         // Convert and round down to seconds
         auto seconds = duration_cast<std::chrono::seconds>(timeout);
         // Then subtract the seconds from the timeout and convert the remainder
@@ -72,23 +81,26 @@ int Poller::run() {
     }
 
     std::vector<struct pollfd> fds;
+    std::unordered_map<int, Pollable*> pollables;
     while (true) {
         fds.clear();
+        pollables.clear();
         Pollable::Timestamp deadline = Pollable::Timestamp::max();
-        for (const auto& pollable : mPollables) {
-            int fd = pollable->data().fd;
-            if (fd != -1) {
-                fds.push_back(pollfd{});
-                fds.back().fd = fd;
-                fds.back().events = POLLIN;
+        for (auto& pollable : mPollables) {
+            size_t start = fds.size();
+            pollable->getPollData(&fds);
+            Pollable::Timestamp pollableDeadline = pollable->getTimeout();
+            // Create a map from each fd to the pollable
+            for (size_t i = start; i < fds.size(); ++i) {
+                pollables[fds[i].fd] = pollable;
             }
-            if (pollable->data().deadline < deadline) {
-                deadline = pollable->data().deadline;
+            if (pollableDeadline < deadline) {
+                deadline = pollableDeadline;
             }
         }
 
         struct timespec ts = { 0, 0 };
-        struct timespec* tsPtr = getTimeout(deadline, &ts);
+        struct timespec* tsPtr = calculateTimeout(deadline, &ts);
         status = ::ppoll(fds.data(), fds.size(), tsPtr, &mask);
         if (status < 0) {
             if (errno == EINTR) {
@@ -98,32 +110,46 @@ int Poller::run() {
             // Actual error, time to quit
             LOGE("Polling failed: %s", strerror(errno));
             return errno;
-        }
-        // Check for timeouts
-        Pollable::Timestamp now = Pollable::Clock::now();
-        for (auto& pollable : mPollables) {
-            // Since we're going to have a very low number of pollables it's
-            // probably faster to just loop through fds here instead of
-            // constructing a map from fd to pollable every polling loop.
+        } else if (status > 0) {
+            // Check for read or close events
             for (const auto& fd : fds) {
-                if (fd.fd == pollable->data().fd) {
-                    if (fd.revents & POLLIN) {
-                        // This pollable has data available for reading
-                        pollable->onReadAvailable();
+                if ((fd.revents & (POLLIN | POLLHUP)) == 0) {
+                    // Neither POLLIN nor POLLHUP, not interested
+                    continue;
+                }
+                auto pollable = pollables.find(fd.fd);
+                if (pollable == pollables.end()) {
+                    // No matching fd, weird and unexpected
+                    LOGE("Poller could not find fd matching %d", fd.fd);
+                    continue;
+                }
+                if (fd.revents & POLLIN) {
+                    // This pollable has data available for reading
+                    int status = 0;
+                    if (!pollable->second->onReadAvailable(fd.fd, &status)) {
+                        // The onReadAvailable handler signaled an exit
+                        return status;
                     }
-                    if (fd.revents & POLLHUP) {
-                        // The fd was closed from the other end
-                        pollable->onClose();
+                }
+                if (fd.revents & POLLHUP) {
+                    // The fd was closed from the other end
+                    int status = 0;
+                    if (!pollable->second->onClose(fd.fd, &status)) {
+                        // The onClose handler signaled an exit
+                        return status;
                     }
                 }
             }
-            // Potentially trigger both read and timeout for pollables that have
-            // different logic for these two cases. By checking the timeout
-            // after the read we allow the pollable to update the deadline after
-            // the read to prevent this from happening.
-            if (now > pollable->data().deadline) {
-                // This pollable has reached its deadline
-                pollable->onTimeout();
+        }
+        // Check for timeouts
+        Pollable::Timestamp now = Pollable::Clock::now();
+        for (const auto& pollable : mPollables) {
+            if (pollable->getTimeout() <= now) {
+                int status = 0;
+                if (!pollable->onTimeout(&status)) {
+                    // The onTimeout handler signaled an exit
+                    return status;
+                }
             }
         }
     }

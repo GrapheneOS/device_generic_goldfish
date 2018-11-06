@@ -20,7 +20,10 @@
 #include "log.h"
 
 #include <errno.h>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 #include <qemu_pipe.h>
+#pragma clang diagnostic pop
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -54,12 +57,17 @@ void Commander::registerCommand(const char* commandStr, Command* command) {
     mCommands[commandStr] = command;
 }
 
-Pollable::Data Commander::data() const {
-    return Data { mPipeFd, mDeadline };
+void Commander::getPollData(std::vector<pollfd>* fds) const {
+    if (mPipeFd != -1) {
+        fds->push_back(pollfd{mPipeFd, POLLIN, 0});
+    }
 }
 
-void Commander::onReadAvailable() {
+Pollable::Timestamp Commander::getTimeout() const {
+    return mDeadline;
+}
 
+bool Commander::onReadAvailable(int /*fd*/, int* /*status*/) {
     size_t offset = mReceiveBuffer.size();
     mReceiveBuffer.resize(offset + kReceiveSpace);
     if (mReceiveBuffer.size() > kMaxReceiveBufferSize) {
@@ -78,7 +86,8 @@ void Commander::onReadAvailable() {
                 continue;
             }
             LOGE("Commander failed to receive on pipe: %s", strerror(errno));
-            return;
+            // Don't exit the looper because of this, keep trying
+            return true;
         }
         size_t length = static_cast<size_t>(status);
         mReceiveBuffer.resize(offset + length);
@@ -89,7 +98,7 @@ void Commander::onReadAvailable() {
                                      '\n');
             if (endline == mReceiveBuffer.end()) {
                 // No endline in sight, keep waiting and buffering
-                return;
+                return true;
             }
 
             *endline = '\0';
@@ -109,27 +118,29 @@ void Commander::onReadAvailable() {
             if (endline == mReceiveBuffer.end()) {
                 mReceiveBuffer.clear();
                 // There can be nothing left, just return
-                return;
+                return true;
             } else {
                 mReceiveBuffer.erase(mReceiveBuffer.begin(), endline + 1);
                 // There may be another line in there so keep looping and look
                 // for more
             }
         }
-        return;
+        return true;
     }
 }
 
-void Commander::onClose() {
+bool Commander::onClose(int /*fd*/, int* /*status*/) {
     // Pipe was closed from the other end, close it on our side and re-open
     closePipe();
     openPipe();
+    return true;
 }
 
-void Commander::onTimeout() {
+bool Commander::onTimeout(int* /*status*/) {
     if (mPipeFd == -1) {
         openPipe();
     }
+    return true;
 }
 
 void Commander::openPipe() {
