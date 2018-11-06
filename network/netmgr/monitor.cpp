@@ -44,7 +44,7 @@ void Monitor::setOnInterfaceState(OnInterfaceStateCallback callback) {
     mOnInterfaceStateCallback = callback;
 }
 
-void Monitor::onReadAvailable() {
+bool Monitor::onReadAvailable(int /*fd*/, int* /*status*/) {
     char buffer[32768];
     struct sockaddr_storage storage;
 
@@ -56,16 +56,21 @@ void Monitor::onReadAvailable() {
                                 MSG_DONTWAIT,
                                 reinterpret_cast<struct sockaddr*>(&storage),
                                 &addrSize);
-        if (status < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            // Nothing to receive, everything is fine
-            return;
-        } else if (status < 0) {
+        if (status < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // Nothing to receive, everything is fine
+                return true;
+            } else if (errno == EINTR) {
+                continue;
+            }
             LOGE("Monitor receive failed: %s", strerror(errno));
-            return;
+            // An error occurred but let's keep trying
+            return true;
         } else if (addrSize < 0 ||
                    static_cast<size_t>(addrSize) != sizeof(struct sockaddr_nl)) {
             LOGE("Monitor received invalid address size");
-            return;
+            // It's an error but no need to exit, let's keep polling
+            return true;
         }
 
         size_t length = static_cast<size_t>(status);
@@ -84,20 +89,30 @@ void Monitor::onReadAvailable() {
     }
 }
 
-void Monitor::onClose() {
+bool Monitor::onClose(int /*fd*/, int* status) {
     // Socket was closed from the other end, close it from our end and re-open
     closeSocket();
     Result res = openSocket();
     if (!res) {
         LOGE("%s", res.c_str());
+        *status = 1;
+        return false;
+    }
+    return true;
+}
+
+bool Monitor::onTimeout(int* /*status*/) {
+    return true;
+}
+
+void Monitor::getPollData(std::vector<pollfd>* fds) const {
+    if (mSocketFd != -1) {
+        fds->push_back(pollfd{mSocketFd, POLLIN, 0});
     }
 }
 
-void Monitor::onTimeout() {
-}
-
-Pollable::Data Monitor::data() const {
-    return Pollable::Data{ mSocketFd, Pollable::Timestamp::max() };
+Pollable::Timestamp Monitor::getTimeout() const {
+    return Pollable::Timestamp::max();
 }
 
 Result Monitor::openSocket() {

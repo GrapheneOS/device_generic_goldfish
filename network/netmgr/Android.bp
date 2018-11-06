@@ -17,6 +17,10 @@
 cc_binary {
     name: "netmgr",
     vendor: true,
+    cflags: [
+             "-Wall",
+             "-Werror",
+            ],
     srcs: [
            "address_assigner.cpp",
            "commander.cpp",
@@ -26,11 +30,13 @@ cc_binary {
            "main.cpp",
            "monitor.cpp",
            "poller.cpp",
+           "wifi_forwarder.cpp",
            "commands/wifi_command.cpp",
           ],
     shared_libs: [
         "libcutils",
         "liblog",
+        "libpcap",
     ],
     header_libs: [
         "goldfish_headers",
