@@ -34,3 +34,12 @@ void initIsTerminal();
     } \
 } while (0)
 
+#define LOGW(...) do { \
+    if (isTerminal) { \
+        fprintf(stderr, __VA_ARGS__); \
+        fprintf(stderr, "\n"); \
+    } else { \
+        ALOGW(__VA_ARGS__); \
+    } \
+} while (0)
+
