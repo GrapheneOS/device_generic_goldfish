@@ -185,6 +185,9 @@ Result WifiForwarder::init() {
 
 
 void WifiForwarder::getPollData(std::vector<pollfd>* fds) const {
+    if (mPipeFd == -1) {
+        return;
+    }
     int pcapFd = pcap_get_selectable_fd(mMonitorPcap);
     if (pcapFd != -1) {
         fds->push_back(pollfd{pcapFd, POLLIN, 0});
