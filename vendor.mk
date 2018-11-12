@@ -22,6 +22,7 @@ PRODUCT_PACKAGES += \
     gralloc.goldfish \
     gralloc.goldfish.default \
     gralloc.ranchu \
+    vulkan.ranchu \
     libGLESv1_CM_emulation \
     lib_renderControl_enc \
     libEGL_emulation \
