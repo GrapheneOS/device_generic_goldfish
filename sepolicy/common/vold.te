@@ -1,0 +1,3 @@
+dontaudit vold kernel:system module_request;
+
+allow vold nsfs:file r_file_perms;

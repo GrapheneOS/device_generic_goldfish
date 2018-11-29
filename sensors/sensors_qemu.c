@@ -128,7 +128,7 @@ _sensorIdFromName( const char*  name )
 /* return the current time in nanoseconds */
 static int64_t now_ns(void) {
     struct timespec  ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    clock_gettime(CLOCK_BOOTTIME, &ts);
     return (int64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
 }
 

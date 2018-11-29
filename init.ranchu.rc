@@ -15,6 +15,12 @@ on post-fs-data
     mkdir /data/vendor/var/run 0755 root root
     mkdir /data/vendor/var/run/netns 0755 root root
 
+on zygote-start
+    # Create the directories used by the Wireless subsystem
+    mkdir /data/vendor/wifi 0771 wifi wifi
+    mkdir /data/vendor/wifi/wpa 0770 wifi wifi
+    mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
+
 on boot
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
@@ -26,9 +32,12 @@ on boot
     setprop ro.hardware.audio.primary goldfish
 
     setprop wifi.interface wlan0
+    setprop wifi.direct.interface p2p-dev-wlan0
 
     start goldfish-logcat
 
+    # Create a dummy USB gadget to allow sysfs testing
+    mkdir /config/usb_gadget/g1 0770 root root
 
 service ranchu-setup /vendor/bin/init.ranchu-core.sh
     class core
@@ -56,9 +65,9 @@ service ipv6proxy /vendor/bin/execns router /vendor/bin/ipv6proxy -o eth0 -i wla
     group root
     disabled
 
-service emu_hostapd /vendor/bin/execns router /vendor/bin/hw/hostapd /vendor/etc/simulated_hostapd.conf
+service emu_hostapd /vendor/bin/execns -u wifi -g wifi router /vendor/bin/hostapd_nohidl /vendor/etc/simulated_hostapd.conf
     user root
-    group root wifi
+    group root wifi net_raw net_admin
     disabled
 
 service dhcpserver /vendor/bin/execns router /vendor/bin/dhcpserver --range 192.168.232.2,192.168.239.254 --gateway 192.168.232.1 --netmask 255.255.248.0 --exclude-interface eth0
