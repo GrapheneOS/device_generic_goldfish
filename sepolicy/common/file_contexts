@@ -12,6 +12,7 @@
 
 /dev/goldfish_pipe           u:object_r:qemu_device:s0
 /dev/goldfish_sync           u:object_r:qemu_device:s0
+/dev/goldfish_address_space  u:object_r:qemu_device:s0
 /dev/qemu_.*                 u:object_r:qemu_device:s0
 /dev/ttyGF[0-9]*             u:object_r:serial_device:s0
 /dev/ttyS2                   u:object_r:console_device:s0
