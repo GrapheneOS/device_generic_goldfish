@@ -487,6 +487,12 @@ out:
             t = now;
         }
 
+        if (has_guest_event_time) {
+            if (guest_event_time > now) {
+                guest_event_time = now;
+            }
+        }
+
         while (new_sensors) {
             uint32_t i = 31 - __builtin_clz(new_sensors);
             new_sensors &= ~(1U << i);
