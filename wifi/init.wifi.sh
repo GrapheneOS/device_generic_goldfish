@@ -72,7 +72,8 @@ setprop ctl.start dhcpclient_rtr
 # time. Keep this short so we don't slow down startup too much.
 execns ${NAMESPACE} /system/bin/iptables -w -W 50000 -t nat -A POSTROUTING -s 192.168.232.0/21 -o eth0 -j MASQUERADE
 execns ${NAMESPACE} /system/bin/iptables -w -W 50000 -t nat -A POSTROUTING -s 192.168.200.0/24 -o eth0 -j MASQUERADE
-/system/bin/iw phy phy1 set netns $PID
+/vendor/bin/iw phy phy1 set netns $PID
+
 execns ${NAMESPACE} /system/bin/ip addr add 192.168.232.1/21 dev wlan1
 execns ${NAMESPACE} /system/bin/ip link set wlan1 up
 # Start the IPv6 proxy that will enable use of IPv6 in the main namespace
