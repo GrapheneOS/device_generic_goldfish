@@ -265,7 +265,7 @@ status_t EmulatedFakeCamera3::configureStreams(
         }
 
         ALOGV("%s: Stream %p (id %zu), type %d, usage 0x%x, format 0x%x "
-              "width %d, height %d",
+              "width 0x%x, height 0x%x",
                 __FUNCTION__, newStream, i, newStream->stream_type,
                 newStream->usage,
                 newStream->format,
@@ -291,10 +291,9 @@ status_t EmulatedFakeCamera3::configureStreams(
             }
         }
 
-        if (newStream->width <= 0 ||
-            (int32_t)newStream->width > mSensorWidth ||
-            newStream->height <= 0 ||
-            (int32_t)newStream->height > mSensorHeight) {
+        if (newStream->width == 0 || newStream->height == 0 ||
+            newStream->width > (uint32_t)mSensorWidth ||
+            newStream->height > (uint32_t)mSensorHeight) {
             ALOGE("%s: Unsupported stream width 0x%x height 0x%x",
                   __FUNCTION__, newStream->width, newStream->height);
             return BAD_VALUE;
@@ -1113,6 +1112,7 @@ status_t EmulatedFakeCamera3::getCameraCapabilities() {
         // "RAW" causes several CTS failures: b/68723953, disable it so far.
         // TODO: add "RAW" back when all failures are resolved.
         //mCapabilities.add(RAW);
+        mCapabilities.add(MOTION_TRACKING);
     }
 
     // Add level-based caps
@@ -1876,6 +1876,9 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
                 break;
             case CONSTRAINED_HIGH_SPEED_VIDEO:
                 caps.add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO);
+                break;
+            case MOTION_TRACKING:
+                caps.add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_MOTION_TRACKING);
                 break;
             default:
                 // Ignore LEVELs
