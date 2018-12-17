@@ -3,6 +3,7 @@ on fs
 
 on early-init
     mount debugfs debugfs /sys/kernel/debug mode=755
+    mount proc proc /proc remount hidepid=2,gid=3009
 
 on init
 
