@@ -31,7 +31,7 @@
 #include <time.h>
 
 #define  LOG_TAG  "gps_qemu"
-#include <cutils/log.h>
+#include <log/log.h>
 #include <cutils/sockets.h>
 #include <hardware/gps.h>
 #include "qemu_pipe.h"
