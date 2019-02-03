@@ -19,6 +19,7 @@
 
 # Device modules
 PRODUCT_PACKAGES += \
+    vulkan.ranchu \
     gralloc.goldfish \
     gralloc.goldfish.default \
     gralloc.ranchu \
