@@ -6,9 +6,10 @@ init_daemon_domain(goldfish_setup)
 
 # TODO(b/79502552): Invalid property access from emulator vendor
 #set_prop(goldfish_setup, debug_prop);
-allow goldfish_setup self:capability { net_admin net_raw };
+allow goldfish_setup self:capability { fowner chown net_admin net_raw };
 allow goldfish_setup self:udp_socket { create ioctl };
 allow goldfish_setup vendor_toolbox_exec:file execute_no_trans;
+allow goldfish_setup vendor_file:file execute_no_trans;
 allowxperm goldfish_setup self:udp_socket ioctl priv_sock_ioctls;
 wakelock_use(goldfish_setup);
 allow goldfish_setup vendor_shell_exec:file { rx_file_perms };
@@ -45,3 +46,6 @@ allow goldfish_setup self:rawip_socket { create getopt setopt };
 allow goldfish_setup createns:file { read };
 allow goldfish_setup createns:dir { search };
 allow goldfish_setup createns:lnk_file { read };
+# Allow goldfish_setup to copy the hostapd conf template to the vendor data dir
+allow goldfish_setup hostapd_data_file:file create_file_perms;
+allow goldfish_setup hostapd_data_file:dir rw_dir_perms;

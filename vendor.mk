@@ -123,6 +123,7 @@ PRODUCT_PACKAGES += \
 	hostapd \
 	hostapd_nohidl \
 	ipv6proxy \
+	netmgr \
 	wpa_supplicant \
 
 PRODUCT_COPY_FILES += \
