@@ -6,6 +6,8 @@ on early-init
     mount proc proc /proc remount hidepid=2,gid=3009
 
 on init
+    # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
+    setrlimit memlock 8388608 8388608
 
     symlink /dev/goldfish_pipe /dev/android_pipe
     symlink /dev/goldfish_pipe /dev/qemu_pipe
