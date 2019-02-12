@@ -124,6 +124,7 @@ PRODUCT_PACKAGES += \
 	hostapd \
 	hostapd_nohidl \
 	ipv6proxy \
+	netmgr \
 	wpa_supplicant \
 
 # Needed for /system/priv-app/SdkSetup/SdkSetup.apk to pass CTS android.permission2.cts.PrivappPermissionsTest.
