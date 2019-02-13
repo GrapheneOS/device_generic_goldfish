@@ -23,6 +23,9 @@
     <!-- Allow scanning even if WiFi is disabled -->
     <integer name="def_wifi_scan_always_available">1</integer>
 
+    <!-- maximize the timeout to INT_MAX about 500+ hours -->
+    <integer name="def_screen_off_timeout">2147483647</integer>
+
     <!-- Allow users to use both the on-screen keyboard, as well as a real
          keyboard -->
     <bool name="def_show_ime_with_hard_keyboard">true</bool>
