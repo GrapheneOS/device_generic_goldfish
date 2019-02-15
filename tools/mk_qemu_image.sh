@@ -8,6 +8,11 @@ if [ "$#" -ne 1 ]; then
 fi
 
 srcimg=$1
+if [[ ! -f "$srcimg" ]]; then
+    echo "$0: '${srcimg}' does not exist"
+    exit 1
+fi
+
 base_srcimg=`basename $srcimg`
 label="${base_srcimg%.*}"
 dir_name=$(dirname $srcimg)
