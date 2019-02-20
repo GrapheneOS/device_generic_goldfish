@@ -230,7 +230,6 @@ typedef struct {
     int     utc_year;
     int     utc_mon;
     int     utc_day;
-    int     utc_diff;
     GpsLocation  fix;
     gps_location_callback  callback;
     GnssData    gnss_data;
@@ -240,34 +239,6 @@ typedef struct {
     bool    gnss_enabled; /* passed in from _gps_state */
     bool    fix_provided_by_gnss; /* passed in from _gps_state */
 } NmeaReader;
-
-
-static void
-nmea_reader_update_utc_diff( NmeaReader*  r )
-{
-    time_t         now = time(NULL);
-    struct tm      tm_local;
-    struct tm      tm_utc;
-    long           time_local, time_utc;
-
-    gmtime_r( &now, &tm_utc );
-    localtime_r( &now, &tm_local );
-
-    time_local = tm_local.tm_sec +
-                 60*(tm_local.tm_min +
-                 60*(tm_local.tm_hour +
-                 24*(tm_local.tm_yday +
-                 365*tm_local.tm_year)));
-
-    time_utc = tm_utc.tm_sec +
-               60*(tm_utc.tm_min +
-               60*(tm_utc.tm_hour +
-               24*(tm_utc.tm_yday +
-               365*tm_utc.tm_year)));
-
-    r->utc_diff = time_utc - time_local;
-}
-
 
 static void
 nmea_reader_init( NmeaReader*  r )
@@ -286,7 +257,6 @@ nmea_reader_init( NmeaReader*  r )
     r->gnss_enabled = s->gnss_enabled;
     r->fix_provided_by_gnss = s->fix_provided_by_gnss;
 
-    nmea_reader_update_utc_diff( r );
 }
 
 
@@ -322,14 +292,7 @@ nmea_reader_update_time( NmeaReader*  r, Token  tok )
     tm.tm_mday  = r->utc_day;
     tm.tm_isdst = -1;
 
-    // This is a little confusing, let's use an example:
-    // Suppose now it's 1970-1-1 01:00 GMT, local time is 1970-1-1 00:00 GMT-1
-    // Then the utc_diff is 3600.
-    // The time string from GPS is 01:00:00, mktime assumes it's a local
-    // time. So we are doing mktime for 1970-1-1 01:00 GMT-1. The result of
-    // mktime is 7200 (1970-1-1 02:00 GMT) actually. To get the correct
-    // timestamp, we have to subtract utc_diff here.
-    fix_time = mktime( &tm ) - r->utc_diff;
+    fix_time = timegm( &tm );
     r->fix.timestamp = (long long)fix_time * 1000;
     return 0;
 }
@@ -641,7 +604,9 @@ nmea_reader_parse( NmeaReader*  r )
         if (r->fix.flags & GPS_LOCATION_HAS_ACCURACY) {
             p += snprintf(p,end-p, " accuracy=%g", r->fix.accuracy);
         }
-        gmtime_r( (time_t*) &r->fix.timestamp, &utc );
+        //The unit of r->fix.timestamp is millisecond.
+        time_t timestamp = r->fix.timestamp / 1000;
+        gmtime_r( (time_t*) &timestamp, &utc );
         p += snprintf(p, end-p, " time=%s", asctime( &utc ) );
 #endif
         if (r->callback) {
