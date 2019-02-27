@@ -1,4 +1,4 @@
-PRODUCT_KERNEL_VERSION := 4.4
+PRODUCT_KERNEL_VERSION := 4.14
 
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib/libgoldfish-ril.so
