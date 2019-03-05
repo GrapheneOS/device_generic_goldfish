@@ -66,6 +66,10 @@ PRODUCT_PACKAGES += \
     adb \
     adbd \
 
+PRODUCT_HOST_PACKAGES += \
+    adb \
+    adbd \
+
 # QEMU
 PRODUCT_PACKAGES += \
     qemu-props \
@@ -97,6 +101,11 @@ PRODUCT_PACKAGES += \
     e2fsck \
     gzip \
 
+PRODUCT_HOST_PACKAGES += \
+    e2fsck \
+    mke2fs \
+    toybox \
+
 # SELinux
 PRODUCT_PACKAGES += \
     sepolicy \
@@ -106,6 +115,9 @@ PRODUCT_PACKAGES += \
     seapp_contexts \
     property_contexts \
     mac_permissions.xml \
+
+PRODUCT_HOST_PACKAGES += \
+    selinux_policy_system \
 
 PRODUCT_COPY_FILES += \
     $(SRC1_ROOT_DIR)/manifest.xml:$(TARGET_COPY_OUT_VENDOR)/manifest.xml \
