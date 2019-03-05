@@ -22,10 +22,28 @@ BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_FLASH_BLOCK_SIZE := 512
 BOARD_HAVE_BLUETOOTH := false
 
-SRC1_ROOT_DIR := device/generic/goldfish/kernel-tests
+THIS_DIR := device/generic/goldfish/kernel-tests
+
+# android.hardware.
+PRODUCT_PACKAGES += \
+    android.hardware.keymaster@3.0-service \
+    android.hardware.drm@1.1-service.clearkey \
+    android.hardware.graphics.allocator@2.0-service \
+    android.hardware.graphics.allocator@2.0-impl \
+
+# android.hidl.
+PRODUCT_PACKAGES += \
+    android.hidl.allocator@1.0-service \
+    android.hidl.base-V1.0-java \
+    android.hidl.manager-V1.0-java \
+    android.hidl.memory@1.0-impl \
+    android.hidl.memory@1.0-impl.vendor \
 
 # libXYZ
 PRODUCT_PACKAGES += \
+    libc.bootstrap \
+    libdl.bootstrap \
+    libm.bootstrap \
     libc \
     libstdc++ \
     libm \
@@ -37,17 +55,6 @@ PRODUCT_PACKAGES += \
     libhardware_legacy \
     linker \
     linker64 \
-
-# important stuff
-PRODUCT_PACKAGES += \
-    android.hidl.allocator@1.0-service \
-    android.hidl.base-V1.0-java \
-    android.hidl.manager-V1.0-java \
-    android.hidl.memory@1.0-impl \
-    android.hidl.memory@1.0-impl.vendor \
-    android.system.suspend@1.0-service \
-    ashmemd \
-    libashmemd_client \
 
 # logs
 PRODUCT_PACKAGES += \
@@ -72,14 +79,16 @@ PRODUCT_PACKAGES += \
 
 # Graphics
 PRODUCT_PACKAGES += \
-    gralloc.goldfish \
-    gralloc.goldfish.default \
-    gralloc.ranchu \
-    android.hardware.graphics.allocator@2.0-service \
-    android.hardware.graphics.allocator@2.0-impl \
 
 # Device modules
 PRODUCT_PACKAGES += \
+    android.system.suspend@1.0-service \
+    ashmemd \
+    libashmemd_client \
+    keymaster@3.0-impl \
+    gralloc.goldfish \
+    gralloc.goldfish.default \
+    gralloc.ranchu \
     servicemanager \
     hwservicemanager \
     vndservice \
@@ -94,6 +103,7 @@ PRODUCT_PACKAGES += \
     service \
     cmd \
     sh \
+    su \
     e2fsck \
     gzip \
 
@@ -108,11 +118,14 @@ PRODUCT_PACKAGES += \
     mac_permissions.xml \
 
 PRODUCT_COPY_FILES += \
-    $(SRC1_ROOT_DIR)/manifest.xml:$(TARGET_COPY_OUT_VENDOR)/manifest.xml \
-    $(SRC1_ROOT_DIR)/init.ranchu-core.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-core.sh \
-    $(SRC1_ROOT_DIR)/init.ranchu.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.ranchu.rc \
-    $(SRC1_ROOT_DIR)/fstab.ranchu:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
-    $(SRC1_ROOT_DIR)/config.ini:config.ini \
+    $(THIS_DIR)/manifest.xml:$(TARGET_COPY_OUT_VENDOR)/manifest.xml \
+    $(THIS_DIR)/init.ranchu-core.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-core.sh \
+    $(THIS_DIR)/init.ranchu.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.ranchu.rc \
+    $(THIS_DIR)/fstab.ranchu:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
+    $(THIS_DIR)/config.ini:config.ini \
+    device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
+    development/sys-img/advancedFeatures.ini:advancedFeatures.ini \
+    prebuilts/qemu-kernel/x86_64/4.14/kernel-qemu2:kernel-ranchu \
 
 # The set of packages we want to force 'speed' compilation on.
 PRODUCT_DEXPREOPT_SPEED_APPS := \
