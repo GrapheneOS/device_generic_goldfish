@@ -73,7 +73,6 @@ PRODUCT_PACKAGES += \
     dumpstate \
     dumpsys \
     crash_dump \
-    adb \
     adbd \
 
 PRODUCT_HOST_PACKAGES += \
