@@ -77,7 +77,6 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_HOST_PACKAGES += \
     adb \
-    adbd \
 
 # QEMU
 PRODUCT_PACKAGES += \
@@ -111,7 +110,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_HOST_PACKAGES += \
     e2fsck \
     mke2fs \
-    toybox \
     e2fsdroid \
     sload_f2fs \
     make_f2fs \
@@ -125,9 +123,6 @@ PRODUCT_PACKAGES += \
     seapp_contexts \
     property_contexts \
     mac_permissions.xml \
-
-PRODUCT_HOST_PACKAGES += \
-    selinux_policy_system \
 
 PRODUCT_COPY_FILES += \
     $(SYSTEM_CORE_ROOTDIR)/init.usb.rc:root/init.usb.rc \
