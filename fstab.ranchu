@@ -4,3 +4,4 @@
 # specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
 /dev/block/vdc                                          /data               ext4      noatime,nosuid,nodev,nomblk_io_submit,errors=panic   wait,check,quota,forceencrypt=/dev/block/vdd,reservedsize=128M
 /devices/*/block/vdf                                    auto                auto      defaults                                             voldmanaged=sdcard:auto,encryptable=userdata
+/dev/block/zram0                                    none               swap        defaults                                              zramsize=75%
