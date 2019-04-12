@@ -25,6 +25,7 @@ ifeq ($(BUILD_QEMU_IMAGES),true)
 	$(hide) grep -v '#' $< > $@
 
   $(call dist-for-goals, dist_files, $(INSTALLED_EMULATOR_INFO_TXT_TARGET))
+  $(call dist-for-goals, sdk, $(INSTALLED_EMULATOR_INFO_TXT_TARGET))
 
   subdir_makefiles=$(call first-makefiles-under,$(LOCAL_PATH))
   $(foreach mk,$(subdir_makefiles),$(info including $(mk) ...)$(eval include $(mk)))
