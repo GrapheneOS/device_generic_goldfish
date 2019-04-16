@@ -130,6 +130,8 @@ PRODUCT_PACKAGES += \
 	netmgr \
 	wpa_supplicant \
 
+PRODUCT_PACKAGES += android.hardware.thermal@2.0-service.mock
+
 # Needed for /system/priv-app/SdkSetup/SdkSetup.apk to pass CTS android.permission2.cts.PrivappPermissionsTest.
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-goldfish.xml
