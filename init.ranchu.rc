@@ -28,6 +28,7 @@ on zygote-start
     mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
 
 on boot
+    setprop ro.hardware.egl emulation
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
     setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
