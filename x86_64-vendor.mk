@@ -8,11 +8,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # build quite specifically for the emulator, and might not be
 # entirely appropriate to inherit from for on-device configurations.
 PRODUCT_COPY_FILES += \
-    development/sys-img/advancedFeatures.ini:advancedFeatures.ini \
+    device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     prebuilts/qemu-kernel/x86_64/$(PRODUCT_KERNEL_VERSION)/kernel-qemu2:kernel-ranchu
 PRODUCT_SDK_ADDON_COPY_FILES += \
-    development/sys-img/advancedFeatures.ini:images/x86_64/advancedFeatures.ini \
+    device/generic/goldfish/data/etc/advancedFeatures.ini:images/x86_64/advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:images/x86_64/encryptionkey.img \
     prebuilts/qemu-kernel/x86_64/$(PRODUCT_KERNEL_VERSION)/kernel-qemu2:images/x86_64/kernel-ranchu
 
