@@ -4,6 +4,7 @@ init unlabeled dir 131596633
 installd device file 131595213
 kernel kernel system 131597442
 netd device file 131598170
+platform_app vendor_default_prop file 130684647
 priv_app property_socket sock_file 131598844
 priv_app varrun_file dir 131598844
 storaged device file 131598843
