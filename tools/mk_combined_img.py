@@ -74,7 +74,7 @@ def write_partition(partition, output_file, offset):
 
 def unsparse_partition(partition):
     # if the input image is in sparse format, unsparse it
-    simg2img = os.environ.get('ANDROID_HOST_OUT', '/usr') + '/bin/simg2img'
+    simg2img = os.environ.get('SIMG2IMG', 'simg2img')
     print "Unsparsing %s" % (partition["path"]),
     partition["fd"], temp_file = mkstemp()
     shell_command([simg2img, partition["path"], temp_file])
@@ -83,12 +83,13 @@ def unsparse_partition(partition):
     return
 
 def clear_partition_table(filename):
-    sgdisk = os.environ.get('ANDROID_HOST_OUT', '/usr') + '/bin/sgdisk'
+    sgdisk = os.environ.get('SGDISK', 'sgdisk')
+    print "%s --clear %s" % (sgdisk, filename)
     shell_command([sgdisk, '--clear', filename])
     return
 
 def add_partition(partition, output_file):
-    sgdisk = os.environ.get('ANDROID_HOST_OUT', '/usr') + '/bin/sgdisk'
+    sgdisk = os.environ.get('SGDISK', 'sgdisk')
     num = str(partition["num"])
     new_comm = '--new='+num+':'+partition["start"]+':'+partition["end"]
     type_comm = '--type='+num+':8300'
