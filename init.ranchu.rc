@@ -68,7 +68,7 @@ service ipv6proxy /vendor/bin/execns router /vendor/bin/ipv6proxy -o eth0 -i wla
     group root
     disabled
 
-service emu_hostapd /vendor/bin/execns router /vendor/bin/hostapd_nohidl /data/vendor/wifi/hostapd/hostapd.conf
+service emu_hostapd /vendor/bin/execns -u wifi -g wifi router /vendor/bin/hostapd_nohidl /data/vendor/wifi/hostapd/hostapd.conf
     user root
     group root wifi net_raw net_admin
     disabled
