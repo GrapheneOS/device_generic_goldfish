@@ -30,6 +30,10 @@
 #  define  D(...)   do{}while(0)
 #endif
 
+typedef int QEMU_PIPE_HANDLE;
+
+#define QEMU_PIPE_INVALID_HANDLE -1
+
 static bool ReadFully(int fd, void* data, size_t byte_count) {
   uint8_t* p = (uint8_t*)(data);
   size_t remaining = byte_count;
@@ -109,4 +113,8 @@ qemu_pipe_open(const char*  pipeName)
     return fd;
 }
 
+static __inline__ bool
+qemu_pipe_valid(QEMU_PIPE_HANDLE pipe) {
+    return pipe >= 0;
+}
 #endif /* ANDROID_INCLUDE_HARDWARE_QEMUD_PIPE_H */
