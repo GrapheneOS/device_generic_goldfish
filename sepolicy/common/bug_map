@@ -1,6 +1,7 @@
 hal_wifi_default default_prop file 131598173
 hal_wifi_default vendor_default_prop property_service 131598173
 init unlabeled dir 131596633
+init vendor_toolbox_exec file 132695863
 installd device file 131595213
 kernel kernel system 131597442
 netd device file 131598170
