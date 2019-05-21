@@ -17,6 +17,9 @@
 LOCAL_PATH := $(call my-dir)
 
 ifeq ($(BUILD_QEMU_IMAGES),true)
+  QEMU_CUSTOMIZATIONS := true
+endif
+ifeq ($(QEMU_CUSTOMIZATIONS),true)
   INSTALLED_EMULATOR_INFO_TXT_TARGET := $(PRODUCT_OUT)/emulator-info.txt
   emulator_info_txt := $(wildcard ${LOCAL_PATH}/emulator-info.txt)
 
