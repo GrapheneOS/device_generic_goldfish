@@ -63,6 +63,7 @@ PRODUCT_PACKAGES += \
     android.hardware.wifi@1.0-service \
     android.hardware.biometrics.fingerprint@2.1-service \
     sh_vendor \
+    iw_vendor \
     audio.r_submix.default \
     local_time.default \
     SdkSetup
