@@ -128,6 +128,16 @@ def main():
     partitions = parse_input(config)
     config.close()
 
+    # take a shortcut in build environment
+    if os.path.exists(output_filename):
+        print "updating " + output_filename + " ..."
+        shell_command(['dd', "if=" + partitions[0]["path"], "of=" + output_filename,
+                "conv=notrunc,sync", "ibs=1024k", "obs=1024k", "seek=1"])
+        shell_command(['dd', "if=" + partitions[1]["path"], "of=" + output_filename,
+                "conv=notrunc,sync", "ibs=1024k", "obs=1024k", "seek=2"])
+        print "done"
+        sys.exit(0)
+
     # combine the images
     # add padding
     shell_command(['dd', 'if=/dev/zero', 'of='+output_filename, 'ibs=1024k', 'count=1'])
