@@ -113,6 +113,10 @@ def main():
 
     output_filename = os.path.expandvars(args.output)
 
+    # remove the output_filename.qcow2
+    print "removing " + output_filename + ".qcow2"
+    shell_command(['rm', '-rf', output_filename + ".qcow2"])
+
     # check input file
     config_filename = args.input
     if not os.path.exists(config_filename):
