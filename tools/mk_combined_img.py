@@ -113,6 +113,10 @@ def main():
 
     output_filename = os.path.expandvars(args.output)
 
+    # remove the output_filename.qcow2
+    print "removing " + output_filename + ".qcow2"
+    shell_command(['rm', '-rf', output_filename + ".qcow2"])
+
     # check input file
     config_filename = args.input
     if not os.path.exists(config_filename):
@@ -123,6 +127,16 @@ def main():
     config = open(config_filename, "r")
     partitions = parse_input(config)
     config.close()
+
+    # take a shortcut in build environment
+    if os.path.exists(output_filename):
+        print "updating " + output_filename + " ..."
+        shell_command(['dd', "if=" + partitions[0]["path"], "of=" + output_filename,
+                "conv=notrunc,sync", "ibs=1024k", "obs=1024k", "seek=1"])
+        shell_command(['dd', "if=" + partitions[1]["path"], "of=" + output_filename,
+                "conv=notrunc,sync", "ibs=1024k", "obs=1024k", "seek=2"])
+        print "done"
+        sys.exit(0)
 
     # combine the images
     # add padding
