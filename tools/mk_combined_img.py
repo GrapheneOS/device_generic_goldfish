@@ -16,8 +16,7 @@ def check_sparse(filename):
     return False
 
 def shell_command(comm_list):
-    command = Popen(comm_list, stdout=PIPE, stderr=PIPE)
-    command.communicate()
+    command = Popen(comm_list)
     execute = command.wait()
     if command.returncode != 0:
         sys.exit(1)
@@ -42,9 +41,6 @@ def parse_input(input_file):
         partition_info = dict()
         partition_info["path"] =  line[0]
         partition_info["label"] = line[1]
-        # round up by 1M
-        sizeByMb = str((1024 * 1024 - 1 + os.path.getsize(line[0])) / 1024 / 1024)
-        partition_info["sizeByMb"] = sizeByMb
 
         try:
             partition_info["num"] = int(line[2])
@@ -141,24 +137,6 @@ def main():
                 "conv=notrunc,sync", "ibs=1024k", "obs=1024k", "seek=2"])
         print "done"
         sys.exit(0)
-    else:
-        gptprefix = partitions[0]["sizeByMb"] + "_" + partitions[1]["sizeByMb"]
-        prebuilt_gpt_dir = os.path.dirname(os.path.abspath( __file__ )) + "/prebuilt/gpt/" + gptprefix
-        gpt_head = prebuilt_gpt_dir + "/head.img"
-        gpt_tail = prebuilt_gpt_dir + "/head.img"
-        if os.path.exists(gpt_head) and os.path.exists(gpt_tail):
-            print "found prebuilt gpt header and footer, use it"
-            shell_command(['dd', "if=" + gpt_head, "of=" + output_filename, "bs=1M",
-                    "conv=notrunc,sync", "count=1"])
-            shell_command(['dd', "if=" + partitions[0]["path"], "of=" + output_filename,
-                    "bs=1M", "conv=notrunc,sync", "seek=1"])
-            shell_command(['dd', "if=" + partitions[1]["path"], "of=" + output_filename,
-                    "bs=1M", "conv=notrunc,sync", "seek=" + str(1 + int(partitions[0]["sizeByMb"]))])
-            shell_command(['dd', "if=" + gpt_tail, "of=" + output_filename,
-                    "bs=1M", "conv=notrunc,sync",
-                    "seek=" + str(1 + int(partitions[0]["sizeByMb"]) + int(partitions[1]["sizeByMb"]))])
-            print "done"
-            sys.exit(0)
 
     # combine the images
     # add padding
