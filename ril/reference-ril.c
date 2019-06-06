@@ -1147,6 +1147,12 @@ static void requestSignalStrength(void *data __unused, size_t datalen __unused, 
         if (err < 0 && count < minNumOfElements) goto error;
     }
 
+    // remove gsm/cdma/evdo,just keep LTE
+    int numSignalsToIgnore = sizeof(RIL_SignalStrength_v5)/sizeof(int);
+    for (int i=0; i < numSignalsToIgnore; ++i) {
+        response[i] = INT_MAX;
+    }
+
     RIL_onRequestComplete(t, RIL_E_SUCCESS, response, sizeof(response));
 
     at_response_free(p_response);
