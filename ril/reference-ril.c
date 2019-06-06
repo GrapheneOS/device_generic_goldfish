@@ -2397,7 +2397,7 @@ static void requestGetRadioCapability(void *data, size_t datalen, RIL_Token t)
    radioCapability.version = RIL_RADIO_CAPABILITY_VERSION;
    radioCapability.session = 0;
    radioCapability.phase   = 0;
-   radioCapability.rat     = 0;
+   radioCapability.rat     = RAF_LTE;
    radioCapability.logicalModemUuid[0] = '\0';
    radioCapability.status  = RC_STATUS_SUCCESS;
 
