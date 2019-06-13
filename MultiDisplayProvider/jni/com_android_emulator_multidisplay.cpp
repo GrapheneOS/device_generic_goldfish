@@ -39,6 +39,21 @@
 using namespace android;
 
 static int gFd = 0;
+static const uint8_t ADD = 1;
+static const uint8_t DEL = 2;
+static const uint8_t QUERY = 3;
+static const uint8_t BIND = 4;
+
+static void fillMsg(std::vector<uint8_t>& buf, uint8_t cmd, uint8_t* data, uint32_t size) {
+    // msg format is size(4B) + cmd(1B) + data(size B)
+    uint32_t totalSize = size + 1;
+    uint8_t* p = (uint8_t*)&totalSize;
+    buf.insert(buf.end(), p, p + 4);
+    buf.push_back(cmd);
+    if (data) {
+        buf.insert(buf.end(), data, data + size);
+    }
+}
 
 struct FrameListener : public ConsumerBase::FrameAvailableListener {
     sp<BufferItemConsumer> mConsumer;
@@ -54,8 +69,10 @@ public:
             if (mCb != cb->hostHandle) {
                 ALOGI("sent cb %d", cb->hostHandle);
                 mCb = cb->hostHandle;
-                std::vector<uint32_t> data = {8, mId, mCb};
-                WriteFully(gFd, data.data(), data.size() * sizeof(uint32_t));
+                uint32_t data[] = {mId, mCb};
+                std::vector<uint8_t> buf;
+                fillMsg(buf, BIND, (uint8_t*)data, sizeof(data));
+                WriteFully(gFd, buf.data(), buf.size());
             }
         }
         else {
@@ -93,14 +110,15 @@ static jint nativeOpen(JNIEnv* env, jobject obj) {
     if (gFd < 0) {
         ALOGE("Error opening multidisplay pipe %d", gFd);
     } else {
+        std::vector<uint8_t> buf;
+        fillMsg(buf, QUERY, nullptr, 0);
+        WriteFully(gFd, buf.data(), buf.size());
         ALOGI("multidisplay pipe connected!!!");
     }
     return gFd;
 }
 
 static bool nativeReadPipe(JNIEnv* env, jobject obj, jintArray arr) {
-    static const uint8_t ADD = 1;
-    static const uint8_t DEL = 2;
     int* arrp = env->GetIntArrayElements(arr, 0);
     uint32_t length;
     ReadFully(gFd, &length, sizeof(length));
