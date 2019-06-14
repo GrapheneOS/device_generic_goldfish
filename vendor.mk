@@ -41,7 +41,6 @@ PRODUCT_PACKAGES += \
     camera.goldfish.jpeg \
     camera.ranchu \
     camera.ranchu.jpeg \
-    gatekeeper.ranchu \
     gps.goldfish \
     gps.ranchu \
     fingerprint.goldfish \
@@ -116,8 +115,7 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.4-impl \
 
 PRODUCT_PACKAGES += \
-    android.hardware.gatekeeper@1.0-impl \
-    android.hardware.gatekeeper@1.0-service
+    android.hardware.gatekeeper@1.0-service.software
 
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
