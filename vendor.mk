@@ -41,7 +41,6 @@ PRODUCT_PACKAGES += \
     camera.goldfish.jpeg \
     camera.ranchu \
     camera.ranchu.jpeg \
-    gatekeeper.ranchu \
     gps.goldfish \
     gps.ranchu \
     fingerprint.goldfish \
@@ -116,8 +115,7 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.4-impl \
 
 PRODUCT_PACKAGES += \
-    android.hardware.gatekeeper@1.0-impl \
-    android.hardware.gatekeeper@1.0-service
+    android.hardware.gatekeeper@1.0-service.software
 
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
@@ -141,6 +139,7 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     debug.stagefright.ccodec=0
 
+DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
@@ -164,7 +163,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/input/virtio_input_multi_touch_9.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/virtio_input_multi_touch_9.idc \
     device/generic/goldfish/input/virtio_input_multi_touch_10.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/virtio_input_multi_touch_10.idc \
     device/generic/goldfish/input/virtio_input_multi_touch_11.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/virtio_input_multi_touch_11.idc \
-    device/generic/goldfish/manifest.xml:$(TARGET_COPY_OUT_VENDOR)/manifest.xml \
     device/generic/goldfish/data/etc/config.ini:config.ini \
     device/generic/goldfish/wifi/simulated_hostapd.conf:$(TARGET_COPY_OUT_VENDOR)/etc/simulated_hostapd.conf \
     device/generic/goldfish/wifi/wpa_supplicant.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant.conf \
