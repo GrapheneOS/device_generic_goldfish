@@ -17,6 +17,13 @@
 # This file is to configure vendor/data partitions of emulator-related products
 #
 
+ifeq ($(QEMU_DISABLE_AVB),true)
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
+    device/generic/goldfish/fstab.ranchu.initrd.noavb:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
+    device/generic/goldfish/fstab.ranchu.noavb:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
+endif
+
 # Device modules
 PRODUCT_PACKAGES += \
     vulkan.ranchu \
