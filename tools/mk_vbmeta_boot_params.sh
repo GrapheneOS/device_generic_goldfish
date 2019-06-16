@@ -2,7 +2,7 @@
 
 if [ $# -ne 3 ]; then
   echo "Usage: $0 <vbmeta.img> <system.img> <VbmetaBootParams.textproto>"
-  exit 1
+  exit 0
 fi
 
 # Example Output from 'avbtool calculate_vbmeta_digest --image $OUT/vbmeta.img':
