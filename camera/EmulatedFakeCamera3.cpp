@@ -66,12 +66,12 @@ const int32_t EmulatedFakeCamera3::kAvailableFormats[] = {
         HAL_PIXEL_FORMAT_Y16
 };
 
-const uint32_t EmulatedFakeCamera3::kAvailableRawSizes[4] = {
+const uint32_t EmulatedFakeCamera3::kAvailableRawSizes[6] = {
     640, 480,
-    1280, 720
+    1280, 720,
+    1920, 1080
     //    mSensorWidth, mSensorHeight
 };
-
 
 /**
  * 3A constants
@@ -1364,22 +1364,18 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
 
     const std::vector<int32_t> availableStreamConfigurationsBasic = {
         HAL_PIXEL_FORMAT_BLOB, width, height, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_BLOB, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 640, 480, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 640, 480, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
+        HAL_PIXEL_FORMAT_BLOB, 640, 480, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 320, 240, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_YCbCr_420_888, 320, 240, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_BLOB, 320, 240, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_YCbCr_420_888, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
         HAL_PIXEL_FORMAT_BLOB, 176, 144, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
-        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
-        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
-        HAL_PIXEL_FORMAT_BLOB, 1280, 720, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
-    };
-
-    // Always need to include 640x480 in basic formats
-    const std::vector<int32_t> availableStreamConfigurationsBasic640 = {
-        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 640, 480, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
-        HAL_PIXEL_FORMAT_YCbCr_420_888, 640, 480, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT,
-        HAL_PIXEL_FORMAT_BLOB, 640, 480, ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_OUTPUT
     };
 
     const std::vector<int32_t> availableStreamConfigurationsRaw = {
@@ -1398,11 +1394,6 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         availableStreamConfigurations.insert(availableStreamConfigurations.end(),
                 availableStreamConfigurationsBasic.begin(),
                 availableStreamConfigurationsBasic.end());
-        if (width > 640) {
-            availableStreamConfigurations.insert(availableStreamConfigurations.end(),
-                    availableStreamConfigurationsBasic640.begin(),
-                    availableStreamConfigurationsBasic640.end());
-        }
     }
     if (hasCapability(RAW)) {
         availableStreamConfigurations.insert(availableStreamConfigurations.end(),
@@ -1423,22 +1414,18 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
 
     const std::vector<int64_t> availableMinFrameDurationsBasic = {
         HAL_PIXEL_FORMAT_BLOB, width, height, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_BLOB, 1280, 720, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 640, 480, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 640, 480, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_BLOB, 640, 480, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 320, 240, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_YCbCr_420_888, 320, 240, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_BLOB, 320, 240, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 176, 144, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_YCbCr_420_888, 176, 144, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_BLOB, 176, 144, Sensor::kFrameDurationRange[0],
-        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, Sensor::kFrameDurationRange[0],
-        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, Sensor::kFrameDurationRange[0],
-        HAL_PIXEL_FORMAT_BLOB, 1280, 720, Sensor::kFrameDurationRange[0],
-    };
-
-    // Always need to include 640x480 in basic formats
-    const std::vector<int64_t> availableMinFrameDurationsBasic640 = {
-        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 640, 480, Sensor::kFrameDurationRange[0],
-        HAL_PIXEL_FORMAT_YCbCr_420_888, 640, 480, Sensor::kFrameDurationRange[0],
-        HAL_PIXEL_FORMAT_BLOB, 640, 480, Sensor::kFrameDurationRange[0]
     };
 
     const std::vector<int64_t> availableMinFrameDurationsRaw = {
@@ -1457,11 +1444,6 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         availableMinFrameDurations.insert(availableMinFrameDurations.end(),
                 availableMinFrameDurationsBasic.begin(),
                 availableMinFrameDurationsBasic.end());
-        if (width > 640) {
-            availableMinFrameDurations.insert(availableMinFrameDurations.end(),
-                    availableMinFrameDurationsBasic640.begin(),
-                    availableMinFrameDurationsBasic640.end());
-        }
     }
     if (hasCapability(RAW)) {
         availableMinFrameDurations.insert(availableMinFrameDurations.end(),
@@ -1482,31 +1464,27 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
 
     const std::vector<int64_t> availableStallDurationsBasic = {
         HAL_PIXEL_FORMAT_BLOB, width, height, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, 0,
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, 0,
+        HAL_PIXEL_FORMAT_BLOB, 1280, 720, Sensor::kFrameDurationRange[0],
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 640, 480, 0,
+        HAL_PIXEL_FORMAT_YCbCr_420_888, 640, 480, 0,
+        HAL_PIXEL_FORMAT_BLOB, 640, 480, Sensor::kFrameDurationRange[0],
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 320, 240, 0,
         HAL_PIXEL_FORMAT_YCbCr_420_888, 320, 240, 0,
         HAL_PIXEL_FORMAT_RGBA_8888, 320, 240, 0,
         HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 176, 144, 0,
         HAL_PIXEL_FORMAT_YCbCr_420_888, 176, 144, 0,
         HAL_PIXEL_FORMAT_RGBA_8888, 176, 144, 0,
-        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 1280, 720, 0,
-        HAL_PIXEL_FORMAT_YCbCr_420_888, 1280, 720, 0,
-        HAL_PIXEL_FORMAT_RGBA_8888, 1280, 720, 0,
-    };
-
-    // Always need to include 640x480 in basic formats
-    const std::vector<int64_t> availableStallDurationsBasic640 = {
-        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 640, 480, 0,
-        HAL_PIXEL_FORMAT_YCbCr_420_888, 640, 480, 0,
-        HAL_PIXEL_FORMAT_BLOB, 640, 480, Sensor::kFrameDurationRange[0]
     };
 
     const std::vector<int64_t> availableStallDurationsRaw = {
-        HAL_PIXEL_FORMAT_RAW16, 640, 480, Sensor::kFrameDurationRange[0]
+        HAL_PIXEL_FORMAT_RAW16, width, height, Sensor::kFrameDurationRange[0]
     };
     const std::vector<int64_t> availableStallDurationsBurst = {
-        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 640, 480, 0,
-        HAL_PIXEL_FORMAT_YCbCr_420_888, 640, 480, 0,
-        HAL_PIXEL_FORMAT_RGBA_8888, 640, 480, 0
+        HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, width, height, 0,
+        HAL_PIXEL_FORMAT_YCbCr_420_888, width, height, 0,
+        HAL_PIXEL_FORMAT_RGBA_8888, width, height, 0
     };
 
     std::vector<int64_t> availableStallDurations;
@@ -1515,11 +1493,6 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         availableStallDurations.insert(availableStallDurations.end(),
                 availableStallDurationsBasic.begin(),
                 availableStallDurationsBasic.end());
-        if (width > 640) {
-            availableStallDurations.insert(availableStallDurations.end(),
-                    availableStallDurationsBasic640.begin(),
-                    availableStallDurationsBasic640.end());
-        }
     }
     if (hasCapability(RAW)) {
         availableStallDurations.insert(availableStallDurations.end(),
