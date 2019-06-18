@@ -111,6 +111,8 @@ Sensor::Sensor(uint32_t width, uint32_t height):
         mScene(width, height, kElectronsPerLuxSecond)
 {
     ALOGV("Sensor created with pixel array %d x %d", width, height);
+    // For better FPS for high-resolution sensor, the Scene only calculated once
+//    mScene.calculateScene(49294925);
 }
 
 Sensor::~Sensor() {
@@ -498,6 +500,10 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
 }
 
 void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
+    if (mYUVImageCache.find(width, height, HAL_PIXEL_FORMAT_YCbCr_420_888, gain)) {
+        memcpy(img, mYUVImageCache.data(), width * height * 3/2);
+        return;
+    }
     float totalGain = gain/100.0 * kBaseGainFactor;
     // Using fixed-point math with 6 bits of fractional precision.
     // In fixed-point math, calculate total scaling from electrons to 8bpp
@@ -553,6 +559,8 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
             }
         }
     }
+    mYUVImageCache.set(width, height, HAL_PIXEL_FORMAT_YCbCr_420_888, gain,
+                    std::move(std::vector<uint8_t>(img, img + width * height * 3/2)));
     ALOGVV("NV21 sensor image captured");
 }
 

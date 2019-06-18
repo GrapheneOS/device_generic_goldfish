@@ -82,12 +82,41 @@
 #include "Scene.h"
 #include "Base.h"
 
+#include <vector>
+
 namespace android {
 
 class EmulatedFakeCamera2;
 
 class Sensor: private Thread, public virtual RefBase {
   public:
+    class ImageCache {
+      public:
+        void set(uint32_t width, uint32_t height, uint32_t type, uint32_t gain,
+                 const std::vector<uint8_t>&& image) {
+            mWidth = width;
+            mHeight = height;
+            mType = type;
+            mGain = gain;
+            mImage = image;
+
+        }
+        bool find(uint32_t width, uint32_t height, uint32_t type, uint32_t gain) {
+            return (mWidth ==  width &&
+                    mHeight == height &&
+                    mType == type &&
+                    mGain == gain);
+        }
+        uint8_t* data() {
+            return mImage.data();
+        }
+      private:
+        uint32_t mWidth = 0;
+        uint32_t mHeight = 0;
+        uint32_t mType = 0;
+        uint32_t mGain = 0;
+        std::vector<uint8_t> mImage;
+    };
 
     // width: Width of pixel array
     // height: Height of pixel array
@@ -219,6 +248,7 @@ class Sensor: private Thread, public virtual RefBase {
     // Time of sensor startup, used for simulation zero-time point
     nsecs_t mStartupTime;
 
+    ImageCache mYUVImageCache;
     /**
      * Inherited Thread virtual overrides, and members only used by the
      * processing thread
