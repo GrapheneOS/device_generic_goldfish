@@ -447,9 +447,9 @@ void Sensor::captureRGBA(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
             }
             lastX = x;
             // TODO: Perfect demosaicing is a cheat
-            rCount = (pixel[Scene::R]+(outX+outY)%64) * scale64x;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
-            bCount = (pixel[Scene::B]+(outX+outY)%64) * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
 
             *px++ = rCount < 255*64 ? rCount / 64 : 255;
             *px++ = gCount < 255*64 ? gCount / 64 : 255;
@@ -485,9 +485,9 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
             }
             lastX = x;
            // TODO: Perfect demosaicing is a cheat
-            rCount = (pixel[Scene::R]+(outX+outY)%64)  * scale64x;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
-            bCount = (pixel[Scene::B]+(outX+outY)%64)  * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
 
             *px++ = rCount < 255*64 ? rCount / 64 : 255;
             *px++ = gCount < 255*64 ? gCount / 64 : 255;
@@ -532,14 +532,11 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
                 }
             }
             lastX = x;
-            //Slightly different color for the same Scene, result in larger
-            //jpeg image size requried by CTS test
-            //android.provider.cts.MediaStoreUiTest#testImageCapture
-            rCount = (pixel[Scene::R]+(outX+outY)%64)  * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
             rCount = rCount < saturationPoint ? rCount : saturationPoint;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
             gCount = gCount < saturationPoint ? gCount : saturationPoint;
-            bCount = (pixel[Scene::B]+(outX+outY)%64)  * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
             bCount = bCount < saturationPoint ? bCount : saturationPoint;
             *pxY++ = (rgbToY[0] * rCount +
                     rgbToY[1] * gCount +
