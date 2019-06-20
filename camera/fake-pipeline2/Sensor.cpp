@@ -111,6 +111,8 @@ Sensor::Sensor(uint32_t width, uint32_t height):
         mScene(width, height, kElectronsPerLuxSecond)
 {
     ALOGV("Sensor created with pixel array %d x %d", width, height);
+    // For better FPS for high-resolution sensor, the Scene only calculated once
+//    mScene.calculateScene(49294925);
 }
 
 Sensor::~Sensor() {
@@ -447,9 +449,9 @@ void Sensor::captureRGBA(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
             }
             lastX = x;
             // TODO: Perfect demosaicing is a cheat
-            rCount = (pixel[Scene::R]+(outX+outY)%64) * scale64x;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
-            bCount = (pixel[Scene::B]+(outX+outY)%64) * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
 
             *px++ = rCount < 255*64 ? rCount / 64 : 255;
             *px++ = gCount < 255*64 ? gCount / 64 : 255;
@@ -485,9 +487,9 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
             }
             lastX = x;
            // TODO: Perfect demosaicing is a cheat
-            rCount = (pixel[Scene::R]+(outX+outY)%64)  * scale64x;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
-            bCount = (pixel[Scene::B]+(outX+outY)%64)  * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
 
             *px++ = rCount < 255*64 ? rCount / 64 : 255;
             *px++ = gCount < 255*64 ? gCount / 64 : 255;
@@ -498,6 +500,10 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
 }
 
 void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
+    if (mYUVImageCache.find(width, height, HAL_PIXEL_FORMAT_YCbCr_420_888, gain)) {
+        memcpy(img, mYUVImageCache.data(), width * height * 3/2);
+        return;
+    }
     float totalGain = gain/100.0 * kBaseGainFactor;
     // Using fixed-point math with 6 bits of fractional precision.
     // In fixed-point math, calculate total scaling from electrons to 8bpp
@@ -532,14 +538,11 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
                 }
             }
             lastX = x;
-            //Slightly different color for the same Scene, result in larger
-            //jpeg image size requried by CTS test
-            //android.provider.cts.MediaStoreUiTest#testImageCapture
-            rCount = (pixel[Scene::R]+(outX+outY)%64)  * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
             rCount = rCount < saturationPoint ? rCount : saturationPoint;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
             gCount = gCount < saturationPoint ? gCount : saturationPoint;
-            bCount = (pixel[Scene::B]+(outX+outY)%64)  * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
             bCount = bCount < saturationPoint ? bCount : saturationPoint;
             *pxY++ = (rgbToY[0] * rCount +
                     rgbToY[1] * gCount +
@@ -556,6 +559,8 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
             }
         }
     }
+    mYUVImageCache.set(width, height, HAL_PIXEL_FORMAT_YCbCr_420_888, gain,
+                    std::move(std::vector<uint8_t>(img, img + width * height * 3/2)));
     ALOGVV("NV21 sensor image captured");
 }
 
