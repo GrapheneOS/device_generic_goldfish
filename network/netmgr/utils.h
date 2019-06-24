@@ -14,20 +14,9 @@
  * limitations under the License.
  */
 
-#include "timestamp.h"
+#pragma once
 
+#include <string>
+#include <vector>
 
-Timestamp::Timestamp() {
-    memset(&mTime, 0, sizeof(mTime));
-}
-
-static Timestamp Timestamp::now() {
-    Timestamp t;
-    clock_gettime(CLOCK_MONOTONIC, &t.mTime);
-    return t;
-}
-
-bool Timestamp::operator==(const Timestamp& other) const {
-}
-bool Timestamp::operator<(const Timestamp& other) const {
-}
+std::vector<std::string> explode(const char* str, char divider);

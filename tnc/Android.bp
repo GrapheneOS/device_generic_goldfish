@@ -15,31 +15,18 @@
 //
 
 cc_binary {
-    name: "netmgr",
+    name: "tnc",
     vendor: true,
     cflags: [
              "-Wall",
              "-Werror",
             ],
     srcs: [
-           "bridge.cpp",
-           "bridge_builder.cpp",
-           "commander.cpp",
-           "interface_state.cpp",
-           "log.cpp",
            "main.cpp",
-           "monitor.cpp",
-           "poller.cpp",
-           "utils.cpp",
-           "wifi_forwarder.cpp",
-           "commands/wifi_command.cpp",
           ],
     shared_libs: [
         "libcutils",
         "liblog",
-        "libpcap",
-    ],
-    header_libs: [
-        "goldfish_headers",
     ],
 }
+

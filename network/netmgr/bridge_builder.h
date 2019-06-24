@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, The Android Open Source Project
+ * Copyright 2019, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,24 @@
 
 #pragma once
 
-#include <time.h>
+#include "interface_state.h"
 
-class Timestamp {
+#include <stddef.h>
+
+class Bridge;
+
+class BridgeBuilder {
 public:
-    Timestamp();
+    // Construct a bridge builder that will add any interface that comes up to
+    // |bridge| if the interface name begins with |interfacePrefix|.
+    BridgeBuilder(Bridge& bridge, const char* interfacePrefix);
 
-    static Timestamp now();
-
-    bool operator==(const Timestamp& other) const;
-    bool operator<(const Timestamp& other) const;
+    void onInterfaceState(unsigned int index,
+                          const char* name,
+                          InterfaceState state);
 
 private:
-    struct timespec mTime;
+    Bridge& mBridge;
+    const char* mInterfacePrefix;
+    size_t mPrefixLength;
 };
-
