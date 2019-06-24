@@ -20,6 +20,7 @@ on post-fs-data
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
     mkdir /data/vendor/var/run/netns 0755 root root
+    start ranchu-net
 
     chown root root /data/vendor/etc
     rm /data/vendor/etc/media_codecs_google_video.xml
@@ -77,33 +78,27 @@ service ranchu-net /vendor/bin/init.ranchu-net.sh
     user root
     group root wakelock wifi
     oneshot
-
-service ipv6proxy /vendor/bin/execns router /vendor/bin/ipv6proxy -o eth0 -i wlan1,radio0-peer
-    user root
-    group root
-    disabled
+    disabled    # Started on post-fs-data
 
 service emu_hostapd /vendor/bin/execns router /vendor/bin/hostapd_nohidl /data/vendor/wifi/hostapd/hostapd.conf
     user root
     group root wifi net_raw net_admin
     disabled
 
-service dhcpserver /vendor/bin/execns router /vendor/bin/dhcpserver --exclude-interface eth0
-    user root
-    group root
-    disabled
-
-service netmgr /vendor/bin/execns router /vendor/bin/netmgr --if-prefix wlan1_ --network 192.168.232.9/29
+service netmgr /vendor/bin/execns router /vendor/bin/netmgr --if-prefix wlan1 --bridge eth0,radio0-peer
     user root
     group root wifi
     disabled
 
-service dhcpclient_rtr /vendor/bin/execns router /vendor/bin/dhcpclient -i eth0
+service dhcpclient_rtr /vendor/bin/dhcpclient -i radio0 --no-gateway
     user root
     group root
     disabled
 
-service dhcpclient_def /vendor/bin/dhcpclient -i eth0
+on property:vendor.network.bridged=1
+    start dhcpclient_rtr
+
+service dhcpclient_def /vendor/bin/dhcpclient -i eth0 --no-gateway
     user root
     group root
     disabled

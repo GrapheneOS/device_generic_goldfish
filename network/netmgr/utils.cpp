@@ -14,11 +14,24 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "utils.h"
 
-enum class InterfaceState {
-    Up,
-    Down,
-};
+#include <string.h>
 
-const char* interfaceStateToStr(InterfaceState state);
+std::vector<std::string> explode(const char* str, char divider) {
+    const char* cur = str;
+    const char* space = nullptr;
+    std::vector<std::string> result;
+    do {
+        space = ::strchr(cur, divider);
+        if (space) {
+            result.emplace_back(cur, space);
+            cur = space + 1;
+        } else {
+            result.emplace_back(cur);
+        }
+    } while (space);
+
+    return result;
+}
+

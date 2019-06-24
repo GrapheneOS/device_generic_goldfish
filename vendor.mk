@@ -71,6 +71,7 @@ PRODUCT_PACKAGES += \
     android.hardware.wifi@1.0-service \
     android.hardware.biometrics.fingerprint@2.1-service \
     sh_vendor \
+    ip_vendor \
     iw_vendor \
     audio.r_submix.default \
     local_time.default \
@@ -133,11 +134,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	createns \
 	dhcpclient \
-	dhcpserver \
 	execns \
 	hostapd \
 	hostapd_nohidl \
-	ipv6proxy \
 	netmgr \
 	wpa_supplicant \
 
