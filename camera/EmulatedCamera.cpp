@@ -607,6 +607,26 @@ status_t EmulatedCamera::setParameters(const char* parms)
         getCameraDevice()->setPreviewFrameRate(new_frame_rate);
     }
 
+    // Validate KEY_PREVIEW_FPS_RANGE i.e., "preview-fps-range"
+    const char* preview_fps_range = new_param.get(CameraParameters::KEY_PREVIEW_FPS_RANGE);
+    if (preview_fps_range) {
+        char tmp[1024];
+        snprintf(tmp, sizeof(tmp), "%s", preview_fps_range);
+        int low=-1, high=-1;
+        if (sscanf(tmp, "%d,%d", &low, &high) != 2) {
+            ALOGE("incorrect preview-fps-range %s", tmp);
+            return BAD_VALUE;
+        }
+        if (low < 0 || high < 0) {
+            ALOGE("negative preview_fps_range in %s", tmp);
+            return BAD_VALUE;
+        }
+        if (low > high) {
+            ALOGE("invalid preview_fps_range in %s", tmp);
+            return BAD_VALUE;
+        }
+    }
+
     // Validate focus mode
     const char* focus_mode = new_param.get(CameraParameters::KEY_FOCUS_MODE);
     if (focus_mode && !IsValueInList(focus_mode, kValidFocusModes)) {

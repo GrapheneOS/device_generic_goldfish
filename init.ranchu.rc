@@ -3,8 +3,11 @@ on fs
 
 on early-init
     mount debugfs debugfs /sys/kernel/debug mode=755
+    mount proc proc /proc remount hidepid=2,gid=3009
 
 on init
+    # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
+    setrlimit memlock 8388608 8388608
 
     symlink /dev/goldfish_pipe /dev/android_pipe
     symlink /dev/goldfish_pipe /dev/qemu_pipe
@@ -25,9 +28,11 @@ on zygote-start
     mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
 
 on boot
+    setprop ro.hardware.egl emulation
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
     setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
+    setprop ro.zygote.disable_gl_preload 1
     setprop dalvik.vm.heapsize 192m
     setprop dalvik.vm.heapsize ${ro.kernel.qemu.dalvik.vm.heapsize}
     chown root system /sys/power/wake_lock

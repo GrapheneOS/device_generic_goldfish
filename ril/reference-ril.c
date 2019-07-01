@@ -1147,6 +1147,12 @@ static void requestSignalStrength(void *data __unused, size_t datalen __unused, 
         if (err < 0 && count < minNumOfElements) goto error;
     }
 
+    // remove gsm/cdma/evdo,just keep LTE
+    int numSignalsToIgnore = sizeof(RIL_SignalStrength_v5)/sizeof(int);
+    for (int i=0; i < numSignalsToIgnore; ++i) {
+        response[i] = INT_MAX;
+    }
+
     RIL_onRequestComplete(t, RIL_E_SUCCESS, response, sizeof(response));
 
     at_response_free(p_response);
@@ -2397,7 +2403,7 @@ static void requestGetRadioCapability(void *data, size_t datalen, RIL_Token t)
    radioCapability.version = RIL_RADIO_CAPABILITY_VERSION;
    radioCapability.session = 0;
    radioCapability.phase   = 0;
-   radioCapability.rat     = 0;
+   radioCapability.rat     = RAF_LTE;
    radioCapability.logicalModemUuid[0] = '\0';
    radioCapability.status  = RC_STATUS_SUCCESS;
 
