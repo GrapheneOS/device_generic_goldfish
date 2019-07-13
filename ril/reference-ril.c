@@ -47,6 +47,7 @@
 #include "if_monitor.h"
 #include "ril.h"
 
+#define EMULATOR_DUMMY_SIM_CHANNEL_NAME "A00000015144414300"
 #define LOG_TAG "RIL"
 #include <utils/Log.h>
 
@@ -1915,39 +1916,44 @@ error2:
 static void requestSimOpenChannel(void *data, size_t datalen, RIL_Token t)
 {
     ATResponse *p_response = NULL;
-    int32_t session_id;
+    int32_t session_id[3];
     int err;
     char cmd[32];
     char dummy;
     char *line;
 
+    const char *pdata = data ? data : EMULATOR_DUMMY_SIM_CHANNEL_NAME;
+
     // Max length is 16 bytes according to 3GPP spec 27.007 section 8.45
-    if (data == NULL || datalen == 0 || datalen > 16) {
-        ALOGE("Invalid data passed to requestSimOpenChannel");
+    if (pdata == NULL || datalen == 0 || datalen > 16) {
+        RLOGE("Invalid data passed to requestSimOpenChannel");
         RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
         return;
     }
 
-    snprintf(cmd, sizeof(cmd), "AT+CCHO=%s", data);
+    snprintf(cmd, sizeof(cmd), "AT+CCHO=%s", pdata);
 
     err = at_send_command_numeric(cmd, &p_response);
     if (err < 0 || p_response == NULL || p_response->success == 0) {
-        ALOGE("Error %d opening logical channel: %d",
+        RLOGE("Error %d opening logical channel: %d",
               err, p_response ? p_response->success : 0);
         RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
         at_response_free(p_response);
         return;
     }
 
+    memset(session_id, 0, sizeof(session_id));
+
     // Ensure integer only by scanning for an extra char but expect one result
     line = p_response->p_intermediates->line;
-    if (sscanf(line, "%" SCNd32 "%c", &session_id, &dummy) != 1) {
-        ALOGE("Invalid AT response, expected integer, was '%s'", line);
+    if (sscanf(line, "%" SCNd32 "%c", session_id, &dummy) != 1) {
+        RLOGE("Invalid AT response, expected integer, was '%s'", line);
         RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
         return;
     }
 
-    RIL_onRequestComplete(t, RIL_E_SUCCESS, &session_id, sizeof(session_id));
+    session_id[1] = 0x90;
+    RIL_onRequestComplete(t, RIL_E_SUCCESS, session_id, sizeof(session_id));
     at_response_free(p_response);
 }
 
