@@ -2773,6 +2773,9 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
         case RIL_REQUEST_SIM_TRANSMIT_APDU_CHANNEL:
             requestSimTransmitApduChannel(data, datalen, t);
             break;
+        case RIL_REQUEST_SIM_TRANSMIT_APDU_BASIC:
+            requestSimTransmitApduChannel(data, datalen, t);
+            break;
         case RIL_REQUEST_SETUP_DATA_CALL:
             requestSetupDataCall(data, datalen, t);
             break;
