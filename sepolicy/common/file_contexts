@@ -28,6 +28,7 @@
 /vendor/bin/dhcpclient       u:object_r:dhcpclient_exec:s0
 /vendor/bin/hostapd_nohidl   u:object_r:hostapd_nohidl_exec:s0
 /vendor/bin/netmgr           u:object_r:netmgr_exec:s0
+/vendor/bin/wifi_forwarder   u:object_r:wifi_forwarder_exec:s0
 
 /vendor/bin/hw/android\.hardware\.drm@1\.0-service\.widevine          u:object_r:hal_drm_widevine_exec:s0
 /vendor/bin/hw/android\.hardware\.drm@1\.2-service\.widevine          u:object_r:hal_drm_widevine_exec:s0

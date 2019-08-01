@@ -32,7 +32,6 @@
 #include <functional>
 
 static const char kBridgeName[] = "br0";
-static const char kWifiMonitorInterface[] = "hwsim0";
 static const char kNetworkBridgedProperty[] = "vendor.network.bridged";
 
 static void usage(const char* name) {
@@ -124,17 +123,10 @@ int main(int argc, char* argv[]) {
     WifiCommand wifiCommand(bridge);
     commander.registerCommand("wifi", &wifiCommand);
 
-    WifiForwarder forwarder(kWifiMonitorInterface);
-    res = forwarder.init();
-    if (!res) {
-        LOGE("%s", res.c_str());
-        return 1;
-    }
-
     Poller poller;
     poller.addPollable(&monitor);
     poller.addPollable(&commander);
-    poller.addPollable(&forwarder);
+
     return poller.run();
 }
 

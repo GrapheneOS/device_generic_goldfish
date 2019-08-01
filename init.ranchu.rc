@@ -80,6 +80,11 @@ service netmgr /vendor/bin/execns router /vendor/bin/netmgr --if-prefix wlan1 --
     group root wifi
     disabled
 
+service wifi_forwarder /vendor/bin/wifi_forwarder
+    user root
+    group root wifi
+    disabled
+
 service dhcpclient_rtr /vendor/bin/dhcpclient -i radio0 --no-gateway
     user root
     group root

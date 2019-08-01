@@ -150,6 +150,7 @@ PRODUCT_PACKAGES += \
 	hostapd \
 	hostapd_nohidl \
 	netmgr \
+	wifi_forwarder \
 	wpa_supplicant \
 
 PRODUCT_PACKAGES += android.hardware.thermal@2.0-service.mock
