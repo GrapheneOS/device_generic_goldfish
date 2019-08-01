@@ -240,7 +240,8 @@ int main(int argc, char* argv[]) {
     }
     {
         // Open and then immediately close the fd
-        Fd fd(::open(path.c_str(), O_CREAT | O_TRUNC | O_RDONLY | O_CLOEXEC, 0));
+        Fd fd(::open(path.c_str(), O_CREAT | O_TRUNC | O_RDONLY | O_CLOEXEC,
+                     S_IRUSR | S_IWUSR | S_IRGRP));
         if (fd.get() == -1) {
             ALOGE("Failed to open file %s: %s", path.c_str(), strerror(errno));
             return 1;

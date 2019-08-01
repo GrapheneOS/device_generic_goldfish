@@ -69,6 +69,8 @@ execns ${NAMESPACE} /vendor/bin/ip link set wlan1 up
 
 setprop ctl.start netmgr
 
+setprop ctl.start wifi_forwarder
+
 # If this is a clean boot we need to copy the hostapd configuration file to the
 # data partition where netmgr can change it if needed. If it already exists we
 # need to preserve the existing settings.
