@@ -34,8 +34,7 @@ service goldfish-logcat /system/bin/logcat -Q
     group log
     oneshot
 
-service bugreport /system/bin/dumpstate -d -p -B -z \
-        -o /data/user_de/0/com.android.shell/files/bugreports/bugreport
+service bugreport /system/bin/dumpstate -d -p -z
     class main
     disabled
     oneshot
