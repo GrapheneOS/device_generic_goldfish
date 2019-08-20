@@ -2390,6 +2390,7 @@ static void requestGetHardwareConfig(void *data, size_t datalen, RIL_Token t)
    // TODO - hook this up with real query/info from radio.
 
    RIL_HardwareConfig hwCfg;
+   memset(&hwCfg, 0, sizeof(hwCfg));
 
    RIL_UNUSED_PARM(data);
    RIL_UNUSED_PARM(datalen);
