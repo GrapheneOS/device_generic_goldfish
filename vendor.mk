@@ -24,6 +24,8 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.noavb:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
 endif
 
+DISABLE_RILD_OEM_HOOK := true
+
 # Device modules
 PRODUCT_PACKAGES += \
     vulkan.ranchu \
