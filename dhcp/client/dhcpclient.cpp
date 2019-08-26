@@ -383,11 +383,13 @@ bool DhcpClient::configureDhcp(const Message& msg) {
                     mDhcpInfo.dns[3] =
                         *reinterpret_cast<const in_addr_t*>(opt + 12);
                 }
+                break;
             case OPT_SERVER_ID:
                 if (optLength == 4) {
                     mDhcpInfo.serverId =
                         *reinterpret_cast<const in_addr_t*>(opt);
                 }
+                break;
             default:
                 break;
         }
