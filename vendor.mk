@@ -36,6 +36,7 @@ PRODUCT_PACKAGES += \
     lib_renderControl_enc \
     libEGL_emulation \
     libGLESv2_enc \
+    libandroidemu \
     libvulkan_enc \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
