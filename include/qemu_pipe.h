@@ -34,7 +34,7 @@ typedef int QEMU_PIPE_HANDLE;
 
 #define QEMU_PIPE_INVALID_HANDLE -1
 
-static bool ReadFully(int fd, void* data, size_t byte_count) {
+static __inline__ bool ReadFully(int fd, void* data, size_t byte_count) {
   uint8_t* p = (uint8_t*)(data);
   size_t remaining = byte_count;
   while (remaining > 0) {
@@ -46,7 +46,7 @@ static bool ReadFully(int fd, void* data, size_t byte_count) {
   return true;
 }
 
-static bool WriteFully(int fd, const void* data, size_t byte_count) {
+static __inline__ bool WriteFully(int fd, const void* data, size_t byte_count) {
   const uint8_t* p = (const uint8_t*)(data);
   size_t remaining = byte_count;
   while (remaining > 0) {
