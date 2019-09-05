@@ -123,7 +123,7 @@ static void saveFingerprint(worker_thread_t* listener, int idx) {
         return;
     }
     int nf = fwrite(&listener->fingerid[idx], sizeof(uint64_t), 1, fp);
-    if (ns != 1 || ns !=1)
+    if (ns != 1 || nf !=1)
         ALOGW("Corrupt emulator fingerprints storage; could not save "
               "fingerprints");
 
