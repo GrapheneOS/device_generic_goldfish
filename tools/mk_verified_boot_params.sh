@@ -2,7 +2,8 @@
 
 if [ $# -ne 3 ]; then
   echo "Usage: mk_verified_boot_params.sh <vbmeta.img> <system-qemu.img> <VerifiedBootParams.textproto>"
-  exit 1
+#when building vendor.img only, this is expected
+  exit 0
 fi
 
 # Example Output from 'avbtool calculate_kernel_cmdline --image vbmeta.img':
