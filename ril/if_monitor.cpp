@@ -16,7 +16,9 @@
 
 #include "if_monitor.h"
 
+#include <arpa/inet.h>
 #include <errno.h>
+#include <ifaddrs.h>
 #include <linux/rtnetlink.h>
 #include <net/if.h>
 #include <poll.h>
@@ -30,6 +32,7 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #define LOG_TAG "RIL-IFMON"
@@ -53,6 +56,18 @@ static size_t addrLength(int addrFamily) {
             return 16;
         default:
             return 0;
+    }
+}
+
+static const void* getSockAddrData(const struct sockaddr* addr) {
+    switch (addr->sa_family) {
+        case AF_INET:
+            return &reinterpret_cast<const struct sockaddr_in*>(addr)->sin_addr;
+        case AF_INET6:
+            return
+                &reinterpret_cast<const struct sockaddr_in6*>(addr)->sin6_addr;
+        default:
+            return nullptr;
     }
 }
 
@@ -133,32 +148,75 @@ public:
         mThread = std::make_unique<std::thread>([this]() { run(); });
     }
 
-    void requestAddress() {
-        struct {
-            struct nlmsghdr hdr;
-            struct ifaddrmsg msg;
-            char padding[16];
-        } request;
+    void requestAddresses() {
+        struct ifaddrs* addresses = nullptr;
 
-        memset(&request, 0, sizeof(request));
-        request.hdr.nlmsg_len = NLMSG_LENGTH(sizeof(request.msg));
-        request.hdr.nlmsg_flags = NLM_F_REQUEST | NLM_F_ROOT;
-        request.hdr.nlmsg_type = RTM_GETADDR;
+        if (getifaddrs(&addresses) != 0) {
+            RLOGE("Unable to retrieve list of interfaces, cannot get initial "
+                  "interface addresses: %s", strerror(errno));
+            return;
+        }
 
-        int status = ::send(mSocketFd, &request, request.hdr.nlmsg_len, 0);
-        if (status < 0 ||
-            static_cast<unsigned int>(status) != request.hdr.nlmsg_len) {
-            if (status < 0) {
-                RLOGE("Failed to send netlink request: %s", strerror(errno));
-            } else {
-                RLOGE("Short send only sent %d out of %d bytes",
-                      status, (int)request.hdr.nlmsg_len);
+        for (struct ifaddrs* cur = addresses; cur; cur = cur->ifa_next) {
+            if (cur->ifa_name == nullptr ||
+                cur->ifa_addr == nullptr ||
+                cur->ifa_netmask == nullptr) {
+                // Interface doesn't have all the information we need. Rely on
+                // the netlink notification to catch this interface later if it
+                // is configured correctly.
+                continue;
+            }
+            if (cur->ifa_flags & IFF_LOOPBACK) {
+                // Not interested in loopback devices, they will never be radio
+                // interfaces.
+                continue;
+            }
+            unsigned int ifIndex = if_nametoindex(cur->ifa_name);
+            if (ifIndex == 0) {
+                RLOGE("Encountered interface %s with no index: %s",
+                      cur->ifa_name, strerror(errno));
+                continue;
+            }
+            ifAddress addr;
+            addr.family = cur->ifa_addr->sa_family;
+            addr.prefix = getPrefix(cur->ifa_netmask);
+            memcpy(addr.addr,
+                   getSockAddrData(cur->ifa_addr),
+                   addrLength(cur->ifa_addr->sa_family));
+            mAddresses[ifIndex].push_back(addr);
+        }
+        freeifaddrs(addresses);
+
+        if (mOnAddressChangeCallback) {
+            for (const auto& ifAddr : mAddresses) {
+                mOnAddressChangeCallback(ifAddr.first,
+                                         ifAddr.second.data(),
+                                         ifAddr.second.size());
             }
         }
     }
 
+    int getPrefix(const struct sockaddr* addr) {
+        // This uses popcnt, a built-in instruction on some CPUs, to count
+        // the number of bits in a 32-bit word. The number of bits in a netmask
+        // equals the width of the prefix. For example a netmask of
+        // 255.255.255.0 has 24 bits set and that's also its width.
+        if (addr->sa_family == AF_INET) {
+            auto v4 = reinterpret_cast<const struct sockaddr_in*>(addr);
+            return __builtin_popcount(v4->sin_addr.s_addr);
+        } else if (addr->sa_family == AF_INET6) {
+            auto v6 = reinterpret_cast<const struct sockaddr_in6*>(addr);
+            // Copy to our own array to avoid aliasing
+            uint64_t words[2];
+            memcpy(words, v6->sin6_addr.s6_addr, sizeof(words));
+            return __builtin_popcountll(words[0]) +
+                   __builtin_popcountll(words[1]);
+        }
+        return 0;
+    }
+
     void run() {
-        requestAddress();
+        requestAddresses();
 
         std::vector<struct pollfd> fds(2);
         fds[0].events = POLLIN;
@@ -251,9 +309,14 @@ private:
                         RLOGE("Received message type %d", (int)hdr->nlmsg_type);
                         break;
                 }
-                NLMSG_NEXT(hdr, length);
+                hdr = NLMSG_NEXT(hdr, length);
             }
         }
+    }
+
+    std::string getInterfaceName(unsigned int ifIndex) {
+        char buffer[IF_NAMESIZE] = { '\0' };
+        return if_indextoname(ifIndex, buffer);
     }
 
     void handleAddressChange(const struct nlmsghdr* hdr) {
