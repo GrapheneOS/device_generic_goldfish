@@ -45,10 +45,16 @@
 #include <netinet/in.h>
 
 #include "if_monitor.h"
+#include "ipv6_monitor.h"
 #include "ril.h"
 
 #define LOG_TAG "RIL"
 #include <utils/Log.h>
+
+#define MAX(x, y) ({\
+    __typeof__(x) _x = (x); \
+    __typeof__(y) _y = (y); \
+    _x > _y ? _x : _y; })
 
 static void *noopRemoveWarning( void *a ) { return a; }
 #define RIL_UNUSED_PARM(a) noopRemoveWarning((void *)&(a));
@@ -273,9 +279,13 @@ static int s_mnc = 0;
 static int s_lac = 0;
 static int s_cid = 0;
 
-// A string containing all the IPv6 addresses of the radio interface
-static char s_ipv6_addresses[8192];
-static pthread_mutex_t s_ipv6_addresses_mutex = PTHREAD_MUTEX_INITIALIZER;
+// A string containing all IP addresses of the radio interface
+static char s_if_addresses[8192];
+// A string containing the IPv6 gateway of the radio interface
+static char s_ipv6_gateway[INET6_ADDRSTRLEN];
+// A string containing the IPv6 DNS servers of the radio interface
+static char s_ipv6_dns[8192];
+static pthread_mutex_t s_addresses_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void pollSIMState (void *param);
 static void setRadioState(RIL_RadioState newState);
@@ -618,6 +628,8 @@ static void requestOrSendDataCallList(RIL_Token *t)
     char propValue[PROP_VALUE_MAX];
     bool hasWifi = hasWifiCapability();
     const char* radioInterfaceName = getRadioInterfaceName(hasWifi);
+    char ipv6Gateway[INET6_ADDRSTRLEN];
+    char ipv6Dns[8192];
 
     err = at_send_command_multiline ("AT+CGACT?", "+CGACT:", &p_response);
     if (err != 0 || p_response->success == 0) {
@@ -735,24 +747,23 @@ static void requestOrSendDataCallList(RIL_Token *t)
         if (err < 0)
             goto error;
 
-        pthread_mutex_lock(&s_ipv6_addresses_mutex);
+        pthread_mutex_lock(&s_addresses_mutex);
 
-        // Extra space for null terminator and separating space
-        int addresses_size = strlen(out) + strlen(s_ipv6_addresses) + 2;
+        // Extra space for null terminator
+        int addresses_size = MAX(strlen(out), strlen(s_if_addresses)) + 1;
         responses[i].addresses = alloca(addresses_size);
-        if (*s_ipv6_addresses) {
-            // IPv6 addresses exist, add them
-            snprintf(responses[i].addresses, addresses_size,
-                     "%s %s",
-                     hasWifi ? RADIO0_IPV4_ADDRESS : out,
-                     s_ipv6_addresses);
+        if (*s_if_addresses) {
+            // Interface addresses exist, use them.
+            strlcpy(responses[i].addresses, s_if_addresses, addresses_size);
         } else {
-            // Only provide the IPv4 address
-            strlcpy(responses[i].addresses,
-                    hasWifi ? RADIO0_IPV4_ADDRESS : out,
-                    addresses_size);
+            // No known interface address, use whatever the modem provided
+            strlcpy(responses[i].addresses, out, addresses_size);
         }
-        pthread_mutex_unlock(&s_ipv6_addresses_mutex);
+
+        strlcpy(ipv6Gateway, s_ipv6_gateway, sizeof(ipv6Gateway));
+        strlcpy(ipv6Dns, s_ipv6_dns, sizeof(ipv6Dns));
+
+        pthread_mutex_unlock(&s_addresses_mutex);
 
         if (isInEmulator()) {
             /* We are in the emulator - the dns servers are listed
@@ -769,12 +780,15 @@ static void requestOrSendDataCallList(RIL_Token *t)
             int         nn;
             char  propName[PROP_NAME_MAX];
             char  propValue[PROP_VALUE_MAX];
+            char* gateways = NULL;
+            size_t gatewaysSize = 0;
 
             dnslist[0] = 0;
             for (nn = 1; nn <= 4; nn++) {
                 /* Probe net.eth0.dns<n> */
 
-                snprintf(propName, sizeof propName, "net.eth0.dns%d", nn);
+                snprintf(propName, sizeof propName, "net.%s.dns%d",
+                         radioInterfaceName, nn);
 
                 /* Ignore if undefined */
                 if (property_get(propName, propValue, "") <= 0) {
@@ -788,7 +802,8 @@ static void requestOrSendDataCallList(RIL_Token *t)
             }
             for (nn = 1; nn <= 4; ++nn) {
                 /* Probe net.eth0.ipv6dns<n> for IPv6 DNS servers */
-                snprintf(propName, sizeof propName, "net.eth0.ipv6dns%d", nn);
+                snprintf(propName, sizeof propName, "net.%s.ipv6dns%d",
+                         radioInterfaceName, nn);
                 /* Ignore if undefined */
                 if (property_get(propName, propValue, "") <= 0) {
                     continue;
@@ -800,13 +815,31 @@ static void requestOrSendDataCallList(RIL_Token *t)
 
             responses[i].dnses = dnslist;
 
-            /* There is only one gateway in the emulator. If WiFi is
-             * configured the interface visible to RIL will be behind a NAT
-             * where the gateway is different. */
-            if (hasWifi) {
-                responses[i].gateways = "192.168.200.1";
-            } else if (property_get("net.eth0.gw", propValue, "") > 0) {
-                responses[i].gateways = propValue;
+            /* There is only one gateway in the emulator. */
+            snprintf(propName, sizeof propName, "net.%s.gw",
+                     radioInterfaceName);
+
+            gatewaysSize = strlen(ipv6Gateway);
+            if (property_get(propName, propValue, "") > 0) {
+                if (gatewaysSize > 0) {
+                    // Room for a separating space
+                    ++gatewaysSize;
+                }
+                gatewaysSize += strlen(propValue);
+            }
+            if (gatewaysSize > 0) {
+                // Room for a terminating null byte
+                ++gatewaysSize;
+                responses[i].gateways = alloca(gatewaysSize);
+                if (ipv6Gateway[0]) {
+                    strlcpy(responses[i].gateways, ipv6Gateway, gatewaysSize);
+                }
+                if (propValue[0]) {
+                    if (responses[i].gateways[0] != '\0') {
+                        strlcat(responses[i].gateways, " ", gatewaysSize);
+                    }
+                    strlcat(responses[i].gateways, propValue, gatewaysSize);
+                }
             } else {
                 responses[i].gateways = "";
             }
@@ -823,13 +856,14 @@ static void requestOrSendDataCallList(RIL_Token *t)
 
     at_response_free(p_response);
 
-    if (t != NULL)
+    if (t != NULL) {
         RIL_onRequestComplete(*t, RIL_E_SUCCESS, responses,
                               n * sizeof(RIL_Data_Call_Response_v11));
-    else
+    } else {
         RIL_onUnsolicitedResponse(RIL_UNSOL_DATA_CALL_LIST_CHANGED,
                                   responses,
                                   n * sizeof(RIL_Data_Call_Response_v11));
+    }
 
     return;
 
@@ -3950,22 +3984,18 @@ static void onInterfaceAddressChange(unsigned int ifIndex,
         return;
     }
 
-    pthread_mutex_lock(&s_ipv6_addresses_mutex);
+    pthread_mutex_lock(&s_addresses_mutex);
     // Clear out any existing addresses, we receive a full set of addresses
     // that are going to replace the existing ones.
-    s_ipv6_addresses[0] = '\0';
-    currentLoc = s_ipv6_addresses;
-    remaining = sizeof(s_ipv6_addresses);
+    s_if_addresses[0] = '\0';
+    currentLoc = s_if_addresses;
+    remaining = sizeof(s_if_addresses);
     for (i = 0; i < numAddresses; ++i) {
-        if (addresses[i].family != AF_INET6) {
-            // Only care about IPv6 addresses
-            continue;
-        }
         char address[INET6_ADDRSTRLEN];
         if (inet_ntop(addresses[i].family, &addresses[i].addr,
                       address, sizeof(address))) {
             int printed = 0;
-            if (s_ipv6_addresses[0]) {
+            if (s_if_addresses[0]) {
                 // We've already printed something, separate them
                 if (remaining < 1) {
                     continue;
@@ -3983,7 +4013,38 @@ static void onInterfaceAddressChange(unsigned int ifIndex,
             RLOGE("Unable to convert address to string for if %s", ifName);
         }
     }
-    pthread_mutex_unlock(&s_ipv6_addresses_mutex);
+    pthread_mutex_unlock(&s_addresses_mutex);
+
+    // Send unsolicited call list change to notify upper layers about the new
+    // addresses
+    requestOrSendDataCallList(NULL);
+}
+
+static void onIpv6Change(const struct in6_addr* gateway,
+                         const struct in6_addr* dnsServers,
+                         size_t numDnsServers) {
+    char* dnsLoc = s_ipv6_dns;
+    size_t remaining = sizeof(s_ipv6_dns);
+    char address[INET6_ADDRSTRLEN];
+
+    pthread_mutex_lock(&s_addresses_mutex);
+
+    inet_ntop(AF_INET6, gateway, s_ipv6_gateway, sizeof(s_ipv6_gateway));
+
+    s_ipv6_dns[0] = '\0';
+    for (size_t i = 0; i < numDnsServers; ++i) {
+        if (inet_ntop(AF_INET6, &dnsServers[i], address, sizeof(address))) {
+            size_t len = strlcat(s_ipv6_dns, address, sizeof(s_ipv6_dns));
+            if (i + 1 < numDnsServers && len + 1 < sizeof(s_ipv6_dns)) {
+                // There's more to come and there's room for more, separate
+                // multiple DNS servers by a space.
+                s_ipv6_dns[len] = ' ';
+                s_ipv6_dns[len + 1] = '\0';
+            }
+        }
+    }
+
+    pthread_mutex_unlock(&s_addresses_mutex);
 
     // Send unsolicited call list change to notify upper layers about the new
     // addresses
@@ -3995,14 +4056,20 @@ mainLoop(void *param __unused)
 {
     int fd;
     int ret;
-    struct ifMonitor* monitor = ifMonitorCreate();
+    bool hasWifi = hasWifiCapability();
+    const char* radioInterfaceName = getRadioInterfaceName(hasWifi);
+    struct ifMonitor* ifMonitor = ifMonitorCreate();
+    struct ipv6Monitor* ipv6Monitor = ipv6MonitorCreate(radioInterfaceName);
 
     AT_DUMP("== ", "entering mainLoop()", -1 );
     at_set_on_reader_closed(onATReaderClosed);
     at_set_on_timeout(onATTimeout);
 
-    ifMonitorSetCallback(monitor, &onInterfaceAddressChange);
-    ifMonitorRunAsync(monitor);
+    ifMonitorSetCallback(ifMonitor, &onInterfaceAddressChange);
+    ifMonitorRunAsync(ifMonitor);
+
+    ipv6MonitorSetCallback(ipv6Monitor, &onIpv6Change);
+    ipv6MonitorRunAsync(ipv6Monitor);
 
     for (;;) {
         fd = -1;
@@ -4052,8 +4119,11 @@ mainLoop(void *param __unused)
         RLOGI("Re-opening after close");
     }
 
-    ifMonitorStop(monitor);
-    ifMonitorFree(monitor);
+    ifMonitorStop(ifMonitor);
+    ifMonitorFree(ifMonitor);
+
+    ipv6MonitorStop(ipv6Monitor);
+    ipv6MonitorFree(ipv6Monitor);
 
     return NULL;
 }
