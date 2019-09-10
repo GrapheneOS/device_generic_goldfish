@@ -706,7 +706,7 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
 
         uint8_t afMode = 0;
 
-        if (mFacingBack) {
+        {
             switch (type) {
                 case CAMERA3_TEMPLATE_PREVIEW:
                     afMode = ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE;
@@ -730,9 +730,8 @@ const camera_metadata_t* EmulatedFakeCamera3::constructDefaultRequestSettings(
                     afMode = ANDROID_CONTROL_AF_MODE_AUTO;
                     break;
             }
-        } else {
-            afMode = ANDROID_CONTROL_AF_MODE_OFF;
         }
+
         settings.update(ANDROID_CONTROL_AF_MODE, &afMode, 1);
 
         settings.update(ANDROID_CONTROL_AF_REGIONS, controlRegions, 5);
@@ -1251,12 +1250,12 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
 
     if (hasCapability(BACKWARD_COMPATIBLE)) {
         // 5 cm min focus distance for back camera, infinity (fixed focus) for front
-        const float minFocusDistance = mFacingBack ? 1.0/0.05 : 0.0;
+        const float minFocusDistance = 1.0/0.05;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_MINIMUM_FOCUS_DISTANCE,
                 &minFocusDistance, 1);
 
         // 5 m hyperfocal distance for back camera, infinity (fixed focus) for front
-        const float hyperFocalDistance = mFacingBack ? 1.0/5.0 : 0.0;
+        const float hyperFocalDistance = 1.0/5.0;
         ADD_STATIC_ENTRY(ANDROID_LENS_INFO_HYPERFOCAL_DISTANCE,
                 &hyperFocalDistance, 1);
 
@@ -1287,8 +1286,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
         // 90 degree rotation to align with long edge of a phone device that's by default portrait
         static const float qO[] = { 0.707107f, 0.f, 0.f, 0.707107f};
 
-        // Either a 180-degree rotation for back-facing, or no rotation for front-facing
-        const float qF[] = {0, (mFacingBack ? 1.f : 0.f), 0, (mFacingBack ? 0.f : 1.f)};
+        const float qF[] = {0, 1.f, 0, 0.f};
 
         // Quarternion product, orientation change then facing
         const float lensPoseRotation[] = {qO[0]*qF[0] - qO[1]*qF[1] - qO[2]*qF[2] - qO[3]*qF[3],
@@ -1676,7 +1674,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
             ANDROID_CONTROL_AF_MODE_OFF
     };
 
-    if (mFacingBack && hasCapability(BACKWARD_COMPATIBLE)) {
+    if (hasCapability(BACKWARD_COMPATIBLE)) {
         ADD_STATIC_ENTRY(ANDROID_CONTROL_AF_AVAILABLE_MODES,
                 availableAfModesBack, sizeof(availableAfModesBack));
     } else {
@@ -2127,11 +2125,6 @@ status_t EmulatedFakeCamera3::doFakeAF(CameraMetadata &settings) {
         case ANDROID_CONTROL_AF_MODE_MACRO:
         case ANDROID_CONTROL_AF_MODE_CONTINUOUS_VIDEO:
         case ANDROID_CONTROL_AF_MODE_CONTINUOUS_PICTURE:
-            if (!mFacingBack) {
-                // Always report INACTIVE for front Emulated Camera
-                mAfState = ANDROID_CONTROL_AF_STATE_INACTIVE;
-                return OK;
-            }
             break;
         default:
             ALOGE("%s: Emulator doesn't support AF mode %d",
