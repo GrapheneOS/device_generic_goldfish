@@ -507,12 +507,18 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
     // Fixed-point coefficients for RGB-YUV transform
     // Based on JFIF RGB->YUV transform.
     // Cb/Cr offset scaled by 64x twice since they're applied post-multiply
-    const int rgbToY[]  = {19, 37, 7};
-    const int rgbToCb[] = {-10,-21, 32, 524288};
-    const int rgbToCr[] = {32,-26, -5, 524288};
+    float rgbToY[]  = {19.0, 37.0, 7.0, 0.0};
+    float rgbToCb[] = {-10.0,-21.0, 32.0, 524288.0};
+    float rgbToCr[] = {32.0,-26.0, -5.0, 524288.0};
     // Scale back to 8bpp non-fixed-point
     const int scaleOut = 64;
     const int scaleOutSq = scaleOut * scaleOut; // after multiplies
+    const double invscaleOutSq = 1.0/scaleOutSq;
+    for (int i=0; i < 4; ++i) {
+        rgbToY[i] *= invscaleOutSq;
+        rgbToCb[i] *= invscaleOutSq;
+        rgbToCr[i] *= invscaleOutSq;
+    }
 
     unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
     unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
@@ -541,18 +547,10 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
             gCount = gCount < saturationPoint ? gCount : saturationPoint;
             bCount = (pixel[Scene::B]+(outX+outY)%64)  * scale64x;
             bCount = bCount < saturationPoint ? bCount : saturationPoint;
-            *pxY++ = (rgbToY[0] * rCount +
-                    rgbToY[1] * gCount +
-                    rgbToY[2] * bCount) / scaleOutSq;
+            *pxY++ = (rgbToY[0] * rCount + rgbToY[1] * gCount + rgbToY[2] * bCount);
             if (outY % 2 == 0 && outX % 2 == 0) {
-                *pxVU++ = (rgbToCr[0] * rCount +
-                        rgbToCr[1] * gCount +
-                        rgbToCr[2] * bCount +
-                        rgbToCr[3]) / scaleOutSq;
-                *pxVU++ = (rgbToCb[0] * rCount +
-                        rgbToCb[1] * gCount +
-                        rgbToCb[2] * bCount +
-                        rgbToCb[3]) / scaleOutSq;
+                *pxVU++ = (rgbToCr[0] * rCount + rgbToCr[1] * gCount + rgbToCr[2] * bCount + rgbToCr[3]);
+                *pxVU++ = (rgbToCb[0] * rCount + rgbToCb[1] * gCount + rgbToCb[2] * bCount + rgbToCb[3]);
             }
         }
     }
