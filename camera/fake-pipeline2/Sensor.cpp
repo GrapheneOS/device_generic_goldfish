@@ -76,6 +76,7 @@ const float Sensor::kReadNoiseVarAfterGain =
 const int32_t Sensor::kSensitivityRange[2] = {100, 1600};
 const uint32_t Sensor::kDefaultSensitivity = 100;
 
+
 /** A few utility functions for math, normal distributions */
 
 // Take advantage of IEEE floating-point format to calculate an approximate
@@ -108,7 +109,9 @@ Sensor::Sensor(uint32_t width, uint32_t height):
         mFrameNumber(0),
         mCapturedBuffers(NULL),
         mListener(NULL),
-        mScene(width, height, kElectronsPerLuxSecond)
+        mSceneWidth((width < Scene::kMaxWidth) ? width : Scene::kMaxWidth),
+        mSceneHeight((height < Scene::kMaxHeight) ? height : Scene::kMaxHeight),
+        mScene(mSceneWidth, mSceneHeight, kElectronsPerLuxSecond)
 {
     ALOGV("Sensor created with pixel array %d x %d", width, height);
 }
@@ -428,8 +431,8 @@ void Sensor::captureRGBA(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate total scaling from electrons to 8bpp
     int scale64x = 64 * totalGain * 255 / kMaxRawValue;
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
 
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
@@ -466,8 +469,8 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate total scaling from electrons to 8bpp
     int scale64x = 64 * totalGain * 255 / kMaxRawValue;
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
 
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
@@ -520,8 +523,8 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
         rgbToCr[i] *= invscaleOutSq;
     }
 
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
         uint8_t *pxY = img + outY * width;
@@ -561,8 +564,8 @@ void Sensor::captureDepth(uint8_t *img, uint32_t gain, uint32_t width, uint32_t 
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate scaling factor to 13bpp millimeters
     int scale64x = 64 * totalGain * 8191 / kMaxRawValue;
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
 
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
