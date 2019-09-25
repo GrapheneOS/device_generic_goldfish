@@ -108,6 +108,11 @@ class Scene {
         NUM_CHANNELS
     };
 
+    // Max scene width and height. Calculation for larger scene consumes much
+    // CPU resource. So we put a limit here.
+    static const int kMaxWidth;
+    static const int kMaxHeight;
+
   private:
     // Sensor color filtering coefficients in XYZ
     float mFilterR[3];
