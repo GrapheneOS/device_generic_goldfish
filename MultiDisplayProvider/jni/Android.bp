@@ -34,4 +34,6 @@ cc_library_shared {
         "-Wextra",
         "-Wno-unused-parameter",
     ],
+
+    system_ext_specific: true,
 }
