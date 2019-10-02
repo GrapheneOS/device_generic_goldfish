@@ -42,6 +42,8 @@ namespace android {
 
 const int Scene::kSceneWidth = 20;
 const int Scene::kSceneHeight = 20;
+const int Scene::kMaxWidth = 640;
+const int Scene::kMaxHeight = 480;
 
 const uint8_t Scene::kScene[Scene::kSceneWidth * Scene::kSceneHeight] = {
     //      5         10        15        20
