@@ -90,7 +90,8 @@ PRODUCT_PACKAGES += \
     iw_vendor \
     audio.r_submix.default \
     local_time.default \
-    SdkSetup
+    SdkSetup \
+    MultiDisplayProvider
 
 PRODUCT_PACKAGES += \
     android.hardware.audio@4.0-impl:32 \
