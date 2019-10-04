@@ -21,6 +21,7 @@ include $(CLEAR_VARS)
 EMU_EXTRA_FILES := \
         $(PRODUCT_OUT)/system-qemu-config.txt \
         $(PRODUCT_OUT)/ramdisk.img \
+        $(PRODUCT_OUT)/misc_info.txt \
 
 ifeq ($(filter sdk_gphone_%, $(TARGET_PRODUCT)),)
 ifeq ($(TARGET_BUILD_VARIANT),user)
@@ -89,6 +90,8 @@ $(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(EMULATOR_KERNEL_FILE) $(AVBTOOL) $(SOO
 
 .PHONY: emu_extra_imgs
 emu_extra_imgs: $(EMU_EXTRA_TARGET)
+
+$(call dist-for-goals, emu_extra_imgs, $(EMU_EXTRA_TARGET))
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
 endif
