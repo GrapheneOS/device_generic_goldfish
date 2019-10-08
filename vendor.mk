@@ -164,8 +164,8 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-goldfish.xml
 
 # Goldfish does not support ION needed for Codec 2.0
-PRODUCT_PROPERTY_OVERRIDES += \
-    debug.stagefright.ccodec=0
+#PRODUCT_PROPERTY_OVERRIDES += \
+#    debug.stagefright.ccodec=0
 
 DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
 
