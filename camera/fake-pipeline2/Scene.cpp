@@ -42,6 +42,8 @@ namespace android {
 
 const int Scene::kSceneWidth = 20;
 const int Scene::kSceneHeight = 20;
+const int Scene::kMaxWidth = 640;
+const int Scene::kMaxHeight = 480;
 
 const uint8_t Scene::kScene[Scene::kSceneWidth * Scene::kSceneHeight] = {
     //      5         10        15        20
@@ -337,35 +339,6 @@ void Scene::calculateScene(nsecs_t time) {
 
     // Set starting pixel
     setReadoutPixel(0,0);
-}
-
-void Scene::setReadoutPixel(int x, int y) {
-    mCurrentX = x;
-    mCurrentY = y;
-    mSubX = (x + mOffsetX + mHandshakeX) % mMapDiv;
-    mSubY = (y + mOffsetY + mHandshakeY) % mMapDiv;
-    mSceneX = (x + mOffsetX + mHandshakeX) / mMapDiv;
-    mSceneY = (y + mOffsetY + mHandshakeY) / mMapDiv;
-    mSceneIdx = mSceneY * kSceneWidth + mSceneX;
-    mCurrentSceneMaterial = &(mCurrentColors[kScene[mSceneIdx]]);
-}
-
-const uint32_t* Scene::getPixelElectrons() {
-    const uint32_t *pixel = mCurrentSceneMaterial;
-    mCurrentX++;
-    mSubX++;
-    if (mCurrentX >= mSensorWidth) {
-        mCurrentX = 0;
-        mCurrentY++;
-        if (mCurrentY >= mSensorHeight) mCurrentY = 0;
-        setReadoutPixel(mCurrentX, mCurrentY);
-    } else if (mSubX > mMapDiv) {
-        mSceneIdx++;
-        mSceneX++;
-        mCurrentSceneMaterial = &(mCurrentColors[kScene[mSceneIdx]]);
-        mSubX = 0;
-    }
-    return pixel;
 }
 
 // Handshake model constants.

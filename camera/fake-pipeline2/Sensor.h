@@ -231,6 +231,8 @@ class Sensor: private Thread, public virtual RefBase {
     nsecs_t mNextCaptureTime;
     Buffers *mNextCapturedBuffers;
 
+    int mSceneWidth;
+    int mSceneHeight;
     Scene mScene;
 
     void captureRaw(uint8_t *img, uint32_t gain, uint32_t stride);
