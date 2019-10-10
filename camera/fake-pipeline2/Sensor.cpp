@@ -76,6 +76,7 @@ const float Sensor::kReadNoiseVarAfterGain =
 const int32_t Sensor::kSensitivityRange[2] = {100, 1600};
 const uint32_t Sensor::kDefaultSensitivity = 100;
 
+
 /** A few utility functions for math, normal distributions */
 
 // Take advantage of IEEE floating-point format to calculate an approximate
@@ -108,7 +109,9 @@ Sensor::Sensor(uint32_t width, uint32_t height):
         mFrameNumber(0),
         mCapturedBuffers(NULL),
         mListener(NULL),
-        mScene(width, height, kElectronsPerLuxSecond)
+        mSceneWidth((width < Scene::kMaxWidth) ? width : Scene::kMaxWidth),
+        mSceneHeight((height < Scene::kMaxHeight) ? height : Scene::kMaxHeight),
+        mScene(mSceneWidth, mSceneHeight, kElectronsPerLuxSecond)
 {
     ALOGV("Sensor created with pixel array %d x %d", width, height);
 }
@@ -428,8 +431,8 @@ void Sensor::captureRGBA(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate total scaling from electrons to 8bpp
     int scale64x = 64 * totalGain * 255 / kMaxRawValue;
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
 
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
@@ -447,9 +450,9 @@ void Sensor::captureRGBA(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
             }
             lastX = x;
             // TODO: Perfect demosaicing is a cheat
-            rCount = (pixel[Scene::R]+(outX+outY)%64) * scale64x;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
-            bCount = (pixel[Scene::B]+(outX+outY)%64) * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
 
             *px++ = rCount < 255*64 ? rCount / 64 : 255;
             *px++ = gCount < 255*64 ? gCount / 64 : 255;
@@ -466,8 +469,8 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate total scaling from electrons to 8bpp
     int scale64x = 64 * totalGain * 255 / kMaxRawValue;
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
 
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
@@ -485,9 +488,9 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
             }
             lastX = x;
            // TODO: Perfect demosaicing is a cheat
-            rCount = (pixel[Scene::R]+(outX+outY)%64)  * scale64x;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
-            bCount = (pixel[Scene::B]+(outX+outY)%64)  * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
 
             *px++ = rCount < 255*64 ? rCount / 64 : 255;
             *px++ = gCount < 255*64 ? gCount / 64 : 255;
@@ -507,15 +510,21 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
     // Fixed-point coefficients for RGB-YUV transform
     // Based on JFIF RGB->YUV transform.
     // Cb/Cr offset scaled by 64x twice since they're applied post-multiply
-    const int rgbToY[]  = {19, 37, 7};
-    const int rgbToCb[] = {-10,-21, 32, 524288};
-    const int rgbToCr[] = {32,-26, -5, 524288};
+    float rgbToY[]  = {19.0, 37.0, 7.0, 0.0};
+    float rgbToCb[] = {-10.0,-21.0, 32.0, 524288.0};
+    float rgbToCr[] = {32.0,-26.0, -5.0, 524288.0};
     // Scale back to 8bpp non-fixed-point
     const int scaleOut = 64;
     const int scaleOutSq = scaleOut * scaleOut; // after multiplies
+    const double invscaleOutSq = 1.0/scaleOutSq;
+    for (int i=0; i < 4; ++i) {
+        rgbToY[i] *= invscaleOutSq;
+        rgbToCb[i] *= invscaleOutSq;
+        rgbToCr[i] *= invscaleOutSq;
+    }
 
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
         uint8_t *pxY = img + outY * width;
@@ -532,27 +541,16 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
                 }
             }
             lastX = x;
-            //Slightly different color for the same Scene, result in larger
-            //jpeg image size requried by CTS test
-            //android.provider.cts.MediaStoreUiTest#testImageCapture
-            rCount = (pixel[Scene::R]+(outX+outY)%64)  * scale64x;
+            rCount = pixel[Scene::R]  * scale64x;
             rCount = rCount < saturationPoint ? rCount : saturationPoint;
-            gCount = (pixel[Scene::Gr]+(outX+outY)%64) * scale64x;
+            gCount = pixel[Scene::Gr] * scale64x;
             gCount = gCount < saturationPoint ? gCount : saturationPoint;
-            bCount = (pixel[Scene::B]+(outX+outY)%64)  * scale64x;
+            bCount = pixel[Scene::B]  * scale64x;
             bCount = bCount < saturationPoint ? bCount : saturationPoint;
-            *pxY++ = (rgbToY[0] * rCount +
-                    rgbToY[1] * gCount +
-                    rgbToY[2] * bCount) / scaleOutSq;
+            *pxY++ = (rgbToY[0] * rCount + rgbToY[1] * gCount + rgbToY[2] * bCount);
             if (outY % 2 == 0 && outX % 2 == 0) {
-                *pxVU++ = (rgbToCr[0] * rCount +
-                        rgbToCr[1] * gCount +
-                        rgbToCr[2] * bCount +
-                        rgbToCr[3]) / scaleOutSq;
-                *pxVU++ = (rgbToCb[0] * rCount +
-                        rgbToCb[1] * gCount +
-                        rgbToCb[2] * bCount +
-                        rgbToCb[3]) / scaleOutSq;
+                *pxVU++ = (rgbToCr[0] * rCount + rgbToCr[1] * gCount + rgbToCr[2] * bCount + rgbToCr[3]);
+                *pxVU++ = (rgbToCb[0] * rCount + rgbToCb[1] * gCount + rgbToCb[2] * bCount + rgbToCb[3]);
             }
         }
     }
@@ -563,8 +561,8 @@ void Sensor::captureDepth(uint8_t *img, uint32_t gain, uint32_t width, uint32_t 
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate scaling factor to 13bpp millimeters
     int scale64x = 64 * totalGain * 8191 / kMaxRawValue;
-    unsigned int DivH= (float)mResolution[1]/height * (0x1 << 10);
-    unsigned int DivW = (float)mResolution[0]/width * (0x1 << 10);
+    unsigned int DivH= (float)mSceneHeight/height * (0x1 << 10);
+    unsigned int DivW = (float)mSceneWidth/width * (0x1 << 10);
 
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;

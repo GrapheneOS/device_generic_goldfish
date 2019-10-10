@@ -122,7 +122,26 @@ LOCAL_SRC_FILES := ${emulator_camera_src}
 
 LOCAL_MODULE := camera.ranchu
 
+# Symlink media profile configurations from /vendor/etc to /data/vendor/etc/
+LOCAL_POST_INSTALL_CMD := ln -sf /data/vendor/etc/media_codecs_google_video.xml $(PRODUCT_OUT)/vendor/etc/media_codecs_google_video.xml
 include $(BUILD_SHARED_LIBRARY)
+
+# Emulator camera - test binary################################################
+
+include ${CLEAR_VARS}
+
+LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
+LOCAL_CFLAGS := ${emulator_camera_cflags}
+LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
+
+LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
+LOCAL_STATIC_LIBRARIES := ${emulator_camera_static_libraries}
+LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
+LOCAL_SRC_FILES := ${emulator_camera_src}
+LOCAL_SRC_FILES += EmulatorCameraTest.cpp
+
+LOCAL_MODULE := emulatorcameratest
+include $(BUILD_EXECUTABLE)
 
 # Build all subdirectories #####################################################
 include $(call all-makefiles-under,$(LOCAL_PATH))
