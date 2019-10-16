@@ -190,7 +190,7 @@ class QemuSensor: private Thread, public virtual RefBase {
             uint32_t stride, int64_t *timestamp);
     void captureRGB(uint8_t *img, uint32_t width, uint32_t height,
             uint32_t stride, int64_t *timestamp);
-    void captureNV21(uint8_t *img, uint32_t width, uint32_t height,
+    void captureYU12(uint8_t *img, uint32_t width, uint32_t height,
             uint32_t stride, int64_t *timestamp);
 };
 
