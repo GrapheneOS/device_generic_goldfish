@@ -303,7 +303,7 @@ bool QemuSensor::threadLoop() {
                     }
                     break;
                 case HAL_PIXEL_FORMAT_YCbCr_420_888:
-                    captureNV21(b.img, b.width, b.height, b.stride, &timestamp);
+                    captureYU12(b.img, b.width, b.height, b.stride, &timestamp);
                     break;
                 default:
                     ALOGE("%s: Unknown/unsupported format %x, no output",
@@ -369,9 +369,9 @@ void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
         /*
          * Host Camera always assumes V4L2_PIX_FMT_RGB32 as the preview format,
          * and asks for the video format from the pixFmt parameter, which is
-         * V4L2_PIX_FMT_NV21 in our implementation.
+         * V4L2_PIX_FMT_YUV420 in our implementation.
          */
-        uint32_t pixFmt = V4L2_PIX_FMT_NV21;
+        uint32_t pixFmt = V4L2_PIX_FMT_YUV420;
         res = mCameraQemuClient.queryStart(pixFmt, width, height);
         if (res == NO_ERROR) {
             mLastRequestWidth = width;
@@ -411,7 +411,7 @@ void QemuSensor::captureRGB(uint8_t *img, uint32_t width, uint32_t height, uint3
     ALOGE("%s: Not implemented", __FUNCTION__);
 }
 
-void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride, int64_t *timestamp) {
+void QemuSensor::captureYU12(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride, int64_t *timestamp) {
     status_t res;
     if (width != (uint32_t)mLastRequestWidth ||
         height != (uint32_t)mLastRequestHeight) {
@@ -438,9 +438,9 @@ void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint
         /*
          * Host Camera always assumes V4L2_PIX_FMT_RGB32 as the preview format,
          * and asks for the video format from the pixFmt parameter, which is
-         * V4L2_PIX_FMT_NV21 in our implementation.
+         * V4L2_PIX_FMT_YUV420 in our implementation.
          */
-        uint32_t pixFmt = V4L2_PIX_FMT_NV21;
+        uint32_t pixFmt = V4L2_PIX_FMT_YUV420;
         res = mCameraQemuClient.queryStart(pixFmt, width, height);
         if (res == NO_ERROR) {
             mLastRequestWidth = width;
@@ -463,7 +463,7 @@ void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint
               width, stride);
     }
 
-    // Calculate the buffer size for NV21.
+    // Calculate the buffer size for YUV420.
     size_t bufferSize = (width * height * 12) / 8;
     // Apply no white balance or exposure compensation.
     float whiteBalance[] = {1.0f, 1.0f, 1.0f};
@@ -473,7 +473,7 @@ void QemuSensor::captureNV21(uint8_t *img, uint32_t width, uint32_t height, uint
             whiteBalance[1], whiteBalance[2],
             exposureCompensation, timestamp);
 
-    ALOGVV("NV21 sensor image captured");
+    ALOGVV("YUV420 sensor image captured");
 }
 
 }; // end of namespace android

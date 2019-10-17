@@ -350,7 +350,7 @@ bool Sensor::threadLoop() {
                     }
                     break;
                 case HAL_PIXEL_FORMAT_YCbCr_420_888:
-                    captureNV21(b.img, gain, b.width, b.height);
+                    captureYU12(b.img, gain, b.width, b.height);
                    break;
                 case HAL_PIXEL_FORMAT_YV12:
                     // TODO:
@@ -500,7 +500,7 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
     ALOGVV("RGB sensor image captured");
 }
 
-void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
+void Sensor::captureYU12(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
     float totalGain = gain/100.0 * kBaseGainFactor;
     // Using fixed-point math with 6 bits of fractional precision.
     // In fixed-point math, calculate total scaling from electrons to 8bpp
@@ -529,6 +529,8 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
         unsigned int y = outY * DivH >> 10;
         uint8_t *pxY = img + outY * width;
         uint8_t *pxVU = img + (height + outY / 2) * width;
+        uint8_t *pxU = img + height * width + (outY / 2) * (width / 2);
+        uint8_t *pxV = pxU + (height / 2) * (width / 2);
         mScene.setReadoutPixel(0, y);
         unsigned int lastX = 0;
         const uint32_t *pixel = mScene.getPixelElectrons();
@@ -549,12 +551,12 @@ void Sensor::captureNV21(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
             bCount = bCount < saturationPoint ? bCount : saturationPoint;
             *pxY++ = (rgbToY[0] * rCount + rgbToY[1] * gCount + rgbToY[2] * bCount);
             if (outY % 2 == 0 && outX % 2 == 0) {
-                *pxVU++ = (rgbToCr[0] * rCount + rgbToCr[1] * gCount + rgbToCr[2] * bCount + rgbToCr[3]);
-                *pxVU++ = (rgbToCb[0] * rCount + rgbToCb[1] * gCount + rgbToCb[2] * bCount + rgbToCb[3]);
+                *pxV++ = (rgbToCr[0] * rCount + rgbToCr[1] * gCount + rgbToCr[2] * bCount + rgbToCr[3]);
+                *pxU++ = (rgbToCb[0] * rCount + rgbToCb[1] * gCount + rgbToCb[2] * bCount + rgbToCb[3]);
             }
         }
     }
-    ALOGVV("NV21 sensor image captured");
+    ALOGVV("YU21 sensor image captured");
 }
 
 void Sensor::captureDepth(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
