@@ -2,8 +2,6 @@
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib/libgoldfish-ril.so
 
-DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest-arm.xml
-
 # Note: the following lines need to stay at the beginning so that it can
 # take priority  and override the rules it inherit from other mk files
 # see copy file rules in core/Makefile
