@@ -40,31 +40,22 @@ endif
 
 DISABLE_RILD_OEM_HOOK := true
 
+DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
+
 # Device modules
 PRODUCT_PACKAGES += \
     vulkan.ranchu \
     gralloc.goldfish \
     gralloc.goldfish.default \
     gralloc.ranchu \
-    libGLESv1_CM_emulation \
-    lib_renderControl_enc \
-    libEGL_emulation \
-    libGLESv2_enc \
     libandroidemu \
-    libvulkan_enc \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    libGLESv2_emulation \
-    libGLESv1_enc \
     libEGL_swiftshader \
     libGLESv1_CM_swiftshader \
     libGLESv2_swiftshader \
     libgoldfish-ril \
     qemu-props \
-    camera.goldfish \
-    camera.goldfish.jpeg \
-    camera.ranchu \
-    camera.ranchu.jpeg \
     gps.goldfish \
     gps.ranchu \
     fingerprint.goldfish \
@@ -73,7 +64,6 @@ PRODUCT_PACKAGES += \
     power.goldfish \
     power.ranchu \
     fingerprint.ranchu \
-    sensors.ranchu \
     android.hardware.graphics.composer@2.3-impl \
     android.hardware.graphics.composer@2.3-service \
     android.hardware.graphics.allocator@2.0-service \
@@ -92,6 +82,17 @@ PRODUCT_PACKAGES += \
     local_time.default \
     SdkSetup \
     MultiDisplayProvider
+
+ifneq ($(BUILD_EMULATOR_OPENGL),false)
+PRODUCT_PACKAGES += \
+    libGLESv1_CM_emulation \
+    lib_renderControl_enc \
+    libEGL_emulation \
+    libGLESv2_enc \
+    libvulkan_enc \
+    libGLESv2_emulation \
+    libGLESv1_enc
+endif
 
 PRODUCT_PACKAGES += \
     android.hardware.audio@4.0-impl:32 \
@@ -114,12 +115,16 @@ ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
 PRODUCT_PACKAGES += \
     android.hardware.gnss@1.0-service \
     android.hardware.gnss@1.0-impl
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.gnss.xml
 endif
 
-
+ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
 PRODUCT_PACKAGES += \
     android.hardware.sensors@1.0-impl \
-    android.hardware.sensors@1.0-service
+    android.hardware.sensors@1.0-service \
+    sensors.ranchu
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.sensors.xml
+endif
 
 PRODUCT_PACKAGES += \
     android.hardware.drm@1.0-service \
@@ -135,10 +140,17 @@ PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
 
 PRODUCT_PROPERTY_OVERRIDES += persist.sys.zram_enabled=1 \
 
+ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
 PRODUCT_PACKAGES += \
     camera.device@1.0-impl \
     android.hardware.camera.provider@2.4-service \
     android.hardware.camera.provider@2.4-impl \
+    camera.goldfish \
+    camera.goldfish.jpeg \
+    camera.ranchu \
+    camera.ranchu.jpeg
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
+endif
 
 PRODUCT_PACKAGES += \
     android.hardware.gatekeeper@1.0-service.software
@@ -163,8 +175,6 @@ PRODUCT_COPY_FILES += \
 # Goldfish does not support ION needed for Codec 2.0
 PRODUCT_PROPERTY_OVERRIDES += \
     debug.stagefright.ccodec=0
-
-DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
