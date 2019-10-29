@@ -176,8 +176,9 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/permissions/privapp-permissions-goldfish.xml
 
 # Goldfish does not support ION needed for Codec 2.0
-#PRODUCT_PROPERTY_OVERRIDES += \
-#    debug.stagefright.ccodec=0
+# still disable it until b/143473631 is fixed
+PRODUCT_PROPERTY_OVERRIDES += \
+    debug.stagefright.ccodec=0
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
