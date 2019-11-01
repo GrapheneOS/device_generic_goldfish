@@ -173,8 +173,10 @@ PRODUCT_PACKAGES += android.hardware.thermal@2.0-service.mock
 
 # Goldfish does not support ION needed for Codec 2.0
 # still disable it until b/143473631 is fixed
-PRODUCT_PROPERTY_OVERRIDES += \
-    debug.stagefright.ccodec=0
+# now this is setup on init.ranchu.rc
+# -qemu -append qemu.media.ccodec=<value> can override it; default 0
+#PRODUCT_PROPERTY_OVERRIDES += \
+#    debug.stagefright.ccodec=0
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
