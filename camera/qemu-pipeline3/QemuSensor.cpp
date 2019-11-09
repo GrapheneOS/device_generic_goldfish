@@ -21,6 +21,7 @@
 //#define LOG_NNDEBUG 0
 
 #define LOG_TAG "EmulatedCamera3_QemuSensor"
+#define ATRACE_TAG ATRACE_TAG_CAMERA
 
 #ifdef LOG_NNDEBUG
 #define ALOGVV(...) ALOGV(__VA_ARGS__)
@@ -35,6 +36,7 @@
 #include <cstdlib>
 #include <linux/videodev2.h>
 #include <log/log.h>
+#include <utils/Trace.h>
 
 namespace android {
 
@@ -187,6 +189,7 @@ status_t QemuSensor::readyToRun() {
 }
 
 bool QemuSensor::threadLoop() {
+    ATRACE_CALL();
     /*
      * Stages are out-of-order relative to a single frame's processing, but
      * in-order in time.
@@ -343,6 +346,7 @@ bool QemuSensor::threadLoop() {
 
 void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
         uint32_t stride, int64_t *timestamp) {
+    ATRACE_CALL();
     status_t res;
     if (width != (uint32_t)mLastRequestWidth ||
         height != (uint32_t)mLastRequestHeight) {
@@ -412,6 +416,7 @@ void QemuSensor::captureRGB(uint8_t *img, uint32_t width, uint32_t height, uint3
 }
 
 void QemuSensor::captureYU12(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride, int64_t *timestamp) {
+    ATRACE_CALL();
     status_t res;
     if (width != (uint32_t)mLastRequestWidth ||
         height != (uint32_t)mLastRequestHeight) {
