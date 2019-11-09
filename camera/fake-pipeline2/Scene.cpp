@@ -42,8 +42,8 @@ namespace android {
 
 const int Scene::kSceneWidth = 20;
 const int Scene::kSceneHeight = 20;
-const int Scene::kMaxWidth = 640;
-const int Scene::kMaxHeight = 480;
+const int Scene::kMaxWidth = 20;
+const int Scene::kMaxHeight = 20;
 
 const uint8_t Scene::kScene[Scene::kSceneWidth * Scene::kSceneHeight] = {
     //      5         10        15        20
@@ -343,13 +343,13 @@ void Scene::calculateScene(nsecs_t time) {
 
 // Handshake model constants.
 // Frequencies measured in a nanosecond timebase
-const float Scene::kHorizShakeFreq1 = 2 * M_PI * 2  / 1e9; // 2 Hz
-const float Scene::kHorizShakeFreq2 = 2 * M_PI * 13 / 1e9; // 13 Hz
-const float Scene::kVertShakeFreq1  = 2 * M_PI * 3  / 1e9; // 3 Hz
-const float Scene::kVertShakeFreq2  = 2 * M_PI * 11 / 1e9; // 1 Hz
+const float Scene::kHorizShakeFreq1 = 2 * M_PI * 1  / 1e9; // 1 Hz
+const float Scene::kHorizShakeFreq2 = 2 * M_PI * 1 / 1e9; // 1 Hz
+const float Scene::kVertShakeFreq1  = 2 * M_PI * 1  / 1e9; // 1 Hz
+const float Scene::kVertShakeFreq2  = 2 * M_PI * 1 / 1e9; // 1 Hz
 const float Scene::kFreq1Magnitude  = 5;
 const float Scene::kFreq2Magnitude  = 1;
-const float Scene::kShakeFraction   = 0.03; // As a fraction of a scene tile
+const float Scene::kShakeFraction   = 0.2; // As a fraction of a scene tile
 
 // RGB->YUV, Jpeg standard
 const float Scene::kRgb2Yuv[12] = {
