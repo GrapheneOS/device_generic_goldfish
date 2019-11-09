@@ -17,6 +17,7 @@
 //#define LOG_NDEBUG 0
 //#define LOG_NNDEBUG 0
 #define LOG_TAG "EmulatedCamera2_Sensor"
+#define ATRACE_TAG ATRACE_TAG_CAMERA
 
 #ifdef LOG_NNDEBUG
 #define ALOGVV(...) ALOGV(__VA_ARGS__)
@@ -25,6 +26,7 @@
 #endif
 
 #include <log/log.h>
+#include <utils/Trace.h>
 
 #include "../EmulatedFakeCamera2.h"
 #include "Sensor.h"
@@ -227,6 +229,7 @@ status_t Sensor::readyToRun() {
 }
 
 bool Sensor::threadLoop() {
+    ATRACE_CALL();
     /**
      * Sensor capture operation main loop.
      *
@@ -387,6 +390,7 @@ bool Sensor::threadLoop() {
 };
 
 void Sensor::captureRaw(uint8_t *img, uint32_t gain, uint32_t stride) {
+    ATRACE_CALL();
     float totalGain = gain/100.0 * kBaseGainFactor;
     float noiseVarGain =  totalGain * totalGain;
     float readNoiseVar = kReadNoiseVarBeforeGain * noiseVarGain
@@ -428,6 +432,7 @@ void Sensor::captureRaw(uint8_t *img, uint32_t gain, uint32_t stride) {
 }
 
 void Sensor::captureRGBA(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
+    ATRACE_CALL();
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate total scaling from electrons to 8bpp
     int scale64x = 64 * totalGain * 255 / kMaxRawValue;
@@ -466,6 +471,7 @@ void Sensor::captureRGBA(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
 }
 
 void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
+    ATRACE_CALL();
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate total scaling from electrons to 8bpp
     int scale64x = 64 * totalGain * 255 / kMaxRawValue;
@@ -501,6 +507,7 @@ void Sensor::captureRGB(uint8_t *img, uint32_t gain, uint32_t width, uint32_t he
 }
 
 void Sensor::captureYU12(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
+    ATRACE_CALL();
     float totalGain = gain/100.0 * kBaseGainFactor;
     // Using fixed-point math with 6 bits of fractional precision.
     // In fixed-point math, calculate total scaling from electrons to 8bpp
@@ -560,6 +567,7 @@ void Sensor::captureYU12(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
 }
 
 void Sensor::captureDepth(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height) {
+    ATRACE_CALL();
     float totalGain = gain/100.0 * kBaseGainFactor;
     // In fixed-point math, calculate scaling factor to 13bpp millimeters
     int scale64x = 64 * totalGain * 8191 / kMaxRawValue;
@@ -591,7 +599,7 @@ void Sensor::captureDepth(uint8_t *img, uint32_t gain, uint32_t width, uint32_t 
 }
 
 void Sensor::captureDepthCloud(uint8_t *img) {
-
+    ATRACE_CALL();
     android_depth_points *cloud = reinterpret_cast<android_depth_points*>(img);
 
     cloud->num_points = 16;
