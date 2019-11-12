@@ -94,11 +94,9 @@ PRODUCT_PACKAGES += \
     toolbox \
     toybox \
     vold \
-    init \
     init_system \
     init_vendor \
     init.environ.rc \
-    init.rc \
     reboot \
     service \
     cmd \
@@ -125,9 +123,8 @@ PRODUCT_PACKAGES += \
     mac_permissions.xml \
 
 PRODUCT_COPY_FILES += \
-    $(SYSTEM_CORE_ROOTDIR)/init.usb.rc:root/init.usb.rc \
-    $(SYSTEM_CORE_ROOTDIR)/init.usb.configfs.rc:root/init.usb.configfs.rc \
-    $(SYSTEM_CORE_ROOTDIR)/ueventd.rc:root/ueventd.rc \
+    $(SYSTEM_CORE_ROOTDIR)/init.usb.rc:system/etc/init/hw/init.usb.rc \
+    $(SYSTEM_CORE_ROOTDIR)/init.usb.configfs.rc:system/etc/init/hw/init.usb.configfs.rc \
     $(SYSTEM_CORE_ROOTDIR)/etc/hosts:system/etc/hosts \
 
 PRODUCT_COPY_FILES += \
