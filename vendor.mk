@@ -41,6 +41,8 @@ endif
 DISABLE_RILD_OEM_HOOK := true
 
 DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
+PRODUCT_SOONG_NAMESPACES += hardware/google/camera
+PRODUCT_SOONG_NAMESPACES += vendor/google/camera
 
 # Device modules
 PRODUCT_PACKAGES += \
@@ -151,7 +153,10 @@ PRODUCT_PACKAGES += \
     camera.goldfish \
     camera.goldfish.jpeg \
     camera.ranchu \
-    camera.ranchu.jpeg
+    camera.ranchu.jpeg \
+    android.hardware.camera.provider@2.4-service-google \
+    libgooglecamerahwl_impl \
+    android.hardware.camera.provider@2.4-impl-google
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
 endif
 
@@ -235,4 +240,7 @@ PRODUCT_COPY_FILES += \
     frameworks/av/services/audiopolicy/config/audio_policy_volumes.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_volumes.xml \
     frameworks/av/services/audiopolicy/config/default_volume_tables.xml:$(TARGET_COPY_OUT_VENDOR)/etc/default_volume_tables.xml \
     frameworks/av/services/audiopolicy/config/surround_sound_configuration_5_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/surround_sound_configuration_5_0.xml \
-    device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-goldfish.xml
+    device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-goldfish.xml \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_back.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_back.json \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_front.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_front.json \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_depth.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_depth.json \
