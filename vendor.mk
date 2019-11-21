@@ -42,7 +42,7 @@ DISABLE_RILD_OEM_HOOK := true
 
 DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera
-PRODUCT_SOONG_NAMESPACES += vendor/google/camera
+PRODUCT_SOONG_NAMESPACES += hardware/google/camera/devices/EmulatedCamera
 
 # Device modules
 PRODUCT_PACKAGES += \
