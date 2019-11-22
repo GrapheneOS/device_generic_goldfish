@@ -182,6 +182,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	android.hardware.atrace@1.0-service
 
+# Authsecret
+PRODUCT_PACKAGES += \
+    android.hardware.authsecret@1.0-service
 
 # Goldfish does not support ION needed for Codec 2.0
 # still disable it until b/143473631 is fixed
