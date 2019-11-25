@@ -174,6 +174,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	android.hardware.atrace@1.0-service
 
+# Vibrator
+PRODUCT_PACKAGES += \
+	android.hardware.vibrator-service.example
 
 # Goldfish does not support ION needed for Codec 2.0
 PRODUCT_PROPERTY_OVERRIDES += \
