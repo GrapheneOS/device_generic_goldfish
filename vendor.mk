@@ -182,6 +182,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	android.hardware.atrace@1.0-service
 
+# Vibrator
+PRODUCT_PACKAGES += \
+	android.hardware.vibrator-service.example
+
 # Authsecret
 PRODUCT_PACKAGES += \
     android.hardware.authsecret@1.0-service
