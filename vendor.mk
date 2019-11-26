@@ -178,6 +178,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	android.hardware.vibrator-service.example
 
+# Authsecret
+PRODUCT_PACKAGES += \
+    android.hardware.authsecret@1.0-service
+
 # Goldfish does not support ION needed for Codec 2.0
 PRODUCT_PROPERTY_OVERRIDES += \
     debug.stagefright.ccodec=0
