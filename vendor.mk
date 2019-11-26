@@ -182,6 +182,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.authsecret@1.0-service
 
+# Input Classifier HAL
+PRODUCT_PACKAGES += \
+    android.hardware.input.classifier@1.0-service.default
+
 # Goldfish does not support ION needed for Codec 2.0
 PRODUCT_PROPERTY_OVERRIDES += \
     debug.stagefright.ccodec=0
