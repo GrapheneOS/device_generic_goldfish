@@ -97,8 +97,8 @@ PRODUCT_PACKAGES += \
 endif
 
 PRODUCT_PACKAGES += \
-    android.hardware.audio@4.0-impl:32 \
-    android.hardware.audio.effect@4.0-impl:32 \
+    android.hardware.audio@5.0-impl:32 \
+    android.hardware.audio.effect@5.0-impl:32 \
     android.hardware.broadcastradio@1.1-service \
     android.hardware.broadcastradio@1.0-impl \
     android.hardware.soundtrigger@2.0-impl
@@ -174,7 +174,17 @@ PRODUCT_PACKAGES += \
 	wifi_forwarder \
 	wpa_supplicant \
 
-PRODUCT_PACKAGES += android.hardware.thermal@2.0-service.mock
+# Thermal
+PRODUCT_PACKAGES += \
+	android.hardware.thermal@2.0-service.mock
+
+# Atrace
+PRODUCT_PACKAGES += \
+	android.hardware.atrace@1.0-service
+
+# Authsecret
+PRODUCT_PACKAGES += \
+    android.hardware.authsecret@1.0-service
 
 # Goldfish does not support ION needed for Codec 2.0
 # still disable it until b/143473631 is fixed
