@@ -201,6 +201,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.power.stats@1.0-service.mock
 
+# Reboot escrow
+PRODUCT_PACKAGES += \
+    android.hardware.rebootescrow-service.default
+
 # Goldfish does not support ION needed for Codec 2.0
 # still disable it until b/143473631 is fixed
 # now this is setup on init.ranchu.rc
