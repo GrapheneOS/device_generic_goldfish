@@ -83,6 +83,8 @@ PRODUCT_PACKAGES += \
     audio.r_submix.default \
     local_time.default \
     SdkSetup \
+    libstagefrighthw \
+    libstagefright_goldfish_vpxdec \
     MultiDisplayProvider
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
