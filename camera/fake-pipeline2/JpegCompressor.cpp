@@ -187,7 +187,7 @@ status_t JpegCompressor::compress() {
     // Refer to /hardware/libhardware/include/hardware/camera3.h
     // Transport header for compressed JPEG buffers in output streams.
     camera3_jpeg_blob_t jpeg_blob;
-    cb_handle_t *cb = (cb_handle_t *)(*mJpegBuffer.buffer);
+    const cb_handle_t *cb = cb_handle_t::from(*mJpegBuffer.buffer);
     jpeg_blob.jpeg_blob_id = CAMERA3_JPEG_BLOB_ID;
     jpeg_blob.jpeg_size = nV21JpegCompressor.getCompressedSize();
     memcpy(mJpegBuffer.img + cb->width - sizeof(camera3_jpeg_blob_t),
