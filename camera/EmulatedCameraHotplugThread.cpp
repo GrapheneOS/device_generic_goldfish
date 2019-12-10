@@ -35,20 +35,12 @@
 namespace android {
 
 EmulatedCameraHotplugThread::EmulatedCameraHotplugThread(
-    const int* cameraIdArray,
-    size_t size) :
-        Thread(/*canCallJava*/false) {
+    std::vector<int> subscribedCameraIds) :
+        Thread(/*canCallJava*/false),
+        mSubscribedCameraIds(std::move(subscribedCameraIds)) {
 
     mRunning = true;
     mInotifyFd = 0;
-
-    for (size_t i = 0; i < size; ++i) {
-        int id = cameraIdArray[i];
-
-        if (createFileIfNotExists(id)) {
-            mSubscribedCameraIds.push_back(id);
-        }
-    }
 }
 
 EmulatedCameraHotplugThread::~EmulatedCameraHotplugThread() {
@@ -116,11 +108,7 @@ status_t EmulatedCameraHotplugThread::readyToRun() {
          * For each fake camera file, add a watch for when
          * the file is closed (if it was written to)
          */
-        Vector<int>::const_iterator it, end;
-        it = mSubscribedCameraIds.begin();
-        end = mSubscribedCameraIds.end();
-        for (; it != end; ++it) {
-            int cameraId = *it;
+        for (int cameraId: mSubscribedCameraIds) {
             if (!addWatch(cameraId)) {
                 mRunning = false;
                 break;
@@ -248,14 +236,11 @@ bool EmulatedCameraHotplugThread::createFileIfNotExists(int cameraId) const
 }
 
 int EmulatedCameraHotplugThread::getCameraId(const String8& filePath) const {
-    Vector<int>::const_iterator it, end;
-    it = mSubscribedCameraIds.begin();
-    end = mSubscribedCameraIds.end();
-    for (; it != end; ++it) {
-        String8 camPath = getFilePath(*it);
+    for (int cameraId: mSubscribedCameraIds) {
+        String8 camPath = getFilePath(cameraId);
 
         if (camPath == filePath) {
-            return *it;
+            return cameraId;
         }
     }
 
