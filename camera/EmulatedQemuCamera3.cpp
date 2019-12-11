@@ -416,7 +416,7 @@ status_t EmulatedQemuCamera3::configureStreams(
         if (newStream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
             if (newStream->usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
                 if (newStream->usage & GRALLOC_USAGE_HW_TEXTURE) {
-                    newStream->format = HAL_PIXEL_FORMAT_RGBA_8888;
+                    newStream->format = HAL_PIXEL_FORMAT_YCbCr_420_888;
                 }
                 else if (newStream->usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
                     newStream->format = HAL_PIXEL_FORMAT_YCbCr_420_888;
@@ -904,7 +904,7 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
         if (srcBuf.stream->format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
             if (srcBuf.stream->usage & GRALLOC_USAGE_HW_CAMERA_WRITE) {
                 if (srcBuf.stream->usage & GRALLOC_USAGE_HW_TEXTURE) {
-                    destBuf.format = HAL_PIXEL_FORMAT_RGBA_8888;
+                    destBuf.format = HAL_PIXEL_FORMAT_YCbCr_420_888;
                 }
                 else if (srcBuf.stream->usage & GRALLOC_USAGE_HW_VIDEO_ENCODER) {
                     destBuf.format = HAL_PIXEL_FORMAT_YCbCr_420_888;

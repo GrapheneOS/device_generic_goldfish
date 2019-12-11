@@ -470,6 +470,17 @@ status_t CameraQemuClient::queryDisconnect()
     return res;
 }
 
+status_t CameraQemuClient::queryStart() {
+    ALOGV("%s", __FUNCTION__);
+    QemuQuery query(mQueryStart);
+    doQuery(&query);
+    const status_t res = query.getCompletionStatus();
+    ALOGE_IF(res != NO_ERROR, "%s: Query failed: %s",
+            __FUNCTION__, query.mReplyData ? query.mReplyData :
+                                             "No error message");
+    return res;
+}
+
 status_t CameraQemuClient::queryStart(uint32_t pixel_format,
                                       int width,
                                       int height)
@@ -566,4 +577,44 @@ status_t CameraQemuClient::queryFrame(void* vframe,
     return NO_ERROR;
 }
 
+status_t CameraQemuClient::queryFrame(int width,
+                                      int height,
+                                      uint32_t pixel_format,
+                                      uint64_t offset,
+                                      float r_scale,
+                                      float g_scale,
+                                      float b_scale,
+                                      float exposure_comp,
+                                      int64_t* frame_time)
+{
+    ALOGV("%s: w %d h %d %.4s offset 0x%llx", __FUNCTION__, width, height,
+          (char*)(&pixel_format), offset);
+
+    char query_str[256];
+    snprintf(query_str, sizeof(query_str), "%s dim=%dx%d pix=%d offset=%llu whiteb=%g,%g,%g expcomp=%g time=%d",
+             mQueryFrame, width, height, pixel_format, offset,
+             r_scale, g_scale, b_scale,
+             exposure_comp, frame_time != nullptr ? 1 : 0);
+    QemuQuery query(query_str);
+    doQuery(&query);
+    const status_t res = query.getCompletionStatus();
+    if( res != NO_ERROR) {
+        ALOGE("%s: Query failed: %s",
+             __FUNCTION__, query.mReplyData ? query.mReplyData :
+                                              "No error message");
+        return res;
+    }
+
+    /* Copy requested frames. */
+    const uint8_t* frame = reinterpret_cast<const uint8_t*>(query.mReplyData);
+    if (frame_time != nullptr) {
+        if (query.mReplyDataSize >= 8) {
+            *frame_time = *reinterpret_cast<const int64_t*>(frame);
+        } else {
+            *frame_time = 0L;
+        }
+    }
+
+    return NO_ERROR;
+}
 }; /* namespace android */
