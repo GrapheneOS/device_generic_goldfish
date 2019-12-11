@@ -83,6 +83,7 @@ PRODUCT_PACKAGES += \
     SdkSetup \
     libstagefrighthw \
     libstagefright_goldfish_vpxdec \
+    libstagefright_goldfish_avcdec \
     MultiDisplayProvider
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
