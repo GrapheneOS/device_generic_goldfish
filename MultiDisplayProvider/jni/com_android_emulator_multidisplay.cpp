@@ -65,7 +65,7 @@ public:
         mConsumer->acquireBuffer(&bufferItem, 0);
         ANativeWindowBuffer* b = bufferItem.mGraphicBuffer->getNativeBuffer();
         if (b && b->handle) {
-            cb_handle_t* cb = (cb_handle_t*)(b->handle);
+            const cb_handle_t* cb = cb_handle_t::from(b->handle);
             if (mCb != cb->hostHandle) {
                 ALOGI("sent cb %d", cb->hostHandle);
                 mCb = cb->hostHandle;
