@@ -29,6 +29,7 @@
 #define ALOGVV(...) ((void)0)
 #endif
 
+#include "GrallocModule.h"
 #include "qemu-pipeline3/QemuSensor.h"
 #include "system/camera_metadata.h"
 
@@ -36,6 +37,7 @@
 #include <cstdlib>
 #include <linux/videodev2.h>
 #include <log/log.h>
+#include <cutils/properties.h>
 #include <utils/Trace.h>
 
 namespace android {
@@ -48,6 +50,8 @@ const nsecs_t QemuSensor::kMinVerticalBlank = 10000L;
 
 const int32_t QemuSensor::kSensitivityRange[2] = {100, 1600};
 const uint32_t QemuSensor::kDefaultSensitivity = 100;
+
+const char QemuSensor::kHostCameraVerString[] = "ro.kernel.qemu.camera_protocol_ver";
 
 QemuSensor::QemuSensor(const char *deviceName, uint32_t width, uint32_t height):
         Thread(false),
@@ -64,6 +68,7 @@ QemuSensor::QemuSensor(const char *deviceName, uint32_t width, uint32_t height):
         mFrameNumber(0),
         mCapturedBuffers(nullptr),
         mListener(nullptr) {
+    mHostCameraVer = property_get_int32(kHostCameraVerString, 0);
     ALOGV("QemuSensor created with pixel array %d x %d", width, height);
 }
 
@@ -283,7 +288,11 @@ bool QemuSensor::threadLoop() {
                     captureRGB(b.img, b.width, b.height, b.stride, &timestamp);
                     break;
                 case HAL_PIXEL_FORMAT_RGBA_8888:
-                    captureRGBA(b.img, b.width, b.height, b.stride, &timestamp);
+                    if (mHostCameraVer == 1) {
+                        captureRGBA(b.width, b.height, b.stride, &timestamp, b.buffer);
+                    } else {
+                        captureRGBA(b.img, b.width, b.height, b.stride, &timestamp);
+                    }
                     break;
                 case HAL_PIXEL_FORMAT_BLOB:
                     if (b.dataSpace == HAL_DATASPACE_DEPTH) {
@@ -299,14 +308,36 @@ bool QemuSensor::threadLoop() {
                         bAux.height = b.height;
                         bAux.format = HAL_PIXEL_FORMAT_YCbCr_420_888;
                         bAux.stride = b.width;
-                        bAux.buffer = nullptr;
-                        // TODO: Reuse these.
-                        bAux.img = new uint8_t[b.width * b.height * 3];
+                        if (mHostCameraVer == 1) {
+                            int grallocUsage = GRALLOC_USAGE_HW_CAMERA_WRITE |
+                               GRALLOC_USAGE_HW_CAMERA_READ |
+                               GRALLOC_USAGE_HW_TEXTURE;
+                            cb_handle_t* handle;
+                            android_ycbcr ycbcr;
+                            GrallocModule::getInstance().alloc(bAux.width, bAux.height, bAux.format,
+                                                               grallocUsage,
+                                                               (buffer_handle_t*)&handle);
+                            GrallocModule::getInstance().lock_ycbcr(handle,
+                                                                    GRALLOC_USAGE_HW_CAMERA_WRITE,
+                                                                    0, 0,
+                                                                    bAux.width, bAux.height,
+                                                                    &ycbcr);
+                            bAux.buffer = (buffer_handle_t*)&handle;
+                            bAux.img = (uint8_t*)ycbcr.y;
+                        } else {
+                            bAux.buffer = nullptr;
+                            // TODO: Reuse these.
+                            bAux.img = new uint8_t[b.width * b.height * 3];
+                        }
                         mNextCapturedBuffers->push_back(bAux);
                     }
                     break;
                 case HAL_PIXEL_FORMAT_YCbCr_420_888:
-                    captureYU12(b.img, b.width, b.height, b.stride, &timestamp);
+                    if (mHostCameraVer == 1) {
+                        captureYU12(b.width, b.height, b.stride, &timestamp, b.buffer);
+                    } else {
+                        captureYU12(b.img, b.width, b.height, b.stride, &timestamp);
+                    }
                     break;
                 default:
                     ALOGE("%s: Unknown/unsupported format %x, no output",
@@ -399,14 +430,52 @@ void QemuSensor::captureRGBA(uint8_t *img, uint32_t width, uint32_t height,
     }
 
     // Since the format is V4L2_PIX_FMT_RGB32, we need 4 bytes per pixel.
-    size_t bufferSize = width * height * 4;
-    // Apply no white balance or exposure compensation.
+      size_t bufferSize = width * height * 4;
+      // Apply no white balance or exposure compensation.
+      float whiteBalance[] = {1.0f, 1.0f, 1.0f};
+      float exposureCompensation = 1.0f;
+      // Read from webcam.
+      mCameraQemuClient.queryFrame(nullptr, img, 0, bufferSize, whiteBalance[0],
+              whiteBalance[1], whiteBalance[2],
+              exposureCompensation, timestamp);
+
+    ALOGVV("RGBA sensor image captured");
+}
+
+void QemuSensor::captureRGBA(uint32_t width, uint32_t height,
+        uint32_t stride, int64_t *timestamp, buffer_handle_t* handle) {
+    ATRACE_CALL();
+    status_t res;
+    if (mLastRequestWidth == -1 || mLastRequestHeight == -1) {
+        uint32_t pixFmt = V4L2_PIX_FMT_YUV420;
+        res = mCameraQemuClient.queryStart();
+        if (res == NO_ERROR) {
+            mLastRequestWidth = width;
+            mLastRequestHeight = height;
+            ALOGV("%s: Qemu camera device '%s' is started for %.4s[%dx%d] frames",
+                    __FUNCTION__, (const char*) mDeviceName,
+                    reinterpret_cast<const char*>(&pixFmt),
+                    mWidth, mHeight);
+            mState = ECDS_STARTED;
+        } else {
+            ALOGE("%s: Unable to start device '%s' for %.4s[%dx%d] frames",
+                    __FUNCTION__, (const char*) mDeviceName,
+                    reinterpret_cast<const char*>(&pixFmt),
+                    mWidth, mHeight);
+            return;
+        }
+    }
+    if (width != stride) {
+        ALOGW("%s: expect stride (%d), actual stride (%d)", __FUNCTION__,
+              width, stride);
+    }
+
     float whiteBalance[] = {1.0f, 1.0f, 1.0f};
     float exposureCompensation = 1.0f;
-    // Read from webcam.
-    mCameraQemuClient.queryFrame(nullptr, img, 0, bufferSize, whiteBalance[0],
-            whiteBalance[1], whiteBalance[2],
-            exposureCompensation, timestamp);
+    uint64_t offset = GrallocModule::getInstance().getOffset(*handle);
+    mCameraQemuClient.queryFrame(width, height, V4L2_PIX_FMT_RGB32, offset,
+                                 whiteBalance[0], whiteBalance[1], whiteBalance[2],
+                                 exposureCompensation, timestamp);
 
     ALOGVV("RGBA sensor image captured");
 }
@@ -415,7 +484,8 @@ void QemuSensor::captureRGB(uint8_t *img, uint32_t width, uint32_t height, uint3
     ALOGE("%s: Not implemented", __FUNCTION__);
 }
 
-void QemuSensor::captureYU12(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride, int64_t *timestamp) {
+void QemuSensor::captureYU12(uint8_t *img, uint32_t width, uint32_t height, uint32_t stride,
+                             int64_t *timestamp) {
     ATRACE_CALL();
     status_t res;
     if (width != (uint32_t)mLastRequestWidth ||
@@ -427,7 +497,6 @@ void QemuSensor::captureYU12(uint8_t *img, uint32_t width, uint32_t height, uint
 
         if (mLastRequestWidth != -1 || mLastRequestHeight != -1) {
             // We only need to stop the camera if this isn't the first request.
-
             // Stop the camera device.
             res = mCameraQemuClient.queryStop();
             if (res == NO_ERROR) {
@@ -478,6 +547,43 @@ void QemuSensor::captureYU12(uint8_t *img, uint32_t width, uint32_t height, uint
             whiteBalance[1], whiteBalance[2],
             exposureCompensation, timestamp);
 
+    ALOGVV("YUV420 sensor image captured");
+}
+
+void QemuSensor::captureYU12(uint32_t width, uint32_t height, uint32_t stride,
+                             int64_t *timestamp, buffer_handle_t* handle) {
+    ATRACE_CALL();
+    status_t res;
+    if (mLastRequestWidth == -1 || mLastRequestHeight == -1) {
+        uint32_t pixFmt = V4L2_PIX_FMT_YUV420;
+        res = mCameraQemuClient.queryStart();
+        if (res == NO_ERROR) {
+            mLastRequestWidth = width;
+            mLastRequestHeight = height;
+            ALOGV("%s: Qemu camera device '%s' is started for %.4s[%dx%d] frames",
+                    __FUNCTION__, (const char*) mDeviceName,
+                    reinterpret_cast<const char*>(&pixFmt),
+                    mWidth, mHeight);
+            mState = ECDS_STARTED;
+        } else {
+            ALOGE("%s: Unable to start device '%s' for %.4s[%dx%d] frames",
+                    __FUNCTION__, (const char*) mDeviceName,
+                    reinterpret_cast<const char*>(&pixFmt),
+                    mWidth, mHeight);
+            return;
+        }
+    }
+    if (width != stride) {
+        ALOGW("%s: expect stride (%d), actual stride (%d)", __FUNCTION__,
+              width, stride);
+    }
+
+    float whiteBalance[] = {1.0f, 1.0f, 1.0f};
+    float exposureCompensation = 1.0f;
+    uint64_t offset = GrallocModule::getInstance().getOffset(*handle);
+    mCameraQemuClient.queryFrame(width, height, V4L2_PIX_FMT_YUV420, offset,
+                                 whiteBalance[0], whiteBalance[1], whiteBalance[2],
+                                 exposureCompensation, timestamp);
     ALOGVV("YUV420 sensor image captured");
 }
 
