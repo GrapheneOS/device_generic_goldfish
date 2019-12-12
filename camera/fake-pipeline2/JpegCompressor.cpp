@@ -25,6 +25,7 @@
 #include "../EmulatedFakeCamera3.h"
 #include "../Exif.h"
 #include "../Thumbnail.h"
+#include "../GrallocModule.h"
 #include "hardware/camera3.h"
 
 namespace android {
@@ -227,7 +228,12 @@ void JpegCompressor::cleanUp() {
 
     if (mFoundAux) {
         if (mAuxBuffer.streamId == 0) {
-            delete[] mAuxBuffer.img;
+            if (mAuxBuffer.buffer == nullptr) {
+                delete[] mAuxBuffer.img;
+            } else {
+                GrallocModule::getInstance().unlock(*mAuxBuffer.buffer);
+                GrallocModule::getInstance().free(*mAuxBuffer.buffer);
+            }
         } else if (!mSynchronous) {
             mListener->onJpegInputDone(mAuxBuffer);
         }

@@ -161,7 +161,7 @@ static char * out_get_parameters(const struct audio_stream *stream, const char *
     ret = str_parms_get_str(query, AUDIO_PARAMETER_STREAM_ROUTING, value, sizeof(value));
     if (ret >= 0) {
         str_parms_add_int(reply, AUDIO_PARAMETER_STREAM_ROUTING, out->device);
-        str = strdup(str_parms_to_str(reply));
+        str = str_parms_to_str(reply);
     } else {
         str = strdup(keys);
     }
@@ -318,7 +318,7 @@ static char * in_get_parameters(const struct audio_stream *stream,
     ret = str_parms_get_str(query, AUDIO_PARAMETER_STREAM_ROUTING, value, sizeof(value));
     if (ret >= 0) {
         str_parms_add_int(reply, AUDIO_PARAMETER_STREAM_ROUTING, in->device);
-        str = strdup(str_parms_to_str(reply));
+        str = str_parms_to_str(reply);
     } else {
         str = strdup(keys);
     }
