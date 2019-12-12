@@ -110,21 +110,6 @@ _sensorIdToName( int  id )
     return "<UNKNOWN>";
 }
 
-static int
-_sensorIdFromName( const char*  name )
-{
-    int  nn;
-
-    if (name == NULL)
-        return -1;
-
-    for (nn = 0; nn < MAX_NUM_SENSORS; nn++)
-        if (!strcmp(name, _sensorIds[nn].name))
-            return _sensorIds[nn].id;
-
-    return -1;
-}
-
 /* return the current time in nanoseconds */
 static int64_t now_ns(void) {
     struct timespec  ts;
