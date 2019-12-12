@@ -26,7 +26,7 @@ The resulting kernel image and DTB must then be copied into the product output d
 
 ```
 mkdir -p $ANDROID_PRODUCT_OUT/boot
-cp out/android-mainline/dist/Image out/android-mainline/dist/*.ko $ANDROID_PRODUCT_OUT/boot/
+cp out/android-mainline/dist/Image out/android-mainline/dist/initramfs.img $ANDROID_PRODUCT_OUT/boot/
 cp out/android-mainline/dist/fvp-base-revc.dtb $ANDROID_PRODUCT_OUT/boot/devtree.dtb
 ```
 
@@ -98,6 +98,17 @@ cd common
 git fetch https://github.com/pcc/linux android-experimental-mte
 git checkout FETCH_HEAD
 cd ..
+```
+Then replace the prebuilt binutils with binutils 2.33.1:
+```
+cd binutils-2.33.1
+./configure --prefix=$PWD/inst --target=aarch64-linux-gnu
+make
+make install
+for i in $PWD/inst/bin/*; do
+  ln -sf $i /path/to/android-kernel-mainline/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/$(basename $i)
+  ln -sf $i /path/to/android-kernel-mainline/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/$(basename $i | sed -e 's/gnu/android/g')
+done
 ```
 
 ### Accessing the model via adb
