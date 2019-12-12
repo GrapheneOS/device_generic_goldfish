@@ -26,7 +26,6 @@
 #include <sys/epoll.h>
 
 #include "utils/Log.h"
-#include "../../include/qemu_pipe.h"
 #include "nativehelper/JNIHelp.h"
 #include <nativehelper/ScopedLocalRef.h>
 #include "jni.h"
@@ -72,7 +71,7 @@ public:
                 uint32_t data[] = {mId, mCb};
                 std::vector<uint8_t> buf;
                 fillMsg(buf, BIND, (uint8_t*)data, sizeof(data));
-                WriteFully(gFd, buf.data(), buf.size());
+                qemu_pipe_write_fully(gFd, buf.data(), buf.size());
             }
         }
         else {
@@ -112,7 +111,7 @@ static jint nativeOpen(JNIEnv* env, jobject obj) {
     } else {
         std::vector<uint8_t> buf;
         fillMsg(buf, QUERY, nullptr, 0);
-        WriteFully(gFd, buf.data(), buf.size());
+        qemu_pipe_write_fully(gFd, buf.data(), buf.size());
         ALOGI("multidisplay pipe connected!!!");
     }
     return gFd;
@@ -121,9 +120,9 @@ static jint nativeOpen(JNIEnv* env, jobject obj) {
 static bool nativeReadPipe(JNIEnv* env, jobject obj, jintArray arr) {
     int* arrp = env->GetIntArrayElements(arr, 0);
     uint32_t length;
-    ReadFully(gFd, &length, sizeof(length));
+    qemu_pipe_read_fully(gFd, &length, sizeof(length));
     std::vector<uint8_t> args(length, 0);
-    ReadFully(gFd, args.data(), (size_t)length);
+    qemu_pipe_read_fully(gFd, args.data(), (size_t)length);
     switch(args[0]) {
         case ADD: {
             ALOGV("received add event");

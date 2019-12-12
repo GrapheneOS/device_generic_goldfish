@@ -41,6 +41,6 @@ cc_binary {
         "libutilscallstack",
     ],
     header_libs: [
-        "goldfish_headers",
+        "goldfish_pipe_headers",
     ],
 }

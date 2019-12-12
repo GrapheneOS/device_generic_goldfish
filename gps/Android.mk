@@ -28,7 +28,7 @@ LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_CFLAGS += -DQEMU_HARDWARE
 LOCAL_SHARED_LIBRARIES := liblog libcutils libhardware
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 LOCAL_SRC_FILES := gps_qemu.c
 ifeq ($(TARGET_PRODUCT),vbox_x86)
 LOCAL_MODULE := gps.vbox_x86
@@ -44,7 +44,7 @@ LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_CFLAGS += -DQEMU_HARDWARE
 LOCAL_SHARED_LIBRARIES := liblog libcutils libhardware
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 LOCAL_SRC_FILES := gps_qemu.c
 LOCAL_MODULE := gps.ranchu
 
