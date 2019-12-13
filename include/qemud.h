@@ -45,8 +45,6 @@ static __inline__ int
 qemud_channel_open(const char*  name)
 {
     int  fd;
-    int  namelen = strlen(name);
-    char answer[2];
     char pipe_name[256];
 
     /* First, try to connect to the pipe. */
@@ -55,30 +53,7 @@ qemud_channel_open(const char*  name)
     D("%s: pipe name %s (name %s) fd %d", __FUNCTION__, pipe_name, name, fd);
     if (fd < 0) {
         D("QEMUD pipe is not available for %s: %s", name, strerror(errno));
-        /* If pipe is not available, connect to qemud control socket */
-        fd = socket_local_client( "qemud",
-                                  ANDROID_SOCKET_NAMESPACE_RESERVED,
-                                  SOCK_STREAM );
-        if (fd < 0) {
-            D("no qemud control socket: %s", strerror(errno));
-            return -1;
-        }
-
-        /* send service name to connect */
-        if (!WriteFully(fd, name, namelen)) {
-            D("can't send service name to qemud: %s",
-               strerror(errno));
-            close(fd);
-            return -1;
-        }
-
-        /* read answer from daemon */
-        if (!ReadFully(fd, answer, 2) ||
-            answer[0] != 'O' || answer[1] != 'K') {
-            D("cant' connect to %s service through qemud", name);
-            close(fd);
-            return -1;
-        }
+        return -1;
     }
     return fd;
 }

@@ -110,21 +110,6 @@ _sensorIdToName( int  id )
     return "<UNKNOWN>";
 }
 
-static int
-_sensorIdFromName( const char*  name )
-{
-    int  nn;
-
-    if (name == NULL)
-        return -1;
-
-    for (nn = 0; nn < MAX_NUM_SENSORS; nn++)
-        if (!strcmp(name, _sensorIds[nn].name))
-            return _sensorIds[nn].id;
-
-    return -1;
-}
-
 /* return the current time in nanoseconds */
 static int64_t now_ns(void) {
     struct timespec  ts;
@@ -687,6 +672,8 @@ static int sensor_device_default_batch(
      int flags,
      int64_t sampling_period_ns,
      int64_t max_report_latency_ns) {
+    (void)flags;
+    (void)max_report_latency_ns;
     return sensor_device_set_delay(dev, sensor_handle, sampling_period_ns);
 }
 
