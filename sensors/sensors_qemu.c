@@ -687,6 +687,8 @@ static int sensor_device_default_batch(
      int flags,
      int64_t sampling_period_ns,
      int64_t max_report_latency_ns) {
+    (void)flags;
+    (void)max_report_latency_ns;
     return sensor_device_set_delay(dev, sensor_handle, sampling_period_ns);
 }
 
