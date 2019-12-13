@@ -1,12 +1,2 @@
-service insmod_sh /vendor/bin/init.insmod.sh
-    user root
-    group root system
-    disabled
-    oneshot
-
-on init
-    start insmod_sh
-
 on fs
-    wait_for_prop vendor.all.modules.ready 1
     mount_all /vendor/etc/fstab.fvpbase
