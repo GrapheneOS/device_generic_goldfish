@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-zcat "$ANDROID_PRODUCT_OUT/ramdisk.img" > "$ANDROID_PRODUCT_OUT/boot/ramdisk.img"
-
 tmp="$(mktemp -d)"
 trap "rm -rf $tmp" EXIT
 mkfifo $tmp/port
