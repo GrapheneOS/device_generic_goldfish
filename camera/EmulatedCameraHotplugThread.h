@@ -25,6 +25,7 @@
  * Refer to FAKE_HOTPLUG_FILE in EmulatedCameraHotplugThread.cpp
  */
 
+#include <vector>
 #include "EmulatedCamera2.h"
 #include <utils/String8.h>
 #include <utils/Vector.h>
@@ -32,7 +33,7 @@
 namespace android {
 class EmulatedCameraHotplugThread : public Thread {
   public:
-    EmulatedCameraHotplugThread(const int* cameraIdArray, size_t size);
+    EmulatedCameraHotplugThread(std::vector<int> subscribedCameraIds);
     ~EmulatedCameraHotplugThread();
 
     virtual void requestExit();
@@ -62,7 +63,7 @@ class EmulatedCameraHotplugThread : public Thread {
     bool createFileIfNotExists(int cameraId) const;
 
     int mInotifyFd;
-    Vector<int> mSubscribedCameraIds;
+    std::vector<int> mSubscribedCameraIds;
     Vector<SubscriberInfo> mSubscribers;
 
     // variables above are unguarded:
