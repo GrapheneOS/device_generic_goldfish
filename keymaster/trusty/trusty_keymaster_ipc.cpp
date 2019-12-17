@@ -58,14 +58,14 @@ int trusty_keymaster_call(uint32_t cmd, void* in, uint32_t in_size, uint8_t* out
 
     int pipe_command_length = msg_size;
     assert(pipe_command_length > 0);
-    ssize_t rc = WriteFully(handle_, &pipe_command_length, sizeof(pipe_command_length));
-    if (rc < 1) {
+    ssize_t rc = qemu_pipe_write_fully(handle_, &pipe_command_length, sizeof(pipe_command_length));
+    if (rc) {
         ALOGE("failed to send msg_size (%d) for cmd (%d) to %s: %s\n", (int)(sizeof(pipe_command_length)),
                 (int)cmd, KEYMASTER_PORT, strerror(errno));
         return -errno;
     }
 
-    rc = WriteFully(handle_, msg, pipe_command_length);
+    rc = qemu_pipe_write_fully(handle_, msg, pipe_command_length);
     if (in_size == 157 && cmd == KM_FINISH_OPERATION) {
         for (int i=0; i < (int)in_size; ++i) {
             ALOGE("pay[%d]: %d", i, (int)(msg->payload[i]));
@@ -74,20 +74,20 @@ int trusty_keymaster_call(uint32_t cmd, void* in, uint32_t in_size, uint8_t* out
     free(msg);
 
 
-    if (rc < 1) {
+    if (rc) {
         ALOGE("failed to send cmd (%d) to %s: %s\n", cmd, KEYMASTER_PORT, strerror(errno));
         return -errno;
     }
 
-    rc = ReadFully(handle_, &pipe_command_length, sizeof(pipe_command_length));
-    if (rc < 1) {
+    rc = qemu_pipe_read_fully(handle_, &pipe_command_length, sizeof(pipe_command_length));
+    if (rc) {
         ALOGE("failed to retrieve response length for cmd (%d) to %s: %s\n", cmd, KEYMASTER_PORT,
               strerror(errno));
         return -errno;
     }
 
-    rc = ReadFully(handle_, out, pipe_command_length);
-    if (rc < 1) {
+    rc = qemu_pipe_read_fully(handle_, out, pipe_command_length);
+    if (rc) {
         ALOGE("failed to retrieve response for cmd (%d) to %s: %s\n", cmd, KEYMASTER_PORT,
               strerror(errno));
         return -errno;

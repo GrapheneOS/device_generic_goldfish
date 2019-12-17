@@ -26,7 +26,7 @@
 #include <log/log.h>
 #include "EmulatedFakeCamera.h"
 #include "EmulatedFakeRotatingCameraDevice.h"
-#include "qemud.h"
+#include "qemu_pipe.h"
 
 #include <EGL/egl.h>
 #include <GLES/gl.h>
@@ -296,10 +296,10 @@ void EmulatedFakeRotatingCameraDevice::read_sensor() {
     if (mSensorPipe < 0) return;
     char get[] = "get";
     int pipe_command_length = sizeof(get);
-    WriteFully(mSensorPipe, &pipe_command_length, sizeof(pipe_command_length));
-    WriteFully(mSensorPipe, get, pipe_command_length);
-    ReadFully(mSensorPipe, &pipe_command_length, sizeof(pipe_command_length));
-    ReadFully(mSensorPipe, &mSensorValues, pipe_command_length);
+    qemu_pipe_write_fully(mSensorPipe, &pipe_command_length, sizeof(pipe_command_length));
+    qemu_pipe_write_fully(mSensorPipe, get, pipe_command_length);
+    qemu_pipe_read_fully(mSensorPipe, &pipe_command_length, sizeof(pipe_command_length));
+    qemu_pipe_read_fully(mSensorPipe, &mSensorValues, pipe_command_length);
     assert(pipe_command_length == 9*sizeof(float));
     ALOGD("accel: %g %g %g; magnetic %g %g %g orientation %g %g %g",
             mSensorValues[SENSOR_VALUE_ACCEL_X], mSensorValues[SENSOR_VALUE_ACCEL_Y],
