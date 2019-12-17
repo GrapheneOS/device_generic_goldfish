@@ -23,7 +23,9 @@ LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_HEADER_LIBRARIES := libhardware_headers
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
+LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 LOCAL_SRC_FILES := sensors_qemu.c
 LOCAL_MODULE := sensors.ranchu
 
