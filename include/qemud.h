@@ -17,49 +17,16 @@
 #ifndef ANDROID_INCLUDE_HARDWARE_QEMUD_H
 #define ANDROID_INCLUDE_HARDWARE_QEMUD_H
 
-#include <cutils/sockets.h>
 #include "qemu_pipe.h"
 
-/* the following is helper code that is used by the QEMU-specific
- * hardware HAL modules to communicate with the emulator program
- * through the 'qemud' multiplexing daemon, or through the qemud
- * pipe.
- *
- * see the documentation comments for details in
- * development/emulator/qemud/qemud.c
- *
- * all definitions here are built into the HAL module to avoid
- * having to write a tiny shared library for this.
- */
-
-/* we expect the D macro to be defined to a function macro
- * that sends its formatted string argument(s) to the log.
- * If not, ignore the traces.
- */
-#ifndef D
-#  define  D(...)   do{}while(0)
-#endif
-
-
-static __inline__ int
+static __inline__ QEMU_PIPE_HANDLE
 qemud_channel_open(const char*  name)
 {
-    int  fd;
-    char pipe_name[256];
-
-    /* First, try to connect to the pipe. */
-    snprintf(pipe_name, sizeof(pipe_name), "qemud:%s", name);
-    fd = qemu_pipe_open(pipe_name);
-    D("%s: pipe name %s (name %s) fd %d", __FUNCTION__, pipe_name, name, fd);
-    if (fd < 0) {
-        D("QEMUD pipe is not available for %s: %s", name, strerror(errno));
-        return -1;
-    }
-    return fd;
+    return qemu_pipe_open_ns("qemud", name, O_RDWR);
 }
 
 static __inline__ int
-qemud_channel_send(int  fd, const void*  msg, int  msglen)
+qemud_channel_send(QEMU_PIPE_HANDLE pipe, const void*  msg, int  msglen)
 {
     char  header[5];
 
@@ -69,26 +36,26 @@ qemud_channel_send(int  fd, const void*  msg, int  msglen)
     if (msglen == 0)
         return 0;
 
-    snprintf(header, sizeof header, "%04x", msglen);
-    if (!WriteFully(fd, header, 4)) {
+    snprintf(header, sizeof(header), "%04x", msglen);
+    if (qemu_pipe_write_fully(pipe, header, 4)) {
         D("can't write qemud frame header: %s", strerror(errno));
         return -1;
     }
 
-    if (!WriteFully(fd, msg, msglen)) {
-        D("can4t write qemud frame payload: %s", strerror(errno));
+    if (qemu_pipe_write_fully(pipe, msg, msglen)) {
+        D("can't write qemud frame payload: %s", strerror(errno));
         return -1;
     }
     return 0;
 }
 
 static __inline__ int
-qemud_channel_recv(int  fd, void*  msg, int  msgsize)
+qemud_channel_recv(QEMU_PIPE_HANDLE pipe, void*  msg, int  msgsize)
 {
     char  header[5];
     int   size;
 
-    if (!ReadFully(fd, header, 4)) {
+    if (qemu_pipe_read_fully(pipe, header, 4)) {
         D("can't read qemud frame header: %s", strerror(errno));
         return -1;
     }
@@ -100,7 +67,7 @@ qemud_channel_recv(int  fd, void*  msg, int  msgsize)
     if (size > msgsize)
         return -1;
 
-    if (!ReadFully(fd, msg, size)) {
+    if (qemu_pipe_read_fully(pipe, msg, size)) {
         D("can't read qemud frame payload: %s", strerror(errno));
         return -1;
     }

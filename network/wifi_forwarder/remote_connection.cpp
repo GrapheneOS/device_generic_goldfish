@@ -300,12 +300,12 @@ bool RemoteConnection::sendFrame(std::unique_ptr<Frame> frame) {
         iov[current].iov_len -= written;
     }
 #else
-    if (!WriteFully(mPipeFd, &header, sizeof(header))) {
+    if (qemu_pipe_write_fully(mPipeFd, &header, sizeof(header))) {
         ALOGE("RemoteConnection failed to write to pipe: %s", strerror(errno));
         return false;
     }
 
-    if (!WriteFully(mPipeFd, frame->data(), frame->size())) {
+    if (qemu_pipe_write_fully(mPipeFd, frame->data(), frame->size())) {
         ALOGE("RemoteConnection failed to write to pipe: %s", strerror(errno));
         return false;
     }
@@ -327,7 +327,7 @@ bool RemoteConnection::ackFrame(FrameInfo& info, bool success) {
                              info.rates().size(),
                              info.rates().data());
 
-    if (!WriteFully(mPipeFd, &header, sizeof(header))) {
+    if (qemu_pipe_write_fully(mPipeFd, &header, sizeof(header))) {
         ALOGE("RemoteConnection failed to write to pipe: %s", strerror(errno));
         return false;
     }

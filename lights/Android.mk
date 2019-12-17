@@ -21,7 +21,9 @@ LOCAL_RENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_C_INC := lights_qemu.c
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
+LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 LOCAL_SRC_FILES := lights_qemu.c
 LOCAL_MODULE := lights.ranchu
 LOCAL_CFLAGS += -DLIGHT_BACKLIGHT
