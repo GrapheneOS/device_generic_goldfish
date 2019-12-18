@@ -255,12 +255,12 @@ void WifiForwarder::forwardFromPcap() {
 
     WifiForwardHeader forwardHeader(header->caplen, radioLen);
 
-    if (!WriteFully(mPipeFd, &forwardHeader, sizeof(forwardHeader))) {
+    if (qemu_pipe_write_fully(mPipeFd, &forwardHeader, sizeof(forwardHeader))) {
         LOGE("WifiForwarder failed to write to pipe: %s", strerror(errno));
         return;
     }
 
-    if (!WriteFully(mPipeFd, data, header->caplen)) {
+    if (qemu_pipe_write_fully(mPipeFd, data, header->caplen)) {
         LOGE("WifiForwarder failed to write to pipe: %s", strerror(errno));
         return;
     }

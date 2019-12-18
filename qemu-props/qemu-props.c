@@ -91,7 +91,7 @@ int  main(void)
         char* q;
         char  temp[BUFF_SIZE];
         char  vendortemp[BUFF_SIZE];
-        int   len = qemud_channel_recv(qemud_fd, temp, sizeof temp - 1);
+        int   len = qemud_channel_recv(qemud_fd, temp, sizeof(temp) - 1);
 
         /* lone NUL-byte signals end of properties */
         if (len < 0 || len > BUFF_SIZE-1 || temp[0] == '\0')
@@ -181,10 +181,10 @@ void sendMessage(const char* mesg) {
     char set[64];
     snprintf(set, sizeof(set), "%s", mesg);
     int pipe_command_length = strlen(set)+1; //including trailing '\0'
-    WriteFully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
-    WriteFully(s_QemuMiscPipe, set, pipe_command_length);
-    ReadFully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
+    qemu_pipe_write_fully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
+    qemu_pipe_write_fully(s_QemuMiscPipe, set, pipe_command_length);
+    qemu_pipe_read_fully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
     if (pipe_command_length > (int)(sizeof(set)) || pipe_command_length <= 0)
         return;
-    ReadFully(s_QemuMiscPipe, set, pipe_command_length);
+    qemu_pipe_read_fully(s_QemuMiscPipe, set, pipe_command_length);
 }
