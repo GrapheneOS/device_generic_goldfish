@@ -26,6 +26,7 @@
 #include "EmulatedCamera3.h"
 #include "fake-pipeline2/JpegCompressor.h"
 #include "qemu-pipeline3/QemuSensor.h"
+#include "cbmanager.h"
 
 #include <CameraMetadata.h>
 #include <utils/SortedVector.h>
@@ -48,7 +49,7 @@ namespace android {
 class EmulatedQemuCamera3 : public EmulatedCamera3,
         private QemuSensor::QemuSensorListener {
 public:
-    EmulatedQemuCamera3(int cameraId, struct hw_module_t* module);
+    EmulatedQemuCamera3(int cameraId, struct hw_module_t* module, CbManager* cbmanager);
     virtual ~EmulatedQemuCamera3();
 
     /*
@@ -170,6 +171,7 @@ private:
 
     // Shortcut to the input stream.
     camera3_stream_t* mInputStream;
+    CbManager* mCbManager;
 
     typedef List<camera3_stream_t*> StreamList;
     typedef List<camera3_stream_t*>::iterator StreamIterator;

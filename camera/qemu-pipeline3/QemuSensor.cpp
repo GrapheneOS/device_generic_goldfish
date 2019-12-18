@@ -29,7 +29,7 @@
 #define ALOGVV(...) ((void)0)
 #endif
 
-#include "GrallocModule.h"
+#include "cbmanager.h"
 #include "qemu-pipeline3/QemuSensor.h"
 #include "system/camera_metadata.h"
 
@@ -53,7 +53,8 @@ const uint32_t QemuSensor::kDefaultSensitivity = 100;
 
 const char QemuSensor::kHostCameraVerString[] = "ro.kernel.qemu.camera_protocol_ver";
 
-QemuSensor::QemuSensor(const char *deviceName, uint32_t width, uint32_t height):
+QemuSensor::QemuSensor(const char *deviceName, uint32_t width, uint32_t height,
+                       CbManager* cbManager):
         Thread(false),
         mWidth(width),
         mHeight(height),
@@ -62,6 +63,7 @@ QemuSensor::QemuSensor(const char *deviceName, uint32_t width, uint32_t height):
         mLastRequestHeight(-1),
         mCameraQemuClient(),
         mDeviceName(deviceName),
+        mCbManager(cbManager),
         mGotVSync(false),
         mFrameDuration(kFrameDurationRange[0]),
         mNextBuffers(nullptr),
@@ -309,20 +311,24 @@ bool QemuSensor::threadLoop() {
                         bAux.format = HAL_PIXEL_FORMAT_YCbCr_420_888;
                         bAux.stride = b.width;
                         if (mHostCameraVer == 1) {
-                            int grallocUsage = GRALLOC_USAGE_HW_CAMERA_WRITE |
-                               GRALLOC_USAGE_HW_CAMERA_READ |
-                               GRALLOC_USAGE_HW_TEXTURE;
-                            buffer_handle_t *handle = (buffer_handle_t*)new cb_handle_t*;
-                            android_ycbcr ycbcr;
-                            GrallocModule::getInstance().alloc(bAux.width, bAux.height, bAux.format,
-                                                               grallocUsage,
-                                                               handle);
-                            GrallocModule::getInstance().lock_ycbcr(*handle,
-                                                                    GRALLOC_USAGE_HW_CAMERA_WRITE,
-                                                                    0, 0,
-                                                                    bAux.width, bAux.height,
-                                                                    &ycbcr);
-                            bAux.buffer = handle;
+                            const CbManager::BufferUsageBits usage =
+                                CbManager::BufferUsage::CAMERA_OUTPUT |
+                                CbManager::BufferUsage::CAMERA_INPUT |
+                                CbManager::BufferUsage::GPU_TEXTURE;
+
+                            cb_handle_t *cb_handle = mCbManager->allocateBuffer(
+                                bAux.width, bAux.height,
+                                CbManager::PixelFormat(bAux.format), usage);
+
+                            CbManager::YCbCrLayout ycbcr = {};
+                            mCbManager->lockYCbCrBuffer(*cb_handle,
+                                                        (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
+                                                        0, 0,
+                                                        bAux.width, bAux.height,
+                                                        &ycbcr);
+
+                            bAux.buffer = new buffer_handle_t;
+                            *bAux.buffer = cb_handle;
                             bAux.img = (uint8_t*)ycbcr.y;
                         } else {
                             bAux.buffer = nullptr;
@@ -472,7 +478,7 @@ void QemuSensor::captureRGBA(uint32_t width, uint32_t height,
 
     float whiteBalance[] = {1.0f, 1.0f, 1.0f};
     float exposureCompensation = 1.0f;
-    uint64_t offset = GrallocModule::getInstance().getOffset(*handle);
+    const uint64_t offset = CbManager::getOffset(*handle);
     mCameraQemuClient.queryFrame(width, height, V4L2_PIX_FMT_RGB32, offset,
                                  whiteBalance[0], whiteBalance[1], whiteBalance[2],
                                  exposureCompensation, timestamp);
@@ -580,7 +586,7 @@ void QemuSensor::captureYU12(uint32_t width, uint32_t height, uint32_t stride,
 
     float whiteBalance[] = {1.0f, 1.0f, 1.0f};
     float exposureCompensation = 1.0f;
-    uint64_t offset = GrallocModule::getInstance().getOffset(*handle);
+    const uint64_t offset = CbManager::getOffset(*handle);
     mCameraQemuClient.queryFrame(width, height, V4L2_PIX_FMT_YUV420, offset,
                                  whiteBalance[0], whiteBalance[1], whiteBalance[2],
                                  exposureCompensation, timestamp);

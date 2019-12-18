@@ -19,6 +19,7 @@
 
 #include "EmulatedBaseCamera.h"
 #include "QemuClient.h"
+#include "cbmanager.h"
 
 #include <cutils/properties.h>
 
@@ -265,6 +266,9 @@ private:
 
     // Connection to the camera service in the emulator.
     FactoryQemuClient mQemuClient;
+
+    // API to manipulate color buffers
+    CbManager mCbManager;
 
     // Array of cameras available for the emulation.
     std::vector<std::unique_ptr<EmulatedBaseCamera>> mEmulatedCameras;
