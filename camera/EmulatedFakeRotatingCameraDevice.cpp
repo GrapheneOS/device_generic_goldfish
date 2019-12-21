@@ -284,7 +284,7 @@ void EmulatedFakeRotatingCameraDevice::free_gl_surface(void)
 void EmulatedFakeRotatingCameraDevice::init_sensor() {
     if (mSensorPipe >=0) return;
     // create a sensor pipe
-    mSensorPipe = qemu_pipe_open(FAKE_CAMERA_SENSOR);
+    mSensorPipe = qemu_pipe_open_ns(NULL, FAKE_CAMERA_SENSOR, O_RDWR);
     if (mSensorPipe < 0) {
         ALOGE("cannot open %s", FAKE_CAMERA_SENSOR);
     } else {
