@@ -60,8 +60,6 @@ class EmulatedCameraHotplugThread : public Thread {
     String8 getFilePath(int cameraId) const;
     int readFile(const String8& filePath) const;
 
-    bool createFileIfNotExists(int cameraId) const;
-
     int mInotifyFd;
     std::vector<int> mSubscribedCameraIds;
     Vector<SubscriberInfo> mSubscribers;
