@@ -267,7 +267,7 @@ status_t QemuClient::sendMessage(const void* data, size_t data_size)
         return EINVAL;
     }
 
-    const size_t written = TEMP_FAILURE_RETRY(write(mPipeFD, data, data_size));
+    const size_t written = QEMU_PIPE_RETRY(write(mPipeFD, data, data_size));
     if (written == data_size) {
         return NO_ERROR;
     } else {
@@ -293,7 +293,7 @@ status_t QemuClient::receiveMessage(void** data, size_t* data_size)
      * value. Note also, that the string doesn't contain zero-terminator. */
     size_t payload_size;
     char payload_size_str[9];
-    int rd_res = TEMP_FAILURE_RETRY(read(mPipeFD, payload_size_str, 8));
+    int rd_res = QEMU_PIPE_RETRY(read(mPipeFD, payload_size_str, 8));
     if (rd_res != 8) {
         ALOGE("%s: Unable to obtain payload size: %s",
              __FUNCTION__, strerror(errno));
@@ -316,7 +316,7 @@ status_t QemuClient::receiveMessage(void** data, size_t* data_size)
              __FUNCTION__, payload_size);
         return ENOMEM;
     }
-    rd_res = TEMP_FAILURE_RETRY(read(mPipeFD, *data, payload_size));
+    rd_res = QEMU_PIPE_RETRY(read(mPipeFD, *data, payload_size));
     if (static_cast<size_t>(rd_res) == payload_size) {
         *data_size = payload_size;
         return NO_ERROR;
