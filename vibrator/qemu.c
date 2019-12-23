@@ -36,7 +36,7 @@
 #  define  D(...)   ((void)0)
 #endif
 
-#include "qemu_pipe.h"
+#include "qemud.h"
 
 int
 qemu_check(void)
@@ -78,8 +78,7 @@ qemu_channel_open_qemud_pipe( QemuChannel*  channel,
     int   fd;
     char  pipe_name[512];
 
-    snprintf(pipe_name, sizeof(pipe_name), "qemud:%s", name);
-    fd = qemu_pipe_open(pipe_name);
+    fd = qemud_channel_open(name);
     if (fd < 0) {
         D("no qemud pipe: %s", strerror(errno));
         return -1;
