@@ -16,13 +16,15 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES := \
     liblog libcutils libutils libril librilutils
 
-LOCAL_STATIC_LIBRARIES := libqemu_pipe libbase
+LOCAL_STATIC_LIBRARIES := libbase
 
 # for asprinf
 LOCAL_CFLAGS := -D_GNU_SOURCE
 LOCAL_CFLAGS += -Wall -Wextra -Wno-unused-variable -Wno-unused-function -Werror
 
-LOCAL_C_INCLUDES :=
+LOCAL_C_INCLUDES := \
+	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 
 ifeq ($(TARGET_DEVICE),sooner)
   LOCAL_CFLAGS += -DUSE_TI_COMMANDS
