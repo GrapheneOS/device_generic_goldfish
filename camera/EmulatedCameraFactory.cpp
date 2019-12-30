@@ -94,7 +94,7 @@ EmulatedCameraFactory::EmulatedCameraFactory() :
         for (const auto &camera: mEmulatedCameras) {
             cameraIdVector.push_back(camera->getCameraId());
         }
-        mHotplugThread = new EmulatedCameraHotplugThread(cameraIdVector);
+        mHotplugThread = new EmulatedCameraHotplugThread(std::move(cameraIdVector));
         mHotplugThread->run("EmulatedCameraHotplugThread");
     }
 
