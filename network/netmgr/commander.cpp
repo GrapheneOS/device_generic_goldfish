@@ -144,7 +144,7 @@ bool Commander::onTimeout(int* /*status*/) {
 }
 
 void Commander::openPipe() {
-    mPipeFd = qemu_pipe_open(kQemuPipeName);
+    mPipeFd = qemu_pipe_open_ns(NULL, kQemuPipeName, O_RDWR);
     if (mPipeFd == -1) {
         LOGE("Failed to open QEMU pipe '%s': %s",
              kQemuPipeName,

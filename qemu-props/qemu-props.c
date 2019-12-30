@@ -172,7 +172,7 @@ void notifyHostBootComplete() {
 
 void sendMessage(const char* mesg) {
    if (s_QemuMiscPipe < 0) {
-        s_QemuMiscPipe = qemu_pipe_open(QEMU_MISC_PIPE);
+        s_QemuMiscPipe = qemu_pipe_open_ns(NULL, QEMU_MISC_PIPE, O_RDWR);
         if (s_QemuMiscPipe < 0) {
             ALOGE("failed to open %s", QEMU_MISC_PIPE);
             return;

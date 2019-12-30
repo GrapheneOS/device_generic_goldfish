@@ -105,7 +105,7 @@ static jobject nativeCreateSurface(JNIEnv *env, jobject obj, jint id, jint width
 
 static jint nativeOpen(JNIEnv* env, jobject obj) {
     // Open pipe
-    gFd = qemu_pipe_open("multidisplay");
+    gFd = qemu_pipe_open_ns(NULL, "multidisplay", O_RDWR);
     if (gFd < 0) {
         ALOGE("Error opening multidisplay pipe %d", gFd);
     } else {
