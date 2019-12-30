@@ -28,7 +28,7 @@
 
 #include "keymaster_ipc.h"
 #include "trusty_keymaster_ipc.h"
-#include "qemud.h"
+#include "qemu_pipe.h"
 
 #define KEYMASTER_SERVICE_NAME "KeymasterService3"
 
@@ -36,7 +36,7 @@ static int handle_ = 0;
 
 int trusty_keymaster_connect() {
     ALOGE("calling %s\n", __func__);
-    handle_ = qemu_pipe_open(KEYMASTER_SERVICE_NAME);
+    handle_ = qemu_pipe_open_ns(NULL, KEYMASTER_SERVICE_NAME, O_RDWR);
     if (handle_ < 0) {
         handle_ = 0;
         ALOGE("failed to open %s pipe service", KEYMASTER_SERVICE_NAME);

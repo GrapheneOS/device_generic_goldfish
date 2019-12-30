@@ -99,7 +99,7 @@ Result RemoteConnection::init() {
         return Result::error("RemoteConnetion already initialized");
     }
 
-    mPipeFd = qemu_pipe_open(kQemuPipeName);
+    mPipeFd = qemu_pipe_open_ns(NULL, kQemuPipeName, O_RDWR);
     if (mPipeFd == -1) {
         return Result::error("RemoteConnection failed to open pipe");
     }
