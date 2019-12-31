@@ -2042,9 +2042,11 @@ static void requestSimTransmitApduChannel(void *data,
     char *line;
     size_t cmd_size;
     RIL_SIM_IO_Response sim_response;
+    memset(&sim_response, 0, sizeof(sim_response));
     RIL_SIM_APDU *apdu = (RIL_SIM_APDU *)data;
 
     if (apdu == NULL || datalen != sizeof(RIL_SIM_APDU)) {
+        RLOGE("Error input invalid %p %d %d", apdu, (int)datalen, (int)(sizeof(RIL_SIM_APDU)));
         RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
         return;
     }
@@ -2057,7 +2059,7 @@ static void requestSimTransmitApduChannel(void *data,
     err = at_send_command_singleline(cmd, "+CGLA", &p_response);
     free(cmd);
     if (err < 0 || p_response == NULL || p_response->success == 0) {
-        ALOGE("Error %d transmitting APDU: %d",
+        RLOGE("Error %d transmitting APDU: %d",
               err, p_response ? p_response->success : 0);
         RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
         at_response_free(p_response);
@@ -2071,7 +2073,7 @@ static void requestSimTransmitApduChannel(void *data,
         RIL_onRequestComplete(t, RIL_E_SUCCESS,
                               &sim_response, sizeof(sim_response));
     } else {
-        ALOGE("Error %d parsing SIM response line: %s", err, line);
+        RLOGE("Error %d parsing SIM response line: %s", err, line);
         RIL_onRequestComplete(t, RIL_E_GENERIC_FAILURE, NULL, 0);
     }
     at_response_free(p_response);
@@ -2422,6 +2424,7 @@ static void requestGetHardwareConfig(void *data, size_t datalen, RIL_Token t)
    // TODO - hook this up with real query/info from radio.
 
    RIL_HardwareConfig hwCfg;
+   memset(&hwCfg, 0, sizeof(hwCfg));
 
    RIL_UNUSED_PARM(data);
    RIL_UNUSED_PARM(datalen);
@@ -2769,6 +2772,9 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             requestSimCloseChannel(data, datalen, t);
             break;
         case RIL_REQUEST_SIM_TRANSMIT_APDU_CHANNEL:
+            requestSimTransmitApduChannel(data, datalen, t);
+            break;
+        case RIL_REQUEST_SIM_TRANSMIT_APDU_BASIC:
             requestSimTransmitApduChannel(data, datalen, t);
             break;
         case RIL_REQUEST_SETUP_DATA_CALL:
