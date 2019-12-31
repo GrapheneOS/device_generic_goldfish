@@ -234,6 +234,8 @@ static const struct RIL_Env *s_rilenv;
 
 static RIL_RadioState sState = RADIO_STATE_UNAVAILABLE;
 
+static int s_sim_update_started = 0;
+
 static pthread_mutex_t s_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s_state_cond = PTHREAD_COND_INITIALIZER;
 
@@ -1627,6 +1629,11 @@ static void requestRegistrationState(int request, void *data __unused,
     int type, startfrom;
 
     RLOGD("requestRegistrationState");
+    if(s_sim_update_started == 0) {
+        RLOGD("too early, sim card is not done yet");
+        goto error;
+    }
+
     if (request == RIL_REQUEST_VOICE_REGISTRATION_STATE) {
         cmd = "AT+CREG?";
         prefix = "+CREG:";
@@ -2256,6 +2263,10 @@ static void  requestSIM_IO(void *data, size_t datalen __unused, RIL_Token t)
         asprintf(&cmd, "AT+CRSM=%d,%d,%d,%d,%d,%s",
                     p_args->command, p_args->fileid,
                     p_args->p1, p_args->p2, p_args->p3, p_args->data);
+    }
+
+    if (p_args->command == 0xdc) {
+        s_sim_update_started = 1;
     }
 
     err = at_send_command_singleline(cmd, "+CRSM:", &p_response);
