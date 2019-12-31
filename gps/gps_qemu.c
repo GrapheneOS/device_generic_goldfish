@@ -36,10 +36,10 @@
 #include <cutils/sockets.h>
 #include <cutils/properties.h>
 #include <hardware/gps.h>
-#include "qemu_pipe.h"
+#include "qemud.h"
 
 /* the name of the qemu-controlled pipe */
-#define  QEMU_CHANNEL_NAME  "qemud:gps"
+#define  QEMUD_CHANNEL_NAME  "gps"
 
 #define  GPS_DEBUG  0
 
@@ -910,14 +910,14 @@ gps_state_init( GpsState*  state, GpsCallbacks* callbacks )
     state->control[1] = -1;
     state->fd         = -1;
 
-    state->fd = qemu_pipe_open(QEMU_CHANNEL_NAME);
+    state->fd = qemud_channel_open(QEMUD_CHANNEL_NAME);
 
     if (state->fd < 0) {
         D("no gps emulation detected");
         return;
     }
 
-    D("gps emulation will read from '%s' qemu pipe", QEMU_CHANNEL_NAME );
+    D("gps emulation will read from '%s' qemud channel", QEMUD_CHANNEL_NAME );
 
     if ( socketpair( AF_LOCAL, SOCK_STREAM, 0, state->control ) < 0 ) {
         ALOGE("could not create thread control socket pair: %s", strerror(errno));
