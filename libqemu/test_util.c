@@ -74,7 +74,7 @@ pipe_openSocket( Pipe*  pipe, int port )
 int
 pipe_openQemuPipe( Pipe*  pipe, const char* pipename )
 {
-    pipe->socket = qemu_pipe_open(pipename);
+    pipe->socket = qemu_pipe_open_ns(NULL, pipename, O_RDWR);
     if (pipe->socket < 0) {
         fprintf(stderr, "%s: Could not open '%s' pipe: %s\n", __FUNCTION__, pipename, strerror(errno));
         return -1;

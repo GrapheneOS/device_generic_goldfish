@@ -212,30 +212,6 @@ String8 EmulatedCameraHotplugThread::getFilePath(int cameraId) const {
     return String8::format(FAKE_HOTPLUG_FILE ".%d", cameraId);
 }
 
-bool EmulatedCameraHotplugThread::createFileIfNotExists(int cameraId) const
-{
-    String8 filePath = getFilePath(cameraId);
-    // make sure this file exists and we have access to it
-    int fd = QEMU_PIPE_RETRY(
-                open(filePath.string(), O_WRONLY | O_CREAT | O_TRUNC,
-                     /* mode = ug+rwx */ S_IRWXU | S_IRWXG ));
-    if (fd == -1) {
-        ALOGE("%s: Could not create file '%s', error: '%s' (%d)",
-             __FUNCTION__, filePath.string(), strerror(errno), errno);
-        return false;
-    }
-
-    // File has '1' by default since we are plugged in by default
-    if (QEMU_PIPE_RETRY(write(fd, "1\n", /*count*/2)) == -1) {
-        ALOGE("%s: Could not write '1' to file '%s', error: '%s' (%d)",
-             __FUNCTION__, filePath.string(), strerror(errno), errno);
-        return false;
-    }
-
-    close(fd);
-    return true;
-}
-
 int EmulatedCameraHotplugThread::getCameraId(const String8& filePath) const {
     for (int cameraId: mSubscribedCameraIds) {
         String8 camPath = getFilePath(cameraId);

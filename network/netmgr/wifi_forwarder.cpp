@@ -127,7 +127,7 @@ Result WifiForwarder::init() {
         return Result::error("WifiForwarder already initialized");
     }
 
-    mPipeFd = qemu_pipe_open(kQemuPipeName);
+    mPipeFd = qemu_pipe_open_ns(NULL, kQemuPipeName, O_RDWR);
     if (mPipeFd == -1) {
         // It's OK if this fails, the emulator might not have been started with
         // this feature enabled. If it's not enabled we'll try again later, in
