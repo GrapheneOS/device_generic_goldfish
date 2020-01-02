@@ -15,6 +15,8 @@
 ** limitations under the License.
 */
 
+#define LOG_TAG "RIL"
+
 #include <telephony/ril_cdma_sms.h>
 #include <telephony/librilutils.h>
 #include <stdio.h>
@@ -37,7 +39,7 @@
 #include <cutils/properties.h>
 #include <cutils/sockets.h>
 #include <termios.h>
-#include <qemu_pipe.h>
+#include <qemud.h>
 #include <sys/wait.h>
 #include <stdbool.h>
 #include <net/if.h>
@@ -49,7 +51,6 @@
 #include "ril.h"
 
 #define EMULATOR_DUMMY_SIM_CHANNEL_NAME "A00000015144414300"
-#define LOG_TAG "RIL"
 #include <utils/Log.h>
 
 #define MAX(x, y) ({\
@@ -4098,7 +4099,7 @@ mainLoop(void *param __unused)
         fd = -1;
         while  (fd < 0) {
             if (isInEmulator()) {
-                fd = qemu_pipe_open("pipe:qemud:gsm");
+                fd = qemud_channel_open("gsm");
             } else if (s_port > 0) {
                 fd = socket_network_client("localhost", s_port, SOCK_STREAM);
             } else if (s_device_socket) {
