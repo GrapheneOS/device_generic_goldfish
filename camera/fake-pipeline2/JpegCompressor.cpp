@@ -233,6 +233,7 @@ void JpegCompressor::cleanUp() {
             } else {
                 GrallocModule::getInstance().unlock(*mAuxBuffer.buffer);
                 GrallocModule::getInstance().free(*mAuxBuffer.buffer);
+                delete mAuxBuffer.buffer;
             }
         } else if (!mSynchronous) {
             mListener->onJpegInputDone(mAuxBuffer);
