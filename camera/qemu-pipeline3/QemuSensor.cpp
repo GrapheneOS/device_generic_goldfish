@@ -312,17 +312,17 @@ bool QemuSensor::threadLoop() {
                             int grallocUsage = GRALLOC_USAGE_HW_CAMERA_WRITE |
                                GRALLOC_USAGE_HW_CAMERA_READ |
                                GRALLOC_USAGE_HW_TEXTURE;
-                            cb_handle_t* handle;
+                            buffer_handle_t *handle = (buffer_handle_t*)new cb_handle_t*;
                             android_ycbcr ycbcr;
                             GrallocModule::getInstance().alloc(bAux.width, bAux.height, bAux.format,
                                                                grallocUsage,
-                                                               (buffer_handle_t*)&handle);
-                            GrallocModule::getInstance().lock_ycbcr(handle,
+                                                               handle);
+                            GrallocModule::getInstance().lock_ycbcr(*handle,
                                                                     GRALLOC_USAGE_HW_CAMERA_WRITE,
                                                                     0, 0,
                                                                     bAux.width, bAux.height,
                                                                     &ycbcr);
-                            bAux.buffer = (buffer_handle_t*)&handle;
+                            bAux.buffer = handle;
                             bAux.img = (uint8_t*)ycbcr.y;
                         } else {
                             bAux.buffer = nullptr;
