@@ -72,6 +72,7 @@ on property:vendor.qemu.android.bootanim=0
 
 on property:dev.bootcomplete=1
     setprop vendor.qemu.dev.bootcomplete 1
+    start ranchu-setup
 
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
