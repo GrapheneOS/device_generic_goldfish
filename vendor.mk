@@ -31,6 +31,7 @@ ifeq ($(QEMU_DISABLE_AVB),true)
   endif
 endif
 
+PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.initrd.ex:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
