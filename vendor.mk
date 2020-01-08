@@ -16,7 +16,7 @@
 #
 # This file is to configure vendor/data partitions of emulator-related products
 #
-$(call inherit-product, frameworks/native/build/phone-xhdpi-2048-dalvik-heap.mk)
+$(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvik-heap.mk)
 
 ifeq ($(QEMU_DISABLE_AVB),true)
   ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
