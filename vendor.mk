@@ -16,7 +16,7 @@
 #
 # This file is to configure vendor/data partitions of emulator-related products
 #
-$(call inherit-product, frameworks/native/build/phone-xhdpi-2048-dalvik-heap.mk)
+$(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvik-heap.mk)
 
 ifeq ($(QEMU_DISABLE_AVB),true)
   ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
@@ -68,8 +68,8 @@ PRODUCT_PACKAGES += \
     power.goldfish \
     power.ranchu \
     fingerprint.ranchu \
-    android.hardware.graphics.composer@2.3-impl \
-    android.hardware.graphics.composer@2.3-service \
+    android.hardware.graphics.composer@2.1-impl \
+    android.hardware.graphics.composer@2.1-service \
     android.hardware.graphics.allocator@2.0-service \
     android.hardware.graphics.allocator@2.0-impl \
     android.hardware.graphics.mapper@2.0-impl \
