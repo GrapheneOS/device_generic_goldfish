@@ -31,6 +31,7 @@
 #include "EmulatedCameraDevice.h"
 #include "PreviewWindow.h"
 #include "CallbackNotifier.h"
+#include "cbmanager.h"
 
 using ::android::hardware::camera::common::V1_0::helper::CameraParameters;
 using ::android::hardware::camera::common::V1_0::helper::Size;
@@ -55,7 +56,8 @@ public:
      *  module - Emulated camera HAL module descriptor.
      */
     EmulatedCamera(int cameraId,
-                   struct hw_module_t* module);
+                   struct hw_module_t* module,
+                   CbManager* cbManager);
 
     /* Destructs EmulatedCamera instance. */
     virtual ~EmulatedCamera();
