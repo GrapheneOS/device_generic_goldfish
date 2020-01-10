@@ -25,17 +25,17 @@
 #include "../EmulatedFakeCamera3.h"
 #include "../Exif.h"
 #include "../Thumbnail.h"
-#include "../GrallocModule.h"
 #include "hardware/camera3.h"
 
 namespace android {
 
-JpegCompressor::JpegCompressor():
+JpegCompressor::JpegCompressor(CbManager* cbManager):
         Thread(false),
         mIsBusy(false),
         mSynchronous(false),
         mBuffers(NULL),
-        mListener(NULL) {
+        mListener(NULL),
+        mCbManager(cbManager) {
 }
 
 JpegCompressor::~JpegCompressor() {
@@ -231,9 +231,10 @@ void JpegCompressor::cleanUp() {
             if (mAuxBuffer.buffer == nullptr) {
                 delete[] mAuxBuffer.img;
             } else {
-                GrallocModule::getInstance().unlock(*mAuxBuffer.buffer);
-                GrallocModule::getInstance().free(*mAuxBuffer.buffer);
-                delete mAuxBuffer.buffer;
+                cb_handle_t* cb = cb_handle_t::from_unconst(*mAuxBuffer.buffer);
+
+                mCbManager->unlockBuffer(*cb);
+                mCbManager->freeBuffer(cb);
             }
         } else if (!mSynchronous) {
             mListener->onJpegInputDone(mAuxBuffer);
