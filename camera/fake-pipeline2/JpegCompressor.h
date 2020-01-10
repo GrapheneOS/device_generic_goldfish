@@ -30,6 +30,7 @@
 
 #include "Base.h"
 #include "../JpegCompressor.h"
+#include "cbmanager.h"
 #include <CameraMetadata.h>
 
 #include <stdio.h>
@@ -45,7 +46,7 @@ namespace android {
 class JpegCompressor: private Thread, public virtual RefBase {
   public:
 
-    JpegCompressor();
+    JpegCompressor(CbManager* cbManager);
     ~JpegCompressor();
 
     struct JpegListener {
@@ -89,6 +90,7 @@ class JpegCompressor: private Thread, public virtual RefBase {
 
     Buffers *mBuffers;
     JpegListener *mListener;
+    CbManager *mCbManager;
 
     StreamBuffer mJpegBuffer, mAuxBuffer;
     bool mFoundJpeg, mFoundAux;

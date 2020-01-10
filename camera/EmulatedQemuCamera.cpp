@@ -33,8 +33,9 @@
 
 namespace android {
 
-EmulatedQemuCamera::EmulatedQemuCamera(int cameraId, struct hw_module_t* module)
-        : EmulatedCamera(cameraId, module),
+EmulatedQemuCamera::EmulatedQemuCamera(int cameraId, struct hw_module_t* module,
+                                       CbManager* cbManager)
+        : EmulatedCamera(cameraId, module, cbManager),
           mQemuCameraDevice(this)
 {
 }

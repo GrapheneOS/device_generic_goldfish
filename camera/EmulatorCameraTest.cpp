@@ -5,7 +5,7 @@
 #include "fake-pipeline2/Base.h"
 #include "fake-pipeline2/Scene.h"
 #include "QemuClient.h"
-#include "GrallocModule.h"
+#include "cbmanager.h"
 #include "gralloc_cb.h"
 
 #include <linux/videodev2.h>
@@ -150,25 +150,27 @@ void captureYU12(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height, S
 // Test the capture speed of qemu camera, e.g., webcam and virtual scene
 int main(int argc, char* argv[]) {
     uint32_t pixFmt;
-    int grallocFmt;
+    CbManager::PixelFormat cbFmt;
     bool v1 = false;
     bool fake = false;
     std::vector<nsecs_t> report;
     uint32_t sceneWidth;
     uint32_t sceneHeight;
 
+    CbManager cbmanager;
+
     if (!strncmp(argv[1], "RGB", 3)) {
         pixFmt = V4L2_PIX_FMT_RGB32;
-        grallocFmt = HAL_PIXEL_FORMAT_RGBA_8888;
+        cbFmt = CbManager::PixelFormat::RGBA_8888;
     } else if (!strncmp(argv[1], "NV21", 3)) {
         pixFmt = V4L2_PIX_FMT_NV21;
-        grallocFmt = HAL_PIXEL_FORMAT_YCbCr_420_888;
+        cbFmt = CbManager::PixelFormat::YCBCR_420_888;
     } else if (!strncmp(argv[1], "YV12", 3)) {
         pixFmt = V4L2_PIX_FMT_YVU420;
-        grallocFmt = HAL_PIXEL_FORMAT_YCbCr_420_888;
+        cbFmt = CbManager::PixelFormat::YCBCR_420_888;
     } else if (!strncmp(argv[1], "YU12", 3)) {
         pixFmt = V4L2_PIX_FMT_YUV420;
-        grallocFmt = HAL_PIXEL_FORMAT_YCbCr_420_888;
+        cbFmt = CbManager::PixelFormat::YCBCR_420_888;
     } else {
         printf("format error, use RGB, NV21, YV12 or YU12");
         return -1;
@@ -195,7 +197,7 @@ int main(int argc, char* argv[]) {
         Scene scene(width, height, kElectronsPerLuxSecond);
         for (int i = 0 ; i < repeated; i++) {
             nsecs_t start = systemTime();
-            if (pixFmt == HAL_PIXEL_FORMAT_RGBA_8888) {
+            if (pixFmt == V4L2_PIX_FMT_RGB32) {
                 captureRGBA(buf.data(), 0, width, height, scene, sceneWidth, sceneHeight);
             } else {
                 captureYU12(buf.data(), 0, width, height, scene, sceneWidth, sceneHeight);
@@ -234,24 +236,25 @@ int main(int argc, char* argv[]) {
             return -1;
         }
         if (v1) {
-            int grallocUsage = GRALLOC_USAGE_HW_CAMERA_WRITE |
-                               GRALLOC_USAGE_HW_CAMERA_READ |
-                               GRALLOC_USAGE_HW_TEXTURE;
+            const CbManager::BufferUsageBits usage =
+                CbManager::BufferUsage::CAMERA_OUTPUT |
+                CbManager::BufferUsage::CAMERA_INPUT |
+                CbManager::BufferUsage::GPU_TEXTURE;
+
             cb_handle_t* handle;
-            android_ycbcr ycbcr;
-            GrallocModule::getInstance().alloc(width, height, grallocFmt,
-                                                grallocUsage, (buffer_handle_t*)&handle);
+            CbManager::YCbCrLayout ycbcr;
+            handle = cbmanager.allocateBuffer(width, height, cbFmt, usage);
             void* addr;
-            if (grallocFmt == HAL_PIXEL_FORMAT_RGBA_8888) {
-                GrallocModule::getInstance().lock(handle, GRALLOC_USAGE_HW_CAMERA_WRITE,
-                                                   0, 0,
-                                                   width, height, &addr);
+            if (cbFmt == CbManager::PixelFormat::RGBA_8888) {
+                cbmanager.lockBuffer(*handle, (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
+                               0, 0,
+                               width, height, &addr);
             } else {
-                GrallocModule::getInstance().lock_ycbcr(handle,
-                                                         GRALLOC_USAGE_HW_CAMERA_WRITE,
-                                                         0, 0,
-                                                         width, height,
-                                                         &ycbcr);
+                cbmanager.lockYCbCrBuffer(*handle,
+                                          (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
+                                          0, 0,
+                                          width, height,
+                                          &ycbcr);
             }
             uint64_t offset = handle->getMmapedOffset();
             printf("offset is 0x%llx\n", offset);
@@ -265,7 +268,7 @@ int main(int argc, char* argv[]) {
                 nsecs_t end = systemTime();
                 report.push_back(end - start);
             }
-            GrallocModule::getInstance().unlock(handle);
+            cbmanager.unlockBuffer(handle);
         } else {
             size_t bufferSize;
             if (pixFmt == V4L2_PIX_FMT_RGB32) {
