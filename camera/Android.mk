@@ -37,7 +37,8 @@ emulator_camera_shared_libraries := \
     libdl \
     libjpeg \
     libcamera_metadata \
-    libhardware
+    libcbmanager \
+    android.hardware.graphics.mapper@2.0 \
 
 emulator_camera_static_libraries := \
 	android.hardware.camera.common@1.0-helper \
@@ -48,6 +49,7 @@ emulator_camera_c_includes := external/libjpeg-turbo \
 	external/libyuv/files/include \
 	frameworks/native/include/media/hardware \
 	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../goldfish-opengl/system/include \
 	$(LOCAL_PATH)/../../goldfish-opengl/system/OpenglSystemCommon \
 	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon \
 	$(call include-path-for, camera)
@@ -130,6 +132,7 @@ include $(BUILD_SHARED_LIBRARY)
 
 include ${CLEAR_VARS}
 
+LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
 LOCAL_CFLAGS := ${emulator_camera_cflags}
 LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}

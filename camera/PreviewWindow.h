@@ -17,6 +17,8 @@
 #ifndef HW_EMULATOR_CAMERA_PREVIEW_WINDOW_H
 #define HW_EMULATOR_CAMERA_PREVIEW_WINDOW_H
 
+#include "cbmanager.h"
+
 /*
  * Contains declaration of a class PreviewWindow that encapsulates functionality
  * of a preview window set via set_preview_window camera HAL API.
@@ -35,7 +37,7 @@ class EmulatedCameraDevice;
 class PreviewWindow {
 public:
     /* Constructs PreviewWindow instance. */
-    PreviewWindow();
+    PreviewWindow(CbManager* cbManager);
 
     /* Destructs PreviewWindow instance. */
     ~PreviewWindow();
@@ -132,6 +134,9 @@ protected:
 
     /* Preview window instance. */
     preview_stream_ops*             mPreviewWindow;
+
+    /* API to manipulate color buffers */
+    CbManager*                      mCbManager;
 
     /*
      * Cached preview window frame dimensions.
