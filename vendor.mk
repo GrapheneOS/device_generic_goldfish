@@ -66,6 +66,7 @@ PRODUCT_PACKAGES += \
     audio.primary.goldfish \
     audio.primary.goldfish_legacy \
     power.goldfish \
+    stagefright \
     power.ranchu \
     fingerprint.ranchu \
     android.hardware.graphics.composer@2.1-impl \
