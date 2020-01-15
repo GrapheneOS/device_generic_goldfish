@@ -135,7 +135,6 @@ PRODUCT_COPY_FILES += \
     $(GOLDFISH_DIR)/ueventd.ranchu.rc:$(TARGET_COPY_OUT_VENDOR)/ueventd.rc \
 
 PRODUCT_COPY_FILES += \
-    $(THIS_DIR)/manifest.xml:$(TARGET_COPY_OUT_VENDOR)/manifest.xml \
     $(THIS_DIR)/init.ranchu-core.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-core.sh \
     $(THIS_DIR)/init.ranchu.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.ranchu.rc \
     $(THIS_DIR)/fstab.ranchu:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
@@ -150,3 +149,14 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.carrier=unknown
+
+DEVICE_MANIFEST_FILE += $(THIS_DIR)/manifest.xml
+# VINTF stuff for system and vendor (no product / odm / system_ext / etc.)
+PRODUCT_PACKAGES += \
+    system_compatibility_matrix.xml \
+    system_manifest.xml \
+    vendor_compatibility_matrix.xml \
+    vendor_manifest.xml \
+
+# Disable VINTF checks.
+PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE := false
