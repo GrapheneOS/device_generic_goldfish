@@ -25,7 +25,4 @@
         <fqname>@1.1::ICryptoFactory/widevine</fqname>
         <fqname>@1.1::IDrmFactory/widevine</fqname>
     </hal>
-    <sepolicy>
-        <version>27.0</version>
-    </sepolicy>
 </manifest>
