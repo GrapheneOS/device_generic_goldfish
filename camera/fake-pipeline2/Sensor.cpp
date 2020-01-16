@@ -535,7 +535,6 @@ void Sensor::captureYU12(uint8_t *img, uint32_t gain, uint32_t width, uint32_t h
     for (unsigned int outY = 0; outY < height; outY++) {
         unsigned int y = outY * DivH >> 10;
         uint8_t *pxY = img + outY * width;
-        uint8_t *pxVU = img + (height + outY / 2) * width;
         uint8_t *pxU = img + height * width + (outY / 2) * (width / 2);
         uint8_t *pxV = pxU + (height / 2) * (width / 2);
         mScene.setReadoutPixel(0, y);
