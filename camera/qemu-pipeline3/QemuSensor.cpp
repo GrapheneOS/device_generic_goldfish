@@ -316,12 +316,12 @@ bool QemuSensor::threadLoop() {
                                 CbManager::BufferUsage::CAMERA_INPUT |
                                 CbManager::BufferUsage::GPU_TEXTURE;
 
-                            cb_handle_t *cb_handle = mCbManager->allocateBuffer(
+                            cb_handle_t *cb_handle = (cb_handle_t*)mCbManager->allocateBuffer(
                                 bAux.width, bAux.height,
                                 CbManager::PixelFormat(bAux.format), usage);
 
                             CbManager::YCbCrLayout ycbcr = {};
-                            mCbManager->lockYCbCrBuffer(*cb_handle,
+                            mCbManager->lockYCbCrBuffer(*(native_handle_t*)cb_handle,
                                                         (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
                                                         0, 0,
                                                         bAux.width, bAux.height,
