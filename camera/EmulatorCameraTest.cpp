@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
                 CbManager::BufferUsage::CAMERA_INPUT |
                 CbManager::BufferUsage::GPU_TEXTURE;
 
-            cb_handle_t* handle;
+            native_handle_t* handle;
             CbManager::YCbCrLayout ycbcr;
             handle = cbmanager.allocateBuffer(width, height, cbFmt, usage);
             void* addr;
@@ -256,7 +256,7 @@ int main(int argc, char* argv[]) {
                                           width, height,
                                           &ycbcr);
             }
-            uint64_t offset = handle->getMmapedOffset();
+            uint64_t offset = ((cb_handle_t*)handle)->getMmapedOffset();
             printf("offset is 0x%llx\n", offset);
             float whiteBalance[] = {1.0f, 1.0f, 1.0f};
             float exposureCompensation = 1.0f;
