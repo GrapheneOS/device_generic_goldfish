@@ -52,7 +52,7 @@ PRODUCT_PACKAGES += \
     android.hardware.graphics.composer@2.1-service \
     android.hardware.graphics.composer@2.1-impl \
     android.hardware.graphics.mapper@2.0-impl \
-    android.hardware.health@2.0-service.goldfish \
+    android.hardware.health@2.0-service \
     android.hardware.keymaster@4.0-service \
     android.hardware.keymaster@4.0-impl \
     libEGL_swiftshader \
