@@ -107,7 +107,7 @@ PRODUCT_PACKAGES += \
     android.hardware.soundtrigger@2.0-impl
 
 PRODUCT_PACKAGES += \
-    android.hardware.health@2.0-service.goldfish
+    android.hardware.health@2.0-service
 
 PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.0-impl \
