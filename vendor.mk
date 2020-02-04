@@ -49,9 +49,6 @@ PRODUCT_SOONG_NAMESPACES += hardware/google/camera/devices/EmulatedCamera
 # Device modules
 PRODUCT_PACKAGES += \
     vulkan.ranchu \
-    gralloc.goldfish \
-    gralloc.goldfish.default \
-    gralloc.ranchu \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
@@ -71,9 +68,8 @@ PRODUCT_PACKAGES += \
     fingerprint.ranchu \
     android.hardware.graphics.composer@2.1-impl \
     android.hardware.graphics.composer@2.1-service \
-    android.hardware.graphics.allocator@2.0-service \
-    android.hardware.graphics.allocator@2.0-impl \
-    android.hardware.graphics.mapper@2.0-impl \
+    android.hardware.graphics.allocator@3.0-service \
+    android.hardware.graphics.mapper@3.0-impl \
     hwcomposer.ranchu \
     toybox_vendor \
     android.hardware.audio@2.0-service \
