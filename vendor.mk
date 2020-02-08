@@ -110,7 +110,8 @@ PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.0-service
 
 PRODUCT_PACKAGES += \
-    DisplayCutoutEmulationEmu01Overlay
+    DisplayCutoutEmulationEmu01Overlay \
+    NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
 PRODUCT_PACKAGES += \

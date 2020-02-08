@@ -35,6 +35,16 @@
             <Limit name="performance-point-1920x1080" value="30" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
+        <MediaCodec name="OMX.android.goldfish.h264.decoder" type="video/avc">
+            <!-- profiles and levels:  ProfileHigh : Level41 -->
+            <Limit name="size" min="16x16" max="1920x1088" />
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Limit name="blocks-per-second" range="1-244800" />
+            <Limit name="bitrate" range="1-12000000" />
+            <Limit name="performance-point-1920x1080" value="30" />
+            <Feature name="adaptive-playback" />
+        </MediaCodec>
         <MediaCodec name="OMX.google.goldfish.h264.decoder" type="video/avc">
             <!-- profiles and levels:  ProfileHigh : Level41 -->
             <Limit name="size" min="16x16" max="1920x1088" />
