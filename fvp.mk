@@ -47,10 +47,11 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.0-impl \
     android.hardware.drm@1.3-service.clearkey \
     android.hardware.gatekeeper@1.0-service.software \
-    android.hardware.graphics.allocator@3.0-service \
+    android.hardware.graphics.allocator@2.0-service \
+    android.hardware.graphics.allocator@2.0-impl \
     android.hardware.graphics.composer@2.1-service \
     android.hardware.graphics.composer@2.1-impl \
-    android.hardware.graphics.mapper@3.0-impl \
+    android.hardware.graphics.mapper@2.0-impl \
     android.hardware.health@2.0-service \
     android.hardware.keymaster@4.0-service \
     android.hardware.keymaster@4.0-impl \
