@@ -14,8 +14,10 @@
 # limitations under the License.
 #
 
+PRODUCT_SHIPPING_API_LEVEL := 29
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 PRODUCT_FULL_TREBLE_OVERRIDE := true
+PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
 
 #
 # All components inherited here go to system image
