@@ -77,5 +77,7 @@ genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/wakeup                              
 genfscon sysfs /devices/pnp0/00:00/wakeup/wakeup                                   u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/virtual/wakeup/wakeup                                      u:object_r:sysfs_wakeup:s0
 
+genfscon sysfs /bus/iio/devices                                                    u:object_r:sysfs_iio_devices:s0
+
 # /proc/<pid>/ns
 genfscon nsfs / u:object_r:nsfs:s0
