@@ -37,25 +37,22 @@ First, install ``dtc``, the device tree compiler. On Debian, this is in the
 ```
 mkdir platform
 cd platform
-repo init -u https://git.linaro.org/landing-teams/working/arm/manifest.git -m pinned-ack.xml -b 19.10
+repo init -u https://git.linaro.org/landing-teams/working/arm/manifest.git -m pinned-uboot.xml -b 20.01
 repo sync
 
 mkdir -p tools/gcc
 cd tools/gcc
 wget https://releases.linaro.org/components/toolchain/binaries/6.2-2016.11/aarch64-linux-gnu/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu.tar.xz
 tar -xJf gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu.tar.xz
-wget https://releases.linaro.org/components/toolchain/binaries/6.2-2016.11/arm-linux-gnueabihf/gcc-linaro-6.2.1-2016.11-x86_64_arm-linux-gnueabihf.tar.xz
-tar -xJf gcc-linaro-6.2.1-2016.11-x86_64_arm-linux-gnueabihf.tar.xz
 cd ../..
 
-CFLAGS=-w build-scripts/build-all.sh -p fvp -f busybox build
-build-scripts/build-all.sh -p fvp -f busybox package
+build-scripts/build-test-uboot.sh -p fvp all
 ```
 
 These components must then be copied into the product output directory:
 
 ```
-cp output/fvp/fvp-busybox/uboot/bl1.bin output/fvp/fvp-busybox/uboot/fip.bin $ANDROID_PRODUCT_OUT/boot/
+cp output/fvp/fvp-uboot/uboot/{bl1,fip}.bin $ANDROID_PRODUCT_OUT/boot/
 ```
 
 ### Obtaining the model

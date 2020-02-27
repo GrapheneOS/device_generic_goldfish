@@ -1,4 +1,6 @@
-PRODUCT_KERNEL_VERSION := 4.14
+PRODUCT_KERNEL_VERSION := 5.4
+BOARD_GENERIC_RAMDISK_KERNEL_MODULES += \
+    $(wildcard prebuilts/qemu-kernel/x86_64/$(PRODUCT_KERNEL_VERSION)/ko/*.ko)
 
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
@@ -11,6 +13,7 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.nexus5:config.ini \
     device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
+    device/generic/goldfish/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json \
     prebuilts/qemu-kernel/x86_64/$(PRODUCT_KERNEL_VERSION)/kernel-qemu2:kernel-ranchu
 PRODUCT_SDK_ADDON_COPY_FILES += \
     device/generic/goldfish/data/etc/advancedFeatures.ini:images/x86_64/advancedFeatures.ini \

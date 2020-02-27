@@ -69,7 +69,7 @@ PRODUCT_PACKAGES += \
     android.hardware.graphics.composer@2.1-impl \
     android.hardware.graphics.composer@2.1-service \
     android.hardware.graphics.allocator@3.0-service \
-    android.hardware.graphics.mapper@3.0-impl \
+    android.hardware.graphics.mapper@3.0-impl-ranchu \
     hwcomposer.ranchu \
     toybox_vendor \
     android.hardware.audio@2.0-service \
@@ -154,9 +154,9 @@ PRODUCT_PACKAGES += \
     camera.goldfish.jpeg \
     camera.ranchu \
     camera.ranchu.jpeg \
-    android.hardware.camera.provider@2.4-service-google \
+    android.hardware.camera.provider@2.6-service-google \
     libgooglecamerahwl_impl \
-    android.hardware.camera.provider@2.4-impl-google
+    android.hardware.camera.provider@2.6-impl-google
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
 endif
 
@@ -256,6 +256,7 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
     frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \
     frameworks/native/data/etc/android.hardware.vulkan.version-1_1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
+    device/generic/goldfish/data/etc/android.software.vulkan.deqp.level-2019-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level-2019-03-01.xml \
     frameworks/native/data/etc/android.software.autofill.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.autofill.xml \
     frameworks/native/data/etc/android.software.verified_boot.xml:${TARGET_COPY_OUT_PRODUCT}/etc/permissions/android.software.verified_boot.xml \
     frameworks/av/media/libeffects/data/audio_effects.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_effects.xml \
