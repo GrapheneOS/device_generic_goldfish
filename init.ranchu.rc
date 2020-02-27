@@ -47,11 +47,6 @@ on post-fs-data
     mkdir /data/vendor/var/run/netns 0755 root root
     start ranchu-net
 
-    chown root root /data/vendor/etc
-    rm /data/vendor/etc/media_codecs_google_video.xml
-    symlink /data/vendor/etc/media_codecs_google_video_default.xml /data/vendor/etc/media_codecs_google_video.xml
-    setprop qemu.mediaprofile.video ${ro.kernel.qemu.mediaprofile.video}
-
 on zygote-start
     # Create the directories used by the Wireless subsystem
     mkdir /data/vendor/wifi 0771 wifi wifi
@@ -88,10 +83,6 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
     user root
     group root
     oneshot
-
-on property:qemu.mediaprofile.video=*
-    rm /data/vendor/etc/media_codecs_google_video.xml
-    symlink ${qemu.mediaprofile.video} /data/vendor/etc/media_codecs_google_video.xml
 
 on property:vendor.qemu.timezone=*
     setprop persist.sys.timezone ${vendor.qemu.timezone}
