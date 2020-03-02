@@ -2,7 +2,7 @@ on fs
     mount_all /vendor/etc/fstab.ranchu
 
 on early-init
-    mount debugfs debugfs /sys/kernel/debug mode=755
+    mount tracefs tracefs /sys/kernel/tracing
     mount proc proc /proc remount hidepid=2,gid=3009
 
 on init
@@ -37,12 +37,6 @@ on init
     chmod 0664 /dev/cpuctl/background/tasks
     chmod 0664 /dev/cpuctl/top-app/tasks
     chmod 0664 /dev/cpuctl/rt/tasks
-
-    # CONFIG_RT_GROUP_SCHED
-    write /dev/cpuctl/foreground/cpu.rt_runtime_us 950000
-    write /dev/cpuctl/background/cpu.rt_runtime_us 950000
-    write /dev/cpuctl/top-app/cpu.rt_runtime_us 950000
-    write /dev/cpuctl/rt/cpu.rt_runtime_us 950000
 
 on post-fs-data
     setprop vold.post_fs_data_done 1

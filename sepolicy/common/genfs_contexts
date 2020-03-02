@@ -10,6 +10,9 @@ genfscon sysfs /devices/platform/GFSH0001:00/power_supply u:object_r:sysfs_batte
 # /sys/class/rtc
 genfscon sysfs /devices/pnp0/00:00/rtc u:object_r:sysfs_rtc:s0
 genfscon sysfs /devices/platform/GFSH0007:00/rtc u:object_r:sysfs_rtc:s0
+genfscon sysfs /devices/platform/rtc-test.0/rtc/rtc1/hctosys u:object_r:sysfs_rtc:s0
+genfscon sysfs /devices/platform/rtc-test.1/rtc/rtc2/hctosys u:object_r:sysfs_rtc:s0
+genfscon sysfs /devices/platform/rtc-test.2/rtc/rtc3/hctosys u:object_r:sysfs_rtc:s0
 
 # /sys/class/net
 genfscon sysfs /devices/pci0000:00/0000:00:08.0/virtio5/net u:object_r:sysfs_net:s0
@@ -76,6 +79,8 @@ genfscon sysfs /devices/platform/GFSH0001:00/power_supply/battery/wakeup        
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/wakeup                                 u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/wakeup/wakeup                                   u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/virtual/wakeup/wakeup                                      u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup34                        u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup35                        u:object_r:sysfs_wakeup:s0
 
 genfscon sysfs /bus/iio/devices                                                    u:object_r:sysfs_iio_devices:s0
 
