@@ -202,6 +202,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.rebootescrow-service.default
 
+# Extension implementation for Jetpack WindowManager
+PRODUCT_PACKAGES += \
+    androidx.window.extensions
+
 # Goldfish does not support ION needed for Codec 2.0
 # still disable it until b/143473631 is fixed
 # now this is setup on init.ranchu.rc
