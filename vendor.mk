@@ -159,6 +159,7 @@ PRODUCT_PACKAGES += \
 
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
+	mac80211_create_radios \
 	createns \
 	dhcpclient \
 	execns \
