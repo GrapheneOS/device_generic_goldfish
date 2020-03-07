@@ -52,9 +52,6 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    libEGL_swiftshader \
-    libGLESv1_CM_swiftshader \
-    libGLESv2_swiftshader \
     libgoldfish-ril \
     qemu-props \
     gps.goldfish \
