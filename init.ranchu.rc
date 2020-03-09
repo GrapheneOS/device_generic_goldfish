@@ -4,6 +4,7 @@ on fs
 on early-init
     mount tracefs tracefs /sys/kernel/tracing
     mount proc proc /proc remount hidepid=2,gid=3009
+    setprop ro.hardware.egl emulation
 
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
