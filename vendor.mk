@@ -59,9 +59,7 @@ PRODUCT_PACKAGES += \
     fingerprint.goldfish \
     audio.primary.goldfish \
     audio.primary.goldfish_legacy \
-    power.goldfish \
     stagefright \
-    power.ranchu \
     fingerprint.ranchu \
     android.hardware.graphics.composer@2.1-impl \
     android.hardware.graphics.composer@2.1-service \
@@ -132,7 +130,7 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.3-service.widevine
 
 PRODUCT_PACKAGES += \
-    android.hardware.power@1.1-service.ranchu \
+    android.hardware.power@1.3-service.ranchu \
 
 PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
