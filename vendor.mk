@@ -130,7 +130,7 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.3-service.widevine
 
 PRODUCT_PACKAGES += \
-    android.hardware.power@1.3-service.ranchu \
+    android.hardware.power-service.example \
 
 PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
