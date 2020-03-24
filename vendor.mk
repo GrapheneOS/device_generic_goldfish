@@ -138,6 +138,9 @@ PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
 
 PRODUCT_PROPERTY_OVERRIDES += persist.sys.zram_enabled=1 \
 
+# Prevent logcat from getting canceled early on in boot
+PRODUCT_PROPERTY_OVERRIDES += ro.logd.size=1M \
+
 ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
 PRODUCT_PACKAGES += \
     camera.device@1.0-impl \
