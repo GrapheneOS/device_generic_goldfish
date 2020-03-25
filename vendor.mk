@@ -138,6 +138,9 @@ PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
 
 PRODUCT_PROPERTY_OVERRIDES += persist.sys.zram_enabled=1 \
 
+PRODUCT_PACKAGES += \
+    android.hardware.dumpstate@1.1-service.example \
+
 # Prevent logcat from getting canceled early on in boot
 PRODUCT_PROPERTY_OVERRIDES += ro.logd.size=1M \
 
