@@ -210,6 +210,10 @@ PRODUCT_PACKAGES += \
 #PRODUCT_PROPERTY_OVERRIDES += \
 #    debug.stagefright.ccodec=0
 
+# Enable Incremental on the device via kernel driver
+PRODUCT_PRODUCT_PROPERTIES += ro.incremental.enable=yes
+
+
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
     device/generic/goldfish/data/etc/apns-conf.xml:data/misc/apns/apns-conf.xml \
