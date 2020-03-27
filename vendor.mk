@@ -195,6 +195,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.input.classifier@1.0-service.default
 
+# lights
+PRODUCT_PACKAGES += \
+    android.hardware.lights-service.example
+
 # power stats
 PRODUCT_PACKAGES += \
     android.hardware.power.stats@1.0-service.mock
