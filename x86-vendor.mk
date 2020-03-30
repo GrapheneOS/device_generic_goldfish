@@ -26,3 +26,23 @@ PRODUCT_COPY_FILES += \
 
 PRODUCT_SHIPPING_API_LEVEL := 28
 TARGET_USES_MKE2FS := true
+
+ifeq ($(QEMU_DISABLE_AVB),true)
+  ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
+    PRODUCT_COPY_FILES += \
+      device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
+      device/generic/goldfish/fstab.ranchu.initrd.noavb.ex:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
+      device/generic/goldfish/fstab.ranchu.noavb.ex:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
+  else
+    PRODUCT_COPY_FILES += \
+      device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
+      device/generic/goldfish/fstab.ranchu.initrd.noavb:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
+      device/generic/goldfish/fstab.ranchu.noavb:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
+  endif
+endif
+
+ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/fstab.ranchu.initrd.ex:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
+    device/generic/goldfish/fstab.ranchu.ex:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
+endif
