@@ -18,7 +18,12 @@ endif
 
 PRODUCT_COPY_FILES += \
     prebuilts/qemu-kernel/arm64/4.4/kernel-qemu2:kernel-ranchu \
-    device/generic/goldfish/fstab.ranchu.arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
+    device/generic/goldfish/data/etc/advancedFeatures.ini.arm:advancedFeatures.ini \
 
 EMULATOR_VENDOR_NO_GNSS := true
 
+ifeq ($(QEMU_DISABLE_AVB),true)
+    PRODUCT_COPY_FILES += \
+      device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
+
+endif
