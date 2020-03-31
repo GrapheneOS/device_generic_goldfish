@@ -50,4 +50,5 @@ allow goldfish_setup createns:lnk_file { read };
 # Allow goldfish_setup to copy the hostapd conf template to the vendor data dir
 allow goldfish_setup hostapd_data_file:file create_file_perms;
 allow goldfish_setup hostapd_data_file:dir rw_dir_perms;
+#allow goldfish_setup system_file:file { execute getattr open read };
 dontaudit goldfish_setup self:capability dac_override;
