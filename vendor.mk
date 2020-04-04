@@ -39,8 +39,8 @@ PRODUCT_PACKAGES += \
     audio.primary.goldfish_legacy \
     stagefright \
     fingerprint.ranchu \
-    android.hardware.graphics.composer@2.1-impl \
-    android.hardware.graphics.composer@2.1-service \
+    android.hardware.graphics.composer@2.3-impl \
+    android.hardware.graphics.composer@2.3-service \
     android.hardware.graphics.allocator@3.0-service \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
     hwcomposer.ranchu \
