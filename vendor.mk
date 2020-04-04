@@ -54,8 +54,6 @@ PRODUCT_PACKAGES += \
     libOpenglSystemCommon \
     libgoldfish-ril \
     qemu-props \
-    gps.goldfish \
-    gps.ranchu \
     fingerprint.goldfish \
     audio.primary.goldfish \
     audio.primary.goldfish_legacy \
@@ -110,10 +108,7 @@ PRODUCT_PACKAGES += \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
-PRODUCT_PACKAGES += \
-    android.hardware.gnss@1.0-service \
-    android.hardware.gnss@1.0-impl
-DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.gnss.xml
+PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
