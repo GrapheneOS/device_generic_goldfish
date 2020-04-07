@@ -19,6 +19,7 @@ mkdir android-kernel-mainline
 cd android-kernel-mainline
 repo init -u https://android.googlesource.com/kernel/manifest -b common-android-mainline
 repo sync
+repo start android-mainline common && repo download -c common 1145352
 BUILD_CONFIG=common/build.config.fvp build/build.sh
 ```
 
