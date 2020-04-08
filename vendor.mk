@@ -106,6 +106,13 @@ PRODUCT_PACKAGES += \
     android.hardware.health.storage@1.0-service \
 
 PRODUCT_PACKAGES += \
+    android.hardware.neuralnetworks@1.3-service-sample-all \
+    android.hardware.neuralnetworks@1.3-service-sample-float-fast \
+    android.hardware.neuralnetworks@1.3-service-sample-float-slow \
+    android.hardware.neuralnetworks@1.3-service-sample-minimal \
+    android.hardware.neuralnetworks@1.3-service-sample-quant
+
+PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.1-service
 
 PRODUCT_PACKAGES += \
