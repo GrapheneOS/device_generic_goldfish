@@ -65,13 +65,11 @@ PRODUCT_PACKAGES += \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
     hwcomposer.ranchu \
     toybox_vendor \
-    android.hardware.audio@2.0-service \
     android.hardware.wifi@1.0-service \
     android.hardware.biometrics.fingerprint@2.1-service \
     sh_vendor \
     ip_vendor \
     iw_vendor \
-    audio.r_submix.default \
     local_time.default \
     SdkSetup \
     libstagefrighthw \
@@ -91,6 +89,8 @@ PRODUCT_PACKAGES += \
 endif
 
 PRODUCT_PACKAGES += \
+    audio.r_submix.default \
+    android.hardware.audio@2.0-service \
     android.hardware.audio@5.0-impl:32 \
     android.hardware.audio.effect@5.0-impl:32 \
     android.hardware.soundtrigger@2.0-impl
