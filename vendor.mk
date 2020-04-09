@@ -71,9 +71,9 @@ endif
 PRODUCT_PACKAGES += \
     audio.r_submix.default \
     android.hardware.audio.service \
-    android.hardware.audio@5.0-impl:32 \
-    android.hardware.audio.effect@5.0-impl:32 \
-    android.hardware.soundtrigger@2.0-impl
+    android.hardware.audio@6.0-impl:32 \
+    android.hardware.audio.effect@6.0-impl:32 \
+    android.hardware.soundtrigger@2.2-impl
 
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.1-service.sim \
@@ -84,6 +84,13 @@ PRODUCT_PACKAGES += \
     android.hardware.health@2.1-service \
     android.hardware.health@2.1-impl \
     android.hardware.health.storage@1.0-service \
+
+PRODUCT_PACKAGES += \
+    android.hardware.neuralnetworks@1.3-service-sample-all \
+    android.hardware.neuralnetworks@1.3-service-sample-float-fast \
+    android.hardware.neuralnetworks@1.3-service-sample-float-slow \
+    android.hardware.neuralnetworks@1.3-service-sample-minimal \
+    android.hardware.neuralnetworks@1.3-service-sample-quant
 
 PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.1-service
