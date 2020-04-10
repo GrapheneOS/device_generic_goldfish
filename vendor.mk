@@ -202,6 +202,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     androidx.window.extensions
 
+PRODUCT_PACKAGES += \
+    android.hardware.biometrics.face@1.0-service.example
+
 # Goldfish does not support ION needed for Codec 2.0
 # still disable it until b/143473631 is fixed
 # now this is setup on init.ranchu.rc
