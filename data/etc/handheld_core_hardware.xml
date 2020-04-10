@@ -24,8 +24,6 @@
 
      This file is similar to frameworks/native/data/etc/handheld_core_hardware.xml.
      The differences are:
-         'Normal' features that are not available in goldfish:
-             android.hardware.bluetooth
          Extra features available in goldfish:
              android.hardware.location.gps
              android.hardware.sensor.barometer
@@ -39,6 +37,7 @@
 -->
 <permissions>
     <feature name="android.hardware.audio.output" />
+    <feature name="android.hardware.bluetooth" />
     <feature name="android.hardware.camera" />
     <feature name="android.hardware.location" />
     <feature name="android.hardware.location.gps" />

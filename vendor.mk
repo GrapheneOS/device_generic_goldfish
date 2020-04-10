@@ -65,13 +65,11 @@ PRODUCT_PACKAGES += \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
     hwcomposer.ranchu \
     toybox_vendor \
-    android.hardware.audio@2.0-service \
     android.hardware.wifi@1.0-service \
     android.hardware.biometrics.fingerprint@2.1-service \
     sh_vendor \
     ip_vendor \
     iw_vendor \
-    audio.r_submix.default \
     local_time.default \
     SdkSetup \
     libstagefrighthw \
@@ -91,14 +89,28 @@ PRODUCT_PACKAGES += \
 endif
 
 PRODUCT_PACKAGES += \
-    android.hardware.audio@5.0-impl:32 \
-    android.hardware.audio.effect@5.0-impl:32 \
-    android.hardware.soundtrigger@2.0-impl
+    audio.r_submix.default \
+    android.hardware.audio.service \
+    android.hardware.audio@6.0-impl:32 \
+    android.hardware.audio.effect@6.0-impl:32 \
+    android.hardware.soundtrigger@2.2-impl
+
+PRODUCT_PACKAGES += \
+    android.hardware.bluetooth@1.1-service.sim \
+    android.hardware.bluetooth.audio@2.0-impl
+PRODUCT_PROPERTY_OVERRIDES += bt.rootcanal_test_console=off
 
 PRODUCT_PACKAGES += \
     android.hardware.health@2.1-service \
     android.hardware.health@2.1-impl \
     android.hardware.health.storage@1.0-service \
+
+PRODUCT_PACKAGES += \
+    android.hardware.neuralnetworks@1.3-service-sample-all \
+    android.hardware.neuralnetworks@1.3-service-sample-float-fast \
+    android.hardware.neuralnetworks@1.3-service-sample-float-slow \
+    android.hardware.neuralnetworks@1.3-service-sample-minimal \
+    android.hardware.neuralnetworks@1.3-service-sample-quant
 
 PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.1-service
@@ -249,6 +261,9 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/wifi/simulated_hostapd.conf:$(TARGET_COPY_OUT_VENDOR)/etc/simulated_hostapd.conf \
     device/generic/goldfish/wifi/wpa_supplicant.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant.conf \
     device/generic/goldfish/wifi/WifiConfigStore.xml:data/misc/wifi/WifiConfigStore.xml \
+    frameworks/native/data/etc/android.hardware.bluetooth_le.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.bluetooth_le.xml \
+    frameworks/native/data/etc/android.hardware.bluetooth.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.bluetooth.xml \
+    system/bt/vendor_libs/test_vendor_lib/data/controller_properties.json:vendor/etc/bluetooth/controller_properties.json \
     frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml \
     frameworks/native/data/etc/android.hardware.wifi.direct.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.direct.xml \
     device/generic/goldfish/data/etc/handheld_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/handheld_core_hardware.xml \
