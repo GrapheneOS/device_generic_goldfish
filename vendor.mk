@@ -33,8 +33,6 @@ PRODUCT_PACKAGES += \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
     libgoldfish-ril \
-    libgoldfish-rild \
-    libril-goldfish-fork \
     qemu-props \
     fingerprint.goldfish \
     audio.primary.goldfish \
