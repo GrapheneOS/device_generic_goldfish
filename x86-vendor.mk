@@ -20,8 +20,8 @@ PRODUCT_SDK_ADDON_COPY_FILES += \
     device/generic/goldfish/data/etc/encryptionkey.img:images/x86/encryptionkey.img \
     prebuilts/qemu-kernel/x86_64/$(PRODUCT_KERNEL_VERSION)/kernel-qemu2:images/x86/kernel-ranchu-64
 
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/etc/x86/emulatorip:$(TARGET_COPY_OUT_VENDOR)/bin/ip
+PRODUCT_PACKAGES += \
+    emulatorip
 
 
 PRODUCT_SHIPPING_API_LEVEL := 28
