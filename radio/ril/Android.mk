@@ -14,7 +14,7 @@ LOCAL_SRC_FILES:= \
     at_tok.c
 
 LOCAL_SHARED_LIBRARIES := \
-    liblog libcutils libutils libril librilutils
+    liblog libcutils libutils libril-goldfish-fork librilutils
 
 LOCAL_STATIC_LIBRARIES := libbase
 
