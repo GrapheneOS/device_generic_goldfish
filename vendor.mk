@@ -182,6 +182,9 @@ PRODUCT_PACKAGES += \
 	wifi_forwarder \
 	wpa_supplicant \
 
+PRODUCT_PACKAGES += \
+    android.hardware.usb@1.0-service
+
 # Thermal
 PRODUCT_PACKAGES += \
 	android.hardware.thermal@2.0-service.mock
