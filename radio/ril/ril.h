@@ -262,7 +262,8 @@ typedef enum {
     RADIO_TECH_GSM = 16, // Only supports voice
     RADIO_TECH_TD_SCDMA = 17,
     RADIO_TECH_IWLAN = 18,
-    RADIO_TECH_LTE_CA = 19
+    RADIO_TECH_LTE_CA = 19,
+    RADIO_TECH_NR = 20
 } RIL_RadioTechnology;
 
 typedef enum {
@@ -7022,6 +7023,9 @@ typedef struct {
  * "response" is a const RIL_KeepaliveStatus *
  */
 #define RIL_UNSOL_KEEPALIVE_STATUS 1050
+
+
+#define RIL_UNSOL_PHYSICAL_CHANNEL_CONFIGS 1051
 
 /***********************************************************************/
 

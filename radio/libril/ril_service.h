@@ -576,6 +576,9 @@ int onUssdInd(int slotId, int indicationType,
 int nitzTimeReceivedInd(int slotId, int indicationType,
                         int token, RIL_Errno e, void *response, size_t responselen);
 
+int reportPhysicalChannelConfigs(int slotId, int indicationType,
+                        int token, RIL_Errno e, void *response, size_t responselen);
+
 int currentSignalStrengthInd(int slotId,
                              int indicationType, int token, RIL_Errno e,
                              void *response, size_t responselen);
