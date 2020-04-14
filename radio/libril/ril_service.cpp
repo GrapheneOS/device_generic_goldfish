@@ -16,10 +16,10 @@
 
 #define LOG_TAG "RILC"
 
-#include <android/hardware/radio/1.1/IRadio.h>
-#include <android/hardware/radio/1.1/IRadioResponse.h>
-#include <android/hardware/radio/1.1/IRadioIndication.h>
-#include <android/hardware/radio/1.1/types.h>
+#include <android/hardware/radio/1.4/IRadio.h>
+#include <android/hardware/radio/1.4/IRadioResponse.h>
+#include <android/hardware/radio/1.4/IRadioIndication.h>
+#include <android/hardware/radio/1.4/types.h>
 
 #include <android/hardware/radio/deprecated/1.0/IOemHook.h>
 
@@ -38,6 +38,10 @@
 using namespace android::hardware::radio;
 using namespace android::hardware::radio::V1_0;
 using namespace android::hardware::radio::deprecated::V1_0;
+using DataRegStateResultV1_4 = android::hardware::radio::V1_4::DataRegStateResult;
+using PhysicalChannelConfigV1_4 =
+    android::hardware::radio::V1_4::PhysicalChannelConfig;
+using RadioTechnologyV1_4 = android::hardware::radio::V1_4::RadioTechnology;
 using ::android::hardware::configureRpcThreadpool;
 using ::android::hardware::joinRpcThreadpool;
 using ::android::hardware::Return;
@@ -127,6 +131,9 @@ struct RadioImpl : public V1_1::IRadio {
     sp<IRadioIndication> mRadioIndication;
     sp<V1_1::IRadioResponse> mRadioResponseV1_1;
     sp<V1_1::IRadioIndication> mRadioIndicationV1_1;
+    sp<V1_4::IRadioResponse> mRadioResponseV1_4;
+    sp<V1_4::IRadioIndication> mRadioIndicationV1_4;
+
 
     Return<void> setResponseFunctions(
             const ::android::sp<IRadioResponse>& radioResponse,
@@ -818,6 +825,13 @@ Return<void> RadioImpl::setResponseFunctions(
     if (mRadioResponseV1_1 == nullptr || mRadioIndicationV1_1 == nullptr) {
         mRadioResponseV1_1 = nullptr;
         mRadioIndicationV1_1 = nullptr;
+    }
+
+    mRadioResponseV1_4 = V1_4::IRadioResponse::castFrom(mRadioResponse).withDefault(nullptr);
+    mRadioIndicationV1_4 = V1_4::IRadioIndication::castFrom(mRadioIndication).withDefault(nullptr);
+    if (mRadioResponseV1_4 == nullptr || mRadioIndicationV1_4 == nullptr) {
+        mRadioResponseV1_4 = nullptr;
+        mRadioIndicationV1_4 = nullptr;
     }
 
     mCounterRadio[mSlotId]++;
@@ -3940,8 +3954,38 @@ int radio::getDataRegistrationStateResponse(int slotId,
                 dataRegResponse.rat =  ATOI_NULL_HANDLED_DEF(resp[3], 0);
                 dataRegResponse.reasonDataDenied =  ATOI_NULL_HANDLED(resp[4]);
                 dataRegResponse.maxDataCalls =  ATOI_NULL_HANDLED_DEF(resp[5], 1);
-                fillCellIdentityFromDataRegStateResponseString(dataRegResponse.cellIdentity,
-                        numStrings, resp);
+                fillCellIdentityFromDataRegStateResponseString(dataRegResponse.cellIdentity, numStrings, resp);
+
+                if (radioService[slotId]->mRadioResponseV1_4 != NULL) {
+                  DataRegStateResultV1_4 dataRegResponse14 = {};
+                  dataRegResponse14.base.regState =
+                      (RegState)ATOI_NULL_HANDLED_DEF(resp[0], 4);
+                  dataRegResponse14.base.rat =
+                      ATOI_NULL_HANDLED_DEF(resp[3], 0);
+                  dataRegResponse14.base.reasonDataDenied =
+                      ATOI_NULL_HANDLED(resp[4]);
+                  dataRegResponse14.base.maxDataCalls =
+                      ATOI_NULL_HANDLED_DEF(resp[5], 1);
+                  dataRegResponse14.base.cellIdentity.cellInfoType = dataRegResponse.cellIdentity.cellInfoType;
+                  //const bool enableNR = (dataRegResponse14.base.rat == (int)android::hardware::radio::V1_4::RadioTechnology::LTE);
+                  const bool enableNR = (dataRegResponse14.base.rat == (int)android::hardware::radio::V1_4::RadioTechnology::NR);
+
+                  dataRegResponse14.nrIndicators.isEndcAvailable = enableNR ? 1 : 0;
+                  dataRegResponse14.nrIndicators.isDcNrRestricted = enableNR ? 0 : 1;
+                  dataRegResponse14.nrIndicators.isNrAvailable = enableNR ? 1 : 0;
+                  if (enableNR) {
+                    RLOGD("getDataRegistrationStateResponse enabled 5g");
+                  } else {
+                    RLOGD("getDataRegistrationStateResponse disable 5g");
+                  }
+                  Return<void> retStatus =
+                      radioService[slotId]
+                          ->mRadioResponseV1_4
+                          ->getDataRegistrationStateResponse_1_4(
+                              responseInfo, dataRegResponse14);
+                  radioService[slotId]->checkReturnStatus(retStatus);
+                  return 0;
+                }
             }
         } else {
             RIL_DataRegistrationStateResponse *dataRegState =
@@ -7083,6 +7127,34 @@ int radio::nitzTimeReceivedInd(int slotId,
 
     return 0;
 }
+
+int radio::reportPhysicalChannelConfigs(int slotId,
+                               int indicationType, int token, RIL_Errno e, void *response,
+                               size_t responseLen) {
+
+    if (radioService[slotId] != NULL && radioService[slotId]->mRadioIndicationV1_4 != NULL) {
+        int *configs = (int*)response;
+          ::android::hardware::hidl_vec<PhysicalChannelConfigV1_4> physChanConfig;
+          physChanConfig.resize(1);
+          physChanConfig[0].base.status = (::android::hardware::radio::V1_2::CellConnectionStatus)configs[0];
+          physChanConfig[0].base.cellBandwidthDownlink = configs[1];
+          physChanConfig[0].rat = (::android::hardware::radio::V1_4::RadioTechnology)configs[2];
+          physChanConfig[0].rfInfo.range((::android::hardware::radio::V1_4::FrequencyRange)configs[3]);
+          physChanConfig[0].contextIds.resize(1);
+          physChanConfig[0].contextIds[0] = configs[4];
+          RLOGD("reportPhysicalChannelConfigs: %d %d %d %d %d", configs[0],
+                configs[1], configs[2], configs[3], configs[4]);
+          radioService[slotId]
+              ->mRadioIndicationV1_4->currentPhysicalChannelConfigs_1_4(
+                  RadioIndicationType::UNSOLICITED, physChanConfig);
+    } else {
+        RLOGE("reportPhysicalChannelConfigs: radioService[%d]->mRadioIndicationV1_4 == NULL", slotId);
+        return -1;
+    }
+
+    return 0;
+}
+
 
 void convertRilSignalStrengthToHal(void *response, size_t responseLen,
         SignalStrength& signalStrength) {
