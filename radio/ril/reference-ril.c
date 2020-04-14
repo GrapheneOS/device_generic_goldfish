@@ -470,6 +470,10 @@ static void onRadioPowerOn()
     at_send_command("AT%CTZV=1", NULL);
 #endif
 
+    /*  Golfish specific -- enable physical channel config unsol notifs
+        for 5g support
+     */
+    at_send_command("AT%CGFPCCFG=1", NULL);
     pollSIMState(NULL);
 }
 
@@ -3807,7 +3811,32 @@ static void onUnsolicited (const char *s, const char *sms_pdu)
         return;
     }
 
-    if (strStartsWith(s, "%CTZV:")) {
+#define  CGFPCCFG "%CGFPCCFG:"
+    if (strStartsWith(s, CGFPCCFG)) {
+        /* goldfish specific TODO: send phys channel cfg unsol
+        */
+        char *response;
+        line = p = strdup(s);
+        RLOGD("got CGFPCCFG line %s and %s\n", s, p);
+        err = at_tok_start(&line);
+        if(err) {
+            RLOGE("invalid CGFPCCFG line %s and %s\n", s, p);
+        }
+#define kSize 5
+        int configs[kSize];
+        for (int i=0; i < kSize && !err; ++i) {
+            err = at_tok_nextint(&line, &(configs[i]));
+            RLOGD("got i %d, val = %d", i, configs[i]);
+        }
+        if(err) {
+            RLOGE("invalid CGFPCCFG line %s and %s\n", s, p);
+        } else {
+            RIL_onUnsolicitedResponse (
+                RIL_UNSOL_PHYSICAL_CHANNEL_CONFIGS,
+                configs, kSize);
+        }
+        free(p);
+    } else if (strStartsWith(s, "%CTZV:")) {
         /* TI specific -- NITZ time */
         char *response;
 
