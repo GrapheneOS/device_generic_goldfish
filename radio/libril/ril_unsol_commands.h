@@ -65,3 +65,4 @@
     {RIL_UNSOL_CARRIER_INFO_IMSI_ENCRYPTION, radio::carrierInfoForImsiEncryption, WAKE_PARTIAL},
     {RIL_UNSOL_NETWORK_SCAN_RESULT, radio::networkScanResultInd, WAKE_PARTIAL},
     {RIL_UNSOL_KEEPALIVE_STATUS, radio::keepaliveStatusInd, WAKE_PARTIAL},
+    {RIL_UNSOL_PHYSICAL_CHANNEL_CONFIGS, radio::reportPhysicalChannelConfigs, WAKE_PARTIAL},
