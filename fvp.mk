@@ -63,6 +63,11 @@ PRODUCT_PACKAGES += \
     libGLESv1_CM_swiftshader \
     libGLESv2_swiftshader \
 
+PRODUCT_PACKAGES += \
+    android.hardware.bluetooth@1.1-service.sim \
+    android.hardware.bluetooth.audio@2.0-impl
+PRODUCT_PROPERTY_OVERRIDES += bt.rootcanal_test_console=off
+
 PRODUCT_PACKAGE_OVERLAYS := device/generic/goldfish/overlay
 
 PRODUCT_NAME := fvp
@@ -73,6 +78,9 @@ PRODUCT_MODEL := AOSP on FVP
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/handheld_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/handheld_core_hardware.xml \
     frameworks/native/data/etc/android.hardware.ethernet.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.ethernet.xml \
+    frameworks/native/data/etc/android.hardware.bluetooth_le.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.bluetooth_le.xml \
+    frameworks/native/data/etc/android.hardware.bluetooth.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.bluetooth.xml \
+    system/bt/vendor_libs/test_vendor_lib/data/controller_properties.json:vendor/etc/bluetooth/controller_properties.json \
     device/generic/goldfish/fvpbase/fstab.fvpbase:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.fvpbase \
     device/generic/goldfish/fvpbase/fstab.fvpbase.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.fvpbase \
     device/generic/goldfish/fvpbase/init.fvpbase.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.fvpbase.rc \
