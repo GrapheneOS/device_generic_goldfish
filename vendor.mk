@@ -34,7 +34,6 @@ PRODUCT_PACKAGES += \
     libgoldfish-rild \
     libril-goldfish-fork \
     qemu-props \
-    fingerprint.goldfish \
     audio.primary.goldfish \
     audio.primary.goldfish_legacy \
     stagefright \
