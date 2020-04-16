@@ -31,7 +31,10 @@
 #include <endian.h>
 #include <inttypes.h>
 #include <malloc.h>
+#include <pthread.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <log/log.h>
 #include <hardware/hardware.h>
 #include <hardware/fingerprint.h>
