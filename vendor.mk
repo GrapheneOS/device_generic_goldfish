@@ -54,7 +54,6 @@ PRODUCT_PACKAGES += \
     libOpenglSystemCommon \
     libgoldfish-ril \
     qemu-props \
-    fingerprint.goldfish \
     audio.primary.goldfish \
     audio.primary.goldfish_legacy \
     stagefright \
