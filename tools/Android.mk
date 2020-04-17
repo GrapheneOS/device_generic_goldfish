@@ -20,7 +20,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 EMU_EXTRA_FILES := \
         $(PRODUCT_OUT)/system-qemu-config.txt \
-        $(PRODUCT_OUT)/ramdisk.img \
+        $(PRODUCT_OUT)/ramdisk-qemu.img \
         $(PRODUCT_OUT)/misc_info.txt \
 
 ifeq ($(filter sdk_gphone_%, $(TARGET_PRODUCT)),)
