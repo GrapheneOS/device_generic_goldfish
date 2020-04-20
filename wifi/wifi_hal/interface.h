@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <wifi_hal.h>
-
 #include <stdint.h>
 #include <string>
+#include <hardware_legacy/wifi_hal.h>
 
 class Netlink;
 class NetlinkMessage;
