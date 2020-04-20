@@ -135,8 +135,6 @@ PRODUCT_PACKAGES += \
     camera.device@1.0-impl \
     android.hardware.camera.provider@2.4-service \
     android.hardware.camera.provider@2.4-impl \
-    camera.goldfish \
-    camera.goldfish.jpeg \
     camera.ranchu \
     camera.ranchu.jpeg
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
