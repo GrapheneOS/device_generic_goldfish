@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-#include <wifi_hal.h>
-
+#include <memory>
 #include "halstate.h"
 #include "info.h"
 #include "interface.h"
-
-#include <memory>
 
 template<typename>
 struct NotSupportedFunction;
