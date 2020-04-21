@@ -300,8 +300,6 @@ void DhcpClient::waitAndReceive(const sigset_t& pollSignalMask) {
 }
 
 bool DhcpClient::configureDhcp(const Message& msg) {
-    uint8_t optLength = 0;
-
     size_t optsSize = msg.optionsSize();
     if (optsSize < 4) {
         // Message is too small
