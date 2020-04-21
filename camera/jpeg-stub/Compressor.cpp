@@ -85,7 +85,7 @@ bool Compressor::compressData(const unsigned char* data, ExifData* exifData) {
     const uint8_t* cr[8];
     const uint8_t** planes[3] = { y, cb, cr };
 
-    int i, offset;
+    int i;
     int width = mCompressInfo.image_width;
     int height = mCompressInfo.image_height;
     const uint8_t* yPlanar = data;
