@@ -38,7 +38,7 @@
 #include <log/log.h>
 #include <hardware/hardware.h>
 #include <hardware/fingerprint.h>
-#include "qemud.h"
+#include <qemud.h>
 
 #include <poll.h>
 
