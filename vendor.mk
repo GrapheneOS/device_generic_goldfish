@@ -37,7 +37,6 @@ PRODUCT_PACKAGES += \
     libril-goldfish-fork \
     qemu-props \
     audio.primary.goldfish \
-    audio.primary.goldfish_legacy \
     stagefright \
     fingerprint.ranchu \
     android.hardware.graphics.composer@2.3-impl \
