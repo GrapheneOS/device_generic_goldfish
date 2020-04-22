@@ -1,5 +1,4 @@
-#
-# Copyright 2017 The Android Open-Source Project
+# Copyright (C) 2009 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-LOCAL_PATH:= $(call my-dir)
+
+LOCAL_PATH := $(call my-dir)
+
+# HAL module implemenation stored in
+# hw/<SENSORS_HARDWARE_MODULE_ID>.<ro.hardware>.so
 
 include $(CLEAR_VARS)
-include $(call all-makefiles-under,$(LOCAL_PATH))
+LOCAL_VENDOR_MODULE := true
+LOCAL_MODULE_RELATIVE_PATH := hw
+LOCAL_SHARED_LIBRARIES := liblog libcutils
+LOCAL_HEADER_LIBRARIES := libhardware_headers
+LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
+LOCAL_SRC_FILES := sensors_qemu.c
+LOCAL_MODULE := sensors.ranchu
+
+include $(BUILD_SHARED_LIBRARY)
