@@ -24,7 +24,6 @@ cc_library_shared {
         "multihal_sensors_epoll.cpp",
         "multihal_sensors_qemu.cpp",
         "sensor_list.cpp",
-        "util.cpp",
         "entry.cpp"
     ],
     shared_libs: [
@@ -35,6 +34,7 @@ cc_library_shared {
         "liblog",
         "libutils",
     ],
+    static_libs: ["libqemud.ranchu"],
     header_libs: ["android.hardware.sensors@2.0-multihal.header"],
     cflags: [
         "-DLOG_TAG=\"android.hardware.sensors@2.0-impl.ranchu\"",
