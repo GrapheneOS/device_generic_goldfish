@@ -24,7 +24,7 @@
 
 #include "EmulatedCamera.h"
 #include "EmulatedQemuCameraDevice.h"
-#include "cbmanager.h"
+#include <ui/GraphicBufferMapper.h>
 
 namespace android {
 
@@ -34,7 +34,7 @@ class EmulatedQemuCamera : public EmulatedCamera {
 public:
     /* Constructs EmulatedQemuCamera instance. */
     EmulatedQemuCamera(int cameraId, struct hw_module_t* module,
-                       CbManager* cbManager);
+                       GraphicBufferMapper* gbm);
 
     /* Destructs EmulatedQemuCamera instance. */
     ~EmulatedQemuCamera();
