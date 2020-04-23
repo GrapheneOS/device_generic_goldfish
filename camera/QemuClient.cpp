@@ -34,7 +34,8 @@
 #endif  // LOG_QUERIES
 
 #define QEMU_PIPE_DEBUG  LOGQ
-#include "qemud.h"
+#include <qemud.h>
+#include <qemu_pipe.h>
 
 namespace android {
 
