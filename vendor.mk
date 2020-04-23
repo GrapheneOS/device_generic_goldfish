@@ -107,8 +107,10 @@ endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
 PRODUCT_PACKAGES += \
-    android.hardware.sensors@2.0-service.multihal \
-    android.hardware.sensors@2.0-impl.ranchu
+    android.hardware.sensors@1.0-impl \
+    android.hardware.sensors@1.0-service \
+    sensors.ranchu
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.sensors.xml
 endif
 
 PRODUCT_PACKAGES += \
