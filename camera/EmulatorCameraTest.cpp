@@ -5,8 +5,11 @@
 #include "fake-pipeline2/Base.h"
 #include "fake-pipeline2/Scene.h"
 #include "QemuClient.h"
-#include "cbmanager.h"
 #include "gralloc_cb.h"
+
+#include <ui/GraphicBufferAllocator.h>
+#include <ui/GraphicBufferMapper.h>
+#include <ui/Rect.h>
 
 #include <linux/videodev2.h>
 #include <utils/Timers.h>
@@ -149,28 +152,30 @@ void captureYU12(uint8_t *img, uint32_t gain, uint32_t width, uint32_t height, S
 
 // Test the capture speed of qemu camera, e.g., webcam and virtual scene
 int main(int argc, char* argv[]) {
+    using ::android::GraphicBufferAllocator;
+    using ::android::GraphicBufferMapper;
+
+
     uint32_t pixFmt;
-    CbManager::PixelFormat cbFmt;
+    int uiFmt;
     bool v1 = false;
     bool fake = false;
     std::vector<nsecs_t> report;
     uint32_t sceneWidth;
     uint32_t sceneHeight;
 
-    CbManager cbmanager;
-
     if (!strncmp(argv[1], "RGB", 3)) {
         pixFmt = V4L2_PIX_FMT_RGB32;
-        cbFmt = CbManager::PixelFormat::RGBA_8888;
+        uiFmt = HAL_PIXEL_FORMAT_RGBA_8888;
     } else if (!strncmp(argv[1], "NV21", 3)) {
         pixFmt = V4L2_PIX_FMT_NV21;
-        cbFmt = CbManager::PixelFormat::YCBCR_420_888;
+        uiFmt = HAL_PIXEL_FORMAT_YCbCr_420_888;
     } else if (!strncmp(argv[1], "YV12", 3)) {
         pixFmt = V4L2_PIX_FMT_YVU420;
-        cbFmt = CbManager::PixelFormat::YCBCR_420_888;
+        uiFmt = HAL_PIXEL_FORMAT_YCbCr_420_888;
     } else if (!strncmp(argv[1], "YU12", 3)) {
         pixFmt = V4L2_PIX_FMT_YUV420;
-        cbFmt = CbManager::PixelFormat::YCBCR_420_888;
+        uiFmt = HAL_PIXEL_FORMAT_YCbCr_420_888;
     } else {
         printf("format error, use RGB, NV21, YV12 or YU12");
         return -1;
@@ -236,27 +241,41 @@ int main(int argc, char* argv[]) {
             return -1;
         }
         if (v1) {
-            const CbManager::BufferUsageBits usage =
-                CbManager::BufferUsage::CAMERA_OUTPUT |
-                CbManager::BufferUsage::CAMERA_INPUT |
-                CbManager::BufferUsage::GPU_TEXTURE;
+            const uint64_t usage =
+                GRALLOC_USAGE_HW_CAMERA_READ |
+                GRALLOC_USAGE_HW_CAMERA_WRITE |
+                GRALLOC_USAGE_HW_TEXTURE;
+            uint32_t stride;
 
-            native_handle_t* handle;
-            CbManager::YCbCrLayout ycbcr;
-            handle = cbmanager.allocateBuffer(width, height, cbFmt, usage);
-            void* addr;
-            if (cbFmt == CbManager::PixelFormat::RGBA_8888) {
-                cbmanager.lockBuffer(*handle, (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
-                               0, 0,
-                               width, height, &addr);
-            } else {
-                cbmanager.lockYCbCrBuffer(*handle,
-                                          (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
-                                          0, 0,
-                                          width, height,
-                                          &ycbcr);
+            buffer_handle_t handle;
+            if (GraphicBufferAllocator::get().allocate(
+                    width, height, uiFmt, 1, usage,
+                    &handle, &stride,
+                    0, "EmulatorCameraTest") != ::android::OK) {
+                printf("GraphicBufferAllocator::allocate failed\n");
+                return -1;
             }
-            uint64_t offset = ((cb_handle_t*)handle)->getMmapedOffset();
+
+            void* addr;
+            if (uiFmt == HAL_PIXEL_FORMAT_RGBA_8888) {
+                GraphicBufferMapper::get().lock(
+                    handle,
+                    GRALLOC_USAGE_HW_CAMERA_WRITE,
+                    Rect(0, 0, width, height),
+                    &addr);
+            } else {
+                android_ycbcr ycbcr;
+                GraphicBufferMapper::get().lockYCbCr(
+                    handle,
+                    GRALLOC_USAGE_HW_CAMERA_WRITE,
+                    Rect(0, 0, width, height),
+                    &ycbcr);
+                addr = ycbcr.y;
+            }
+
+            const cb_handle_t* cbHandle = cb_handle_t::from(handle);
+
+            uint64_t offset = cbHandle->getMmapedOffset();
             printf("offset is 0x%llx\n", offset);
             float whiteBalance[] = {1.0f, 1.0f, 1.0f};
             float exposureCompensation = 1.0f;
@@ -268,7 +287,8 @@ int main(int argc, char* argv[]) {
                 nsecs_t end = systemTime();
                 report.push_back(end - start);
             }
-            cbmanager.unlockBuffer(handle);
+            GraphicBufferMapper::get().unlock(handle);
+            GraphicBufferAllocator::get().free(handle);
         } else {
             size_t bufferSize;
             if (pixFmt == V4L2_PIX_FMT_RGB32) {

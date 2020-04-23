@@ -28,8 +28,9 @@
 
 #include "fake-pipeline2/Base.h"
 #include "QemuClient.h"
-#include "cbmanager.h"
 
+#include <ui/GraphicBufferAllocator.h>
+#include <ui/GraphicBufferMapper.h>
 #include <utils/Mutex.h>
 #include <utils/Thread.h>
 #include <utils/Timers.h>
@@ -48,7 +49,7 @@ class QemuSensor: private Thread, public virtual RefBase {
     *     height: Height of pixel array.
     */
     QemuSensor(const char *deviceName, uint32_t width, uint32_t height,
-               CbManager* cbManager);
+               GraphicBufferMapper* gbm);
     ~QemuSensor();
 
     /*
@@ -148,7 +149,8 @@ class QemuSensor: private Thread, public virtual RefBase {
 
     CameraQemuClient mCameraQemuClient;
     const char *mDeviceName;
-    CbManager* mCbManager;
+    GraphicBufferAllocator* mGBA;
+    GraphicBufferMapper*    mGBM;
 
     // Always lock before accessing control parameters.
     Mutex mControlMutex;
