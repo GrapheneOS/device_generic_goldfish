@@ -47,7 +47,9 @@ EMU_EXTRA_TARGET := $(PRODUCT_OUT)/$(name).zip
 
 EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-EMULATOR_KERNEL_VERSION := 3.18
+# Below should be the same as PRODUCT_KERNEL_VERSION set in
+# device/generic/goldfish/(arm|x86)*-vendor.mk
+EMULATOR_KERNEL_VERSION := 5.4
 
 # Use 64-bit kernel even for 32-bit Android
 ifeq ($(TARGET_ARCH), x86)
@@ -57,17 +59,6 @@ endif
 ifeq ($(TARGET_ARCH), arm)
 EMULATOR_KERNEL_ARCH := arm64
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu-64
-endif
-
-# Below should be the same as PRODUCT_KERNEL_VERSION set in
-# device/generic/goldfish/arm*-vendor.mk
-ifneq ($(filter $(TARGET_ARCH), arm arm64),)
-EMULATOR_KERNEL_VERSION := 4.4
-endif
-# Below should be the same as PRODUCT_KERNEL_VERSION set in
-# device/generic/goldfish/x86*-vendor.mk
-ifneq ($(filter $(TARGET_ARCH), x86 x86_64),)
-EMULATOR_KERNEL_VERSION := 4.14
 endif
 
 EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/$(EMULATOR_KERNEL_ARCH)/$(EMULATOR_KERNEL_VERSION)/kernel-qemu2
