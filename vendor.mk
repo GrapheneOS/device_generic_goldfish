@@ -55,7 +55,6 @@ PRODUCT_PACKAGES += \
     libgoldfish-ril \
     qemu-props \
     audio.primary.goldfish \
-    audio.primary.goldfish_legacy \
     stagefright \
     fingerprint.ranchu \
     android.hardware.graphics.composer@2.1-impl \
