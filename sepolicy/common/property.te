@@ -5,3 +5,4 @@ type net_eth0_prop, property_type;
 type net_radio0_prop, property_type;
 type net_share_prop, property_type;
 type vendor_net, property_type;
+type vendor_build_prop, property_type;
