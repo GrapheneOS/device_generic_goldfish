@@ -119,6 +119,11 @@ service dhcpclient_rtr /vendor/bin/dhcpclient -i radio0 --no-gateway
     group root
     disabled
 
+service dhcpclient_wifi /vendor/bin/dhcpclient -i wlan0 --no-gateway
+    user root
+    group root
+    disabled
+
 on property:vendor.network.bridged=1
     start dhcpclient_rtr
 
