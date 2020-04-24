@@ -17,7 +17,7 @@
 #ifndef HW_EMULATOR_CAMERA_PREVIEW_WINDOW_H
 #define HW_EMULATOR_CAMERA_PREVIEW_WINDOW_H
 
-#include <ui/GraphicBufferMapper.h>
+#include "cbmanager.h"
 
 /*
  * Contains declaration of a class PreviewWindow that encapsulates functionality
@@ -37,7 +37,7 @@ class EmulatedCameraDevice;
 class PreviewWindow {
 public:
     /* Constructs PreviewWindow instance. */
-    PreviewWindow(GraphicBufferMapper* gbm);
+    PreviewWindow(CbManager* cbManager);
 
     /* Destructs PreviewWindow instance. */
     ~PreviewWindow();
@@ -135,7 +135,8 @@ protected:
     /* Preview window instance. */
     preview_stream_ops*             mPreviewWindow;
 
-    GraphicBufferMapper*            mGBM;
+    /* API to manipulate color buffers */
+    CbManager*                      mCbManager;
 
     /*
      * Cached preview window frame dimensions.

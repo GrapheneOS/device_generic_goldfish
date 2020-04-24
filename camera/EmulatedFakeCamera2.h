@@ -27,7 +27,7 @@
 #include "fake-pipeline2/Base.h"
 #include "fake-pipeline2/Sensor.h"
 #include "fake-pipeline2/JpegCompressor.h"
-#include <ui/GraphicBufferMapper.h>
+#include "cbmanager.h"
 #include <utils/Condition.h>
 #include <utils/KeyedVector.h>
 #include <utils/String8.h>
@@ -41,8 +41,7 @@ namespace android {
 class EmulatedFakeCamera2 : public EmulatedCamera2 {
 public:
     /* Constructs EmulatedFakeCamera instance. */
-    EmulatedFakeCamera2(int cameraId, bool facingBack, struct hw_module_t* module,
-                        GraphicBufferMapper* gbm);
+    EmulatedFakeCamera2(int cameraId, bool facingBack, struct hw_module_t* module, CbManager* cbManager);
 
     /* Destructs EmulatedFakeCamera instance. */
     ~EmulatedFakeCamera2();
@@ -417,7 +416,7 @@ private:
 
     KeyedVector<uint32_t, Stream> mStreams;
     KeyedVector<uint32_t, ReprocessStream> mReprocessStreams;
-    GraphicBufferMapper* mGBM;
+    CbManager* mCbManager;
 
     /** Simulated hardware interfaces */
     sp<Sensor> mSensor;
