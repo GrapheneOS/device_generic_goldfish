@@ -19,10 +19,10 @@
 
 #include "EmulatedBaseCamera.h"
 #include "QemuClient.h"
+#include "cbmanager.h"
 
 #include <cutils/properties.h>
 
-#include <ui/GraphicBufferMapper.h>
 #include <utils/RefBase.h>
 #include <vector>
 
@@ -267,13 +267,14 @@ private:
     // Connection to the camera service in the emulator.
     FactoryQemuClient mQemuClient;
 
+    // API to manipulate color buffers
+    CbManager mCbManager;
+
     // Array of cameras available for the emulation.
     std::vector<std::unique_ptr<EmulatedBaseCamera>> mEmulatedCameras;
 
     // Flags whether or not constructor has succeeded.
     bool mConstructedOK;
-
-    GraphicBufferMapper *mGBM;
 
     // Camera callbacks (for status changing).
     const camera_module_callbacks_t *mCallbacks;
