@@ -24,6 +24,7 @@
  */
 
 #include "EmulatedCamera.h"
+#include "cbmanager.h"
 
 namespace android {
 
@@ -34,8 +35,7 @@ namespace android {
 class EmulatedFakeCamera : public EmulatedCamera {
 public:
     /* Constructs EmulatedFakeCamera instance. */
-    EmulatedFakeCamera(int cameraId, bool facingBack, struct hw_module_t* module,
-                       GraphicBufferMapper* gbm);
+    EmulatedFakeCamera(int cameraId, bool facingBack, struct hw_module_t* module, CbManager* cbManager);
 
     /* Destructs EmulatedFakeCamera instance. */
     ~EmulatedFakeCamera();
