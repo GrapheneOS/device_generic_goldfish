@@ -37,7 +37,7 @@ emulator_camera_shared_libraries := \
     libdl \
     libjpeg \
     libcamera_metadata \
-    libui \
+    libcbmanager \
     android.hardware.graphics.mapper@2.0 \
 
 emulator_camera_static_libraries := \
