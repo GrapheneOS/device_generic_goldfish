@@ -7,6 +7,7 @@ net_domain(dhcprelay)
 
 allow dhcprelay execns:fd use;
 
+set_prop(dhcprelay, net_wlan0_prop);
 set_prop(dhcprelay, net_eth0_prop);
 dontaudit dhcprelay kernel:system module_request;
 allow dhcprelay self:capability { net_admin net_bind_service net_raw };
