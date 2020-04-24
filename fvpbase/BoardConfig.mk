@@ -26,8 +26,6 @@ TARGET_2ND_CPU_VARIANT := generic
 
 include build/make/target/board/BoardConfigMainlineCommon.mk
 
-TARGET_NO_KERNEL := true
-
 BOARD_USES_SYSTEM_OTHER_ODEX :=
 
 BUILD_QEMU_IMAGES := true
@@ -45,6 +43,28 @@ TARGET_COPY_OUT_SYSTEM_EXT := system/system_ext
 BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
+
+BOARD_BOOTIMAGE_PARTITION_SIZE := 33554432
+
+# Normally, the bootloader is supposed to concatenate the Android initramfs
+# and the initramfs for the kernel modules and let the kernel combine
+# them. However, the bootloader that we're using with FVP (U-Boot) doesn't
+# support concatenation, so we implement it in the build system.
+$(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/boot.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img
+
+$(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/ramdisk.img $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/initramfs.img
+	cat $^ > $@
+
+BOARD_MKBOOTIMG_ARGS := --header_version 2 --ramdisk $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img
+BOARD_INCLUDE_DTB_IN_BOOTIMG := true
+BOARD_PREBUILT_DTBIMAGE_DIR := $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)
+
+BOARD_KERNEL_CMDLINE := \
+	console=ttyAMA0 \
+	earlycon=pl011,0x1c090000 \
+	androidboot.hardware=fvpbase \
+	androidboot.boot_device=bus@8000000/bus@8000000:motherboard/bus@8000000:motherboard:iofpga@3,00000000/1c130000.virtio-block \
+	loglevel=9 \
 
 BOARD_SEPOLICY_DIRS += device/generic/goldfish/fvpbase/sepolicy
 
