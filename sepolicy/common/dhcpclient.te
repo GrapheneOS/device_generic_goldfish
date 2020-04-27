@@ -7,6 +7,7 @@ net_domain(dhcpclient)
 
 allow dhcpclient execns:fd use;
 
+set_prop(dhcpclient, net_wlan0_prop);
 set_prop(dhcpclient, net_eth0_prop);
 set_prop(dhcpclient, net_radio0_prop);
 dontaudit dhcpclient kernel:system module_request;
