@@ -27,7 +27,6 @@
 #include "fake-pipeline2/Base.h"
 #include "fake-pipeline2/Sensor.h"
 #include "fake-pipeline2/JpegCompressor.h"
-#include "cbmanager.h"
 #include <CameraMetadata.h>
 #include <utils/SortedVector.h>
 #include <utils/List.h>
@@ -51,7 +50,7 @@ class EmulatedFakeCamera3 : public EmulatedCamera3,
 public:
 
     EmulatedFakeCamera3(int cameraId, bool facingBack,
-            struct hw_module_t* module, CbManager* cbManager);
+            struct hw_module_t* module, GraphicBufferMapper* gbm);
 
     virtual ~EmulatedFakeCamera3();
 
@@ -162,7 +161,7 @@ private:
 
     SortedVector<AvailableCapabilities> mCapabilities;
 
-    CbManager* mCbManager;
+    GraphicBufferMapper* mGBM;
 
     /**
      * Cache for default templates. Once one is requested, the pointer must be
