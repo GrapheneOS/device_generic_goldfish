@@ -30,7 +30,7 @@
 #include "EmulatedFakeCamera3.h"
 #include "EmulatedCameraFactory.h"
 #include <ui/Fence.h>
-#include "cbmanager.h"
+#include <ui/Rect.h>
 
 #include "fake-pipeline2/Sensor.h"
 #include "fake-pipeline2/JpegCompressor.h"
@@ -94,9 +94,9 @@ const float   EmulatedFakeCamera3::kExposureWanderMax        = 1;
  */
 
 EmulatedFakeCamera3::EmulatedFakeCamera3(int cameraId, bool facingBack,
-        struct hw_module_t* module, CbManager* cbManager) :
+        struct hw_module_t* module, GraphicBufferMapper* gbm) :
         EmulatedCamera3(cameraId, module),
-        mFacingBack(facingBack), mCbManager(cbManager) {
+        mFacingBack(facingBack), mGBM(gbm) {
     ALOGI("Constructing emulated fake camera 3: ID %d, facing %s",
             mCameraID, facingBack ? "back" : "front");
 
@@ -156,7 +156,7 @@ status_t EmulatedFakeCamera3::connectCamera(hw_device_t** device) {
     if (res != NO_ERROR) return res;
 
     mReadoutThread = new ReadoutThread(this);
-    mJpegCompressor = new JpegCompressor(mCbManager);
+    mJpegCompressor = new JpegCompressor(mGBM);
 
     res = mReadoutThread->run("EmuCam3::readoutThread");
     if (res != NO_ERROR) return res;
@@ -949,11 +949,11 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
             // Lock buffer for writing
             if (srcBuf.stream->format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
                 if (destBuf.format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-                    CbManager::YCbCrLayout ycbcr = {};
-                    res = mCbManager->lockYCbCrBuffer(
+                    android_ycbcr ycbcr = {};
+                    res = mGBM->lockYCbCr(
                         *(destBuf.buffer),
-                        (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
-                        0, 0, destBuf.width, destBuf.height,
+                        GRALLOC_USAGE_HW_CAMERA_WRITE,
+                        Rect(0, 0, destBuf.width, destBuf.height),
                         &ycbcr);
                     // This is only valid because we know that emulator's
                     // YCbCr_420_888 is really contiguous NV21 under the hood
@@ -964,10 +964,10 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
                     res = INVALID_OPERATION;
                 }
             } else {
-                res = mCbManager->lockBuffer(
+                res = mGBM->lock(
                     *(destBuf.buffer),
-                    (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
-                    0, 0, destBuf.width, destBuf.height,
+                    GRALLOC_USAGE_HW_CAMERA_WRITE,
+                    Rect(0, 0, destBuf.width, destBuf.height),
                     (void**)&(destBuf.img));
 
             }
@@ -985,7 +985,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
             // Either waiting or locking failed. Unlock locked buffers and bail
             // out.
             for (size_t j = 0; j < i; j++) {
-                mCbManager->unlockBuffer(*(request->output_buffers[i].buffer));
+                mGBM->unlock(*(request->output_buffers[i].buffer));
             }
             delete sensorBuffers;
             delete buffers;
@@ -2565,7 +2565,7 @@ bool EmulatedFakeCamera3::ReadoutThread::threadLoop() {
                         __FUNCTION__, strerror(-res), res);
             // fallthrough for cleanup
         }
-        mParent->mCbManager->unlockBuffer(*(buf->buffer));
+        mParent->mGBM->unlock(*(buf->buffer));
 
         buf->status = goodBuffer ? CAMERA3_BUFFER_STATUS_OK :
                 CAMERA3_BUFFER_STATUS_ERROR;
@@ -2667,7 +2667,7 @@ void EmulatedFakeCamera3::ReadoutThread::onJpegDone(
         const StreamBuffer &jpegBuffer, bool success) {
     Mutex::Autolock jl(mJpegLock);
 
-    mParent->mCbManager->unlockBuffer(*(jpegBuffer.buffer));
+    mParent->mGBM->unlock(*(jpegBuffer.buffer));
 
     mJpegHalBuffer.status = success ?
             CAMERA3_BUFFER_STATUS_OK : CAMERA3_BUFFER_STATUS_ERROR;
