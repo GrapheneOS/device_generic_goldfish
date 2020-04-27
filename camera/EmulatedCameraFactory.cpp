@@ -46,6 +46,7 @@ namespace android {
 EmulatedCameraFactory::EmulatedCameraFactory() :
         mQemuClient(),
         mConstructedOK(false),
+        mGBM(&GraphicBufferMapper::get()),
         mCallbacks(nullptr) {
 
     /*
@@ -325,8 +326,7 @@ EmulatedCameraFactory::createQemuCameraImpl(int halVersion,
 
     switch (halVersion) {
     case 1: {
-            auto camera = std::make_unique<EmulatedQemuCamera>(cameraId, module,
-                                                               &mCbManager);
+            auto camera = std::make_unique<EmulatedQemuCamera>(cameraId, module, mGBM);
             res = camera->Initialize(camInfo.name, camInfo.frameDims, camInfo.dir);
             if (res == NO_ERROR) {
                 return camera;
@@ -335,7 +335,7 @@ EmulatedCameraFactory::createQemuCameraImpl(int halVersion,
         break;
 
     case 3: {
-            auto camera = std::make_unique<EmulatedQemuCamera3>(cameraId, module, &mCbManager);
+            auto camera = std::make_unique<EmulatedQemuCamera3>(cameraId, module, mGBM);
             res = camera->Initialize(camInfo.name, camInfo.frameDims, camInfo.dir);
             if (res == NO_ERROR) {
                 return camera;
@@ -393,19 +393,19 @@ EmulatedCameraFactory::createFakeCameraImpl(bool backCamera,
                                             struct hw_module_t* module) {
     switch (halVersion) {
     case 1:
-        return std::make_unique<EmulatedFakeCamera>(cameraId, backCamera, module, &mCbManager);
+        return std::make_unique<EmulatedFakeCamera>(cameraId, backCamera, module, mGBM);
 
     case 2:
-        return std::make_unique<EmulatedFakeCamera2>(cameraId, backCamera, module, &mCbManager);
+        return std::make_unique<EmulatedFakeCamera2>(cameraId, backCamera, module, mGBM);
 
     case 3: {
             static const char key[] = "ro.kernel.qemu.camera.fake.rotating";
             char prop[PROPERTY_VALUE_MAX];
 
             if (property_get(key, prop, nullptr) > 0) {
-                return std::make_unique<EmulatedFakeCamera>(cameraId, backCamera, module, &mCbManager);
+                return std::make_unique<EmulatedFakeCamera>(cameraId, backCamera, module, mGBM);
             } else {
-                return std::make_unique<EmulatedFakeCamera3>(cameraId, backCamera, module, &mCbManager);
+                return std::make_unique<EmulatedFakeCamera3>(cameraId, backCamera, module, mGBM);
             }
         }
 
