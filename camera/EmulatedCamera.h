@@ -27,11 +27,11 @@
  */
 
 #include <CameraParameters.h>
+#include <ui/GraphicBufferMapper.h>
 #include "EmulatedBaseCamera.h"
 #include "EmulatedCameraDevice.h"
 #include "PreviewWindow.h"
 #include "CallbackNotifier.h"
-#include "cbmanager.h"
 
 using ::android::hardware::camera::common::V1_0::helper::CameraParameters;
 using ::android::hardware::camera::common::V1_0::helper::Size;
@@ -57,7 +57,7 @@ public:
      */
     EmulatedCamera(int cameraId,
                    struct hw_module_t* module,
-                   CbManager* cbManager);
+                   GraphicBufferMapper* gbm);
 
     /* Destructs EmulatedCamera instance. */
     virtual ~EmulatedCamera();

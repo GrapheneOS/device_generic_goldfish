@@ -29,13 +29,13 @@
 
 namespace android {
 
-JpegCompressor::JpegCompressor(CbManager* cbManager):
+JpegCompressor::JpegCompressor(GraphicBufferMapper* gbm):
         Thread(false),
         mIsBusy(false),
         mSynchronous(false),
         mBuffers(NULL),
         mListener(NULL),
-        mCbManager(cbManager) {
+        mGBM(gbm) {
 }
 
 JpegCompressor::~JpegCompressor() {
@@ -231,10 +231,10 @@ void JpegCompressor::cleanUp() {
             if (mAuxBuffer.buffer == nullptr) {
                 delete[] mAuxBuffer.img;
             } else {
-                cb_handle_t* cb = cb_handle_t::from_unconst(*mAuxBuffer.buffer);
+                buffer_handle_t buffer = *mAuxBuffer.buffer;
 
-                mCbManager->unlockBuffer(*cb);
-                mCbManager->freeBuffer(cb);
+                mGBM->unlock(buffer);
+                mGBM->freeBuffer(buffer);
             }
         } else if (!mSynchronous) {
             mListener->onJpegInputDone(mAuxBuffer);
