@@ -35,13 +35,13 @@
 
 #include "EmulatedCameraFactory.h"
 #include "EmulatedQemuCamera3.h"
-#include "cbmanager.h"
 
 #include <cmath>
 #include <cutils/properties.h>
 #include <inttypes.h>
 #include <sstream>
 #include <ui/Fence.h>
+#include <ui/Rect.h>
 #include <log/log.h>
 #include <vector>
 
@@ -84,8 +84,9 @@ const float   EmulatedQemuCamera3::kExposureWanderMax        = 1;
  * Constructor/Destructor
  ****************************************************************************/
 
-EmulatedQemuCamera3::EmulatedQemuCamera3(int cameraId, struct hw_module_t* module, CbManager *cbManager) :
-        EmulatedCamera3(cameraId, module), mCbManager(cbManager) {
+EmulatedQemuCamera3::EmulatedQemuCamera3(int cameraId, struct hw_module_t* module,
+                                         GraphicBufferMapper* gbm) :
+        EmulatedCamera3(cameraId, module), mGBM(gbm) {
     ALOGI("Constructing emulated qemu camera 3: ID %d", mCameraID);
 
     for (size_t i = 0; i < CAMERA3_TEMPLATE_COUNT; ++i) {
@@ -229,7 +230,7 @@ status_t EmulatedQemuCamera3::connectCamera(hw_device_t** device) {
     /*
      * Initialize sensor.
      */
-    mSensor = new QemuSensor(mDeviceName, mSensorWidth, mSensorHeight, mCbManager);
+    mSensor = new QemuSensor(mDeviceName, mSensorWidth, mSensorHeight, mGBM);
     mSensor->setQemuSensorListener(this);
     res = mSensor->startUp();
     if (res != NO_ERROR) {
@@ -237,7 +238,7 @@ status_t EmulatedQemuCamera3::connectCamera(hw_device_t** device) {
     }
 
     mReadoutThread = new ReadoutThread(this);
-    mJpegCompressor = new JpegCompressor(mCbManager);
+    mJpegCompressor = new JpegCompressor(mGBM);
 
     res = mReadoutThread->run("EmuCam3::readoutThread");
     if (res != NO_ERROR) return res;
@@ -938,11 +939,11 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
             // Lock buffer for writing.
             if (srcBuf.stream->format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
                 if (destBuf.format == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-                    CbManager::YCbCrLayout ycbcr = {};
-                    res = mCbManager->lockYCbCrBuffer(
+                    android_ycbcr ycbcr = {};
+                    res = mGBM->lockYCbCr(
                             *(destBuf.buffer),
-                            (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
-                            0, 0, destBuf.width, destBuf.height,
+                            GRALLOC_USAGE_HW_CAMERA_WRITE,
+                            Rect(0, 0, destBuf.width, destBuf.height),
                             &ycbcr);
                     /*
                      * This is only valid because we know that emulator's
@@ -955,10 +956,10 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
                     res = INVALID_OPERATION;
                 }
             } else {
-                res = mCbManager->lockBuffer(
+                res = mGBM->lock(
                     *(destBuf.buffer),
-                    (CbManager::BufferUsage::CAMERA_OUTPUT | 0),
-                    0, 0, destBuf.width, destBuf.height,
+                    GRALLOC_USAGE_HW_CAMERA_WRITE,
+                    Rect(0, 0, destBuf.width, destBuf.height),
                     (void**)&(destBuf.img));
 
             }
@@ -974,7 +975,7 @@ status_t EmulatedQemuCamera3::processCaptureRequest(
              * out.
              */
             for (size_t j = 0; j < i; j++) {
-                mCbManager->unlockBuffer(*(request->output_buffers[i].buffer));
+                mGBM->unlock(*(request->output_buffers[i].buffer));
             }
             delete sensorBuffers;
             delete buffers;
@@ -2023,7 +2024,7 @@ bool EmulatedQemuCamera3::ReadoutThread::threadLoop() {
                     __FUNCTION__, strerror(-res), res);
             // Fallthrough for cleanup.
         }
-        mParent->mCbManager->unlockBuffer(*(buf->buffer));
+        mParent->mGBM->unlock(*(buf->buffer));
 
         buf->status = goodBuffer ? CAMERA3_BUFFER_STATUS_OK :
                 CAMERA3_BUFFER_STATUS_ERROR;
@@ -2106,7 +2107,7 @@ void EmulatedQemuCamera3::ReadoutThread::onJpegDone(
         const StreamBuffer &jpegBuffer, bool success) {
     Mutex::Autolock jl(mJpegLock);
 
-    mParent->mCbManager->unlockBuffer(*(jpegBuffer.buffer));
+    mParent->mGBM->unlock(*(jpegBuffer.buffer));
 
     mJpegHalBuffer.status = success ?
             CAMERA3_BUFFER_STATUS_OK : CAMERA3_BUFFER_STATUS_ERROR;
