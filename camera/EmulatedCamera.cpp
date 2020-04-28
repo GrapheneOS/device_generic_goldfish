@@ -99,12 +99,12 @@ static bool GetFourCcFormatFromCameraParam(const char* fmt_str,
 
 EmulatedCamera::EmulatedCamera(int cameraId,
                                struct hw_module_t* module,
-                               CbManager* cbManager)
+                               GraphicBufferMapper* gbm)
         : EmulatedBaseCamera(cameraId,
                 HARDWARE_DEVICE_API_VERSION(1, 0),
                 &common,
                 module),
-          mPreviewWindow(cbManager),
+          mPreviewWindow(gbm),
           mCallbackNotifier()
 {
     /* camera_device v1 fields. */
