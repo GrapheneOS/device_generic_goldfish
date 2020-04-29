@@ -1,7 +1,4 @@
 
-on early-init
-    mount tracefs tracefs /sys/kernel/tracing
-
 on init
 
 on boot
