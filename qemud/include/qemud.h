@@ -15,15 +15,14 @@
  */
 
 #pragma once
-
-namespace goldfish {
-
-int qemu_pipe_open_ns(const char* ns, const char* pipeName, int flags);
-int qemu_pipe_read_fully(int pipe, void* buffer, int len);
-int qemu_pipe_write_fully(int pipe, const void* buffer, int len);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int qemud_channel_open(const char* name);
-int qemud_channel_send(int pipe, const void* msg, int msglen);
-int qemud_channel_recv(int pipe, void*  msg, int msgsize);
+int qemud_channel_send(int pipe, const void* msg, int size);
+int qemud_channel_recv(int pipe, void* msg, int maxsize);
 
-}  // namespace goldfish
+#ifdef __cplusplus
+}  // extern "C"
+#endif
