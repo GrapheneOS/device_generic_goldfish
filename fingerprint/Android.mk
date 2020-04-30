@@ -24,6 +24,7 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 LOCAL_SRC_FILES := fingerprint.c
 LOCAL_SHARED_LIBRARIES := liblog libcutils
+LOCAL_STATIC_LIBRARIES := libqemud.ranchu
 LOCAL_HEADER_LIBRARIES := libhardware_headers
 
 include $(BUILD_SHARED_LIBRARY)
