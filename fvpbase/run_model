@@ -19,6 +19,7 @@ tmp="$(mktemp -d)"
 trap "rm -rf $tmp" EXIT
 mkfifo $tmp/port
 
+env LD_PRELOAD=$ANDROID_HOST_OUT/lib64/bind_to_localhost.so \
 "$MODEL_BIN" \
   -C bp.secureflashloader.fname="$ANDROID_PRODUCT_OUT/boot/bl1.bin" \
   -C bp.flashloader0.fname="$ANDROID_PRODUCT_OUT/boot/fip.bin" \
