@@ -16,10 +16,10 @@
 
 #include <cinttypes>
 #include <log/log.h>
+#include <qemud.h>
 #include <utils/SystemClock.h>
 #include "multihal_sensors.h"
 #include "sensor_list.h"
-#include "util.h"
 
 namespace goldfish {
 using ahs10::SensorType;
