@@ -35,7 +35,7 @@
 
 #include <cutils/properties.h>
 #include <unistd.h>
-#include <qemu_pipe_bp.h>
+#include <qemu_pipe.h>
 #include <qemud.h>
 #include <string.h>
 #include <stdio.h>
