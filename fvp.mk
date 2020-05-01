@@ -69,6 +69,8 @@ PRODUCT_PACKAGES += \
     android.hardware.bluetooth.audio@2.0-impl
 PRODUCT_PROPERTY_OVERRIDES += bt.rootcanal_test_console=off
 
+PRODUCT_HOST_PACKAGES += bind_to_localhost
+
 PRODUCT_PACKAGE_OVERLAYS := device/generic/goldfish/overlay
 
 PRODUCT_NAME := fvp
