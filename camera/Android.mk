@@ -41,6 +41,7 @@ emulator_camera_shared_libraries := \
     android.hardware.graphics.mapper@2.0 \
 
 emulator_camera_static_libraries := \
+	libqemud.ranchu \
 	android.hardware.camera.common@1.0-helper \
 	libyuv_static
 
