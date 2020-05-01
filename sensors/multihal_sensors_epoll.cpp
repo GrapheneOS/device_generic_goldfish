@@ -17,7 +17,6 @@
 #include <log/log.h>
 #include <sys/epoll.h>
 #include "multihal_sensors.h"
-#include "util.h"
 
 namespace goldfish {
 

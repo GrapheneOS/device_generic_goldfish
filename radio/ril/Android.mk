@@ -16,7 +16,7 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES := \
     liblog libcutils libutils libril-goldfish-fork librilutils
 
-LOCAL_STATIC_LIBRARIES := libbase
+LOCAL_STATIC_LIBRARIES := libbase libqemud.ranchu
 
 # for asprinf
 LOCAL_CFLAGS := -D_GNU_SOURCE
