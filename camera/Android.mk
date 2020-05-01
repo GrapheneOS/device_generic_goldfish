@@ -39,20 +39,20 @@ emulator_camera_shared_libraries := \
     libcamera_metadata \
     libui \
     android.hardware.graphics.mapper@2.0 \
-    libqemupipe.ranchu
 
 emulator_camera_static_libraries := \
 	libqemud.ranchu \
 	android.hardware.camera.common@1.0-helper \
 	libyuv_static
 
-emulator_camera_header_libraries := \
-	libgralloc_cb.ranchu
-
 emulator_camera_c_includes := external/libjpeg-turbo \
 	external/libexif \
 	external/libyuv/files/include \
 	frameworks/native/include/media/hardware \
+	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../goldfish-opengl/system/include \
+	$(LOCAL_PATH)/../../goldfish-opengl/system/OpenglSystemCommon \
+	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon \
 	$(call include-path-for, camera)
 
 emulator_camera_src := \
@@ -96,7 +96,6 @@ LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
 
 LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
 LOCAL_STATIC_LIBRARIES := ${emulator_camera_static_libraries}
-LOCAL_HEADER_LIBRARIES := ${emulator_camera_header_libraries}
 LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
 LOCAL_SRC_FILES := ${emulator_camera_src}
 
@@ -121,7 +120,6 @@ LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
 
 LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
 LOCAL_STATIC_LIBRARIES := ${emulator_camera_static_libraries}
-LOCAL_HEADER_LIBRARIES := ${emulator_camera_header_libraries}
 LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
 LOCAL_SRC_FILES := ${emulator_camera_src}
 

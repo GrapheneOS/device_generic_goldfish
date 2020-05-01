@@ -20,8 +20,59 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <qemud.h>
-#include <qemu_pipe_bp.h>
 #include <unistd.h>
+
+namespace {
+// TODO(rkir): move these functions to libqemupipe.ranchu
+
+bool qemu_pipe_try_again(int ret) {
+    return (ret < 0) && (errno == EINTR || errno == EAGAIN);
+}
+
+#define QEMU_PIPE_RETRY(exp) ({ \
+    __typeof__(exp) _rc; \
+    do { \
+        _rc = (exp); \
+    } while (qemu_pipe_try_again(_rc)); \
+    _rc; })
+
+int qemu_pipe_read_fully(int pipe, void* buffer, int len) {
+    char* p = (char*)buffer;
+    while (len > 0) {
+      int n = QEMU_PIPE_RETRY(read(pipe, p, len));
+      if (n < 0) return n;
+      p += n;
+      len -= n;
+    }
+    return 0;
+}
+
+int qemu_pipe_write_fully(int pipe, const void* buffer, int len) {
+    const char* p = (const char*)buffer;
+    while (len > 0) {
+      int n = QEMU_PIPE_RETRY(write(pipe, p, len));
+      if (n < 0) return n;
+      p += n;
+      len -= n;
+    }
+    return 0;
+}
+
+int qemu_pipe_open_ns(const char* ns, const char* pipeName, const int flags) {
+    int fd = QEMU_PIPE_RETRY(open("/dev/goldfish_pipe", flags));
+    if (fd < 0) {
+        return -1;
+    }
+    char buff[64];
+    int len = snprintf(buff, sizeof(buff), "pipe:%s:%s", ns, pipeName);
+    if (qemu_pipe_write_fully(fd, buff, len + 1)) {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+}  // namespace
 
 int qemud_channel_open(const char*  name) {
     return qemu_pipe_open_ns("qemud", name, O_RDWR);
