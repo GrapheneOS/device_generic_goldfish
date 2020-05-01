@@ -5,7 +5,7 @@
 #include "fake-pipeline2/Base.h"
 #include "fake-pipeline2/Scene.h"
 #include "QemuClient.h"
-#include "gralloc_cb.h"
+#include <gralloc_cb_bp.h>
 
 #include <ui/GraphicBufferAllocator.h>
 #include <ui/GraphicBufferMapper.h>
