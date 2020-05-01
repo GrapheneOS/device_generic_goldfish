@@ -16,6 +16,8 @@
 
 #include <log/log.h>
 #include <fcntl.h>
+#include <qemud.h>
+#include <qemu_pipe_bp.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include "gnss_hw_conn.h"
@@ -25,36 +27,6 @@ namespace {
 constexpr char kCMD_QUIT = 'q';
 constexpr char kCMD_START = 'a';
 constexpr char kCMD_STOP = 'o';
-
-ssize_t qemu_pipe_write_fully(int pipe, const void* buffer, ssize_t len) {
-    const char* p = (const char*)buffer;
-
-    while (len > 0) {
-      ssize_t n = TEMP_FAILURE_RETRY(write(pipe, p, len));
-      if (n < 0) return n;
-
-      p += n;
-      len -= n;
-    }
-
-    return 0;
-}
-
-int qemu_pipe_open_ns(const char* ns, const char* pipeName, const int flags) {
-    int fd = TEMP_FAILURE_RETRY(open("/dev/goldfish_pipe", flags));
-    if (fd < 0) {
-        return -1;
-    }
-
-    char buff[64];
-    int len = snprintf(buff, sizeof(buff), "pipe:%s:%s", ns, pipeName);
-    if (qemu_pipe_write_fully(fd, buff, len + 1)) {
-        close(fd);
-        return -1;
-    }
-
-    return fd;
-}
 
 int epollCtlAdd(int epollFd, int fd) {
     int ret;

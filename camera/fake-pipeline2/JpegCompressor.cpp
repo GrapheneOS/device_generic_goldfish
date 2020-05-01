@@ -19,7 +19,7 @@
 
 #include <log/log.h>
 
-#include "gralloc_cb.h"
+#include <gralloc_cb_bp.h>
 #include "JpegCompressor.h"
 #include "../EmulatedFakeCamera2.h"
 #include "../EmulatedFakeCamera3.h"
