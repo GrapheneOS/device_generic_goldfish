@@ -2,7 +2,6 @@ on fs
     mount_all /vendor/etc/fstab.ranchu
 
 on early-init
-    mount tracefs tracefs /sys/kernel/tracing
     mount proc proc /proc remount hidepid=2,gid=3009
     setprop ro.hardware.egl emulation
 
