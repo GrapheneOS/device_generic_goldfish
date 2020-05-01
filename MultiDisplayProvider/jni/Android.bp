@@ -17,8 +17,6 @@ cc_library_shared {
 
     srcs: ["com_android_emulator_multidisplay.cpp"],
 
-    include_dirs: ["system/core/base/include"],
-
     shared_libs: [
         "libandroid_runtime",
         "libnativehelper",
