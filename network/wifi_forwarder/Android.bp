@@ -40,7 +40,7 @@ cc_binary {
         "libutils",
         "libutilscallstack",
     ],
-    header_libs: [
-        "goldfish_pipe_headers",
+    static_libs: [
+        "libqemupipe.ranchu",
     ],
 }
