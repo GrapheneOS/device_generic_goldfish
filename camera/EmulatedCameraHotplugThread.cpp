@@ -24,7 +24,7 @@
 
 #include "EmulatedCameraHotplugThread.h"
 #include "EmulatedCameraFactory.h"
-#include <qemu_pipe_bp.h>
+#include "qemu_pipe.h"
 
 #define FAKE_HOTPLUG_FILE "/data/misc/media/emulator.camera.hotplug"
 
