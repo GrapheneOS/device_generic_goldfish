@@ -17,9 +17,9 @@
 #include <log/log.h>
 #include <utils/SystemClock.h>
 #include <math.h>
+#include <qemud.h>
 #include "multihal_sensors.h"
 #include "sensor_list.h"
-#include "util.h"
 
 namespace goldfish {
 using ahs10::EventPayload;
