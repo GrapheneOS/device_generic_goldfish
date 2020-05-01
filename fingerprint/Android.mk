@@ -19,9 +19,6 @@ include $(CLEAR_VARS)
 LOCAL_VENDOR_MODULE := true
 LOCAL_MODULE := fingerprint.ranchu
 LOCAL_MODULE_RELATIVE_PATH := hw
-LOCAL_C_INCLUDES += \
-	$(LOCAL_PATH)/../include \
-	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 LOCAL_SRC_FILES := fingerprint.c
 LOCAL_SHARED_LIBRARIES := liblog libcutils
 LOCAL_STATIC_LIBRARIES := libqemud.ranchu
