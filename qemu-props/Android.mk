@@ -24,7 +24,10 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_VENDOR_MODULE    := true
 LOCAL_MODULE    := qemu-props
+LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/../include \
+	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
 LOCAL_SRC_FILES := qemu-props.c
 LOCAL_SHARED_LIBRARIES := libcutils liblog
-LOCAL_STATIC_LIBRARIES := libqemud.ranchu libqemupipe.ranchu
+LOCAL_STATIC_LIBRARIES := libqemud.ranchu
 include $(BUILD_EXECUTABLE)
