@@ -7,11 +7,13 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # see copy file rules in core/Makefile
 ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
   PRODUCT_COPY_FILES += \
-    device/generic/goldfish/fstab.ranchu.initrd.arm.ex:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
+    device/generic/goldfish/fstab.ranchu.initrd.arm.ex:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
+    device/generic/goldfish/fstab.ranchu.initrd.arm.ex:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/fstab.ranchu \
     device/generic/goldfish/fstab.ranchu.arm.ex:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
 else
   PRODUCT_COPY_FILES += \
-    device/generic/goldfish/fstab.ranchu.initrd.arm:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
+    device/generic/goldfish/fstab.ranchu.initrd.arm:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
+    device/generic/goldfish/fstab.ranchu.initrd.arm:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/fstab.ranchu \
     device/generic/goldfish/fstab.ranchu.arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
 endif
 
