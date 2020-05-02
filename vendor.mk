@@ -18,27 +18,7 @@
 #
 $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvik-heap.mk)
 
-ifeq ($(QEMU_DISABLE_AVB),true)
-  ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
-    PRODUCT_COPY_FILES += \
-      device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
-      device/generic/goldfish/fstab.ranchu.initrd.noavb.ex:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
-      device/generic/goldfish/fstab.ranchu.noavb.ex:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
-  else
-    PRODUCT_COPY_FILES += \
-      device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
-      device/generic/goldfish/fstab.ranchu.initrd.noavb:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
-      device/generic/goldfish/fstab.ranchu.noavb:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
-  endif
-endif
-
 PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
-ifeq ($(QEMU_USE_SYSTEM_EXT_PARTITIONS),true)
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/fstab.ranchu.initrd.ex:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
-    device/generic/goldfish/fstab.ranchu.ex:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
-endif
-
 
 DISABLE_RILD_OEM_HOOK := true
 
@@ -243,7 +223,7 @@ PRODUCT_PRODUCT_PROPERTIES += ro.incremental.enable=yes
 
 
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/fstab.ranchu.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.ranchu \
+    device/generic/goldfish/data/etc/dtb.img:dtb.img \
     device/generic/goldfish/data/etc/apns-conf.xml:data/misc/apns/apns-conf.xml \
     device/generic/goldfish/data/etc/local.prop:data/local.prop \
     device/generic/goldfish/init.ranchu-core.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-core.sh \
