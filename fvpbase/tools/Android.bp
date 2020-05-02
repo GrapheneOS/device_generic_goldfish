@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2020 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-cc_library_shared {
-    name: "libemulator_multidisplay_jni",
-
-    srcs: ["com_android_emulator_multidisplay.cpp"],
-
-    shared_libs: [
-        "libandroid_runtime",
-        "libnativehelper",
-        "libcutils",
-        "libutils",
-        "liblog",
-        "libui",
-        "libgui",
-    ],
-
-    cflags: [
-        "-Wall",
-        "-Wextra",
-        "-Wno-unused-parameter",
-    ],
-
-    system_ext_specific: true,
+// The ARM FVP binds to all network interfaces for telnet and adb. This library
+// is a workaround to that. The corresponding LD_PRELOAD additions in
+// fvpbase/run_model ensure that we only bind to localhost.
+cc_library_host_shared {
+  name: "bind_to_localhost",
+  srcs: ["bind_to_localhost.cpp"],
 }
