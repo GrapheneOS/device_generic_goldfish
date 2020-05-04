@@ -17,6 +17,9 @@ else
     device/generic/goldfish/fstab.ranchu.arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
 endif
 
+PRODUCT_SHIPPING_API_LEVEL := 28
+TARGET_USES_MKE2FS := true
+
 PRODUCT_COPY_FILES += \
     prebuilts/qemu-kernel/arm64/4.4/kernel-qemu2:kernel-ranchu-64 \
     device/generic/goldfish/data/etc/advancedFeatures.ini.arm:advancedFeatures.ini \
