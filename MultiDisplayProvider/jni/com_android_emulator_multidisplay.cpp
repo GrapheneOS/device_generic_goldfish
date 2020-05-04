@@ -25,13 +25,15 @@
 
 #include <sys/epoll.h>
 
+#include <gralloc_cb_bp.h>
+#include <qemu_pipe_bp.h>
+
 #include "utils/Log.h"
 #include "nativehelper/JNIHelp.h"
 #include <nativehelper/ScopedLocalRef.h>
 #include "jni.h"
 #include "android_runtime/AndroidRuntime.h"
 #include "android_runtime/android_view_Surface.h"
-#include "../../../goldfish-opengl/shared/OpenglCodecCommon/gralloc_cb.h"
 
 #define MAX_DISPLAYS 10
 
