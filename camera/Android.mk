@@ -14,8 +14,6 @@
 
 LOCAL_PATH := $(call my-dir)
 
-include $(CLEAR_VARS)
-
 # Emulator camera module########################################################
 
 emulator_camera_module_relative_path := hw
@@ -83,30 +81,6 @@ emulator_camera_src := \
 	Exif.cpp \
 	Thumbnail.cpp \
 	WorkerThread.cpp \
-
-
-# Emulated camera - goldfish / vbox_x86 build###################################
-
-LOCAL_VENDOR_MODULE := true
-LOCAL_MODULE_RELATIVE_PATH := ${emulator_camera_module_relative_path}
-LOCAL_CFLAGS := ${emulator_camera_cflags}
-LOCAL_CLANG_CFLAGS += ${emulator_camera_clang_flags}
-
-LOCAL_SHARED_LIBRARIES := ${emulator_camera_shared_libraries}
-LOCAL_STATIC_LIBRARIES := ${emulator_camera_static_libraries}
-LOCAL_HEADER_LIBRARIES := ${emulator_camera_header_libraries}
-LOCAL_C_INCLUDES += ${emulator_camera_c_includes}
-LOCAL_SRC_FILES := ${emulator_camera_src}
-
-ifeq ($(TARGET_BOARD_PLATFORM),brilloemulator)
-LOCAL_MODULE := camera.$(TARGET_BOARD_PLATFORM)
-else ifeq ($(TARGET_PRODUCT),vbox_x86)
-LOCAL_MODULE := camera.vbox_x86
-else
-LOCAL_MODULE := camera.goldfish
-endif
-
-include $(BUILD_SHARED_LIBRARY)
 
 # Emulator camera - ranchu build################################################
 
