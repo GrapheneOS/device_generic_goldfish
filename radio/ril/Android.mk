@@ -23,8 +23,8 @@ LOCAL_CFLAGS := -D_GNU_SOURCE
 LOCAL_CFLAGS += -Wall -Wextra -Wno-unused-variable -Wno-unused-function -Werror
 
 LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/../include \
-	$(LOCAL_PATH)/../../goldfish-opengl/shared/OpenglCodecCommon
+	device/generic/goldfish/include \
+	device/generic/goldfish-opengl/shared/OpenglCodecCommon
 
 ifeq ($(TARGET_DEVICE),sooner)
   LOCAL_CFLAGS += -DUSE_TI_COMMANDS
