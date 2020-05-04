@@ -22,6 +22,9 @@ EMU_EXTRA_FILES := \
         $(PRODUCT_OUT)/system-qemu-config.txt \
         $(PRODUCT_OUT)/ramdisk-qemu.img \
         $(PRODUCT_OUT)/misc_info.txt \
+        $(PRODUCT_OUT)/vbmeta.img \
+        $(PRODUCT_OUT)/VerifiedBootParams.textproto \
+        $(foreach p,$(BOARD_SUPER_PARTITION_PARTITION_LIST),$(PRODUCT_OUT)/$(p).img)
 
 ifeq ($(filter sdk_gphone_%, $(TARGET_PRODUCT)),)
 ifeq ($(TARGET_BUILD_VARIANT),user)
@@ -66,7 +69,7 @@ EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/$(EMULATOR_KERNEL_ARCH)/$(EMULATOR
 $(EMU_EXTRA_TARGET): PRIVATE_PACKAGE_SRC := \
         $(call intermediates-dir-for, PACKAGING, emu_extra_target)
 
-$(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(EMULATOR_KERNEL_FILE) $(AVBTOOL) $(SOONG_ZIP)
+$(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(EMULATOR_KERNEL_FILE) $(SOONG_ZIP)
 	@echo "Package: $@"
 	rm -rf $@ $(PRIVATE_PACKAGE_SRC)
 	mkdir -p $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/prebuilts/qemu-kernel/$(TARGET_ARCH)
@@ -76,7 +79,6 @@ $(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(EMULATOR_KERNEL_FILE) $(AVBTOOL) $(SOO
 	cp -r $(PRODUCT_OUT)/data $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)
 	mkdir -p $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
 	cp $(PRODUCT_OUT)/system/build.prop $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
-	$(AVBTOOL) make_vbmeta_image --flag 2 --padding_size 4096 --output $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/vbmeta-disabled.img
 	$(SOONG_ZIP) -o $@ -C $(PRIVATE_PACKAGE_SRC) -D $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)
 
 .PHONY: emu_extra_imgs
