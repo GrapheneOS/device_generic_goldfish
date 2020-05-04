@@ -221,7 +221,7 @@ PRODUCT_PACKAGES += \
 #    debug.stagefright.ccodec=0
 
 # Enable Incremental on the device via kernel driver
-PRODUCT_PRODUCT_PROPERTIES += ro.incremental.enable=yes
+PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
 
 
 PRODUCT_COPY_FILES += \
