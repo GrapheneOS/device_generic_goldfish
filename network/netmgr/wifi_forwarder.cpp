@@ -23,11 +23,7 @@
 #include <errno.h>
 #include <linux/if_packet.h>
 #include <linux/kernel.h>
-// Ignore warning about unused static qemu pipe function
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#include <qemu_pipe.h>
-#pragma clang diagnostic pop
+#include <qemu_pipe_bp.h>
 #include <string.h>
 #include <net/ethernet.h>
 #include <net/if.h>

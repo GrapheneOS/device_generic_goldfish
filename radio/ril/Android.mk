@@ -13,18 +13,14 @@ LOCAL_SRC_FILES:= \
     misc.c \
     at_tok.c
 
-LOCAL_SHARED_LIBRARIES := \
+LOCAL_SHARED_LIBRARIES += \
     liblog libcutils libutils libril-goldfish-fork librilutils
 
-LOCAL_STATIC_LIBRARIES := libbase libqemud.ranchu
+LOCAL_STATIC_LIBRARIES += libbase libqemud.ranchu
 
 # for asprinf
 LOCAL_CFLAGS := -D_GNU_SOURCE
 LOCAL_CFLAGS += -Wall -Wextra -Wno-unused-variable -Wno-unused-function -Werror
-
-LOCAL_C_INCLUDES := \
-	device/generic/goldfish/include \
-	device/generic/goldfish-opengl/shared/OpenglCodecCommon
 
 ifeq ($(TARGET_DEVICE),sooner)
   LOCAL_CFLAGS += -DUSE_TI_COMMANDS
