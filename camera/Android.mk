@@ -146,6 +146,3 @@ LOCAL_SRC_FILES += EmulatorCameraTest.cpp
 
 LOCAL_MODULE := emulatorcameratest
 include $(BUILD_EXECUTABLE)
-
-# Build all subdirectories #####################################################
-include $(call all-makefiles-under,$(LOCAL_PATH))
