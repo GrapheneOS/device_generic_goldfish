@@ -15,12 +15,12 @@
  */
 
 #pragma once
-#include <android/hardware/sensors/1.0/types.h>
+#include <android/hardware/sensors/2.1/types.h>
 
 namespace goldfish {
 
 namespace ahs = ::android::hardware::sensors;
-using SensorInfo = ahs::V1_0::SensorInfo;
+using SensorInfo = ahs::V2_1::SensorInfo;
 
 constexpr int kSensorHandleAccelerometer = 0;
 constexpr int kSensorHandleGyroscope = 1;

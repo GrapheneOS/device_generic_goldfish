@@ -23,7 +23,7 @@
 
 namespace goldfish {
 using ahs10::EventPayload;
-using ahs10::SensorType;
+using ahs21::SensorType;
 using ahs10::SensorStatus;
 
 namespace {

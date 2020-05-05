@@ -17,7 +17,7 @@
 #include "sensor_list.h"
 
 namespace goldfish {
-using ahs::V1_0::SensorType;
+using ahs::V2_1::SensorType;
 using ahs::V1_0::SensorFlagBits;
 
 constexpr char kAospVendor[] = "The Android Open Source Project";
