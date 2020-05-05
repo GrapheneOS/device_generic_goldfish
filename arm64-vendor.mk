@@ -5,6 +5,9 @@ BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
 
+PRODUCT_SHIPPING_API_LEVEL := 28
+TARGET_USES_MKE2FS := true
+
 # Note: the following lines need to stay at the beginning so that it can
 # take priority  and override the rules it inherit from other mk files
 # see copy file rules in core/Makefile

@@ -26,7 +26,7 @@
 #include <log/log.h>
 #include "EmulatedFakeCamera.h"
 #include "EmulatedFakeRotatingCameraDevice.h"
-#include "qemu_pipe.h"
+#include <qemu_pipe_bp.h>
 
 #include <EGL/egl.h>
 #include <GLES/gl.h>
