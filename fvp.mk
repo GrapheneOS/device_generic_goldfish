@@ -94,6 +94,8 @@ PRODUCT_COPY_FILES += \
     frameworks/av/services/audiopolicy/config/default_volume_tables.xml:$(TARGET_COPY_OUT_VENDOR)/etc/default_volume_tables.xml \
     frameworks/av/services/audiopolicy/config/surround_sound_configuration_5_0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/surround_sound_configuration_5_0.xml \
 
+PRODUCT_BUILD_BOOT_IMAGE := true
+
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
     ro.hardware.egl=swiftshader \
     debug.sf.nobootanimation=1 \
@@ -105,11 +107,3 @@ WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY := false
 
 DEVICE_MANIFEST_FILE := device/generic/goldfish/fvpbase/manifest.xml
 
-# Normally, the bootloader is supposed to concatenate the Android initramfs
-# and the initramfs for the kernel modules and let the kernel combine
-# them. However, the bootloader that we're using with FVP (U-Boot) doesn't
-# support concatenation, so we implement it in the build system.
-droid: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/boot/ramdisk.img
-
-$(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/boot/ramdisk.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/ramdisk.img $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/boot/initramfs.img
-	gzip -dc $^ > $@
