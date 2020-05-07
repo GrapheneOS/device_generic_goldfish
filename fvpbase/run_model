@@ -21,9 +21,9 @@ mkfifo $tmp/port
 
 env LD_PRELOAD=$ANDROID_HOST_OUT/lib64/bind_to_localhost.so \
 "$MODEL_BIN" \
-  -C bp.secureflashloader.fname="$ANDROID_PRODUCT_OUT/boot/bl1.bin" \
-  -C bp.flashloader0.fname="$ANDROID_PRODUCT_OUT/boot/fip.bin" \
-  -C cluster0.cpu0.semihosting-cwd="$ANDROID_PRODUCT_OUT/boot" \
+  -C bp.secureflashloader.fname="$ANDROID_PRODUCT_OUT/bl1.bin" \
+  -C bp.flashloader0.fname="$ANDROID_PRODUCT_OUT/fip.bin" \
+  -C cluster0.cpu0.semihosting-cwd="$ANDROID_PRODUCT_OUT" \
   -C bp.virtioblockdevice.image_path="$ANDROID_PRODUCT_OUT/system-qemu.img" \
   -C bp.mmc.p_mmc_file="$ANDROID_PRODUCT_OUT/userdata.img" \
   -C bp.secure_memory=0 \
