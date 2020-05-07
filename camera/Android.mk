@@ -126,7 +126,6 @@ LOCAL_SRC_FILES := ${emulator_camera_src}
 LOCAL_MODULE := camera.ranchu
 
 # Symlink media profile configurations from /vendor/etc to /data/vendor/etc/
-LOCAL_POST_INSTALL_CMD := ln -sf /data/vendor/etc/media_codecs_google_video.xml $(PRODUCT_OUT)/vendor/etc/media_codecs_google_video.xml
 include $(BUILD_SHARED_LIBRARY)
 
 # Emulator camera - test binary################################################
