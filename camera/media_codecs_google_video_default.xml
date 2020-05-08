@@ -36,33 +36,54 @@
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.android.goldfish.h264.decoder" type="video/avc">
-            <!-- profiles and levels:  ProfileHigh : Level41 -->
-            <Limit name="size" min="16x16" max="1920x1088" />
+            <Limit name="size" min="96x96" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
-            <Limit name="blocks-per-second" range="1-244800" />
-            <Limit name="bitrate" range="1-12000000" />
-            <Limit name="performance-point-1920x1080" value="30" />
+            <Limit name="blocks-per-second" range="24-2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1080" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.goldfish.h264.decoder" type="video/avc">
-            <!-- profiles and levels:  ProfileHigh : Level41 -->
-            <Limit name="size" min="16x16" max="1920x1088" />
+            <Limit name="size" min="96x96" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
-            <Limit name="blocks-per-second" range="1-244800" />
-            <Limit name="bitrate" range="1-12000000" />
-            <Limit name="performance-point-1920x1080" value="30" />
+            <Limit name="blocks-per-second" range="24-2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1080" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.h264.decoder" type="video/avc">
-            <!-- profiles and levels:  ProfileHigh : Level41 -->
-            <Limit name="size" min="16x16" max="1920x1088" />
+            <Limit name="size" min="2x2" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
-            <Limit name="blocks-per-second" range="1-244800" />
-            <Limit name="bitrate" range="1-12000000" />
+            <Limit name="blocks-per-second" range="24-2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="concurrent-instances" max="16" />
+            <Limit name="performance-point-720x480" range="180" />
+            <Limit name="performance-point-1280x720" value="480" />
             <Limit name="performance-point-1920x1080" value="30" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1080" range="30-40" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.hevc.decoder" type="video/hevc">
@@ -76,42 +97,106 @@
             <Limit name="performance-point-1920x1080" value="30" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
+        <MediaCodec name="OMX.android.goldfish.vp9.decoder" type="video/x-vnd.on2.vp9">
+            <Limit name="size" min="96x96" max="3840x2150" />
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Limit name="blocks-per-second" min="24" max="2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1088" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
+            <Feature name="adaptive-playback" />
+        </MediaCodec>
+        <MediaCodec name="OMX.android.goldfish.vp8.decoder" type="video/x-vnd.on2.vp8">
+            <Limit name="size" min="96x96" max="3840x2150" />
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Limit name="blocks-per-second" min="24" max="2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1088" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
+            <Feature name="adaptive-playback" />
+        </MediaCodec>
         <MediaCodec name="OMX.google.goldfish.vp8.decoder" type="video/x-vnd.on2.vp8">
             <Limit name="size" min="2x2" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
-            <Limit name="block-count" range="1-25600" />
-            <Limit name="blocks-per-second" range="1-1536000" />
-            <Limit name="bitrate" range="1-40000000" />
-            <Limit name="performance-point-1920x1080" value="30" />
+            <Limit name="blocks-per-second" min="24" max="2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1088" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.goldfish.vp9.decoder" type="video/x-vnd.on2.vp9">
             <Limit name="size" min="2x2" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
-            <Limit name="block-count" range="1-25600" />
-            <Limit name="blocks-per-second" range="1-768000" />
-            <Limit name="bitrate" range="1-40000000" />
-            <Limit name="performance-point-1920x1080" value="30" />
+            <Limit name="blocks-per-second" min="24" max="2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1088" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.vp8.decoder" type="video/x-vnd.on2.vp8">
-            <Limit name="size" min="2x2" max="2048x2048" />
+            <Limit name="size" min="2x2" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
-            <Limit name="blocks-per-second" range="1-1000000" />
-            <Limit name="bitrate" range="1-40000000" />
-            <Limit name="performance-point-1920x1080" value="30" />
+            <Limit name="blocks-per-second" min="24" max="2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1088" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.vp9.decoder" type="video/x-vnd.on2.vp9">
-            <Limit name="size" min="2x2" max="2048x2048" />
+            <Limit name="size" min="2x2" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
-            <Limit name="blocks-per-second" range="1-500000" />
-            <Limit name="bitrate" range="1-40000000" />
-            <Limit name="performance-point-1920x1080" value="30" />
+            <Limit name="blocks-per-second" min="24" max="2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-2560x1440" value="80" />
+            <Limit name="performance-point-1920x1080" value="160" />
+            <Limit name="performance-point-1280x720" value="480" />
+            <Limit name="measured-frame-rate-320x240" range="183-183" />
+            <Limit name="measured-frame-rate-720x480" range="181-181" />
+            <Limit name="measured-frame-rate-1280x720" range="182-184" />
+            <Limit name="measured-frame-rate-1920x1088" range="30-50" />
+            <Limit name="measured-frame-rate-2560x1440" range="30-40" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
     </Decoders>
