@@ -31,7 +31,7 @@
 
 #include "qemu-pipeline3/QemuSensor.h"
 #include "system/camera_metadata.h"
-#include "gralloc_cb.h"
+#include <gralloc_cb_bp.h>
 
 #include <cmath>
 #include <cstdlib>
