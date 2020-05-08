@@ -27,6 +27,14 @@ cc_library_shared {
         "libgui",
     ],
 
+    static_libs: [
+        "libqemupipe.ranchu",
+    ],
+
+    header_libs: [
+        "libgralloc_cb.ranchu",
+    ],
+
     cflags: [
         "-Wall",
         "-Wextra",
