@@ -22,13 +22,10 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.Display;
-import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.view.Surface;
 import android.os.Messenger;
-import android.os.Message;
 
 
 public class MultiDisplayService extends Service {
@@ -52,7 +49,7 @@ public class MultiDisplayService extends Service {
     private VirtualDisplay mVirtualDisplay[];
     private Surface mSurface[];
     private Messenger mMessenger;
-    private ListenerThread mListner;
+    private ListenerThread mListener;
 
     private final Handler mHandler = new Handler();
 
@@ -99,8 +96,8 @@ public class MultiDisplayService extends Service {
             Log.e(TAG, "Failed to loadLibrary: " + e);
         }
 
-        mListner = new ListenerThread();
-        mListner.start();
+        mListener = new ListenerThread();
+        mListener.start();
 
         mDisplayManager = (DisplayManager)getSystemService(Context.DISPLAY_SERVICE);
         mMultiDisplay = new MultiDisplay[MAX_DISPLAYS + 1];
@@ -128,53 +125,50 @@ public class MultiDisplayService extends Service {
         }
 
         private void deleteVirtualDisplay(int displayId) {
-            int i = displayId;
-            if (mMultiDisplay[i].enabled == false) {
+            if (!mMultiDisplay[displayId].enabled) {
                 return;
             }
-            if (mMultiDisplay[i].virtualDisplay != null) {
-                mMultiDisplay[i].virtualDisplay.release();
+            if (mMultiDisplay[displayId].virtualDisplay != null) {
+                mMultiDisplay[displayId].virtualDisplay.release();
             }
-            if (mMultiDisplay[i].surface != null) {
-                mMultiDisplay[i].surface.release();
+            if (mMultiDisplay[displayId].surface != null) {
+                mMultiDisplay[displayId].surface.release();
             }
-            mMultiDisplay[i].clear();
-            nativeReleaseListener(i);
+            mMultiDisplay[displayId].clear();
+            nativeReleaseListener(displayId);
         }
 
         private void createVirtualDisplay(int displayId, int w, int h, int dpi, int flag) {
-            int i = displayId;
-            mMultiDisplay[i].surface = nativeCreateSurface(i, w, h);
-            mMultiDisplay[i].virtualDisplay = mDisplayManager.createVirtualDisplay(
+            mMultiDisplay[displayId].surface = nativeCreateSurface(displayId, w, h);
+            mMultiDisplay[displayId].virtualDisplay = mDisplayManager.createVirtualDisplay(
                                               null /* projection */,
                                               DISPLAY_NAME, w, h, dpi,
-                                              mMultiDisplay[i].surface, flag,
+                                              mMultiDisplay[displayId].surface, flag,
                                               null /* callback */,
                                               null /* handler */,
-                                              UNIQUE_DISPLAY_ID[i]);
-            mMultiDisplay[i].set(w, h, dpi, flag);
+                                              UNIQUE_DISPLAY_ID[displayId]);
+            mMultiDisplay[displayId].set(w, h, dpi, flag);
         }
 
         private void addVirtualDisplay(int displayId, int w, int h, int dpi, int flag) {
-            int i = displayId;
-            if (mMultiDisplay[i].match(w, h, dpi, flag)) {
+            if (mMultiDisplay[displayId].match(w, h, dpi, flag)) {
                 return;
             }
-            if (mMultiDisplay[i].virtualDisplay == null) {
-                createVirtualDisplay(i, w, h, dpi, flag);
+            if (mMultiDisplay[displayId].virtualDisplay == null) {
+                createVirtualDisplay(displayId, w, h, dpi, flag);
                 return;
             }
-            if (mMultiDisplay[i].flag != flag) {
-                deleteVirtualDisplay(i);
-                createVirtualDisplay(i, w, h, dpi, flag);
+            if (mMultiDisplay[displayId].flag != flag) {
+                deleteVirtualDisplay(displayId);
+                createVirtualDisplay(displayId, w, h, dpi, flag);
                 return;
             }
-            if (mMultiDisplay[i].width != w || mMultiDisplay[i].height != h) {
-                nativeResizeListener(i, w, h);
+            if (mMultiDisplay[displayId].width != w || mMultiDisplay[displayId].height != h) {
+                nativeResizeListener(displayId, w, h);
             }
             // only dpi changes
-            mMultiDisplay[i].virtualDisplay.resize(w, h, dpi);
-            mMultiDisplay[i].set(w, h, dpi, flag);
+            mMultiDisplay[displayId].virtualDisplay.resize(w, h, dpi);
+            mMultiDisplay[displayId].set(w, h, dpi, flag);
         }
 
         @Override
