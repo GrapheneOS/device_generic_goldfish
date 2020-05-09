@@ -24,7 +24,7 @@ import android.content.Intent;
 import android.util.Log;
 
 public class MultiDisplayServiceReceiver extends BroadcastReceiver {
-    private static final String TAG = "MultiDisplayServiceReceiver";
+    private static final String TAG = "MultiDispActionReceiver";
 
     @Override
     public void onReceive(Context context, Intent intent) {
