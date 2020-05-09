@@ -45,7 +45,6 @@ PRODUCT_PACKAGES += \
     android.hardware.audio.service \
     android.hardware.audio@6.0-impl:32 \
     android.hardware.audio.effect@6.0-impl:32 \
-    android.hardware.soundtrigger@2.2-impl \
     audio.primary.default \
     audio.r_submix.default \
     android.hardware.drm@1.0-service \
