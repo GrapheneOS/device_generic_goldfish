@@ -20,10 +20,7 @@
 #include "log.h"
 
 #include <errno.h>
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#include <qemu_pipe.h>
-#pragma clang diagnostic pop
+#include <qemu_pipe_bp.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>

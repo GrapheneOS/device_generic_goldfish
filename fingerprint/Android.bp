@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2013 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,33 +13,14 @@
 // limitations under the License.
 
 cc_library_shared {
-    name: "libemulator_multidisplay_jni",
-
-    srcs: ["com_android_emulator_multidisplay.cpp"],
-
+    name: "fingerprint.ranchu",
+    vendor: true,
+    relative_install_path: "hw",
+    srcs: ["fingerprint.c"],
     shared_libs: [
-        "libandroid_runtime",
-        "libnativehelper",
-        "libcutils",
-        "libutils",
         "liblog",
-        "libui",
-        "libgui",
+        "libcutils",
     ],
-
-    static_libs: [
-        "libqemupipe.ranchu",
-    ],
-
-    header_libs: [
-        "libgralloc_cb.ranchu",
-    ],
-
-    cflags: [
-        "-Wall",
-        "-Wextra",
-        "-Wno-unused-parameter",
-    ],
-
-    system_ext_specific: true,
+    static_libs: ["libqemud.ranchu"],
+    header_libs: ["libhardware_headers"],
 }
