@@ -33,6 +33,7 @@ constexpr int kSensorHandlePressure = 7;
 constexpr int kSensorHandleRelativeHumidity = 8;
 constexpr int kSensorHandleMagneticFieldUncalibrated = 9;
 constexpr int kSensorHandleGyroscopeFieldUncalibrated = 10;
+constexpr int kSensorHandleHingeAngle0 = 11;
 
 int getSensorNumber();
 bool isSensorHandleValid(int h);

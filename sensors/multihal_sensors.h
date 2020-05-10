@@ -76,6 +76,7 @@ private:
         float lastProximityValue = kSensorNoValue;
         float lastLightValue = kSensorNoValue;
         float lastRelativeHumidityValue = kSensorNoValue;
+        float lastHingeAngle0Value = kSensorNoValue;
     };
 
     static bool activateQemuSensorImpl(int pipe, int sensorHandle, bool enabled);
