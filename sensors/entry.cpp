@@ -17,11 +17,13 @@
 #include <log/log.h>
 #include "multihal_sensors.h"
 
+using ::android::hardware::sensors::V2_1::implementation::ISensorsSubHal;
+
 namespace {
 goldfish::MultihalSensors impl;
 }
 
-extern "C" ISensorsSubHal* sensorsHalGetSubHal(uint32_t* version) {
-    *version = SUB_HAL_2_0_VERSION;
+extern "C" ISensorsSubHal* sensorsHalGetSubHal_2_1(uint32_t* version) {
+    *version = SUB_HAL_2_1_VERSION;
     return &impl;
 }
