@@ -105,10 +105,10 @@ endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
 PRODUCT_PACKAGES += \
-    android.hardware.sensors@2.0-service.multihal \
-    android.hardware.sensors@2.0-impl.ranchu
+    android.hardware.sensors@2.1-service.multihal \
+    android.hardware.sensors@2.1-impl.ranchu
 # TODO(rkir):
-# add a soong namespace and move this into a.h.sensors@2.0-impl.ranchu
+# add a soong namespace and move this into a.h.sensors@2.1-impl.ranchu
 # as prebuilt_etc. For now soong_namespace causes a build break because the fw
 # refers to our wifi HAL in random places.
 PRODUCT_COPY_FILES += \

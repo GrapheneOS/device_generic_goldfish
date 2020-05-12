@@ -23,7 +23,7 @@
 
 namespace goldfish {
 using ahs10::EventPayload;
-using ahs10::SensorType;
+using ahs21::SensorType;
 using ahs10::SensorStatus;
 
 namespace {
@@ -222,7 +222,19 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             }
             parsed = true;
         }
-    } else if (const char* values = testPrefix(buf, end, "guest-sync", ':')) {
+    } else if (const char* values = testPrefix(buf, end, "hinge-angle0", ':')) {
+        if (sscanf(values, "%f", &payload->scalar) == 1) {
+            if (!approximatelyEqual(state->lastHingeAngle0Value,
+                                    payload->scalar, 0.001)) {
+                event.timestamp = nowNs + state->timeBiasNs;
+                event.sensorHandle = kSensorHandleHingeAngle0;
+                event.sensorType = SensorType::HINGE_ANGLE;
+                postSensorEvent(event);
+                state->lastHingeAngle0Value = payload->scalar;
+            }
+            parsed = true;
+        }
+     } else if (const char* values = testPrefix(buf, end, "guest-sync", ':')) {
         long long value;
         if ((sscanf(values, "%lld", &value) == 1) && (value >= 0)) {
             const int64_t guestTimeNs = static_cast<int64_t>(value * 1000ll);
