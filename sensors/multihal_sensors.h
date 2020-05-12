@@ -16,17 +16,17 @@
 
 #pragma once
 #include <android-base/unique_fd.h>
-#include <SubHal.h>
+#include <V2_1/SubHal.h>
 #include <cstdint>
 #include <thread>
 
 namespace goldfish {
 namespace ahs = ::android::hardware::sensors;
-namespace ahs20 = ahs::V2_0;
+namespace ahs21 = ahs::V2_1;
 namespace ahs10 = ahs::V1_0;
 
-using ahs20::implementation::IHalProxyCallback;
-using ahs10::Event;
+using ahs21::implementation::IHalProxyCallback;
+using ahs21::Event;
 using ahs10::OperationMode;
 using ahs10::RateLevel;
 using ahs10::Result;
@@ -39,19 +39,19 @@ using ::android::hardware::hidl_vec;
 using ::android::hardware::Return;
 using ::android::sp;
 
-struct MultihalSensors : public ahs20::implementation::ISensorsSubHal {
+struct MultihalSensors : public ahs21::implementation::ISensorsSubHal {
     MultihalSensors();
     ~MultihalSensors();
 
     Return<void> debug(const hidl_handle& fd, const hidl_vec<hidl_string>& args) override;
-    Return<void> getSensorsList(getSensorsList_cb _hidl_cb) override;
+    Return<void> getSensorsList_2_1(getSensorsList_2_1_cb _hidl_cb) override;
     Return<Result> setOperationMode(OperationMode mode) override;
     Return<Result> activate(int32_t sensorHandle, bool enabled) override;
     Return<Result> batch(int32_t sensorHandle,
                            int64_t samplingPeriodNs,
                            int64_t maxReportLatencyNs) override;
     Return<Result> flush(int32_t sensorHandle) override;
-    Return<Result> injectSensorData(const Event& event) override;
+    Return<Result> injectSensorData_2_1(const Event& event) override;
 
 
     Return<void> registerDirectChannel(const SharedMemInfo& mem,
@@ -76,6 +76,7 @@ private:
         float lastProximityValue = kSensorNoValue;
         float lastLightValue = kSensorNoValue;
         float lastRelativeHumidityValue = kSensorNoValue;
+        float lastHingeAngle0Value = kSensorNoValue;
     };
 
     static bool activateQemuSensorImpl(int pipe, int sensorHandle, bool enabled);
