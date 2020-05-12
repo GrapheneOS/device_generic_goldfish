@@ -49,7 +49,7 @@ public class MultiDisplayService extends Service {
     private VirtualDisplay mVirtualDisplay[];
     private Surface mSurface[];
     private Messenger mMessenger;
-    private ListenerThread mListner;
+    private ListenerThread mListener;
 
     private final Handler mHandler = new Handler();
 
@@ -96,8 +96,8 @@ public class MultiDisplayService extends Service {
             Log.e(TAG, "Failed to loadLibrary: " + e);
         }
 
-        mListner = new ListenerThread();
-        mListner.start();
+        mListener = new ListenerThread();
+        mListener.start();
 
         mDisplayManager = (DisplayManager)getSystemService(Context.DISPLAY_SERVICE);
         mMultiDisplay = new MultiDisplay[MAX_DISPLAYS + 1];
