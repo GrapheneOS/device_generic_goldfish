@@ -17,7 +17,7 @@
 #include "sensor_list.h"
 
 namespace goldfish {
-using ahs::V1_0::SensorType;
+using ahs::V2_1::SensorType;
 using ahs::V1_0::SensorFlagBits;
 
 constexpr char kAospVendor[] = "The Android Open Source Project";
@@ -34,6 +34,7 @@ const char* const kQemuSensorName[] = {
     "humidity",
     "magnetic-field-uncalibrated",
     "gyroscope-uncalibrated",
+    "hinge-angle0",
 };
 
 const SensorInfo kAllSensors[] = {
@@ -235,7 +236,25 @@ const SensorInfo kAllSensors[] = {
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::CONTINUOUS_MODE
     },
-};
+    {
+        .sensorHandle = kSensorHandleHingeAngle0,
+        .name = "Goldfish hinge sensor0 (in degrees)",
+        .vendor = kAospVendor,
+        .version = 1,
+        .type = SensorType::HINGE_ANGLE,
+        .typeAsString = "android.sensor.hinge_angle",
+        .maxRange = 360,
+        .resolution = 1.0,
+        .power = 3.0,
+        .minDelay = 10000,
+        .fifoReservedEventCount = 0,
+        .fifoMaxEventCount = 0,
+        .requiredPermission = "",
+        .maxDelay = 500000,
+        .flags = SensorFlagBits::DATA_INJECTION |
+                 SensorFlagBits::ON_CHANGE_MODE |
+                 SensorFlagBits::WAKE_UP
+    }};
 
 constexpr int kSensorNumber = sizeof(kAllSensors) / sizeof(kAllSensors[0]);
 

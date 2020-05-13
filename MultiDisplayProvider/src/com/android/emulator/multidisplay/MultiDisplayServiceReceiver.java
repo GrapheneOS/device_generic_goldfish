@@ -24,20 +24,20 @@ import android.content.Intent;
 import android.util.Log;
 
 public class MultiDisplayServiceReceiver extends BroadcastReceiver {
-    private static final String TAG = "MultiDisplayServiceReceiver";
+    private static final String TAG = "MultiDispActionReceiver";
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (isMyServiceRunning(MultiDisplayService.class, context) == false) {
+        if (!isMyServiceRunning(context)) {
             Log.v(TAG, "startService");
             context.startService(new Intent(context, MultiDisplayService.class));
         }
     }
 
-    private boolean isMyServiceRunning(Class<?> serviceClass, Context context) {
+    private boolean isMyServiceRunning(Context context) {
         ActivityManager manager = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
         for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
+            if (MultiDisplayService.class.getName().equals(service.service.getClassName())) {
                 return true;
             }
         }
