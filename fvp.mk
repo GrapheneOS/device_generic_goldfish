@@ -86,6 +86,7 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/fvpbase/fstab.fvpbase:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.fvpbase \
     device/generic/goldfish/fvpbase/fstab.fvpbase.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.fvpbase \
     device/generic/goldfish/fvpbase/init.fvpbase.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.fvpbase.rc \
+    device/generic/goldfish/fvpbase/required_images:required_images \
     frameworks/av/services/audiopolicy/config/audio_policy_configuration_generic.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
     frameworks/av/services/audiopolicy/config/primary_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/primary_audio_policy_configuration.xml \
     frameworks/av/services/audiopolicy/config/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
