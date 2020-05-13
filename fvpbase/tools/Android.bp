@@ -18,4 +18,5 @@
 cc_library_host_shared {
   name: "bind_to_localhost",
   srcs: ["bind_to_localhost.cpp"],
+  stl: "none",
 }
