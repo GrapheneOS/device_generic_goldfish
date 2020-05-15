@@ -17,7 +17,7 @@
 cc_library_shared {
     name: "android.hardware.sensors@2.1-impl.ranchu",
     vendor: true,
-//    relative_install_path: "hw",  // see  b/154634207
+    relative_install_path: "hw",
     defaults: ["hidl_defaults"],
     srcs: [
         "multihal_sensors.cpp",
