@@ -73,7 +73,7 @@ PRODUCT_PACKAGES += \
     dumpstate \
     dumpsys \
     crash_dump \
-    adbd \
+    adbd.com.android.adbd \
 
 PRODUCT_HOST_PACKAGES += \
     adb \
