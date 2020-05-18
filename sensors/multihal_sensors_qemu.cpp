@@ -234,6 +234,30 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             }
             parsed = true;
         }
+    } else if (const char* values = testPrefix(buf, end, "hinge-angle1", ':')) {
+        if (sscanf(values, "%f", &payload->scalar) == 1) {
+            if (!approximatelyEqual(state->lastHingeAngle1Value,
+                                    payload->scalar, 0.001)) {
+                event.timestamp = nowNs + state->timeBiasNs;
+                event.sensorHandle = kSensorHandleHingeAngle1;
+                event.sensorType = SensorType::HINGE_ANGLE;
+                postSensorEvent(event);
+                state->lastHingeAngle1Value = payload->scalar;
+            }
+            parsed = true;
+        }
+    } else if (const char* values = testPrefix(buf, end, "hinge-angle2", ':')) {
+        if (sscanf(values, "%f", &payload->scalar) == 1) {
+            if (!approximatelyEqual(state->lastHingeAngle2Value,
+                                    payload->scalar, 0.001)) {
+                event.timestamp = nowNs + state->timeBiasNs;
+                event.sensorHandle = kSensorHandleHingeAngle2;
+                event.sensorType = SensorType::HINGE_ANGLE;
+                postSensorEvent(event);
+                state->lastHingeAngle2Value = payload->scalar;
+            }
+            parsed = true;
+        }
      } else if (const char* values = testPrefix(buf, end, "guest-sync", ':')) {
         long long value;
         if ((sscanf(values, "%lld", &value) == 1) && (value >= 0)) {
