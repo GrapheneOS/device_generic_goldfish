@@ -41,6 +41,8 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_product.mk)
 #
 $(call inherit-product, $(SRC_TARGET_DIR)/product/media_vendor.mk)
 
+PRODUCT_SOONG_NAMESPACES += device/generic/goldfish
+
 PRODUCT_PACKAGES += \
     android.hardware.audio.service \
     android.hardware.audio@6.0-impl:32 \
