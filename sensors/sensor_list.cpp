@@ -35,6 +35,8 @@ const char* const kQemuSensorName[] = {
     "magnetic-field-uncalibrated",
     "gyroscope-uncalibrated",
     "hinge-angle0",
+    "hinge-angle1",
+    "hinge-angle2",
 };
 
 const SensorInfo kAllSensors[] = {
@@ -239,6 +241,44 @@ const SensorInfo kAllSensors[] = {
     {
         .sensorHandle = kSensorHandleHingeAngle0,
         .name = "Goldfish hinge sensor0 (in degrees)",
+        .vendor = kAospVendor,
+        .version = 1,
+        .type = SensorType::HINGE_ANGLE,
+        .typeAsString = "android.sensor.hinge_angle",
+        .maxRange = 360,
+        .resolution = 1.0,
+        .power = 3.0,
+        .minDelay = 10000,
+        .fifoReservedEventCount = 0,
+        .fifoMaxEventCount = 0,
+        .requiredPermission = "",
+        .maxDelay = 500000,
+        .flags = SensorFlagBits::DATA_INJECTION |
+                 SensorFlagBits::ON_CHANGE_MODE |
+                 SensorFlagBits::WAKE_UP
+    },
+    {
+        .sensorHandle = kSensorHandleHingeAngle1,
+        .name = "Goldfish hinge sensor1 (in degrees)",
+        .vendor = kAospVendor,
+        .version = 1,
+        .type = SensorType::HINGE_ANGLE,
+        .typeAsString = "android.sensor.hinge_angle",
+        .maxRange = 360,
+        .resolution = 1.0,
+        .power = 3.0,
+        .minDelay = 10000,
+        .fifoReservedEventCount = 0,
+        .fifoMaxEventCount = 0,
+        .requiredPermission = "",
+        .maxDelay = 500000,
+        .flags = SensorFlagBits::DATA_INJECTION |
+                 SensorFlagBits::ON_CHANGE_MODE |
+                 SensorFlagBits::WAKE_UP
+    },
+    {
+        .sensorHandle = kSensorHandleHingeAngle2,
+        .name = "Goldfish hinge sensor2 (in degrees)",
         .vendor = kAospVendor,
         .version = 1,
         .type = SensorType::HINGE_ANGLE,
