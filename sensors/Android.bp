@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+prebuilt_etc {
+    name: "android.hardware.sensors@2.1-impl.ranchu.etc",
+    vendor: true,
+    sub_dir: "sensors",
+    filename: "hals.conf",
+    src: "hals.conf"
+}
+
 cc_library_shared {
     name: "android.hardware.sensors@2.1-impl.ranchu",
     vendor: true,
@@ -41,4 +49,5 @@ cc_library_shared {
         "-DLOG_TAG=\"android.hardware.sensors@2.1-impl.ranchu\"",
         "-DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION",
     ],
+    required: ["android.hardware.sensors@2.1-impl.ranchu.etc"],
 }
