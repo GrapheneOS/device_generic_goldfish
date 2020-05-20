@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -56,13 +55,6 @@ struct generic_audio_device {
     audio_patch_handle_t next_patch_handle; // Protected by this->lock
 };
 
-/* If not NULL, this is a pointer to the fallback module.
- * This really is the original goldfish audio device /dev/eac which we will use
- * if no alsa devices are detected.
- */
-static struct audio_module*  sFallback;
-static pthread_once_t sFallbackOnce = PTHREAD_ONCE_INIT;
-static void fallback_init(void);
 static int adev_get_mic_mute(const struct audio_hw_device *dev, bool *state);
 static int adev_get_microphones(const audio_hw_device_t *dev,
                                 struct audio_microphone_characteristic_t *mic_array,
@@ -1726,11 +1718,6 @@ static int adev_open(const hw_module_t* module, const char* name,
     if (strcmp(name, AUDIO_HARDWARE_INTERFACE) != 0)
         return -EINVAL;
 
-    pthread_once(&sFallbackOnce, fallback_init);
-    if (sFallback != NULL) {
-        return sFallback->common.methods->open(&sFallback->common, name, device);
-    }
-
     pthread_mutex_lock(&adev_init_lock);
     if (audio_device_ref_count != 0) {
         *device = &adev->device.common;
@@ -1823,41 +1810,3 @@ struct audio_module HAL_MODULE_INFO_SYM = {
         .methods = &hal_module_methods,
     },
 };
-
-/* This function detects whether or not we should be using an alsa audio device
- * or fall back to the legacy goldfish_audio driver.
- */
-static void
-fallback_init(void)
-{
-    void* module;
-
-    FILE *fptr = fopen ("/proc/asound/pcm", "r");
-    if (fptr != NULL) {
-      // asound/pcm is empty if there are no devices
-      int c = fgetc(fptr);
-      fclose(fptr);
-      if (c != EOF) {
-          ALOGD("Emulator host-side ALSA audio emulation detected.");
-          return;
-      }
-    }
-
-    ALOGD("Emulator without host-side ALSA audio emulation detected.");
-#if __LP64__
-    module = dlopen("/vendor/lib64/hw/audio.primary.goldfish_legacy.so",
-                    RTLD_LAZY|RTLD_LOCAL);
-#else
-    module = dlopen("/vendor/lib/hw/audio.primary.goldfish_legacy.so",
-                    RTLD_LAZY|RTLD_LOCAL);
-#endif
-    if (module != NULL) {
-        sFallback = (struct audio_module *)(dlsym(module, HAL_MODULE_INFO_SYM_AS_STR));
-        if (sFallback == NULL) {
-            dlclose(module);
-        }
-    }
-    if (sFallback == NULL) {
-        ALOGE("Could not find legacy fallback module!?");
-    }
-}
