@@ -2,6 +2,7 @@ qemu.                   u:object_r:qemu_prop:s0
 qemu.cmdline            u:object_r:qemu_cmdline:s0
 vendor.qemu		u:object_r:qemu_prop:s0
 vendor.network          u:object_r:vendor_net:s0
+ro.aae.simulateMultiZoneAudio u:object_r:hal_audio_default_prop:s0
 ro.emu.                 u:object_r:qemu_prop:s0
 ro.emulator.            u:object_r:qemu_prop:s0
 ro.radio.noril          u:object_r:radio_noril_prop:s0
