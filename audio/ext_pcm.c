@@ -58,14 +58,58 @@ static int str_hash_fn(void *str) {
 static bool mixer_thread_mix(__unused void *key, void *value, void *context) {
   struct ext_mixer_pipeline *pipeline_out = (struct ext_mixer_pipeline *)context;
   struct ext_mixer_pipeline *pipeline_in = (struct ext_mixer_pipeline *)value;
-  pipeline_out->position = MAX(pipeline_out->position, pipeline_in->position);
-  for (int i = 0; i < pipeline_out->position; i++) {
-    float mixed = pipeline_out->buffer[i] + pipeline_in->buffer[i];
-    if (mixed > INT16_MAX) pipeline_out->buffer[i] = INT16_MAX;
-    else if (mixed < INT16_MIN) pipeline_out->buffer[i] = INT16_MIN;
-    else pipeline_out->buffer[i] = (int16_t)mixed;
+
+  const unsigned in_pos = pipeline_in->position;
+  const unsigned out_pos = pipeline_out->position;
+  const unsigned mix_pos = MIN(out_pos, in_pos);
+  const int16_t* in = pipeline_in->buffer;
+  int16_t* out = pipeline_out->buffer;
+  int16_t* out_end = out + mix_pos;
+
+  switch (mix_pos % 8) {
+  case 7: goto rem7;
+  case 6: goto rem6;
+  case 5: goto rem5;
+  case 4: goto rem4;
+  case 3: goto rem3;
+  case 2: goto rem2;
+  case 1: goto rem1;
+  case 0: break;
   }
-  memset(pipeline_in, 0, sizeof(struct ext_mixer_pipeline));
+
+#define ONE_ITER                                    \
+    mixed = *in + *out;                             \
+    clamper =                                       \
+        (mixed > INT16_MAX) * (mixed - INT16_MAX) + \
+        (mixed < INT16_MIN) * (mixed - INT16_MIN);  \
+    *out = mixed - clamper;                         \
+    ++in;                                           \
+    ++out
+
+  while (out < out_end) {
+    int32_t mixed;
+    int32_t clamper;
+
+          ONE_ITER;
+    rem7: ONE_ITER;
+    rem6: ONE_ITER;
+    rem5: ONE_ITER;
+    rem4: ONE_ITER;
+    rem3: ONE_ITER;
+    rem2: ONE_ITER;
+    rem1: ONE_ITER;
+  }
+
+#undef ONE_ITER
+
+  if (in_pos > out_pos) {
+    memcpy(&pipeline_out->buffer[out_pos],
+           &pipeline_in->buffer[out_pos],
+           sizeof(pipeline_in->buffer[0]) * (in_pos - out_pos));
+    pipeline_out->position = in_pos;
+  }
+
+  pipeline_in->position = 0;
   return true;
 }
 
@@ -82,7 +126,7 @@ static void *mixer_thread_loop(void *context) {
       pcm_write(ext_pcm->pcm, (void *)ext_pcm->mixer_pipeline.buffer,
           ext_pcm->mixer_pipeline.position * sizeof(int16_t));
     }
-    memset(&ext_pcm->mixer_pipeline, 0, sizeof(struct ext_mixer_pipeline));
+    ext_pcm->mixer_pipeline.position = 0;
     pthread_mutex_unlock(&ext_pcm->mixer_lock);
     usleep(MIXER_INTERVAL_MS * 1000);
   } while (1);
