@@ -22,10 +22,16 @@ cc_library_shared {
         "liblog",
         "libtinyalsa",
     ],
-    srcs: ["audio_hw.c"],
-    header_libs: ["libhardware_headers"],
+    srcs: [
+        "audio_hw.c",
+        "audio_vbuffer.c",
+        "ext_pcm.c",
+    ],
+    header_libs: [
+        "libhardware_headers",
+        "libcutils_headers",
+    ],
     cflags: [
-        "-Wno-unused-parameter",
-        "-Werror",
+        "-Wno-unused-parameter"
     ],
 }
