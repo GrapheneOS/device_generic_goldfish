@@ -117,14 +117,5 @@
             <instance>slot1</instance>
         </interface>
     </hal>
-    <hal format="hidl">
-        <name>android.hardware.soundtrigger</name>
-        <transport>hwbinder</transport>
-        <version>2.2</version>
-        <interface>
-            <name>ISoundTriggerHw</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
     <kernel target-level="5"/>
 </manifest>
