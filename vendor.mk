@@ -76,8 +76,7 @@ PRODUCT_PACKAGES += \
     audio.r_submix.default \
     android.hardware.audio.service \
     android.hardware.audio@6.0-impl:32 \
-    android.hardware.audio.effect@6.0-impl:32 \
-    android.hardware.soundtrigger@2.2-impl
+    android.hardware.audio.effect@6.0-impl:32
 
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.1-service.sim \
@@ -151,6 +150,12 @@ PRODUCT_PACKAGES += \
     libgooglecamerahwl_impl \
     android.hardware.camera.provider@2.6-impl-google
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
+endif
+
+ifneq ($(EMULATOR_VENDOR_NO_SOUND_TRIGGER),true)
+PRODUCT_PACKAGES += \
+    android.hardware.soundtrigger@2.2-impl
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.soundtrigger.xml
 endif
 
 PRODUCT_PACKAGES += \
