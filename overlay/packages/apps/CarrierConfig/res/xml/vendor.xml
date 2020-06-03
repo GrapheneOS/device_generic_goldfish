@@ -9,4 +9,35 @@
 <boolean name="enabledMMS" value="false"/>
 <boolean name="show_4g_for_lte_data_icon_bool" value="false"/>
 </carrier_config>
+<carrier_config mcc="310" mnc="260">
+        <boolean name="unmetered_nr_sa_bool" value="true" />
+        <boolean name="unmetered_nr_sa_mmwave_bool" value="true" />
+        <boolean name="unmetered_nr_sa_sub6_bool" value="true" />
+        <boolean name="unmetered_nr_nsa_when_roaming_bool" value="true" />
+        <boolean name="unmetered_nr_nsa_bool" value="true" />
+        <boolean name="unmetered_nr_nsa_mmwave_bool" value="true" />
+        <boolean name="unmetered_nr_nsa_sub6_bool" value="true" />
+        <string-array name="bandwidth_string_array" num="19">
+            <item value="GPRS:24,24"/>
+            <item value="EDGE:70,18"/>
+            <item value="UMTS:115,115"/>
+            <item value="CDMA-IS95A:14,14"/>
+            <item value="CDMA-IS95B:14,14"/>
+            <item value="1xRTT:30,30"/>
+            <item value="EvDo-rev.0:750,48"/>
+            <item value="EvDo-rev.A:950,550"/>
+            <item value="HSDPA:4300,620"/>
+            <item value="HSUPA:4300,1800"/>
+            <item value="HSPA:4300,1800"/>
+            <item value="EvDo-rev.B:1500,550"/>
+            <item value="eHRPD:750,48"/>
+            <item value="HSPAP:13000,3400"/>
+            <item value="TD-SCDMA:115,115"/>
+            <item value="LTE:30000,15000"/>
+            <item value="NR_NSA:563200,61440"/>
+            <item value="NR_NSA_MMWAVE:563200,614400"/>
+            <item value="NR_SA:563200,61440"/>
+        </string-array>
+</carrier_config>
+
 </carrier_config_list>
