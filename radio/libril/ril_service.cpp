@@ -3973,6 +3973,11 @@ int radio::getDataRegistrationStateResponse(int slotId,
                   dataRegResponse14.nrIndicators.isEndcAvailable = enableNR ? 1 : 0;
                   dataRegResponse14.nrIndicators.isDcNrRestricted = enableNR ? 0 : 1;
                   dataRegResponse14.nrIndicators.isNrAvailable = enableNR ? 1 : 0;
+                  // override the NR: note, at the moment, NR_SA is not common, so switch to
+                  // NR_NSA(on top of LTE)
+                  if (enableNR) {
+                      dataRegResponse14.base.rat = (int)android::hardware::radio::V1_4::RadioTechnology::LTE_CA;
+                  }
                   if (enableNR) {
                     RLOGD("getDataRegistrationStateResponse enabled 5g");
                   } else {
