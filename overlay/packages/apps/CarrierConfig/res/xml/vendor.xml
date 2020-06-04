@@ -34,9 +34,9 @@
             <item value="HSPAP:13000,3400"/>
             <item value="TD-SCDMA:115,115"/>
             <item value="LTE:30000,15000"/>
-            <item value="NR_NSA:563200,61440"/>
-            <item value="NR_NSA_MMWAVE:563200,614400"/>
-            <item value="NR_SA:563200,61440"/>
+            <item value="NR_NSA:47000,18000"/>
+            <item value="NR_NSA_MMWAVE:145000,60000"/>
+            <item value="NR_SA:145000,60000"/>
         </string-array>
 </carrier_config>
 
