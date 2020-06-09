@@ -68,7 +68,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.1-service.sim \
     android.hardware.bluetooth.audio@2.0-impl
-PRODUCT_PROPERTY_OVERRIDES += bt.rootcanal_test_console=off
+PRODUCT_PROPERTY_OVERRIDES += vendor.bt.rootcanal_test_console=off
 
 PRODUCT_HOST_PACKAGES += bind_to_localhost
 
