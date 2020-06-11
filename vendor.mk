@@ -154,9 +154,7 @@ DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SOUND_TRIGGER),true)
-PRODUCT_PACKAGES += \
-    android.hardware.soundtrigger@2.2-impl
-DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.soundtrigger.xml
+PRODUCT_PACKAGES += android.hardware.soundtrigger@2.2-impl.ranchu
 endif
 
 PRODUCT_PACKAGES += \
