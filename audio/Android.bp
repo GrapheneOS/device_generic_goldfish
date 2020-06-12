@@ -14,24 +14,38 @@
 // limitations under the License.
 
 cc_library_shared {
-    name: "audio.primary.goldfish",
+    name: "android.hardware.audio@6.0-impl.ranchu",
     vendor: true,
+    vintf_fragments: ["android.hardware.audio@6.0-impl.ranchu.xml"],
     relative_install_path: "hw",
+    defaults: ["hidl_defaults"],
+    srcs: [
+        "entry.cpp",
+        "device_factory.cpp",
+        "primary_device.cpp",
+        "stream_common.cpp",
+        "stream_in.cpp",
+        "stream_out.cpp",
+        "io_thread.cpp",
+        "talsa.cpp",
+        "util.cpp",
+    ],
     shared_libs: [
+        "android.hardware.audio@6.0",
+        "android.hardware.audio.common@6.0",
+        "android.hardware.audio.common@6.0-util",
+        "libbase",
         "libcutils",
+        "libhidlbase",
         "liblog",
         "libtinyalsa",
-    ],
-    srcs: [
-        "audio_hw.c",
-        "audio_vbuffer.c",
-        "ext_pcm.c",
+        "libutils",
+        "libfmq",
     ],
     header_libs: [
-        "libhardware_headers",
-        "libcutils_headers",
+        "libaudio_system_headers",
     ],
     cflags: [
-        "-Wno-unused-parameter"
+        "-DLOG_TAG=\"android.hardware.audio@6.0-impl.ranchu\"",
     ],
 }
