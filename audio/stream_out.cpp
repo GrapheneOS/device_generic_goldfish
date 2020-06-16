@@ -172,6 +172,7 @@ struct WriteThread : public IOThread {
         const size_t availToRead = mDataMQ.availableToRead();
         size_t written = 0;
         if (mDataMQ.read(&mBuffer[0], availToRead)) {
+            applyVolume(&mBuffer[0], availToRead, mStream->getVolumeNumerator());
             status.retval = doWriteImpl(&mBuffer[0], availToRead, written);
 
             mPos.addFrames(pcm_bytes_to_frames(mPcm.get(), written));
@@ -182,6 +183,21 @@ struct WriteThread : public IOThread {
         }
 
         return status;
+    }
+
+    static void applyVolume(void *buf, const size_t szBytes, const int32_t numerator) {
+        constexpr int32_t kDenominator = StreamOut::kVolumeDenominator;
+
+        if (numerator == kDenominator) {
+            return;
+        }
+
+        int16_t *samples = static_cast<int16_t *>(buf);
+        std::for_each(samples,
+                      samples + szBytes / sizeof(*samples),
+                      [numerator](int16_t &x) {
+                          x = (x * numerator + kDenominator / 2) / kDenominator;
+                      });
     }
 
     IStreamOut::WriteStatus doGetPresentationPosition() {
@@ -396,9 +412,12 @@ Return<uint32_t> StreamOut::getLatency() {
 }
 
 Return<Result> StreamOut::setVolume(float left, float right) {
-    (void)left;
-    (void)right;
-    return Result::NOT_SUPPORTED;
+    if (left < 0.0f || left > 1.0f || right < 0.0f || right > 1.0f) {
+        return Result::INVALID_ARGUMENTS;
+    }
+
+    mVolumeNumerator = int16_t((left + right) * kVolumeDenominator / 2);
+    return Result::OK;
 }
 
 Return<void> StreamOut::updateSourceMetadata(const SourceMetadata& sourceMetadata) {
