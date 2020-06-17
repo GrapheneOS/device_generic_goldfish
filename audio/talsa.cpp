@@ -56,9 +56,9 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
     if (::pcm_is_ready(pcm.get())) {
         return pcm;
     } else {
-        ALOGE("%s:%d pcm_open failed for sampleRateHz=%zu "
-              "frameCount=%zu with %s", __func__, __LINE__,
-              sampleRateHz, frameCount,
+        ALOGE("%s:%d pcm_open failed for nChannels=%u sampleRateHz=%zu "
+              "frameCount=%zu isOut=%d with %s", __func__, __LINE__,
+              nChannels, sampleRateHz, frameCount, isOut,
               pcm_get_error(pcm.get()));
         return nullptr;
     }
