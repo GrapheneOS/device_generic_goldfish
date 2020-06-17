@@ -24,7 +24,7 @@ namespace implementation {
 
 bool IOThread::notify(const uint32_t mask) {
     EventFlag *evf = getEventFlag();
-    return evf ? evf->wake(mask) : false;
+    return evf ? (NO_ERROR == evf->wake(mask)) : false;
 }
 
 bool IOThread::standby() {
