@@ -334,7 +334,8 @@ Return<void> StreamIn::getParameters(const hidl_vec<ParameterValue>& context,
 Return<Result> StreamIn::setParameters(const hidl_vec<ParameterValue>& context,
                                        const hidl_vec<ParameterValue>& parameters) {
     (void)context;
-    return (parameters.size() > 0) ? Result::NOT_SUPPORTED : Result::OK;
+    (void)parameters;
+    return Result::OK;
 }
 
 Return<Result> StreamIn::setHwAvSync(uint32_t hwAvSync) {
