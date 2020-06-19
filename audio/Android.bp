@@ -27,6 +27,8 @@ cc_library_shared {
         "stream_in.cpp",
         "stream_out.cpp",
         "io_thread.cpp",
+        "device_port_source.cpp",
+        "device_port_sink.cpp",
         "talsa.cpp",
         "util.cpp",
     ],
