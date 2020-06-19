@@ -166,7 +166,7 @@ struct ReadThread : public IOThread {
         size_t read = 0;
         status.retval = doReadImpl(&mBuffer[0], bytesToRead, read);
         if (status.retval == Result::OK) {
-            if (mDataMQ.write(&mBuffer[0], read)) {
+            if (!mDataMQ.write(&mBuffer[0], read)) {
                 ALOGE("ReadThread::%s:%d: mDataMQ.write failed", __func__, __LINE__);
             }
 
