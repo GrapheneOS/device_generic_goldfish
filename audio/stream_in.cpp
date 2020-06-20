@@ -94,7 +94,8 @@ struct ReadThread : public IOThread {
     bool threadLoop() override {
         while (!exitPending()) {
             uint32_t efState = 0;
-            mEfGroup->wait(MessageQueueFlagBits::NOT_EMPTY | 0, &efState);
+            mEfGroup->wait(MessageQueueFlagBits::NOT_FULL | EXIT_REQUEST | STAND_BY_REQUEST,
+                           &efState);
             if (efState & EXIT_REQUEST) {
                 return false;
             }
@@ -104,7 +105,7 @@ struct ReadThread : public IOThread {
                 mBuffer.reset();
             }
 
-            if (efState & (MessageQueueFlagBits::NOT_EMPTY | 0)) {
+            if (efState & (MessageQueueFlagBits::NOT_FULL | 0)) {
                 if (!mPcm) {
                     mBuffer.reset(new uint8_t[mDataMQ.getQuantumCount()]);
                     LOG_ALWAYS_FATAL_IF(!mBuffer);
@@ -155,7 +156,7 @@ struct ReadThread : public IOThread {
             ALOGE("ReadThread::%s:%d: status message queue write failed", __func__, __LINE__);
         }
 
-        mEfGroup->wake(MessageQueueFlagBits::NOT_FULL | 0);
+        mEfGroup->wake(MessageQueueFlagBits::NOT_EMPTY | 0);
     }
 
     IStreamIn::ReadStatus doRead(const IStreamIn::ReadParameters &rParameters) {
@@ -166,7 +167,7 @@ struct ReadThread : public IOThread {
         size_t read = 0;
         status.retval = doReadImpl(&mBuffer[0], bytesToRead, read);
         if (status.retval == Result::OK) {
-            if (mDataMQ.write(&mBuffer[0], read)) {
+            if (!mDataMQ.write(&mBuffer[0], read)) {
                 ALOGE("ReadThread::%s:%d: mDataMQ.write failed", __func__, __LINE__);
             }
 
