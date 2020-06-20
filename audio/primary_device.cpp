@@ -238,11 +238,8 @@ Return<void> PrimaryDevice::getParameters(const hidl_vec<ParameterValue>& contex
 Return<Result> PrimaryDevice::setParameters(const hidl_vec<ParameterValue>& context,
                                             const hidl_vec<ParameterValue>& parameters) {
     (void)context;
-    if (parameters.size() == 0) {
-        return Result::OK;
-    } else {
-        return Result::NOT_SUPPORTED;
-    }
+    (void)parameters;
+    return Result::OK;
 }
 
 Return<void> PrimaryDevice::getMicrophones(getMicrophones_cb _hidl_cb) {
