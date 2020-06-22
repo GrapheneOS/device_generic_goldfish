@@ -24,6 +24,12 @@
 #include "talsa.h"
 #include "deleters.h"
 #include "util.h"
+#include <sys/resource.h>
+#include <pthread.h>
+#include <cutils/sched_policy.h>
+#include <utils/ThreadDefs.h>
+#include <future>
+#include <thread>
 
 namespace android {
 namespace hardware {
@@ -78,29 +84,39 @@ struct WriteThread : public IOThread {
             mEfGroup.reset(rawEfGroup);
         }
 
-        status = run("writer", PRIORITY_URGENT_AUDIO);
-        if (status != OK) {
-            ALOGE("WriteThread::%s:%d: failed to start the thread: %s",
-                  __func__, __LINE__, strerror(-status));
-        }
+        mThread = std::thread(&WriteThread::threadLoop, this);
     }
 
     ~WriteThread() {
-        requestExit();
-        LOG_ALWAYS_FATAL_IF(join() != OK);
+        if (mThread.joinable()) {
+            requestExit();
+            mThread.join();
+        }
     }
 
     EventFlag *getEventFlag() override {
         return mEfGroup.get();
     }
 
-    bool threadLoop() override {
-        while (!exitPending()) {
+    bool isRunning() const {
+        return mThread.joinable();
+    }
+
+    std::future<pthread_t> getTid() {
+        return mTid.get_future();
+    }
+
+    void threadLoop() {
+        setpriority(PRIO_PROCESS, 0, PRIORITY_URGENT_AUDIO);
+        set_sched_policy(0, SP_FOREGROUND);
+        mTid.set_value(pthread_self());
+
+        while (true) {
             uint32_t efState = 0;
             mEfGroup->wait(MessageQueueFlagBits::NOT_EMPTY | STAND_BY_REQUEST | EXIT_REQUEST,
                            &efState);
             if (efState & EXIT_REQUEST) {
-                return false;
+                return;
             }
 
             if (efState & STAND_BY_REQUEST) {
@@ -125,8 +141,6 @@ struct WriteThread : public IOThread {
                 processCommand();
             }
         }
-
-        return false;   // do not restart threadLoop
     }
 
     void processCommand() {
@@ -251,6 +265,8 @@ struct WriteThread : public IOThread {
     std::unique_ptr<uint8_t[]> mBuffer;
     talsa::PcmPtr mPcm;
     util::StreamPosition mPos;
+    std::thread mThread;
+    std::promise<pthread_t> mTid;
 };
 
 } // namespace
@@ -450,7 +466,7 @@ Return<void> StreamOut::prepareForWriting(uint32_t frameSize,
                  *(t->mCommandMQ.getDesc()),
                  *(t->mDataMQ.getDesc()),
                  *(t->mStatusMQ.getDesc()),
-                 {.pid = getpid(), .tid = t->getTid()});
+                 {.pid = getpid(), .tid = t->getTid().get()});
 
         mWriteThread = std::move(t);
     } else {
