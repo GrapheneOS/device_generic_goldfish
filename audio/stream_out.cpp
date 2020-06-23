@@ -21,7 +21,7 @@
 #include <hidl/Status.h>
 #include <math.h>
 #include "stream_out.h"
-#include "talsa.h"
+#include "device_port_sink.h"
 #include "deleters.h"
 #include "util.h"
 #include <sys/resource.h>
@@ -48,15 +48,8 @@ struct WriteThread : public IOThread {
     typedef MessageQueue<IStreamOut::WriteStatus, kSynchronizedReadWrite> StatusMQ;
     typedef MessageQueue<uint8_t, kSynchronizedReadWrite> DataMQ;
 
-    WriteThread(StreamOut *stream,
-                const unsigned nChannels,
-                const size_t sampleRateHz,
-                const size_t frameCount,
-                const size_t mqBufferSize)
+    WriteThread(StreamOut *stream, const size_t mqBufferSize)
             : mStream(stream)
-            , mNChannels(nChannels)
-            , mSampleRateHz(sampleRateHz)
-            , mFrameCount(frameCount)
             , mCommandMQ(1)
             , mStatusMQ(1)
             , mDataMQ(mqBufferSize, true /* EventFlag */) {
@@ -120,22 +113,18 @@ struct WriteThread : public IOThread {
             }
 
             if (efState & STAND_BY_REQUEST) {
-                mPcm.reset();
-                mBuffer.reset();
+                mSink.reset();
             }
 
             if (efState & (MessageQueueFlagBits::NOT_EMPTY | 0)) {
-                if (!mPcm) {
+                if (!mSink) {
                     mBuffer.reset(new uint8_t[mDataMQ.getQuantumCount()]);
                     LOG_ALWAYS_FATAL_IF(!mBuffer);
 
-                    mPcm = talsa::pcmOpen(
-                        talsa::kPcmCard, talsa::kPcmDevice,
-                        mNChannels, mSampleRateHz, mFrameCount,
-                        true /* isOut */);
-                    LOG_ALWAYS_FATAL_IF(!mPcm);
-
-                    mPos.reset();
+                    mSink = DevicePortSink::create(mStream->getDeviceAddress(),
+                                                   mStream->getAudioConfig(),
+                                                   mStream->getAudioOutputFlags());
+                    LOG_ALWAYS_FATAL_IF(!mSink);
                 }
 
                 processCommand();
@@ -188,8 +177,6 @@ struct WriteThread : public IOThread {
         if (mDataMQ.read(&mBuffer[0], availToRead)) {
             applyVolume(&mBuffer[0], availToRead, mStream->getVolumeNumerator());
             status.retval = doWriteImpl(&mBuffer[0], availToRead, written);
-
-            mPos.addFrames(pcm_bytes_to_frames(mPcm.get(), written));
             status.reply.written = written;
         } else {
             ALOGE("WriteThread::%s:%d: mDataMQ.read failed", __func__, __LINE__);
@@ -217,7 +204,7 @@ struct WriteThread : public IOThread {
     IStreamOut::WriteStatus doGetPresentationPosition() {
         IStreamOut::WriteStatus status;
 
-        status.retval = doGetPresentationPositionImpl(
+        status.retval = mSink->getPresentationPosition(
             status.reply.presentationPosition.frames,
             status.reply.presentationPosition.timeStamp);
 
@@ -236,35 +223,25 @@ struct WriteThread : public IOThread {
     Result doWriteImpl(const uint8_t *const data,
                        const size_t toWrite,
                        size_t &written) {
-        const int res = pcm_write(mPcm.get(), data, toWrite);
-        if (res) {
-            ALOGE("WriteThread::%s:%d: pcm_write failed with %s",
+        const int res = mSink->write(data, toWrite);
+        if (res < 0) {
+            ALOGE("WriteThread::%s:%d: DevicePortSink::write failed with %s",
                   __func__, __LINE__, strerror(-res));
+            written = toWrite;
+        } else {
+            written = res;
         }
 
-        written = toWrite;
-        return Result::OK;
-    }
-
-    Result doGetPresentationPositionImpl(uint64_t &frames, TimeSpec &ts) {
-        nsecs_t t = 0;
-        mPos.now(mSampleRateHz, frames, t);
-        ts.tvSec = ns2s(t);
-        ts.tvNSec = t - s2ns(ts.tvSec);
         return Result::OK;
     }
 
     StreamOut *const mStream;
-    const unsigned mNChannels;
-    const size_t mSampleRateHz;
-    const size_t mFrameCount;
     CommandMQ mCommandMQ;
     StatusMQ mStatusMQ;
     DataMQ mDataMQ;
     std::unique_ptr<EventFlag, deleters::forEventFlag> mEfGroup;
     std::unique_ptr<uint8_t[]> mBuffer;
-    talsa::PcmPtr mPcm;
-    util::StreamPosition mPos;
+    std::unique_ptr<DevicePortSink> mSink;
     std::thread mThread;
     std::promise<pthread_t> mTid;
 };
@@ -455,11 +432,7 @@ Return<void> StreamOut::prepareForWriting(uint32_t frameSize,
         return Void();
     }
 
-    auto t = std::make_unique<WriteThread>(this,
-                                           util::countChannels(mCommon.getChannelMask()),
-                                           mCommon.getSampleRate(),
-                                           mCommon.getFrameCount(),
-                                           frameSize * framesCount);
+    auto t = std::make_unique<WriteThread>(this, frameSize * framesCount);
 
     if (t->isRunning()) {
         _hidl_cb(Result::OK,
