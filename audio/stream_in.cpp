@@ -23,6 +23,12 @@
 #include "deleters.h"
 #include "talsa.h"
 #include "util.h"
+#include <sys/resource.h>
+#include <pthread.h>
+#include <cutils/sched_policy.h>
+#include <utils/ThreadDefs.h>
+#include <future>
+#include <thread>
 
 namespace android {
 namespace hardware {
@@ -75,29 +81,39 @@ struct ReadThread : public IOThread {
             mEfGroup.reset(rawEfGroup);
         }
 
-        status = run("reader", PRIORITY_URGENT_AUDIO);
-        if (status != OK) {
-            ALOGE("ReadThread::%s:%d: failed to start the thread: %s",
-                  __func__, __LINE__, strerror(-status));
-        }
+        mThread = std::thread(&ReadThread::threadLoop, this);
     }
 
     ~ReadThread() {
-        requestExit();
-        LOG_ALWAYS_FATAL_IF(join() != OK);
+        if (mThread.joinable()) {
+            requestExit();
+            mThread.join();
+        }
     }
 
     EventFlag *getEventFlag() override {
         return mEfGroup.get();
     }
 
-    bool threadLoop() override {
-        while (!exitPending()) {
+    bool isRunning() const {
+        return mThread.joinable();
+    }
+
+    std::future<pthread_t> getTid() {
+        return mTid.get_future();
+    }
+
+    void threadLoop() {
+        setpriority(PRIO_PROCESS, 0, PRIORITY_URGENT_AUDIO);
+        set_sched_policy(0, SP_FOREGROUND);
+        mTid.set_value(pthread_self());
+
+        while (true) {
             uint32_t efState = 0;
             mEfGroup->wait(MessageQueueFlagBits::NOT_FULL | EXIT_REQUEST | STAND_BY_REQUEST,
                            &efState);
             if (efState & EXIT_REQUEST) {
-                return false;
+                return;
             }
 
             if (efState & STAND_BY_REQUEST) {
@@ -122,8 +138,6 @@ struct ReadThread : public IOThread {
                 processCommand();
             }
         }
-
-        return false;   // do not restart threadLoop
     }
 
     void processCommand() {
@@ -217,6 +231,8 @@ struct ReadThread : public IOThread {
     std::unique_ptr<uint8_t[]> mBuffer;
     talsa::PcmPtr mPcm;
     util::StreamPosition mPos;
+    std::thread mThread;
+    std::promise<pthread_t> mTid;
 };
 
 } // namespace
@@ -413,7 +429,7 @@ Return<void> StreamIn::prepareForReading(uint32_t frameSize,
                  *(t->mCommandMQ.getDesc()),
                  *(t->mDataMQ.getDesc()),
                  *(t->mStatusMQ.getDesc()),
-                 {.pid = getpid(), .tid = t->getTid()});
+                 {.pid = getpid(), .tid = t->getTid().get()});
 
         mReadThread = std::move(t);
     } else {
