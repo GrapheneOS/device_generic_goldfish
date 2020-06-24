@@ -88,7 +88,7 @@ void GnssMeasurement20::update() {
         .receivedSvTimeUncertaintyInNs = 15,
         .cN0DbHz = 30.0,
         .pseudorangeRateMps = -484.13739013671875,
-        .pseudorangeRateUncertaintyMps = 1.0379999876022339,
+        .pseudorangeRateUncertaintyMps = 0.12,
         .accumulatedDeltaRangeState = GnssAccumulatedDeltaRangeState10::ADR_STATE_UNKNOWN | 0,
         .accumulatedDeltaRangeM = 0.0,
         .accumulatedDeltaRangeUncertaintyM = 0.0,
