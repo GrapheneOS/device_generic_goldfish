@@ -36,6 +36,7 @@ cc_library_shared {
         "android.hardware.audio@6.0",
         "android.hardware.audio.common@6.0",
         "android.hardware.audio.common@6.0-util",
+        "libaudioutils",
         "libbase",
         "libcutils",
         "libhidlbase",
