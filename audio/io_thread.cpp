@@ -32,7 +32,6 @@ bool IOThread::standby() {
 }
 
 void IOThread::requestExit() {
-    Thread::requestExit();
     notify(EXIT_REQUEST);
 }
 
