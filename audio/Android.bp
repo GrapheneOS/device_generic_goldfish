@@ -41,6 +41,7 @@ cc_library_shared {
         "libtinyalsa",
         "libutils",
         "libfmq",
+        "libprocessgroup",
     ],
     header_libs: [
         "libaudio_system_headers",
