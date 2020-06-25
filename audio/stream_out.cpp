@@ -21,9 +21,15 @@
 #include <hidl/Status.h>
 #include <math.h>
 #include "stream_out.h"
-#include "talsa.h"
+#include "device_port_sink.h"
 #include "deleters.h"
 #include "util.h"
+#include <sys/resource.h>
+#include <pthread.h>
+#include <cutils/sched_policy.h>
+#include <utils/ThreadDefs.h>
+#include <future>
+#include <thread>
 
 namespace android {
 namespace hardware {
@@ -42,15 +48,8 @@ struct WriteThread : public IOThread {
     typedef MessageQueue<IStreamOut::WriteStatus, kSynchronizedReadWrite> StatusMQ;
     typedef MessageQueue<uint8_t, kSynchronizedReadWrite> DataMQ;
 
-    WriteThread(StreamOut *stream,
-                const unsigned nChannels,
-                const size_t sampleRateHz,
-                const size_t frameCount,
-                const size_t mqBufferSize)
+    WriteThread(StreamOut *stream, const size_t mqBufferSize)
             : mStream(stream)
-            , mNChannels(nChannels)
-            , mSampleRateHz(sampleRateHz)
-            , mFrameCount(frameCount)
             , mCommandMQ(1)
             , mStatusMQ(1)
             , mDataMQ(mqBufferSize, true /* EventFlag */) {
@@ -78,55 +77,59 @@ struct WriteThread : public IOThread {
             mEfGroup.reset(rawEfGroup);
         }
 
-        status = run("writer", PRIORITY_URGENT_AUDIO);
-        if (status != OK) {
-            ALOGE("WriteThread::%s:%d: failed to start the thread: %s",
-                  __func__, __LINE__, strerror(-status));
-        }
+        mThread = std::thread(&WriteThread::threadLoop, this);
     }
 
     ~WriteThread() {
-        requestExit();
-        LOG_ALWAYS_FATAL_IF(join() != OK);
+        if (mThread.joinable()) {
+            requestExit();
+            mThread.join();
+        }
     }
 
     EventFlag *getEventFlag() override {
         return mEfGroup.get();
     }
 
-    bool threadLoop() override {
-        while (!exitPending()) {
+    bool isRunning() const {
+        return mThread.joinable();
+    }
+
+    std::future<pthread_t> getTid() {
+        return mTid.get_future();
+    }
+
+    void threadLoop() {
+        setpriority(PRIO_PROCESS, 0, PRIORITY_URGENT_AUDIO);
+        set_sched_policy(0, SP_FOREGROUND);
+        mTid.set_value(pthread_self());
+
+        while (true) {
             uint32_t efState = 0;
             mEfGroup->wait(MessageQueueFlagBits::NOT_EMPTY | STAND_BY_REQUEST | EXIT_REQUEST,
                            &efState);
             if (efState & EXIT_REQUEST) {
-                return false;
+                return;
             }
 
             if (efState & STAND_BY_REQUEST) {
-                mPcm.reset();
-                mBuffer.reset();
+                mSink.reset();
             }
 
             if (efState & (MessageQueueFlagBits::NOT_EMPTY | 0)) {
-                if (!mPcm) {
+                if (!mSink) {
                     mBuffer.reset(new uint8_t[mDataMQ.getQuantumCount()]);
                     LOG_ALWAYS_FATAL_IF(!mBuffer);
 
-                    mPcm = talsa::pcmOpen(
-                        talsa::kPcmCard, talsa::kPcmDevice,
-                        mNChannels, mSampleRateHz, mFrameCount,
-                        true /* isOut */);
-                    LOG_ALWAYS_FATAL_IF(!mPcm);
-
-                    mPos.reset();
+                    mSink = DevicePortSink::create(mStream->getDeviceAddress(),
+                                                   mStream->getAudioConfig(),
+                                                   mStream->getAudioOutputFlags());
+                    LOG_ALWAYS_FATAL_IF(!mSink);
                 }
 
                 processCommand();
             }
         }
-
-        return false;   // do not restart threadLoop
     }
 
     void processCommand() {
@@ -174,8 +177,6 @@ struct WriteThread : public IOThread {
         if (mDataMQ.read(&mBuffer[0], availToRead)) {
             applyVolume(&mBuffer[0], availToRead, mStream->getVolumeNumerator());
             status.retval = doWriteImpl(&mBuffer[0], availToRead, written);
-
-            mPos.addFrames(pcm_bytes_to_frames(mPcm.get(), written));
             status.reply.written = written;
         } else {
             ALOGE("WriteThread::%s:%d: mDataMQ.read failed", __func__, __LINE__);
@@ -203,7 +204,7 @@ struct WriteThread : public IOThread {
     IStreamOut::WriteStatus doGetPresentationPosition() {
         IStreamOut::WriteStatus status;
 
-        status.retval = doGetPresentationPositionImpl(
+        status.retval = mSink->getPresentationPosition(
             status.reply.presentationPosition.frames,
             status.reply.presentationPosition.timeStamp);
 
@@ -222,35 +223,27 @@ struct WriteThread : public IOThread {
     Result doWriteImpl(const uint8_t *const data,
                        const size_t toWrite,
                        size_t &written) {
-        const int res = pcm_write(mPcm.get(), data, toWrite);
-        if (res) {
-            ALOGE("WriteThread::%s:%d: pcm_write failed with %s",
+        const int res = mSink->write(data, toWrite);
+        if (res < 0) {
+            ALOGE("WriteThread::%s:%d: DevicePortSink::write failed with %s",
                   __func__, __LINE__, strerror(-res));
+            written = toWrite;
+        } else {
+            written = res;
         }
 
-        written = toWrite;
-        return Result::OK;
-    }
-
-    Result doGetPresentationPositionImpl(uint64_t &frames, TimeSpec &ts) {
-        nsecs_t t = 0;
-        mPos.now(mSampleRateHz, frames, t);
-        ts.tvSec = ns2s(t);
-        ts.tvNSec = t - s2ns(ts.tvSec);
         return Result::OK;
     }
 
     StreamOut *const mStream;
-    const unsigned mNChannels;
-    const size_t mSampleRateHz;
-    const size_t mFrameCount;
     CommandMQ mCommandMQ;
     StatusMQ mStatusMQ;
     DataMQ mDataMQ;
     std::unique_ptr<EventFlag, deleters::forEventFlag> mEfGroup;
     std::unique_ptr<uint8_t[]> mBuffer;
-    talsa::PcmPtr mPcm;
-    util::StreamPosition mPos;
+    std::unique_ptr<DevicePortSink> mSink;
+    std::thread mThread;
+    std::promise<pthread_t> mTid;
 };
 
 } // namespace
@@ -439,18 +432,14 @@ Return<void> StreamOut::prepareForWriting(uint32_t frameSize,
         return Void();
     }
 
-    auto t = std::make_unique<WriteThread>(this,
-                                           util::countChannels(mCommon.getChannelMask()),
-                                           mCommon.getSampleRate(),
-                                           mCommon.getFrameCount(),
-                                           frameSize * framesCount);
+    auto t = std::make_unique<WriteThread>(this, frameSize * framesCount);
 
     if (t->isRunning()) {
         _hidl_cb(Result::OK,
                  *(t->mCommandMQ.getDesc()),
                  *(t->mDataMQ.getDesc()),
                  *(t->mStatusMQ.getDesc()),
-                 {.pid = getpid(), .tid = t->getTid()});
+                 {.pid = getpid(), .tid = t->getTid().get()});
 
         mWriteThread = std::move(t);
     } else {

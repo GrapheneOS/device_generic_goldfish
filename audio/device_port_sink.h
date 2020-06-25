@@ -15,7 +15,9 @@
  */
 
 #pragma once
-#include <fmq/EventFlag.h>
+#include <memory>
+#include <android/hardware/audio/common/6.0/types.h>
+#include <android/hardware/audio/6.0/types.h>
 
 namespace android {
 namespace hardware {
@@ -23,15 +25,17 @@ namespace audio {
 namespace V6_0 {
 namespace implementation {
 
-struct IOThread {
-    static constexpr uint32_t STAND_BY_REQUEST = 1 << 20;
-    static constexpr uint32_t EXIT_REQUEST = 1 << 21;
+using namespace ::android::hardware::audio::common::V6_0;
+using namespace ::android::hardware::audio::V6_0;
 
-    virtual ~IOThread() {}
-    virtual EventFlag *getEventFlag() = 0;
-    virtual bool notify(uint32_t mask);
-    virtual bool standby();
-    virtual void requestExit();
+struct DevicePortSink {
+    virtual ~DevicePortSink() {}
+    virtual Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) const = 0;
+    virtual int write(const void *data, size_t nBytes) = 0;
+
+    static std::unique_ptr<DevicePortSink> create(const DeviceAddress &,
+                                                  const AudioConfig &,
+                                                  const hidl_bitfield<AudioOutputFlag> &);
 };
 
 }  // namespace implementation
