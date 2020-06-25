@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <utils/Thread.h>
 #include <fmq/EventFlag.h>
 
 namespace android {
@@ -24,15 +23,15 @@ namespace audio {
 namespace V6_0 {
 namespace implementation {
 
-struct IOThread : public ::android::Thread {
+struct IOThread {
     static constexpr uint32_t STAND_BY_REQUEST = 1 << 20;
     static constexpr uint32_t EXIT_REQUEST = 1 << 21;
 
-    IOThread() : Thread(false /*canCallJava*/) {}
+    virtual ~IOThread() {}
     virtual EventFlag *getEventFlag() = 0;
     virtual bool notify(uint32_t mask);
     virtual bool standby();
-    void requestExit() override;
+    virtual void requestExit();
 };
 
 }  // namespace implementation
