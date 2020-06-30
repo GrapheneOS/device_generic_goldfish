@@ -52,7 +52,7 @@ Return<Result> PrimaryDevice::initCheck() {
 }
 
 Return<Result> PrimaryDevice::setMasterVolume(float volume) {
-    if (volume < 0 || volume > 1.0) {
+    if (isnan(volume) || volume < 0 || volume > 1.0) {
         return Result::INVALID_ARGUMENTS;
     }
 
@@ -61,13 +61,13 @@ Return<Result> PrimaryDevice::setMasterVolume(float volume) {
     }
 
     talsa::mixerSetPercentAll(mMixerMasterVolumeCtl, int(100 * volume));
+    mMasterVolume = volume;
     return Result::OK;
 }
 
 Return<void> PrimaryDevice::getMasterVolume(getMasterVolume_cb _hidl_cb) {
     if (mMixerMasterVolumeCtl) {
-        _hidl_cb(Result::OK,
-                 mixer_ctl_get_percent(mMixerMasterVolumeCtl, 0) / 100.0);
+        _hidl_cb(Result::OK, mMasterVolume);
     } else {
         _hidl_cb(Result::INVALID_STATE, 0);
     }
