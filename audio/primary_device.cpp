@@ -28,7 +28,7 @@ namespace V6_0 {
 namespace implementation {
 
 constexpr size_t kInBufferDurationMs = 15;
-constexpr size_t kOutBufferDurationMs = 15;
+constexpr size_t kOutBufferDurationMs = 22;
 
 using ::android::hardware::Void;
 
