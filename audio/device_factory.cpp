@@ -27,13 +27,26 @@ namespace implementation {
 
 using ::android::hardware::Void;
 
+wp<PrimaryDevice> gPrimaryDevice;   // volume levels and the mic state are global
+
+template <class D> sp<D> getCachedDevice(wp<D>& cache) {
+    sp<D> result = cache.promote();
+    if (!result) {
+        result = new D;
+        cache = result;
+    }
+    return result;
+}
+
 Return<void> DevicesFactory::openDevice(const hidl_string& device,
                                         openDevice_cb _hidl_cb) {
     Result result = Result::OK;
-    std::unique_ptr<IDevice> dev;
+    sp<IDevice> dev;
 
     if (device == AUDIO_HARDWARE_MODULE_ID_PRIMARY) {
-        dev = std::make_unique<PrimaryDevice>();
+        dev = getCachedDevice(gPrimaryDevice);
+    } else if (device == AUDIO_HARDWARE_MODULE_ID_REMOTE_SUBMIX) {
+        dev = getCachedDevice(gPrimaryDevice);
     } else {
         result = Result::INVALID_ARGUMENTS;
     }
@@ -43,12 +56,12 @@ Return<void> DevicesFactory::openDevice(const hidl_string& device,
               __func__, __LINE__, device.c_str(), toString(result).c_str());
     }
 
-    _hidl_cb(result, dev.release());
+    _hidl_cb(result, std::move(dev));
     return Void();
 }
 
 Return<void> DevicesFactory::openPrimaryDevice(openPrimaryDevice_cb _hidl_cb) {
-    _hidl_cb(Result::OK, new PrimaryDevice);
+    _hidl_cb(Result::OK, getCachedDevice(gPrimaryDevice));
     return Void();
 }
 
