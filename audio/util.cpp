@@ -62,8 +62,13 @@ bool checkSampleRateHz(uint32_t value, uint32_t &suggest) {
     return false;
 }
 
+size_t align(size_t v, size_t a) {
+    return (v + a - 1) / a * a;
+}
+
 size_t getBufferSizeFrames(size_t duration_ms, uint32_t sample_rate) {
-    return sample_rate * duration_ms / 1000;
+    // AudioFlinger requires the buffer to be aligned by 16 frames
+    return align(sample_rate * duration_ms / 1000, 16);
 }
 
 }  // namespace
