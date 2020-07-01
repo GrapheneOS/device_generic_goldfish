@@ -28,7 +28,7 @@ namespace V6_0 {
 namespace implementation {
 
 constexpr size_t kInBufferDurationMs = 15;
-constexpr size_t kOutBufferDurationMs = 15;
+constexpr size_t kOutBufferDurationMs = 22;
 
 using ::android::hardware::Void;
 
@@ -52,7 +52,7 @@ Return<Result> PrimaryDevice::initCheck() {
 }
 
 Return<Result> PrimaryDevice::setMasterVolume(float volume) {
-    if (volume < 0 || volume > 1.0) {
+    if (isnan(volume) || volume < 0 || volume > 1.0) {
         return Result::INVALID_ARGUMENTS;
     }
 
@@ -61,13 +61,13 @@ Return<Result> PrimaryDevice::setMasterVolume(float volume) {
     }
 
     talsa::mixerSetPercentAll(mMixerMasterVolumeCtl, int(100 * volume));
+    mMasterVolume = volume;
     return Result::OK;
 }
 
 Return<void> PrimaryDevice::getMasterVolume(getMasterVolume_cb _hidl_cb) {
     if (mMixerMasterVolumeCtl) {
-        _hidl_cb(Result::OK,
-                 mixer_ctl_get_percent(mMixerMasterVolumeCtl, 0) / 100.0);
+        _hidl_cb(Result::OK, mMasterVolume);
     } else {
         _hidl_cb(Result::INVALID_STATE, 0);
     }
@@ -207,20 +207,20 @@ Return<void> PrimaryDevice::updateAudioPatch(AudioPatchHandle previousPatchHandl
                                              const hidl_vec<AudioPortConfig>& sources,
                                              const hidl_vec<AudioPortConfig>& sinks,
                                              updateAudioPatch_cb _hidl_cb) {
-    if (sources.size() == 1 && sinks.size() == 1) {
-        const auto i = mAudioPatches.find(previousPatchHandle);
-        if (i == mAudioPatches.end()) {
-            _hidl_cb(Result::INVALID_ARGUMENTS, previousPatchHandle);
-        } else {
+    const auto i = mAudioPatches.find(previousPatchHandle);
+    if (i == mAudioPatches.end()) {
+        _hidl_cb(Result::INVALID_ARGUMENTS, previousPatchHandle);
+    } else {
+        if (sources.size() == 1 && sinks.size() == 1) {
             AudioPatch patch;
             patch.source = sources[0];
             patch.sink = sinks[0];
             i->second = patch;
 
             _hidl_cb(Result::OK, previousPatchHandle);
+        } else {
+            _hidl_cb(Result::NOT_SUPPORTED, previousPatchHandle);
         }
-    } else {
-        _hidl_cb(Result::NOT_SUPPORTED, 0);
     }
 
     return Void();

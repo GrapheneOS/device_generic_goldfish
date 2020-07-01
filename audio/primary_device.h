@@ -108,6 +108,7 @@ private:
     talsa::mixer_ctl_t  *mMixerCaptureVolumeCtl = nullptr;
     talsa::mixer_ctl_t  *mMixerMasterPaybackSwitchCtl = nullptr;
     talsa::mixer_ctl_t  *mMixerCaptureSwitchCtl = nullptr;
+    float               mMasterVolume = 1.0f;
     std::atomic<int>    mNStreams = 0;
 
     struct AudioPatch {
