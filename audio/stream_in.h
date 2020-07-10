@@ -92,6 +92,8 @@ struct StreamIn : public IStreamIn {
     const hidl_bitfield<AudioOutputFlag> &getAudioOutputFlags() const { return mCommon.m_flags; }
 
 private:
+    Result closeImpl(bool fromDctor);
+
     sp<IDevice> mDev;
     void (* const mUnrefDevice)(IDevice*);
     const StreamCommon mCommon;
