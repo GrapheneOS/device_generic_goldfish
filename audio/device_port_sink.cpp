@@ -15,6 +15,7 @@
  */
 
 #include <log/log.h>
+#include <utils/Timers.h>
 #include "device_port_sink.h"
 #include "talsa.h"
 #include "util.h"
@@ -28,19 +29,18 @@ namespace implementation {
 namespace {
 
 struct TinyalsaSink : public DevicePortSink {
-    TinyalsaSink(unsigned pcmCard, unsigned pcmDevice, const AudioConfig &cfg)
-            : mSampleRateHz(cfg.sampleRateHz)
+    TinyalsaSink(unsigned pcmCard, unsigned pcmDevice,
+                 const AudioConfig &cfg, uint64_t &frames)
+            : mFrames(frames)
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.channelMask),
                                   cfg.sampleRateHz,
                                   cfg.frameCount,
                                   true /* isOut */)) {}
 
-    Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) const override {
-        nsecs_t t = 0;
-        mPos.now(mSampleRateHz, frames, t);
-        ts.tvSec = ns2s(t);
-        ts.tvNSec = t - s2ns(ts.tvSec);
+    Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
+        frames = mFrames;
+        ts = util::nsecs2TimeSpec(systemTime(SYSTEM_TIME_MONOTONIC));
         return Result::OK;
     }
 
@@ -49,18 +49,19 @@ struct TinyalsaSink : public DevicePortSink {
         if (res < 0) {
             return res;
         } else if (res == 0) {
-            mPos.addFrames(::pcm_bytes_to_frames(mPcm.get(), nBytes));
+            mFrames += ::pcm_bytes_to_frames(mPcm.get(), nBytes);
             return nBytes;
         } else {
-            mPos.addFrames(::pcm_bytes_to_frames(mPcm.get(), res));
+            mFrames += ::pcm_bytes_to_frames(mPcm.get(), res);
             return res;
         }
     }
 
     static std::unique_ptr<TinyalsaSink> create(unsigned pcmCard,
                                                 unsigned pcmDevice,
-                                                const AudioConfig &cfg) {
-        auto src = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice, cfg);
+                                                const AudioConfig &cfg,
+                                                uint64_t &frames) {
+        auto src = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice, cfg, frames);
         if (src->mPcm) {
             return src;
         } else {
@@ -69,37 +70,56 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
 private:
-    const uint32_t mSampleRateHz;
-    util::StreamPosition mPos;
+    uint64_t &mFrames;
     talsa::PcmPtr mPcm;
 };
 
 struct NullSink : public DevicePortSink {
-    explicit NullSink(const AudioConfig &cfg)
-            : mSampleRateHz(cfg.sampleRateHz)
-            , mNChannels(util::countChannels(cfg.channelMask)) {}
+    NullSink(const AudioConfig &cfg, uint64_t &frames)
+            : mFrames(frames)
+            , mSampleRateHz(cfg.sampleRateHz)
+            , mNChannels(util::countChannels(cfg.channelMask))
+            , mTimestamp(systemTime(SYSTEM_TIME_MONOTONIC)) {}
 
-    Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) const override {
-        nsecs_t t = 0;
-        mPos.now(mSampleRateHz, frames, t);
-        ts.tvSec = ns2s(t);
-        ts.tvNSec = t - s2ns(ts.tvSec);
+    Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
+        simulatePresentationPosition();
+        frames = mFrames;
+        ts = util::nsecs2TimeSpec(mTimestamp);
         return Result::OK;
     }
 
     int write(const void *, size_t nBytes) override {
-        mPos.addFrames(nBytes / mNChannels / sizeof(int16_t));
+        simulatePresentationPosition();
+        mAvailableFrames += nBytes / mNChannels / sizeof(int16_t);
         return nBytes;
     }
 
-    static std::unique_ptr<NullSink> create(const AudioConfig &cfg) {
-        return std::make_unique<NullSink>(cfg);
+    void simulatePresentationPosition() {
+        const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
+        const nsecs_t deltaNs = nowNs - mTimestamp;
+        const uint64_t deltaFrames = uint64_t(mSampleRateHz) * ns2ms(deltaNs) / 1000;
+        const uint64_t f = std::min(deltaFrames, mAvailableFrames);
+
+        mFrames += f;
+        mAvailableFrames -= f;
+        if (mAvailableFrames) {
+            mTimestamp += us2ns(f * 1000000 / mSampleRateHz);
+        } else {
+            mTimestamp = nowNs;
+        }
+    }
+
+    static std::unique_ptr<NullSink> create(const AudioConfig &cfg,
+                                            uint64_t &frames) {
+        return std::make_unique<NullSink>(cfg, frames);
     }
 
 private:
+    uint64_t &mFrames;
     const unsigned mSampleRateHz;
     const unsigned mNChannels;
-    util::StreamPosition mPos;
+    uint64_t mAvailableFrames = 0;
+    nsecs_t mTimestamp;
 };
 
 }  // namespace
@@ -107,7 +127,8 @@ private:
 std::unique_ptr<DevicePortSink>
 DevicePortSink::create(const DeviceAddress &address,
                        const AudioConfig &cfg,
-                       const hidl_bitfield<AudioOutputFlag> &flags) {
+                       const hidl_bitfield<AudioOutputFlag> &flags,
+                       uint64_t &frames) {
     (void)flags;
 
     if (cfg.format != AudioFormat::PCM_16_BIT) {
@@ -117,10 +138,11 @@ DevicePortSink::create(const DeviceAddress &address,
 
     switch (address.device) {
     case AudioDevice::OUT_SPEAKER:
-        return TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice, cfg);
+        return TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice,
+                                    cfg, frames);
 
     case AudioDevice::OUT_TELEPHONY_TX:
-        return NullSink::create(cfg);
+        return NullSink::create(cfg, frames);
 
     default:
         return nullptr;
