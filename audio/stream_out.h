@@ -102,6 +102,8 @@ struct StreamOut : public IStreamOut {
     const AudioConfig &getAudioConfig() const { return mCommon.m_config; }
     const hidl_bitfield<AudioOutputFlag> &getAudioOutputFlags() const { return mCommon.m_flags; }
 
+    uint64_t &getFrameCounter() { return mFrames; }
+
 private:
     sp<IDevice> mDev;
     void (* const mUnrefDevice)(IDevice*);
@@ -109,6 +111,9 @@ private:
     const SourceMetadata mSourceMetadata;
     std::unique_ptr<IOThread> mWriteThread;
     std::atomic<int16_t> mVolumeNumerator = kVolumeDenominator;
+
+    // The count is not reset to zero when output enters standby.
+    uint64_t mFrames = 0;
 };
 
 }  // namespace implementation

@@ -123,7 +123,8 @@ struct WriteThread : public IOThread {
 
                     mSink = DevicePortSink::create(mStream->getDeviceAddress(),
                                                    mStream->getAudioConfig(),
-                                                   mStream->getAudioOutputFlags());
+                                                   mStream->getAudioOutputFlags(),
+                                                   mStream->getFrameCounter());
                     LOG_ALWAYS_FATAL_IF(!mSink);
                 }
 
