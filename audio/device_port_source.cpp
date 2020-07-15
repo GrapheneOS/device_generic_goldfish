@@ -24,6 +24,7 @@
 #include "device_port_source.h"
 #include "talsa.h"
 #include "util.h"
+#include "debug.h"
 
 namespace android {
 namespace hardware {
@@ -66,7 +67,7 @@ struct TinyalsaSource : public CapturePositionDevicePortSource {
     int read(void *data, size_t toReadBytes) override {
         const int res = ::pcm_read(pcm.get(), data, toReadBytes);
         if (res < 0) {
-            return res;
+            return FAILURE(res);
         } else if (res == 0) {
             return toReadBytes;
         } else {
@@ -81,7 +82,7 @@ struct TinyalsaSource : public CapturePositionDevicePortSource {
         if (src->pcm) {
             return src;
         } else {
-            return nullptr;
+            return FAILURE(nullptr);
         }
     }
 
@@ -239,7 +240,7 @@ DevicePortSource::create(const DeviceAddress &address,
 
     if (cfg.format != AudioFormat::PCM_16_BIT) {
         ALOGE("%s:%d Only PCM_16_BIT is supported", __func__, __LINE__);
-        return nullptr;
+        return FAILURE(nullptr);
     }
 
     switch (address.device) {
@@ -254,7 +255,7 @@ DevicePortSource::create(const DeviceAddress &address,
             cfg, RepeatGenerator(generateSinePattern(cfg.sampleRateHz, 440.0, 1.0)));
 
     default:
-        return nullptr;
+        return FAILURE(nullptr);
     }
 }
 

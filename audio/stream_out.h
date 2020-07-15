@@ -105,6 +105,8 @@ struct StreamOut : public IStreamOut {
     uint64_t &getFrameCounter() { return mFrames; }
 
 private:
+    Result closeImpl(bool fromDctor);
+
     sp<IDevice> mDev;
     void (* const mUnrefDevice)(IDevice*);
     const StreamCommon mCommon;

@@ -18,6 +18,7 @@
 #include <cutils/bitops.h>
 #include <system/audio.h>
 #include "util.h"
+#include "debug.h"
 
 namespace android {
 namespace hardware {
@@ -59,7 +60,7 @@ bool checkSampleRateHz(uint32_t value, uint32_t &suggest) {
     }
 
     suggest = kSupportedRatesHz.back();
-    return false;
+    return FAILURE(false);
 }
 
 size_t align(size_t v, size_t a) {
@@ -112,7 +113,7 @@ bool checkAudioConfig(bool isOut,
                       kSupportedOutChannelMask.end(),
                       cfg.channelMask) == kSupportedOutChannelMask.end()) {
             suggested.channelMask = AudioChannelMask::OUT_STEREO | 0;
-            valid = false;
+            valid = FAILURE(false);
         } else {
             suggested.channelMask = cfg.channelMask;
         }
@@ -121,7 +122,7 @@ bool checkAudioConfig(bool isOut,
                       kSupportedInChannelMask.end(),
                       cfg.channelMask) == kSupportedInChannelMask.end()) {
             suggested.channelMask = AudioChannelMask::IN_STEREO | 0;
-            valid = false;
+            valid = FAILURE(false);
         } else {
             suggested.channelMask = cfg.channelMask;
         }
@@ -131,7 +132,7 @@ bool checkAudioConfig(bool isOut,
                   kSupportedAudioFormats.end(),
                   cfg.format) == kSupportedAudioFormats.end()) {
         suggested.format = AudioFormat::PCM_16_BIT;
-        valid = false;
+        valid = FAILURE(false);
     } else {
         suggested.format = cfg.format;
     }
