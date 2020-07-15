@@ -23,6 +23,7 @@
 #include "device_port_source.h"
 #include "deleters.h"
 #include "util.h"
+#include "debug.h"
 #include <sys/resource.h>
 #include <pthread.h>
 #include <cutils/sched_policy.h>
@@ -150,7 +151,7 @@ struct ReadThread : public IOThread {
             default:
                 ALOGE("ReadThread::%s:%d: Unknown read thread command code %d",
                       __func__, __LINE__, rParameters.command);
-                rStatus.retval = Result::NOT_SUPPORTED;
+                rStatus.retval = FAILURE(Result::NOT_SUPPORTED);
                 break;
         }
 
@@ -231,7 +232,7 @@ StreamIn::StreamIn(sp<IDevice> dev,
 }
 
 StreamIn::~StreamIn() {
-    close();
+    closeImpl(true);
 }
 
 Return<uint64_t> StreamIn::getFrameSize() {
@@ -294,12 +295,12 @@ Return<void> StreamIn::getAudioProperties(getAudioProperties_cb _hidl_cb) {
 
 Return<Result> StreamIn::addEffect(uint64_t effectId) {
     (void)effectId;
-    return Result::INVALID_ARGUMENTS;
+    return FAILURE(Result::INVALID_ARGUMENTS);
 }
 
 Return<Result> StreamIn::removeEffect(uint64_t effectId) {
     (void)effectId;
-    return Result::INVALID_ARGUMENTS;
+    return FAILURE(Result::INVALID_ARGUMENTS);
 }
 
 Return<Result> StreamIn::standby() {
@@ -323,7 +324,7 @@ Return<void> StreamIn::getParameters(const hidl_vec<ParameterValue>& context,
                                      const hidl_vec<hidl_string>& keys,
                                      getParameters_cb _hidl_cb) {
     (void)context;
-    _hidl_cb((keys.size() > 0) ? Result::NOT_SUPPORTED : Result::OK, {});
+    _hidl_cb((keys.size() > 0) ? FAILURE(Result::NOT_SUPPORTED) : Result::OK, {});
     return Void();
 }
 
@@ -336,48 +337,56 @@ Return<Result> StreamIn::setParameters(const hidl_vec<ParameterValue>& context,
 
 Return<Result> StreamIn::setHwAvSync(uint32_t hwAvSync) {
     (void)hwAvSync;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamIn::start() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamIn::stop() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamIn::createMmapBuffer(int32_t minSizeFrames,
                                         createMmapBuffer_cb _hidl_cb) {
     (void)minSizeFrames;
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
 Return<void> StreamIn::getMmapPosition(getMmapPosition_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
-Return<Result> StreamIn::close() {
+Result StreamIn::closeImpl(const bool fromDctor) {
     if (mDev) {
         mReadThread.reset();
         mUnrefDevice(mDev.get());
         mDev = nullptr;
         return Result::OK;
+    } else if (fromDctor) {
+        // closeImpl is always called from the dctor, it is ok if mDev is null,
+        // we don't want to log the error in this case.
+        return Result::OK;
     } else {
-        return Result::INVALID_STATE;
+        return FAILURE(Result::INVALID_STATE);
     }
 }
 
+Return<Result> StreamIn::close() {
+    return closeImpl(false);
+}
+
 Return<void> StreamIn::getAudioSource(getAudioSource_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
 Return<Result> StreamIn::setGain(float gain) {
     (void)gain;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamIn::updateSinkMetadata(const SinkMetadata& sinkMetadata) {
@@ -389,12 +398,12 @@ Return<void> StreamIn::prepareForReading(uint32_t frameSize,
                                          uint32_t framesCount,
                                          prepareForReading_cb _hidl_cb) {
     if (!frameSize || !framesCount || frameSize > 256 || framesCount > (1u << 20)) {
-        _hidl_cb(Result::INVALID_ARGUMENTS, {}, {}, {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, {});
         return Void();
     }
 
     if (mReadThread) {  // INVALID_STATE if the method was already called.
-        _hidl_cb(Result::INVALID_STATE, {}, {}, {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {}, {}, {});
         return Void();
     }
 
@@ -409,7 +418,7 @@ Return<void> StreamIn::prepareForReading(uint32_t frameSize,
 
         mReadThread = std::move(t);
     } else {
-        _hidl_cb(Result::INVALID_ARGUMENTS, {}, {}, {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, {});
     }
 
     return Void();
@@ -420,7 +429,7 @@ Return<uint32_t> StreamIn::getInputFramesLost() {
 }
 
 Return<void> StreamIn::getCapturePosition(getCapturePosition_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, 0, 0);  // see ReadThread::doGetCapturePosition
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0, 0);  // see ReadThread::doGetCapturePosition
     return Void();
 }
 
@@ -431,12 +440,12 @@ Return<void> StreamIn::getActiveMicrophones(getActiveMicrophones_cb _hidl_cb) {
 
 Return<Result> StreamIn::setMicrophoneDirection(MicrophoneDirection direction) {
     (void)direction;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamIn::setMicrophoneFieldDimension(float zoom) {
     (void)zoom;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 }  // namespace implementation

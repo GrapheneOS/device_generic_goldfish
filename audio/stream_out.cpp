@@ -24,6 +24,7 @@
 #include "device_port_sink.h"
 #include "deleters.h"
 #include "util.h"
+#include "debug.h"
 #include <sys/resource.h>
 #include <pthread.h>
 #include <cutils/sched_policy.h>
@@ -157,7 +158,7 @@ struct WriteThread : public IOThread {
             default:
                 ALOGE("WriteThread::%s:%d: Unknown write thread command code %d",
                       __func__, __LINE__, wCommand);
-                wStatus.retval = Result::NOT_SUPPORTED;
+                wStatus.retval = FAILURE(Result::NOT_SUPPORTED);
                 break;
         }
 
@@ -259,11 +260,10 @@ StreamOut::StreamOut(sp<IDevice> dev,
         : mDev(std::move(dev))
         , mUnrefDevice(unrefDevice)
         , mCommon(ioHandle, device, config, flags)
-        , mSourceMetadata(sourceMetadata) {
-}
+        , mSourceMetadata(sourceMetadata) {}
 
 StreamOut::~StreamOut() {
-    close();
+    closeImpl(true);
 }
 
 Return<uint64_t> StreamOut::getFrameSize() {
@@ -326,12 +326,12 @@ Return<void> StreamOut::getAudioProperties(getAudioProperties_cb _hidl_cb) {
 
 Return<Result> StreamOut::addEffect(uint64_t effectId) {
     (void)effectId;
-    return Result::INVALID_ARGUMENTS;
+    return FAILURE(Result::INVALID_ARGUMENTS);
 }
 
 Return<Result> StreamOut::removeEffect(uint64_t effectId) {
     (void)effectId;
-    return Result::INVALID_ARGUMENTS;
+    return FAILURE(Result::INVALID_ARGUMENTS);
 }
 
 Return<Result> StreamOut::standby() {
@@ -355,7 +355,7 @@ Return<void> StreamOut::getParameters(const hidl_vec<ParameterValue>& context,
                                       const hidl_vec<hidl_string>& keys,
                                       getParameters_cb _hidl_cb) {
     (void)context;
-    _hidl_cb((keys.size() > 0) ? Result::NOT_SUPPORTED : Result::OK, {});
+    _hidl_cb((keys.size() > 0) ? FAILURE(Result::NOT_SUPPORTED) : Result::OK, {});
     return Void();
 }
 
@@ -368,37 +368,45 @@ Return<Result> StreamOut::setParameters(const hidl_vec<ParameterValue>& context,
 
 Return<Result> StreamOut::setHwAvSync(uint32_t hwAvSync) {
     (void)hwAvSync;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
-Return<Result> StreamOut::close() {
+Result StreamOut::closeImpl(const bool fromDctor) {
     if (mDev) {
         mWriteThread.reset();
         mUnrefDevice(mDev.get());
         mDev = nullptr;
         return Result::OK;
+    } else if (fromDctor) {
+        // closeImpl is always called from the dctor, it is ok if mDev is null,
+        // we don't want to log the error in this case.
+        return Result::OK;
     } else {
-        return Result::INVALID_STATE;
+        return FAILURE(Result::INVALID_STATE);
     }
 }
 
+Return<Result> StreamOut::close() {
+    return closeImpl(false);
+}
+
 Return<Result> StreamOut::start() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamOut::stop() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamOut::createMmapBuffer(int32_t minSizeFrames,
                                          createMmapBuffer_cb _hidl_cb) {
     (void)minSizeFrames;
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
 Return<void> StreamOut::getMmapPosition(getMmapPosition_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
@@ -409,7 +417,7 @@ Return<uint32_t> StreamOut::getLatency() {
 Return<Result> StreamOut::setVolume(float left, float right) {
     if (isnan(left) || left < 0.0f || left > 1.0f
         || right < 0.0f || right > 1.0f || isnan(right)) {
-        return Result::INVALID_ARGUMENTS;
+        return FAILURE(Result::INVALID_ARGUMENTS);
     }
 
     mVolumeNumerator = int16_t((left + right) * kVolumeDenominator / 2);
@@ -425,12 +433,12 @@ Return<void> StreamOut::prepareForWriting(uint32_t frameSize,
                                           uint32_t framesCount,
                                           prepareForWriting_cb _hidl_cb) {
     if (!frameSize || !framesCount || frameSize > 256 || framesCount > (1u << 20)) {
-        _hidl_cb(Result::INVALID_ARGUMENTS, {}, {}, {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, {});
         return Void();
     }
 
     if (mWriteThread) {  // INVALID_STATE if the method was already called.
-        _hidl_cb(Result::INVALID_STATE, {}, {}, {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {}, {}, {});
         return Void();
     }
 
@@ -445,34 +453,34 @@ Return<void> StreamOut::prepareForWriting(uint32_t frameSize,
 
         mWriteThread = std::move(t);
     } else {
-        _hidl_cb(Result::INVALID_ARGUMENTS, {}, {}, {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, {});
     }
 
     return Void();
 }
 
 Return<void> StreamOut::getRenderPosition(getRenderPosition_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, 0);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0);
     return Void();
 }
 
 Return<void> StreamOut::getNextWriteTimestamp(getNextWriteTimestamp_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, 0);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0);
     return Void();
 }
 
 Return<Result> StreamOut::setCallback(const sp<IStreamOutCallback>& callback) {
     (void)callback;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamOut::clearCallback() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamOut::setEventCallback(const sp<IStreamOutEventCallback>& callback) {
     (void)callback;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamOut::supportsPauseAndResume(supportsPauseAndResume_cb _hidl_cb) {
@@ -481,11 +489,11 @@ Return<void> StreamOut::supportsPauseAndResume(supportsPauseAndResume_cb _hidl_c
 }
 
 Return<Result> StreamOut::pause() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamOut::resume() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<bool> StreamOut::supportsDrain() {
@@ -494,15 +502,15 @@ Return<bool> StreamOut::supportsDrain() {
 
 Return<Result> StreamOut::drain(AudioDrain type) {
     (void)type;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamOut::flush() {
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamOut::getPresentationPosition(getPresentationPosition_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, {}, {});    // see WriteThread::doGetPresentationPosition
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {}, {});    // see WriteThread::doGetPresentationPosition
     return Void();
 }
 
@@ -510,37 +518,37 @@ Return<Result> StreamOut::selectPresentation(int32_t presentationId,
                                              int32_t programId) {
     (void)presentationId;
     (void)programId;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamOut::getDualMonoMode(getDualMonoMode_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
 Return<Result> StreamOut::setDualMonoMode(DualMonoMode mode) {
     (void)mode;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamOut::getAudioDescriptionMixLevel(getAudioDescriptionMixLevel_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, 0);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0);
     return Void();
 }
 
 Return<Result> StreamOut::setAudioDescriptionMixLevel(float leveldB) {
     (void)leveldB;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamOut::getPlaybackRateParameters(getPlaybackRateParameters_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
 Return<Result> StreamOut::setPlaybackRateParameters(const PlaybackRate &playbackRate) {
     (void)playbackRate;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 }  // namespace implementation
