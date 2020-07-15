@@ -16,6 +16,7 @@
 
 #include "device_factory.h"
 #include "primary_device.h"
+#include "debug.h"
 #include <system/audio.h>
 #include <log/log.h>
 
@@ -48,7 +49,7 @@ Return<void> DevicesFactory::openDevice(const hidl_string& device,
     } else if (device == AUDIO_HARDWARE_MODULE_ID_REMOTE_SUBMIX) {
         dev = getCachedDevice(gPrimaryDevice);
     } else {
-        result = Result::INVALID_ARGUMENTS;
+        result = FAILURE(Result::INVALID_ARGUMENTS);
     }
 
     if (!dev) {
