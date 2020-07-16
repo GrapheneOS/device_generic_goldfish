@@ -30,12 +30,13 @@ using namespace ::android::hardware::audio::V6_0;
 
 struct DevicePortSource {
     virtual ~DevicePortSource() {}
-    virtual Result getCapturePosition(uint64_t &frames, uint64_t &time) const = 0;
+    virtual Result getCapturePosition(uint64_t &frames, uint64_t &time) = 0;
     virtual int read(void *data, size_t nBytes) = 0;
 
     static std::unique_ptr<DevicePortSource> create(const DeviceAddress &,
                                                     const AudioConfig &,
-                                                    const hidl_bitfield<AudioOutputFlag> &);
+                                                    const hidl_bitfield<AudioOutputFlag> &,
+                                                    uint64_t &frames);
 };
 
 }  // namespace implementation
