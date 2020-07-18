@@ -14,12 +14,37 @@
  * limitations under the License.
  */
 
+#include <binder/ProcessState.h>
+#include <hwbinder/ProcessState.h>
+#include <hidl/LegacySupport.h>
 #include "device_factory.h"
 
-using android::hardware::audio::V6_0::IDevicesFactory;
-using android::hardware::audio::V6_0::implementation::DevicesFactory;
+int main(int, char**) {
+    using ::android::sp;
+    using ::android::OK;
+    using ::android::hardware::audio::V6_0::IDevicesFactory;
+    using ::android::hardware::audio::V6_0::implementation::DevicesFactory;
+    using ::android::hardware::registerPassthroughServiceImplementation;
 
-extern "C" IDevicesFactory* HIDL_FETCH_IDevicesFactory(const char* name) {
-    (void)name;
-    return new DevicesFactory();
+    ::android::ProcessState::initWithDriver("/dev/vndbinder");
+    ::android::ProcessState::self()->startThreadPool();
+    ::android::hardware::configureRpcThreadpool(16, true /* callerWillJoin */);
+
+    sp<IDevicesFactory> factory(new DevicesFactory());
+    if (factory->registerAsService() != ::android::NO_ERROR) {
+        return -EINVAL;
+    }
+
+    if (registerPassthroughServiceImplementation(
+        "android.hardware.audio.effect@6.0::IEffectsFactory") != OK) {
+        return -EINVAL;
+    }
+
+    if (registerPassthroughServiceImplementation(
+        "android.hardware.soundtrigger@2.2::ISoundTriggerHw") != OK) {
+        return -EINVAL;
+    }
+
+    ::android::hardware::joinRpcThreadpool();
+    return 0;
 }
