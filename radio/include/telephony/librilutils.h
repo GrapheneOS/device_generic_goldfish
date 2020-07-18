@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 The Android Open Source Project
+ * Copyright (C) 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef SAP_SERVICE_H
-#define SAP_SERVICE_H
+#ifndef LIBRILUTILS_H
+#define LIBRILUTILS_H
 
-#include <telephony/ril.h>
-#include <ril_internal.h>
-#include <RilSapSocket.h>
-#include <device/generic/goldfish/radio/librilutils/proto/sap-api.pb.h>
+#include <stdint.h>
 
-namespace sap {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void registerService(const RIL_RadioFunctions *callbacks);
-void processResponse(MsgHeader *rsp, RilSapSocket *sapSocket);
-void processUnsolResponse(MsgHeader *rsp, RilSapSocket *sapSocket);
+/**
+ * Return system time in nanos.
+ *
+ * This is a monotonicly increasing clock and
+ * return the same value as System.nanoTime in java.
+ */
+uint64_t ril_nano_time();
 
-}   // namespace android
+#ifdef __cplusplus
+}
+#endif
 
-#endif  // RIL_SERVICE_H
+#endif // LIBRILUTILS_H
