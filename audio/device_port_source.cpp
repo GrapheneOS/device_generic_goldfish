@@ -269,6 +269,7 @@ DevicePortSource::create(const DeviceAddress &address,
             RepeatGenerator(generateSinePattern(cfg.sampleRateHz, 440.0, 1.0)));
 
     default:
+        ALOGE("%s:%d unsupported device: %x", __func__, __LINE__, address.device);
         return FAILURE(nullptr);
     }
 }

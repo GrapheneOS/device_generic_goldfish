@@ -146,6 +146,7 @@ DevicePortSink::create(const DeviceAddress &address,
         return NullSink::create(cfg, frames);
 
     default:
+        ALOGE("%s:%d unsupported device: %x", __func__, __LINE__, address.device);
         return FAILURE(nullptr);
     }
 }
