@@ -14,7 +14,7 @@ LOCAL_SRC_FILES:= \
     at_tok.c
 
 LOCAL_SHARED_LIBRARIES += \
-    liblog libcutils libutils libril-goldfish-fork librilutils
+    liblog libcutils libutils libril-goldfish-fork librilutils-goldfish-fork
 
 LOCAL_STATIC_LIBRARIES += libbase libqemud.ranchu
 
