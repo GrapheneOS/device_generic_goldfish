@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include <system/audio.h>
+#include <log/log.h>
 #include "device_factory.h"
 #include "primary_device.h"
 #include "debug.h"
-#include <system/audio.h>
-#include <log/log.h>
 
 namespace android {
 namespace hardware {
@@ -28,41 +28,39 @@ namespace implementation {
 
 using ::android::hardware::Void;
 
-wp<PrimaryDevice> gPrimaryDevice;   // volume levels and the mic state are global
+#ifdef __LP64__
+#define LIB_PATH_PREFIX "vendor/lib64/hw/"
+#else
+#define LIB_PATH_PREFIX "vendor/lib/hw/"
+#endif
 
-template <class D> sp<D> getCachedDevice(wp<D>& cache) {
-    sp<D> result = cache.promote();
-    if (!result) {
-        result = new D;
-        cache = result;
-    }
-    return result;
+DevicesFactory::DevicesFactory() {
+    mLegacyLib.reset(dlopen(
+        LIB_PATH_PREFIX "android.hardware.audio@6.0-impl.so", RTLD_NOW));
+    LOG_ALWAYS_FATAL_IF(!mLegacyLib);
+
+    typedef IDevicesFactory *(*Func)(const char *);
+    const auto func = reinterpret_cast<Func>(
+        dlsym(mLegacyLib.get(), "HIDL_FETCH_IDevicesFactory"));
+    LOG_ALWAYS_FATAL_IF(!func);
+
+    mLegacyFactory.reset((*func)("default"));
+    LOG_ALWAYS_FATAL_IF(!mLegacyFactory);
 }
 
 Return<void> DevicesFactory::openDevice(const hidl_string& device,
                                         openDevice_cb _hidl_cb) {
-    Result result = Result::OK;
-    sp<IDevice> dev;
-
-    if (device == AUDIO_HARDWARE_MODULE_ID_PRIMARY) {
-        dev = getCachedDevice(gPrimaryDevice);
-    } else if (device == AUDIO_HARDWARE_MODULE_ID_REMOTE_SUBMIX) {
-        dev = getCachedDevice(gPrimaryDevice);
-    } else {
-        result = FAILURE(Result::INVALID_ARGUMENTS);
+    if (device == AUDIO_HARDWARE_MODULE_ID_PRIMARY)
+        _hidl_cb(Result::OK, new PrimaryDevice);
+    else {
+        mLegacyFactory->openDevice(device, _hidl_cb);
     }
 
-    if (!dev) {
-        ALOGE("DevicesFactory::%s:%d: failed, device='%s' result='%s'",
-              __func__, __LINE__, device.c_str(), toString(result).c_str());
-    }
-
-    _hidl_cb(result, std::move(dev));
     return Void();
 }
 
 Return<void> DevicesFactory::openPrimaryDevice(openPrimaryDevice_cb _hidl_cb) {
-    _hidl_cb(Result::OK, getCachedDevice(gPrimaryDevice));
+    _hidl_cb(Result::OK, new PrimaryDevice);
     return Void();
 }
 

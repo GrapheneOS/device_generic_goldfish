@@ -17,7 +17,7 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libcutils \
     libhardware_legacy \
-    librilutils \
+    librilutils-goldfish-fork \
     android.hardware.radio@1.0 \
     android.hardware.radio@1.1 \
     android.hardware.radio@1.2 \
