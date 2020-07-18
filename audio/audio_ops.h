@@ -15,41 +15,18 @@
  */
 
 #pragma once
-#include <memory>
-#include <tinyalsa/asoundlib.h>
+#include <stdint.h>
 
 namespace android {
 namespace hardware {
 namespace audio {
 namespace V6_0 {
 namespace implementation {
-namespace talsa {
+namespace aops {
 
-constexpr unsigned int kPcmDevice = 0;
-constexpr unsigned int kPcmCard = 0;
+void multiplyByVolume(float volume, int16_t *a, size_t n);
 
-typedef struct pcm pcm_t;
-struct PcmDeleter { void operator()(pcm_t *x) const; };
-typedef std::unique_ptr<pcm_t, PcmDeleter> PcmPtr;
-PcmPtr pcmOpen(unsigned int dev, unsigned int card, unsigned int nChannels, size_t sampleRateHz, size_t frameCount, bool isOut);
-
-class Mixer {
-public:
-    Mixer(unsigned card);
-    ~Mixer();
-
-    operator bool() const { return mMixer != nullptr; }
-
-    Mixer(const Mixer &) = delete;
-    Mixer &operator=(const Mixer &) = delete;
-    Mixer(Mixer &&) = delete;
-    Mixer &operator=(Mixer &&) = delete;
-
-private:
-    struct mixer *mMixer;
-};
-
-}  // namespace talsa
+}  // namespace aops
 }  // namespace implementation
 }  // namespace V6_0
 }  // namespace audio
