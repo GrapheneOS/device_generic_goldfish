@@ -36,7 +36,7 @@ using ::android::hardware::Void;
 
 DevicesFactory::DevicesFactory() {
     mLegacyLib.reset(dlopen(
-        LIB_PATH_PREFIX "android.hardware.audio@6.0-impl.so", RTLD_NOW));
+        LIB_PATH_PREFIX "android.hardware.audio.legacy@6.0-impl.ranchu.so", RTLD_NOW));
     LOG_ALWAYS_FATAL_IF(!mLegacyLib);
 
     typedef IDevicesFactory *(*Func)(const char *);
