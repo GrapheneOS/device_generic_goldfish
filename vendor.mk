@@ -142,13 +142,10 @@ PRODUCT_PACKAGES += \
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
 endif
 
-ifneq ($(EMULATOR_VENDOR_NO_SOUND_TRIGGER),true)
-PRODUCT_PACKAGES += android.hardware.soundtrigger@2.2-impl.ranchu
-endif
-
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
 PRODUCT_PACKAGES += \
     android.hardware.audio.service.ranchu \
+    android.hardware.soundtrigger@2.2-impl.ranchu \
     android.hardware.audio.effect@6.0-impl \
 
 # android.hardware.audio@6.0-impl is required to load audio.r_submix.default.
