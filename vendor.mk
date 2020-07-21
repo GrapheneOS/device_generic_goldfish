@@ -149,25 +149,17 @@ PRODUCT_PACKAGES += \
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
 endif
 
-ifneq ($(EMULATOR_VENDOR_NO_SOUND_TRIGGER),true)
-PRODUCT_PACKAGES += android.hardware.soundtrigger@2.2-impl.ranchu
-endif
-
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
 PRODUCT_PACKAGES += \
     android.hardware.audio.service.ranchu \
+    android.hardware.soundtrigger@2.2-impl.ranchu \
     android.hardware.audio.effect@6.0-impl \
-
-# android.hardware.audio@6.0-impl is required to load audio.r_submix.default.
-# See b/161485545. Should be retired once the bug is resolved.
-PRODUCT_PACKAGES += \
-    android.hardware.audio@6.0-impl \
-    audio.r_submix.default
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/audio/policy/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
     device/generic/goldfish/audio/policy/primary_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/primary_audio_policy_configuration.xml \
-    device/generic/goldfish/audio/policy/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml
+    frameworks/av/services/audiopolicy/config/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
+
 endif
 
 PRODUCT_PACKAGES += \
