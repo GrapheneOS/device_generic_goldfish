@@ -20,8 +20,8 @@
 #include <hidl/MQDescriptor.h>
 #include <hidl/Status.h>
 #include "stream_in.h"
+#include "device_port_source.h"
 #include "deleters.h"
-#include "talsa.h"
 #include "util.h"
 #include <sys/resource.h>
 #include <pthread.h>
@@ -45,15 +45,8 @@ struct ReadThread : public IOThread {
     typedef MessageQueue<IStreamIn::ReadStatus, kSynchronizedReadWrite> StatusMQ;
     typedef MessageQueue<uint8_t, kSynchronizedReadWrite> DataMQ;
 
-    ReadThread(StreamIn *stream,
-               const unsigned nChannels,
-               const size_t sampleRateHz,
-               const size_t frameCount,
-               const size_t bufferSize)
+    ReadThread(StreamIn *stream, const size_t bufferSize)
             : mStream(stream)
-            , mNChannels(nChannels)
-            , mSampleRateHz(sampleRateHz)
-            , mFrameCount(frameCount)
             , mCommandMQ(1)
             , mStatusMQ(1)
             , mDataMQ(bufferSize, true /* EventFlag */) {
@@ -117,22 +110,19 @@ struct ReadThread : public IOThread {
             }
 
             if (efState & STAND_BY_REQUEST) {
-                mPcm.reset();
+                mSource.reset();
                 mBuffer.reset();
             }
 
             if (efState & (MessageQueueFlagBits::NOT_FULL | 0)) {
-                if (!mPcm) {
+                if (!mSource) {
                     mBuffer.reset(new uint8_t[mDataMQ.getQuantumCount()]);
                     LOG_ALWAYS_FATAL_IF(!mBuffer);
 
-                    mPcm = talsa::pcmOpen(
-                        talsa::kPcmCard, talsa::kPcmDevice,
-                        mNChannels, mSampleRateHz, mFrameCount,
-                        false /* isOut */);
-                    LOG_ALWAYS_FATAL_IF(!mPcm);
-
-                    mPos.reset();
+                    mSource = DevicePortSource::create(mStream->getDeviceAddress(),
+                                                       mStream->getAudioConfig(),
+                                                       mStream->getAudioOutputFlags());
+                    LOG_ALWAYS_FATAL_IF(!mSource);
                 }
 
                 processCommand();
@@ -184,8 +174,6 @@ struct ReadThread : public IOThread {
             if (!mDataMQ.write(&mBuffer[0], read)) {
                 ALOGE("ReadThread::%s:%d: mDataMQ.write failed", __func__, __LINE__);
             }
-
-            mPos.addFrames(pcm_bytes_to_frames(mPcm.get(), read));
             status.reply.read = read;
         }
 
@@ -193,15 +181,12 @@ struct ReadThread : public IOThread {
     }
 
     Result doReadImpl(uint8_t *const data, const size_t toRead, size_t &read) {
-        const int res = pcm_read(mPcm.get(), data, toRead);
+        const int res = mSource->read(data, toRead);
         if (res < 0) {
             memset(data, 0, toRead);
             read = toRead;
-
-            ALOGE("ReadThread::%s:%d pcm_read failed with %s",
+            ALOGE("StreamInReadThread::%s:%d pcm_read failed with %s",
                   __func__, __LINE__, strerror(-res));
-        } else if (res == 0) {
-            read = toRead;
         } else {
             read = res;
         }
@@ -212,25 +197,20 @@ struct ReadThread : public IOThread {
     IStreamIn::ReadStatus doGetCapturePosition() {
         IStreamIn::ReadStatus status;
 
-        status.retval = Result::OK;
-        nsecs_t t = 0;
-        mPos.now(mSampleRateHz, status.reply.capturePosition.frames, t);
-        status.reply.capturePosition.time = t;
+        status.retval = mSource->getCapturePosition(
+            status.reply.capturePosition.frames,
+            status.reply.capturePosition.time);
 
         return status;
     }
 
     StreamIn *const mStream;
-    const unsigned mNChannels;
-    const size_t mSampleRateHz;
-    const size_t mFrameCount;
     CommandMQ mCommandMQ;
     StatusMQ mStatusMQ;
     DataMQ mDataMQ;
     std::unique_ptr<EventFlag, deleters::forEventFlag> mEfGroup;
     std::unique_ptr<uint8_t[]> mBuffer;
-    talsa::PcmPtr mPcm;
-    util::StreamPosition mPos;
+    std::unique_ptr<DevicePortSource> mSource;
     std::thread mThread;
     std::promise<pthread_t> mTid;
 };
@@ -418,11 +398,7 @@ Return<void> StreamIn::prepareForReading(uint32_t frameSize,
         return Void();
     }
 
-    auto t = std::make_unique<ReadThread>(this,
-                                          util::countChannels(mCommon.getChannelMask()),
-                                          mCommon.getSampleRate(),
-                                          mCommon.getFrameCount(),
-                                          frameSize * framesCount);
+    auto t = std::make_unique<ReadThread>(this, frameSize * framesCount);
 
     if (t->isRunning()) {
         _hidl_cb(Result::OK,
