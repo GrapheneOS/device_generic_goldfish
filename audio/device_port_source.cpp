@@ -34,52 +34,41 @@ namespace implementation {
 
 namespace {
 
-struct CapturePositionDevicePortSource : public DevicePortSource {
-    explicit CapturePositionDevicePortSource(unsigned sampleRateHz)
-            : mSampleRateHz(sampleRateHz)
-            , mStartNs(systemTime(SYSTEM_TIME_MONOTONIC)) {}
+struct TinyalsaSource : public DevicePortSource {
+    TinyalsaSource(unsigned pcmCard, unsigned pcmDevice,
+                   const AudioConfig &cfg, uint64_t &frames)
+            : mFrames(frames)
+            , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
+                                  util::countChannels(cfg.channelMask),
+                                  cfg.sampleRateHz,
+                                  cfg.frameCount,
+                                  false /* isOut */)) {}
 
-    Result getCapturePosition(uint64_t &frames, uint64_t &time) const override {
-        const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
-        frames = getNowFrames(nowNs);
-        time = uint64_t(nowNs);
+    Result getCapturePosition(uint64_t &frames, uint64_t &time) override {
+        frames = mFrames;
+        time = systemTime(SYSTEM_TIME_MONOTONIC);
         return Result::OK;
     }
 
-    uint64_t getNowFrames(const nsecs_t nowNs) const {
-        return uint64_t(mSampleRateHz) * ns2ms(nowNs - mStartNs) / 1000;
-    }
-
-protected:
-    const unsigned mSampleRateHz;
-    const nsecs_t mStartNs;
-};
-
-struct TinyalsaSource : public CapturePositionDevicePortSource {
-    TinyalsaSource(unsigned pcmCard, unsigned pcmDevice, const AudioConfig &cfg)
-            : CapturePositionDevicePortSource(cfg.sampleRateHz)
-            , pcm(talsa::pcmOpen(pcmCard, pcmDevice,
-                                 util::countChannels(cfg.channelMask),
-                                 cfg.sampleRateHz,
-                                 cfg.frameCount,
-                                 false /* isOut */)) {}
-
     int read(void *data, size_t toReadBytes) override {
-        const int res = ::pcm_read(pcm.get(), data, toReadBytes);
+        const int res = ::pcm_read(mPcm.get(), data, toReadBytes);
         if (res < 0) {
             return FAILURE(res);
         } else if (res == 0) {
+            mFrames += ::pcm_bytes_to_frames(mPcm.get(), toReadBytes);
             return toReadBytes;
         } else {
+            mFrames += ::pcm_bytes_to_frames(mPcm.get(), res);
             return res;
         }
     }
 
     static std::unique_ptr<TinyalsaSource> create(unsigned pcmCard,
                                                   unsigned pcmDevice,
-                                                  const AudioConfig &cfg) {
-        auto src = std::make_unique<TinyalsaSource>(pcmCard, pcmDevice, cfg);
-        if (src->pcm) {
+                                                  const AudioConfig &cfg,
+                                                  uint64_t &frames) {
+        auto src = std::make_unique<TinyalsaSource>(pcmCard, pcmDevice, cfg, frames);
+        if (src->mPcm) {
             return src;
         } else {
             return FAILURE(nullptr);
@@ -87,14 +76,31 @@ struct TinyalsaSource : public CapturePositionDevicePortSource {
     }
 
 private:
-    talsa::PcmPtr pcm;
+    uint64_t &mFrames;
+    talsa::PcmPtr mPcm;
 };
 
-template <class G> struct GeneratedSource : public CapturePositionDevicePortSource {
-    GeneratedSource(const AudioConfig &cfg, G generator)
-            : CapturePositionDevicePortSource(cfg.sampleRateHz)
+template <class G> struct GeneratedSource : public DevicePortSource {
+    GeneratedSource(const AudioConfig &cfg, uint64_t &frames, G generator)
+            : mFrames(frames)
+            , mStartNs(systemTime(SYSTEM_TIME_MONOTONIC))
+            , mSampleRateHz(cfg.sampleRateHz)
             , mNChannels(util::countChannels(cfg.channelMask))
             , mGenerator(std::move(generator)) {}
+
+    Result getCapturePosition(uint64_t &frames, uint64_t &time) override {
+        const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
+        const uint64_t nowFrames = getNowFrames(nowNs);
+        mFrames += (nowFrames - mPreviousFrames);
+        mPreviousFrames = nowFrames;
+        frames = mFrames;
+        time = nowNs;
+        return Result::OK;
+    }
+
+    uint64_t getNowFrames(const nsecs_t nowNs) const {
+        return uint64_t(mSampleRateHz) * ns2ms(nowNs - mStartNs) / 1000;
+    }
 
     int read(void *data, size_t toReadBytes) override {
         int16_t *samples = static_cast<int16_t *>(data);
@@ -128,7 +134,11 @@ template <class G> struct GeneratedSource : public CapturePositionDevicePortSour
     }
 
 private:
+    uint64_t &mFrames;
+    const nsecs_t mStartNs;
+    const unsigned mSampleRateHz;
     const unsigned mNChannels;
+    uint64_t mPreviousFrames = 0;
     uint64_t mSentFrames = 0;
     G mGenerator;
 };
@@ -226,8 +236,8 @@ std::vector<float> generateSinePattern(uint32_t sampleRateHz,
 }
 
 template <class G> std::unique_ptr<GeneratedSource<G>>
-createGeneratedSource(const AudioConfig &cfg, G generator) {
-    return std::make_unique<GeneratedSource<G>>(cfg, std::move(generator));
+createGeneratedSource(const AudioConfig &cfg, uint64_t &frames, G generator) {
+    return std::make_unique<GeneratedSource<G>>(cfg, frames, std::move(generator));
 }
 
 }  // namespace
@@ -235,7 +245,8 @@ createGeneratedSource(const AudioConfig &cfg, G generator) {
 std::unique_ptr<DevicePortSource>
 DevicePortSource::create(const DeviceAddress &address,
                          const AudioConfig &cfg,
-                         const hidl_bitfield<AudioOutputFlag> &flags) {
+                         const hidl_bitfield<AudioOutputFlag> &flags,
+                         uint64_t &frames) {
     (void)flags;
 
     if (cfg.format != AudioFormat::PCM_16_BIT) {
@@ -245,14 +256,17 @@ DevicePortSource::create(const DeviceAddress &address,
 
     switch (address.device) {
     case AudioDevice::IN_BUILTIN_MIC:
-        return TinyalsaSource::create(talsa::kPcmCard, talsa::kPcmDevice, cfg);
+        return TinyalsaSource::create(talsa::kPcmCard, talsa::kPcmDevice,
+                                      cfg, frames);
 
     case AudioDevice::IN_TELEPHONY_RX:
-        return createGeneratedSource(cfg, BusySignalGenerator(cfg.sampleRateHz));
+        return createGeneratedSource(cfg, frames,
+                                     BusySignalGenerator(cfg.sampleRateHz));
 
     case AudioDevice::IN_FM_TUNER:
         return createGeneratedSource(
-            cfg, RepeatGenerator(generateSinePattern(cfg.sampleRateHz, 440.0, 1.0)));
+            cfg, frames,
+            RepeatGenerator(generateSinePattern(cfg.sampleRateHz, 440.0, 1.0)));
 
     default:
         return FAILURE(nullptr);
