@@ -42,7 +42,6 @@
             <Limit name="blocks-per-second" range="24-2073600" />
             <Limit name="bitrate" range="1-120000000" />
             <Limit name="frame-rate" range="1-480" />
-            <Limit name="concurrent-instances" max="4" />
             <Limit name="performance-point-3840x2160" value="60" />
             <Limit name="measured-frame-rate-320x240" range="257-266" />
             <Limit name="measured-frame-rate-720x480" range="262-264" />
@@ -84,7 +83,6 @@
             <Limit name="blocks-per-second" min="24" max="2073600" />
             <Limit name="bitrate" range="1-120000000" />
             <Limit name="frame-rate" range="1-480" />
-            <Limit name="concurrent-instances" max="4" />
             <Limit name="performance-point-3840x2160" value="60" />
             <Limit name="measured-frame-rate-320x180" range="237-258" />
             <Limit name="measured-frame-rate-640x360" range="237-258" />
@@ -100,7 +98,6 @@
             <Limit name="blocks-per-second" min="24" max="2073600" />
             <Limit name="bitrate" range="1-120000000" />
             <Limit name="frame-rate" range="1-480" />
-            <Limit name="concurrent-instances" max="4" />
             <Limit name="performance-point-3840x2160" value="60" />
             <Limit name="measured-frame-rate-320x180" range="743-817" />
             <Limit name="measured-frame-rate-640x360" range="237-258" />
