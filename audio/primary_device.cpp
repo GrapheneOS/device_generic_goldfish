@@ -207,20 +207,20 @@ Return<void> PrimaryDevice::updateAudioPatch(AudioPatchHandle previousPatchHandl
                                              const hidl_vec<AudioPortConfig>& sources,
                                              const hidl_vec<AudioPortConfig>& sinks,
                                              updateAudioPatch_cb _hidl_cb) {
-    if (sources.size() == 1 && sinks.size() == 1) {
-        const auto i = mAudioPatches.find(previousPatchHandle);
-        if (i == mAudioPatches.end()) {
-            _hidl_cb(Result::INVALID_ARGUMENTS, previousPatchHandle);
-        } else {
+    const auto i = mAudioPatches.find(previousPatchHandle);
+    if (i == mAudioPatches.end()) {
+        _hidl_cb(Result::INVALID_ARGUMENTS, previousPatchHandle);
+    } else {
+        if (sources.size() == 1 && sinks.size() == 1) {
             AudioPatch patch;
             patch.source = sources[0];
             patch.sink = sinks[0];
             i->second = patch;
 
             _hidl_cb(Result::OK, previousPatchHandle);
+        } else {
+            _hidl_cb(Result::NOT_SUPPORTED, previousPatchHandle);
         }
-    } else {
-        _hidl_cb(Result::NOT_SUPPORTED, 0);
     }
 
     return Void();
