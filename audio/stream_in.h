@@ -87,12 +87,23 @@ struct StreamIn : public IStreamIn {
     Return<Result> setMicrophoneDirection(MicrophoneDirection direction) override;
     Return<Result> setMicrophoneFieldDimension(float zoom) override;
 
+    const DeviceAddress &getDeviceAddress() const { return mCommon.m_device; }
+    const AudioConfig &getAudioConfig() const { return mCommon.m_config; }
+    const hidl_bitfield<AudioOutputFlag> &getAudioOutputFlags() const { return mCommon.m_flags; }
+
+    uint64_t &getFrameCounter() { return mFrames; }
+
 private:
+    Result closeImpl(bool fromDctor);
+
     sp<IDevice> mDev;
     void (* const mUnrefDevice)(IDevice*);
     const StreamCommon mCommon;
     const SinkMetadata mSinkMetadata;
     std::unique_ptr<IOThread> mReadThread;
+
+    // The count is not reset to zero when output enters standby.
+    uint64_t mFrames = 0;
 };
 
 }  // namespace implementation

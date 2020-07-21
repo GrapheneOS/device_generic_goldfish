@@ -20,6 +20,7 @@
 #include "stream_in.h"
 #include "stream_out.h"
 #include "util.h"
+#include "debug.h"
 
 namespace android {
 namespace hardware {
@@ -28,7 +29,7 @@ namespace V6_0 {
 namespace implementation {
 
 constexpr size_t kInBufferDurationMs = 15;
-constexpr size_t kOutBufferDurationMs = 15;
+constexpr size_t kOutBufferDurationMs = 22;
 
 using ::android::hardware::Void;
 
@@ -48,28 +49,28 @@ PrimaryDevice::PrimaryDevice()
 }
 
 Return<Result> PrimaryDevice::initCheck() {
-    return mMixer ? Result::OK : Result::NOT_INITIALIZED;
+    return mMixer ? Result::OK : FAILURE(Result::NOT_INITIALIZED);
 }
 
 Return<Result> PrimaryDevice::setMasterVolume(float volume) {
-    if (volume < 0 || volume > 1.0) {
-        return Result::INVALID_ARGUMENTS;
+    if (isnan(volume) || volume < 0 || volume > 1.0) {
+        return FAILURE(Result::INVALID_ARGUMENTS);
     }
 
     if (!mMixerMasterVolumeCtl) {
-        return Result::INVALID_STATE;
+        return FAILURE(Result::INVALID_STATE);
     }
 
     talsa::mixerSetPercentAll(mMixerMasterVolumeCtl, int(100 * volume));
+    mMasterVolume = volume;
     return Result::OK;
 }
 
 Return<void> PrimaryDevice::getMasterVolume(getMasterVolume_cb _hidl_cb) {
     if (mMixerMasterVolumeCtl) {
-        _hidl_cb(Result::OK,
-                 mixer_ctl_get_percent(mMixerMasterVolumeCtl, 0) / 100.0);
+        _hidl_cb(Result::OK, mMasterVolume);
     } else {
-        _hidl_cb(Result::INVALID_STATE, 0);
+        _hidl_cb(FAILURE(Result::INVALID_STATE), 0);
     }
 
     return Void();
@@ -80,7 +81,7 @@ Return<Result> PrimaryDevice::PrimaryDevice::setMicMute(bool mute) {
         talsa::mixerSetValueAll(mMixerCaptureSwitchCtl, mute ? 0 : 1);
         return Result::OK;
     } else {
-        return Result::INVALID_STATE;
+        return FAILURE(Result::INVALID_STATE);
     }
 }
 
@@ -89,7 +90,7 @@ Return<void> PrimaryDevice::getMicMute(getMicMute_cb _hidl_cb) {
         const int value = mixer_ctl_get_value(mMixerCaptureSwitchCtl, 0);
         _hidl_cb(Result::OK, value == 0);
     } else {
-        _hidl_cb(Result::INVALID_STATE, 0);
+        _hidl_cb(FAILURE(Result::INVALID_STATE), 0);
     }
     return Void();
 }
@@ -99,7 +100,7 @@ Return<Result> PrimaryDevice::setMasterMute(bool mute) {
         talsa::mixerSetValueAll(mMixerMasterPaybackSwitchCtl, mute ? 0 : 1);
         return Result::OK;
     } else {
-        return Result::INVALID_STATE;
+        return FAILURE(Result::INVALID_STATE);
     }
 }
 
@@ -108,7 +109,7 @@ Return<void> PrimaryDevice::getMasterMute(getMasterMute_cb _hidl_cb) {
         const int value = mixer_ctl_get_value(mMixerMasterPaybackSwitchCtl, 0);
         _hidl_cb(Result::OK, value == 0);
     } else {
-        _hidl_cb(Result::NOT_SUPPORTED, 0);
+        _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0);
     }
 
     return Void();
@@ -126,7 +127,7 @@ Return<void> PrimaryDevice::getInputBufferSize(const AudioConfig& config,
         _hidl_cb(Result::OK, sz);
     } else {
         ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
-        _hidl_cb(Result::INVALID_ARGUMENTS, 0);
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), 0);
     }
 
     return Void();
@@ -147,7 +148,7 @@ Return<void> PrimaryDevice::openOutputStream(int32_t ioHandle,
                  config);
     } else {
         ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
-        _hidl_cb(Result::INVALID_ARGUMENTS, nullptr, suggestedConfig);
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), nullptr, suggestedConfig);
     }
 
     return Void();
@@ -168,49 +169,76 @@ Return<void> PrimaryDevice::openInputStream(int32_t ioHandle,
                  config);
     } else {
         ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
-        _hidl_cb(Result::INVALID_ARGUMENTS, nullptr, suggestedConfig);
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), nullptr, suggestedConfig);
     }
 
     return Void();
 }
 
 Return<bool> PrimaryDevice::supportsAudioPatches() {
-    return false;
+    return true;
 }
 
 Return<void> PrimaryDevice::createAudioPatch(const hidl_vec<AudioPortConfig>& sources,
                                              const hidl_vec<AudioPortConfig>& sinks,
                                              createAudioPatch_cb _hidl_cb) {
-    (void)sources;
-    (void)sinks;
-    _hidl_cb(Result::NOT_SUPPORTED, 0);
+    if (sources.size() == 1 && sinks.size() == 1) {
+        AudioPatch patch;
+        patch.source = sources[0];
+        patch.sink = sinks[0];
+
+        AudioPatchHandle handle;
+        while (true) {
+            handle = mNextAudioPatchHandle;
+            mNextAudioPatchHandle = std::max(handle + 1, 0);
+            if (mAudioPatches.insert({handle, patch}).second) {
+                break;
+            }
+        }
+
+        _hidl_cb(Result::OK, handle);
+    } else {
+        _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0);
+    }
+
     return Void();
 }
 
-Return<void> PrimaryDevice::updateAudioPatch(int32_t previousPatch,
+Return<void> PrimaryDevice::updateAudioPatch(AudioPatchHandle previousPatchHandle,
                                              const hidl_vec<AudioPortConfig>& sources,
                                              const hidl_vec<AudioPortConfig>& sinks,
                                              updateAudioPatch_cb _hidl_cb) {
-    (void)previousPatch;
-    (void)sources;
-    (void)sinks;
-    _hidl_cb(Result::NOT_SUPPORTED, 0);
+    const auto i = mAudioPatches.find(previousPatchHandle);
+    if (i == mAudioPatches.end()) {
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), previousPatchHandle);
+    } else {
+        if (sources.size() == 1 && sinks.size() == 1) {
+            AudioPatch patch;
+            patch.source = sources[0];
+            patch.sink = sinks[0];
+            i->second = patch;
+
+            _hidl_cb(Result::OK, previousPatchHandle);
+        } else {
+            _hidl_cb(Result::NOT_SUPPORTED, previousPatchHandle);
+        }
+    }
+
     return Void();
 }
 
-Return<Result> PrimaryDevice::releaseAudioPatch(int32_t patch) {
-    (void)patch;
-    return Result::NOT_SUPPORTED;
+Return<Result> PrimaryDevice::releaseAudioPatch(AudioPatchHandle patchHandle) {
+    return (mAudioPatches.erase(patchHandle) == 1) ? Result::OK : FAILURE(Result::INVALID_ARGUMENTS);
 }
 
 Return<void> PrimaryDevice::getAudioPort(const AudioPort& port, getAudioPort_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, port);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), port);
     return Void();
 }
 
 Return<Result> PrimaryDevice::setAudioPortConfig(const AudioPortConfig& config) {
     (void)config;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> PrimaryDevice::setScreenState(bool turnedOn) {
@@ -219,7 +247,7 @@ Return<Result> PrimaryDevice::setScreenState(bool turnedOn) {
 }
 
 Return<void> PrimaryDevice::getHwAvSync(getHwAvSync_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, {});
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     return Void();
 }
 
@@ -230,7 +258,7 @@ Return<void> PrimaryDevice::getParameters(const hidl_vec<ParameterValue>& contex
     if (keys.size() == 0) {
         _hidl_cb(Result::OK, {});
     } else {
-        _hidl_cb(Result::NOT_SUPPORTED, {});
+        _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
     }
     return Void();
 }
@@ -250,12 +278,12 @@ Return<void> PrimaryDevice::getMicrophones(getMicrophones_cb _hidl_cb) {
 Return<Result> PrimaryDevice::setConnectedState(const DeviceAddress& dev_addr, bool connected) {
     (void)dev_addr;
     (void)connected;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> PrimaryDevice::close() {
     if (mNStreams > 0) {
-        return Result::INVALID_STATE;
+        return FAILURE(Result::INVALID_STATE);
     } else if (mMixer) {
         mMixerMasterVolumeCtl = nullptr;
         mMixerCaptureVolumeCtl = nullptr;
@@ -264,24 +292,24 @@ Return<Result> PrimaryDevice::close() {
         mMixer.reset();
         return Result::OK;
     } else {
-        return Result::INVALID_STATE;
+        return FAILURE(Result::INVALID_STATE);
     }
 }
 
 Return<Result> PrimaryDevice::addDeviceEffect(AudioPortHandle device, uint64_t effectId) {
     (void)device;
     (void)effectId;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> PrimaryDevice::removeDeviceEffect(AudioPortHandle device, uint64_t effectId) {
     (void)device;
     (void)effectId;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> PrimaryDevice::setVoiceVolume(float volume) {
-    return (volume >= 0 && volume <= 1.0) ? Result::OK : Result::INVALID_ARGUMENTS;
+    return (volume >= 0 && volume <= 1.0) ? Result::OK : FAILURE(Result::INVALID_ARGUMENTS);
 }
 
 Return<Result> PrimaryDevice::setMode(AudioMode mode) {
@@ -293,78 +321,78 @@ Return<Result> PrimaryDevice::setMode(AudioMode mode) {
         return Result::OK;
 
     default:
-        return Result::INVALID_ARGUMENTS;
+        return FAILURE(Result::INVALID_ARGUMENTS);
     }
 }
 
 Return<Result> PrimaryDevice::setBtScoHeadsetDebugName(const hidl_string& name) {
     (void)name;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> PrimaryDevice::getBtScoNrecEnabled(getBtScoNrecEnabled_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, false);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), false);
     return Void();
 }
 
 Return<Result> PrimaryDevice::setBtScoNrecEnabled(bool enabled) {
     (void)enabled;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> PrimaryDevice::getBtScoWidebandEnabled(getBtScoWidebandEnabled_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, false);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), false);
     return Void();
 }
 
 Return<Result> PrimaryDevice::setBtScoWidebandEnabled(bool enabled) {
     (void)enabled;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> PrimaryDevice::getTtyMode(getTtyMode_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, TtyMode::OFF);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), TtyMode::OFF);
     return Void();
 }
 
 Return<Result> PrimaryDevice::setTtyMode(IPrimaryDevice::TtyMode mode) {
     (void)mode;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> PrimaryDevice::getHacEnabled(getHacEnabled_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, false);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), false);
     return Void();
 }
 
 Return<Result> PrimaryDevice::setHacEnabled(bool enabled) {
     (void)enabled;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> PrimaryDevice::getBtHfpEnabled(getBtHfpEnabled_cb _hidl_cb) {
-    _hidl_cb(Result::NOT_SUPPORTED, false);
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), false);
     return Void();
 }
 
 Return<Result> PrimaryDevice::setBtHfpEnabled(bool enabled) {
     (void)enabled;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> PrimaryDevice::setBtHfpSampleRate(uint32_t sampleRateHz) {
     (void)sampleRateHz;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> PrimaryDevice::setBtHfpVolume(float volume) {
     (void)volume;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> PrimaryDevice::updateRotation(IPrimaryDevice::Rotation rotation) {
     (void)rotation;
-    return Result::NOT_SUPPORTED;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 void PrimaryDevice::unrefDevice(IDevice *dev) {

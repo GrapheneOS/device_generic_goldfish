@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-cc_library_shared {
-    name: "android.hardware.audio@6.0-impl.ranchu",
+cc_binary {
+    name: "android.hardware.audio.service.ranchu",
     vendor: true,
+    init_rc: ["android.hardware.audio.service.ranchu.rc"],
     vintf_fragments: ["android.hardware.audio@6.0-impl.ranchu.xml"],
     relative_install_path: "hw",
     defaults: ["hidl_defaults"],
@@ -27,6 +28,8 @@ cc_library_shared {
         "stream_in.cpp",
         "stream_out.cpp",
         "io_thread.cpp",
+        "device_port_source.cpp",
+        "device_port_sink.cpp",
         "talsa.cpp",
         "util.cpp",
     ],
@@ -34,7 +37,9 @@ cc_library_shared {
         "android.hardware.audio@6.0",
         "android.hardware.audio.common@6.0",
         "android.hardware.audio.common@6.0-util",
+        "libaudioutils",
         "libbase",
+        "libbinder",
         "libcutils",
         "libhidlbase",
         "liblog",
@@ -47,6 +52,13 @@ cc_library_shared {
         "libaudio_system_headers",
     ],
     cflags: [
-        "-DLOG_TAG=\"android.hardware.audio@6.0-impl.ranchu\"",
+        "-DLOG_TAG=\"android.hardware.audio.service.ranchu\"",
+    ],
+    // android.hardware.audio.service.ranchu loads android.hardware.audio@6.0-impl
+    // which loads audio.r_submix.default which provides the r_submix device,
+    // see b/161485545. Should be retired once a better r_submix is available.
+    required: [
+        "android.hardware.audio@6.0-impl",
+        "audio.r_submix.default",
     ],
 }

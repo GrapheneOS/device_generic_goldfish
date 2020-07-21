@@ -15,37 +15,30 @@
  */
 
 #pragma once
-#include <array>
+#include <memory>
 #include <android/hardware/audio/common/6.0/types.h>
 #include <android/hardware/audio/6.0/types.h>
-#include <utils/Timers.h>
 
 namespace android {
 namespace hardware {
 namespace audio {
 namespace V6_0 {
 namespace implementation {
-namespace util {
 
-using ::android::hardware::hidl_bitfield;
-using ::android::hardware::audio::common::V6_0::AudioFormat;
-using ::android::hardware::audio::common::V6_0::AudioChannelMask;
-using ::android::hardware::audio::common::V6_0::AudioConfig;
-using ::android::hardware::audio::V6_0::MicrophoneInfo;
+using namespace ::android::hardware::audio::common::V6_0;
+using namespace ::android::hardware::audio::V6_0;
 
-MicrophoneInfo getMicrophoneInfo();
+struct DevicePortSource {
+    virtual ~DevicePortSource() {}
+    virtual Result getCapturePosition(uint64_t &frames, uint64_t &time) = 0;
+    virtual int read(void *data, size_t nBytes) = 0;
 
-size_t countChannels(hidl_bitfield<AudioChannelMask>);
-size_t getBytesPerSample(AudioFormat);
+    static std::unique_ptr<DevicePortSource> create(const DeviceAddress &,
+                                                    const AudioConfig &,
+                                                    const hidl_bitfield<AudioOutputFlag> &,
+                                                    uint64_t &frames);
+};
 
-bool checkAudioConfig(bool isOut,
-                      size_t duration_ms,
-                      const AudioConfig &cfg,
-                      AudioConfig &suggested);
-
-TimeSpec nsecs2TimeSpec(nsecs_t);
-
-}  // namespace util
 }  // namespace implementation
 }  // namespace V6_0
 }  // namespace audio

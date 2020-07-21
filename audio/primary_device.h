@@ -17,6 +17,7 @@
 #pragma once
 #include <android/hardware/audio/6.0/IPrimaryDevice.h>
 #include <atomic>
+#include <unordered_map>
 #include "talsa.h"
 
 namespace android {
@@ -62,11 +63,11 @@ struct PrimaryDevice : public IPrimaryDevice {
     Return<void> createAudioPatch(const hidl_vec<AudioPortConfig>& sources,
                                   const hidl_vec<AudioPortConfig>& sinks,
                                   createAudioPatch_cb _hidl_cb) override;
-    Return<void> updateAudioPatch(int32_t previousPatch,
+    Return<void> updateAudioPatch(AudioPatchHandle previousPatch,
                                   const hidl_vec<AudioPortConfig>& sources,
                                   const hidl_vec<AudioPortConfig>& sinks,
                                   updateAudioPatch_cb _hidl_cb) override;
-    Return<Result> releaseAudioPatch(int32_t patch) override;
+    Return<Result> releaseAudioPatch(AudioPatchHandle patch) override;
     Return<void> getAudioPort(const AudioPort& port, getAudioPort_cb _hidl_cb) override;
     Return<Result> setAudioPortConfig(const AudioPortConfig& config) override;
     Return<Result> setScreenState(bool turnedOn) override;
@@ -107,7 +108,16 @@ private:
     talsa::mixer_ctl_t  *mMixerCaptureVolumeCtl = nullptr;
     talsa::mixer_ctl_t  *mMixerMasterPaybackSwitchCtl = nullptr;
     talsa::mixer_ctl_t  *mMixerCaptureSwitchCtl = nullptr;
+    float               mMasterVolume = 1.0f;
     std::atomic<int>    mNStreams = 0;
+
+    struct AudioPatch {
+        AudioPortConfig source;
+        AudioPortConfig sink;
+    };
+
+    AudioPatchHandle    mNextAudioPatchHandle = 0;
+    std::unordered_map<AudioPatchHandle, AudioPatch> mAudioPatches;
 };
 
 }  // namespace implementation

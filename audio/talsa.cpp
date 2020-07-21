@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "talsa.h"
 #include <log/log.h>
+#include "talsa.h"
+#include "debug.h"
 
 namespace android {
 namespace hardware {
@@ -60,7 +61,7 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
               "frameCount=%zu isOut=%d with %s", __func__, __LINE__,
               nChannels, sampleRateHz, frameCount, isOut,
               pcm_get_error(pcm.get()));
-        return nullptr;
+        return FAILURE(nullptr);
     }
 }
 
