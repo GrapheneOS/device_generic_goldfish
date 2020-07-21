@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <log/log.h>
 #include "device_port_sink.h"
 #include "talsa.h"
 #include "util.h"
@@ -67,9 +68,38 @@ struct TinyalsaSink : public DevicePortSink {
         }
     }
 
+private:
     const uint32_t mSampleRateHz;
     util::StreamPosition mPos;
     talsa::PcmPtr mPcm;
+};
+
+struct NullSink : public DevicePortSink {
+    explicit NullSink(const AudioConfig &cfg)
+            : mSampleRateHz(cfg.sampleRateHz)
+            , mNChannels(util::countChannels(cfg.channelMask)) {}
+
+    Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) const override {
+        nsecs_t t = 0;
+        mPos.now(mSampleRateHz, frames, t);
+        ts.tvSec = ns2s(t);
+        ts.tvNSec = t - s2ns(ts.tvSec);
+        return Result::OK;
+    }
+
+    int write(const void *, size_t nBytes) override {
+        mPos.addFrames(nBytes / mNChannels / sizeof(int16_t));
+        return nBytes;
+    }
+
+    static std::unique_ptr<NullSink> create(const AudioConfig &cfg) {
+        return std::make_unique<NullSink>(cfg);
+    }
+
+private:
+    const unsigned mSampleRateHz;
+    const unsigned mNChannels;
+    util::StreamPosition mPos;
 };
 
 }  // namespace
@@ -78,9 +108,23 @@ std::unique_ptr<DevicePortSink>
 DevicePortSink::create(const DeviceAddress &address,
                        const AudioConfig &cfg,
                        const hidl_bitfield<AudioOutputFlag> &flags) {
-    (void)address;
     (void)flags;
-    return TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice, cfg);
+
+    if (cfg.format != AudioFormat::PCM_16_BIT) {
+        ALOGE("%s:%d Only PCM_16_BIT is supported", __func__, __LINE__);
+        return nullptr;
+    }
+
+    switch (address.device) {
+    case AudioDevice::OUT_SPEAKER:
+        return TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice, cfg);
+
+    case AudioDevice::OUT_TELEPHONY_TX:
+        return NullSink::create(cfg);
+
+    default:
+        return nullptr;
+    }
 }
 
 }  // namespace implementation
