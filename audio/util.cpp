@@ -145,25 +145,11 @@ bool checkAudioConfig(bool isOut,
     return valid;
 }
 
-StreamPosition::StreamPosition() : mTimestamp(systemTime(SYSTEM_TIME_MONOTONIC)) {}
-
-void StreamPosition::addFrames(uint64_t n) {
-    mTimestamp = systemTime(SYSTEM_TIME_MONOTONIC);
-    mFrames += n;
-}
-
-void StreamPosition::now(const size_t sampleRateHz,
-                         uint64_t &frames,
-                         nsecs_t &timestamp) const {
-    const nsecs_t now = systemTime(SYSTEM_TIME_MONOTONIC);
-    const uint64_t deltaUs = ns2us(now - mTimestamp);
-
-    frames = mFrames + sampleRateHz * deltaUs / 1000000;
-    timestamp = now;
-}
-
-void StreamPosition::reset() {
-    *this = StreamPosition();
+TimeSpec nsecs2TimeSpec(nsecs_t ns) {
+    TimeSpec ts;
+    ts.tvSec = ns2s(ns);
+    ts.tvNSec = ns - s2ns(ts.tvSec);
+    return ts;
 }
 
 }  // namespace util
