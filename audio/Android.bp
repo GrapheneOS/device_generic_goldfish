@@ -54,4 +54,11 @@ cc_binary {
     cflags: [
         "-DLOG_TAG=\"android.hardware.audio.service.ranchu\"",
     ],
+    // android.hardware.audio.service.ranchu loads android.hardware.audio@6.0-impl
+    // which loads audio.r_submix.default which provides the r_submix device,
+    // see b/161485545. Should be retired once a better r_submix is available.
+    required: [
+        "android.hardware.audio@6.0-impl",
+        "audio.r_submix.default",
+    ],
 }
