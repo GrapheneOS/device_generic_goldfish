@@ -175,32 +175,59 @@ Return<void> PrimaryDevice::openInputStream(int32_t ioHandle,
 }
 
 Return<bool> PrimaryDevice::supportsAudioPatches() {
-    return false;
+    return true;
 }
 
 Return<void> PrimaryDevice::createAudioPatch(const hidl_vec<AudioPortConfig>& sources,
                                              const hidl_vec<AudioPortConfig>& sinks,
                                              createAudioPatch_cb _hidl_cb) {
-    (void)sources;
-    (void)sinks;
-    _hidl_cb(Result::NOT_SUPPORTED, 0);
+    if (sources.size() == 1 && sinks.size() == 1) {
+        AudioPatch patch;
+        patch.source = sources[0];
+        patch.sink = sinks[0];
+
+        AudioPatchHandle handle;
+        while (true) {
+            handle = mNextAudioPatchHandle;
+            mNextAudioPatchHandle = std::max(handle + 1, 0);
+            if (mAudioPatches.insert({handle, patch}).second) {
+                break;
+            }
+        }
+
+        _hidl_cb(Result::OK, handle);
+    } else {
+        _hidl_cb(Result::NOT_SUPPORTED, 0);
+    }
+
     return Void();
 }
 
-Return<void> PrimaryDevice::updateAudioPatch(int32_t previousPatch,
+Return<void> PrimaryDevice::updateAudioPatch(AudioPatchHandle previousPatchHandle,
                                              const hidl_vec<AudioPortConfig>& sources,
                                              const hidl_vec<AudioPortConfig>& sinks,
                                              updateAudioPatch_cb _hidl_cb) {
-    (void)previousPatch;
-    (void)sources;
-    (void)sinks;
-    _hidl_cb(Result::NOT_SUPPORTED, 0);
+    if (sources.size() == 1 && sinks.size() == 1) {
+        const auto i = mAudioPatches.find(previousPatchHandle);
+        if (i == mAudioPatches.end()) {
+            _hidl_cb(Result::INVALID_ARGUMENTS, previousPatchHandle);
+        } else {
+            AudioPatch patch;
+            patch.source = sources[0];
+            patch.sink = sinks[0];
+            i->second = patch;
+
+            _hidl_cb(Result::OK, previousPatchHandle);
+        }
+    } else {
+        _hidl_cb(Result::NOT_SUPPORTED, 0);
+    }
+
     return Void();
 }
 
-Return<Result> PrimaryDevice::releaseAudioPatch(int32_t patch) {
-    (void)patch;
-    return Result::NOT_SUPPORTED;
+Return<Result> PrimaryDevice::releaseAudioPatch(AudioPatchHandle patchHandle) {
+    return (mAudioPatches.erase(patchHandle) == 1) ? Result::OK : Result::INVALID_ARGUMENTS;
 }
 
 Return<void> PrimaryDevice::getAudioPort(const AudioPort& port, getAudioPort_cb _hidl_cb) {
