@@ -15,6 +15,7 @@
  */
 
 #include "talsa.h"
+#include "debug.h"
 #include <log/log.h>
 
 namespace android {
@@ -60,7 +61,7 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
               "frameCount=%zu isOut=%d with %s", __func__, __LINE__,
               nChannels, sampleRateHz, frameCount, isOut,
               pcm_get_error(pcm.get()));
-        return nullptr;
+        return FAILURE(nullptr);
     }
 }
 
