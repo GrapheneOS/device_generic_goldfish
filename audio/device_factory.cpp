@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include <system/audio.h>
+#include <log/log.h>
 #include "device_factory.h"
 #include "primary_device.h"
 #include "debug.h"
-#include <system/audio.h>
-#include <log/log.h>
 
 namespace android {
 namespace hardware {

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <log/log.h>
 #include "talsa.h"
 #include "debug.h"
-#include <log/log.h>
 
 namespace android {
 namespace hardware {
