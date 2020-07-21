@@ -19,6 +19,7 @@
 #include "device_port_sink.h"
 #include "talsa.h"
 #include "util.h"
+#include "debug.h"
 
 namespace android {
 namespace hardware {
@@ -47,7 +48,7 @@ struct TinyalsaSink : public DevicePortSink {
     int write(const void *data, size_t nBytes) override {
         const int res = ::pcm_write(mPcm.get(), data, nBytes);
         if (res < 0) {
-            return res;
+            return FAILURE(res);
         } else if (res == 0) {
             mFrames += ::pcm_bytes_to_frames(mPcm.get(), nBytes);
             return nBytes;
@@ -65,7 +66,7 @@ struct TinyalsaSink : public DevicePortSink {
         if (src->mPcm) {
             return src;
         } else {
-            return nullptr;
+            return FAILURE(nullptr);
         }
     }
 
@@ -133,7 +134,7 @@ DevicePortSink::create(const DeviceAddress &address,
 
     if (cfg.format != AudioFormat::PCM_16_BIT) {
         ALOGE("%s:%d Only PCM_16_BIT is supported", __func__, __LINE__);
-        return nullptr;
+        return FAILURE(nullptr);
     }
 
     switch (address.device) {
@@ -145,7 +146,7 @@ DevicePortSink::create(const DeviceAddress &address,
         return NullSink::create(cfg, frames);
 
     default:
-        return nullptr;
+        return FAILURE(nullptr);
     }
 }
 
