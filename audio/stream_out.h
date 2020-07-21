@@ -105,6 +105,9 @@ struct StreamOut : public IStreamOut {
     Return<Result> setPlaybackRateParameters(const PlaybackRate &playbackRate) override;
 
     int16_t getVolumeNumerator() const { return mVolumeNumerator; };
+    const DeviceAddress &getDeviceAddress() const { return mCommon.m_device; }
+    const AudioConfig &getAudioConfig() const { return mCommon.m_config; }
+    const hidl_bitfield<AudioOutputFlag> &getAudioOutputFlags() const { return mCommon.m_flags; }
 
 private:
     sp<IDevice> mDev;
