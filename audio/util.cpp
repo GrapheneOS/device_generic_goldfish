@@ -16,7 +16,10 @@
 
 #include <log/log.h>
 #include <cutils/bitops.h>
+#include <cutils/sched_policy.h>
 #include <system/audio.h>
+#include <sys/resource.h>
+#include <pthread.h>
 #include "util.h"
 #include "debug.h"
 
@@ -151,6 +154,11 @@ TimeSpec nsecs2TimeSpec(nsecs_t ns) {
     ts.tvSec = ns2s(ns);
     ts.tvNSec = ns - s2ns(ts.tvSec);
     return ts;
+}
+
+void setThreadPriority(int prio) {
+    setpriority(PRIO_PROCESS, 0, prio);
+    set_sched_policy(0, SP_FOREGROUND);
 }
 
 }  // namespace util
