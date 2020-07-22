@@ -151,7 +151,8 @@ endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
 PRODUCT_PACKAGES += \
-    android.hardware.audio.service.ranchu \
+    android.hardware.audio.service \
+    android.hardware.audio@6.0-impl.ranchu \
     android.hardware.soundtrigger@2.2-impl.ranchu \
     android.hardware.audio.effect@6.0-impl \
 
