@@ -19,9 +19,6 @@
 #include <fmq/MessageQueue.h>
 #include <hidl/MQDescriptor.h>
 #include <hidl/Status.h>
-#include <sys/resource.h>
-#include <pthread.h>
-#include <cutils/sched_policy.h>
 #include <utils/ThreadDefs.h>
 #include <future>
 #include <thread>
@@ -99,8 +96,7 @@ struct ReadThread : public IOThread {
     }
 
     void threadLoop() {
-        setpriority(PRIO_PROCESS, 0, PRIORITY_URGENT_AUDIO);
-        set_sched_policy(0, SP_FOREGROUND);
+        util::setThreadPriority(PRIORITY_URGENT_AUDIO);
         mTid.set_value(pthread_self());
 
         while (true) {
