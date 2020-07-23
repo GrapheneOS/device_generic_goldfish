@@ -56,13 +56,16 @@ MultihalSensors::MultihalSensors() : m_qemuSensorsFd(qemud_channel_open("sensors
         ::abort();
     }
     buffer[len] = 0;
-    uint32_t availableSensorsMask = 0;
-    if (sscanf(buffer, "%u", &availableSensorsMask) != 1) {
+    uint32_t hostSensorsMask = 0;
+    if (sscanf(buffer, "%u", &hostSensorsMask) != 1) {
         ALOGE("%s:%d: Can't parse qemud response", __func__, __LINE__);
         ::abort();
     }
     m_availableSensorsMask =
-        availableSensorsMask & ((1u << getSensorNumber()) - 1);
+        hostSensorsMask & ((1u << getSensorNumber()) - 1);
+
+    ALOGI("%s:%d: host sensors mask=%x, available sensors mask=%x",
+          __func__, __LINE__, hostSensorsMask, m_availableSensorsMask);
 
     if (!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
                                      &m_callersFd, &m_sensorThreadFd)) {
