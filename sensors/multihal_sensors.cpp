@@ -73,7 +73,7 @@ MultihalSensors::MultihalSensors() : m_qemuSensorsFd(qemud_channel_open("sensors
         ::abort();
     }
 
-    m_sensorThread = std::thread(qemuSensorListenerThreadStart, this);
+    m_sensorThread = std::thread(&MultihalSensors::qemuSensorListenerThread, this);
 }
 
 MultihalSensors::~MultihalSensors() {
