@@ -89,7 +89,6 @@ private:
     void postSensorEventLocked(const Event& event);
 
     void qemuSensorListenerThread();
-    static void qemuSensorListenerThreadStart(MultihalSensors* that);
 
     static constexpr char kCMD_QUIT = 'q';
     bool qemuSensorThreadSendCommand(char cmd) const;
