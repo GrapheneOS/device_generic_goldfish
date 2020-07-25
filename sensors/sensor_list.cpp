@@ -122,11 +122,11 @@ const SensorInfo kAllSensors[] = {
         .maxRange = 80.0,
         .resolution = 1.0,
         .power = 0.0,
-        .minDelay = 10000,
+        .minDelay = 0,
         .fifoReservedEventCount = 0,
         .fifoMaxEventCount = 0,
         .requiredPermission = "",
-        .maxDelay = 500000,
+        .maxDelay = 0,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE
     },
@@ -140,11 +140,11 @@ const SensorInfo kAllSensors[] = {
         .maxRange = 1.0,
         .resolution = 1.0,
         .power = 20.0,
-        .minDelay = 10000,
+        .minDelay = 0,
         .fifoReservedEventCount = 0,
         .fifoMaxEventCount = 0,
         .requiredPermission = "",
-        .maxDelay = 500000,
+        .maxDelay = 0,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE |
                  SensorFlagBits::WAKE_UP
@@ -159,11 +159,11 @@ const SensorInfo kAllSensors[] = {
         .maxRange = 40000.0,
         .resolution = 1.0,
         .power = 20.0,
-        .minDelay = 10000,
+        .minDelay = 0,
         .fifoReservedEventCount = 0,
         .fifoMaxEventCount = 0,
         .requiredPermission = "",
-        .maxDelay = 500000,
+        .maxDelay = 0,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE
     },
@@ -195,11 +195,11 @@ const SensorInfo kAllSensors[] = {
         .maxRange = 100.0,
         .resolution = 1.0,
         .power = 20.0,
-        .minDelay = 10000,
+        .minDelay = 0,
         .fifoReservedEventCount = 0,
         .fifoMaxEventCount = 0,
         .requiredPermission = "",
-        .maxDelay = 500000,
+        .maxDelay = 0,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE
     },
@@ -248,11 +248,11 @@ const SensorInfo kAllSensors[] = {
         .maxRange = 360,
         .resolution = 1.0,
         .power = 3.0,
-        .minDelay = 10000,
+        .minDelay = 0,
         .fifoReservedEventCount = 0,
         .fifoMaxEventCount = 0,
         .requiredPermission = "",
-        .maxDelay = 500000,
+        .maxDelay = 0,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE |
                  SensorFlagBits::WAKE_UP
@@ -267,11 +267,11 @@ const SensorInfo kAllSensors[] = {
         .maxRange = 360,
         .resolution = 1.0,
         .power = 3.0,
-        .minDelay = 10000,
+        .minDelay = 0,
         .fifoReservedEventCount = 0,
         .fifoMaxEventCount = 0,
         .requiredPermission = "",
-        .maxDelay = 500000,
+        .maxDelay = 0,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE |
                  SensorFlagBits::WAKE_UP
@@ -286,11 +286,11 @@ const SensorInfo kAllSensors[] = {
         .maxRange = 360,
         .resolution = 1.0,
         .power = 3.0,
-        .minDelay = 10000,
+        .minDelay = 0,
         .fifoReservedEventCount = 0,
         .fifoMaxEventCount = 0,
         .requiredPermission = "",
-        .maxDelay = 500000,
+        .maxDelay = 0,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE |
                  SensorFlagBits::WAKE_UP
