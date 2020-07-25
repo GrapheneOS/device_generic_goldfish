@@ -81,6 +81,7 @@ private:
         float lastHingeAngle2Value = kSensorNoValue;
     };
 
+    bool isSensorHandleValid(int sensorHandle) const;
     static bool activateQemuSensorImpl(int pipe, int sensorHandle, bool enabled);
     bool disableAllSensors();
     void parseQemuSensorEvent(const int pipe, QemuSensorsProtocolState* state);
