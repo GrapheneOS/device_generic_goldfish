@@ -56,13 +56,16 @@ MultihalSensors::MultihalSensors() : m_qemuSensorsFd(qemud_channel_open("sensors
         ::abort();
     }
     buffer[len] = 0;
-    uint32_t availableSensorsMask = 0;
-    if (sscanf(buffer, "%u", &availableSensorsMask) != 1) {
+    uint32_t hostSensorsMask = 0;
+    if (sscanf(buffer, "%u", &hostSensorsMask) != 1) {
         ALOGE("%s:%d: Can't parse qemud response", __func__, __LINE__);
         ::abort();
     }
     m_availableSensorsMask =
-        availableSensorsMask & ((1u << getSensorNumber()) - 1);
+        hostSensorsMask & ((1u << getSensorNumber()) - 1);
+
+    ALOGI("%s:%d: host sensors mask=%x, available sensors mask=%x",
+          __func__, __LINE__, hostSensorsMask, m_availableSensorsMask);
 
     if (!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
                                      &m_callersFd, &m_sensorThreadFd)) {
@@ -70,7 +73,7 @@ MultihalSensors::MultihalSensors() : m_qemuSensorsFd(qemud_channel_open("sensors
         ::abort();
     }
 
-    m_sensorThread = std::thread(qemuSensorListenerThreadStart, this);
+    m_sensorThread = std::thread(&MultihalSensors::qemuSensorListenerThread, this);
 }
 
 MultihalSensors::~MultihalSensors() {
@@ -147,24 +150,26 @@ Return<Result> MultihalSensors::batch(const int32_t sensorHandle,
                                       const int64_t maxReportLatencyNs) {
     (void)maxReportLatencyNs;
 
+    if (!isSensorHandleValid(sensorHandle)) {
+        return Result::BAD_VALUE;
+    }
+
     const SensorInfo* sensor = getSensorInfoByHandle(sensorHandle);
-    if (sensor) {
-        if (samplingPeriodNs >= sensor->minDelay) {
-            return Result::OK;
-        } else {
-            return Result::BAD_VALUE;
-        }
+    LOG_ALWAYS_FATAL_IF(!sensor);
+    if (samplingPeriodNs >= sensor->minDelay) {
+        return Result::OK;
     } else {
         return Result::BAD_VALUE;
     }
 }
 
 Return<Result> MultihalSensors::flush(const int32_t sensorHandle) {
-    const SensorInfo* sensor = getSensorInfoByHandle(sensorHandle);
-    if (!sensor) {
+    if (!isSensorHandleValid(sensorHandle)) {
         return Result::BAD_VALUE;
     }
 
+    const SensorInfo* sensor = getSensorInfoByHandle(sensorHandle);
+    LOG_ALWAYS_FATAL_IF(!sensor);
     std::unique_lock<std::mutex> lock(m_apiMtx);
     if (!(m_activeSensorsMask & (1u << sensorHandle))) {
         return Result::BAD_VALUE;
@@ -180,6 +185,9 @@ Return<Result> MultihalSensors::flush(const int32_t sensorHandle) {
 }
 
 Return<Result> MultihalSensors::injectSensorData_2_1(const Event& event) {
+    if (!isSensorHandleValid(event.sensorHandle)) {
+        return Result::BAD_VALUE;
+    }
     if (event.sensorType == SensorType::ADDITIONAL_INFO) {
         return Result::OK;
     }
@@ -189,9 +197,7 @@ Return<Result> MultihalSensors::injectSensorData_2_1(const Event& event) {
         return Result::INVALID_OPERATION;
     }
     const SensorInfo* sensor = getSensorInfoByHandle(event.sensorHandle);
-    if (!sensor) {
-        return Result::BAD_VALUE;
-    }
+    LOG_ALWAYS_FATAL_IF(!sensor);
     if (sensor->type != event.sensorType) {
         return Result::BAD_VALUE;
     }
@@ -225,6 +231,18 @@ void MultihalSensors::postSensorEventLocked(const Event& event) {
 
 bool MultihalSensors::qemuSensorThreadSendCommand(const char cmd) const {
     return TEMP_FAILURE_RETRY(write(m_callersFd.get(), &cmd, 1)) == 1;
+}
+
+bool MultihalSensors::isSensorHandleValid(int32_t sensorHandle) const {
+    if (!goldfish::isSensorHandleValid(sensorHandle)) {
+        return false;
+    }
+
+    if (!(m_availableSensorsMask & (1u << sensorHandle))) {
+        return false;
+    }
+
+    return true;
 }
 
 /// not supported //////////////////////////////////////////////////////////////

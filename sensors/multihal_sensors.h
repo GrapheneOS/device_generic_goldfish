@@ -81,6 +81,7 @@ private:
         float lastHingeAngle2Value = kSensorNoValue;
     };
 
+    bool isSensorHandleValid(int sensorHandle) const;
     static bool activateQemuSensorImpl(int pipe, int sensorHandle, bool enabled);
     bool disableAllSensors();
     void parseQemuSensorEvent(const int pipe, QemuSensorsProtocolState* state);
@@ -88,7 +89,6 @@ private:
     void postSensorEventLocked(const Event& event);
 
     void qemuSensorListenerThread();
-    static void qemuSensorListenerThreadStart(MultihalSensors* that);
 
     static constexpr char kCMD_QUIT = 'q';
     bool qemuSensorThreadSendCommand(char cmd) const;
