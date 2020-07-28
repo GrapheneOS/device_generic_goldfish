@@ -51,6 +51,17 @@ size_t RingBuffer::makeRoomForProduce(size_t atLeast) {
     return toDrop;
 }
 
+bool RingBuffer::waitForProduceAvailable(Timepoint blockUntil) const {
+    std::unique_lock<std::mutex> lock(mMutex);
+    while (true) {
+        if (mAvailableToConsume < mCapacity) {
+            return true;
+        } else if (mProduceAvailable.wait_until(lock, blockUntil) == std::cv_status::timeout) {
+            return false;
+        }
+    }
+}
+
 RingBuffer::ContiniousChunk RingBuffer::getProduceChunk() const {
     std::unique_lock<std::mutex> lock(mMutex);
     const int availableToProduce = mCapacity - mAvailableToConsume;
@@ -129,8 +140,11 @@ RingBuffer::ContiniousLockedChunk RingBuffer::getConsumeChunk() const {
 size_t RingBuffer::consume(const ContiniousLockedChunk &lock, size_t size) {
     (void)lock; // the lock is provided by getConsumeChunk
     size = std::min(size, size_t(mAvailableToConsume));
+
     mConsumePos = (mConsumePos + size) % mCapacity;
     mAvailableToConsume -= size;
+
+    mProduceAvailable.notify_one();
     return size;
 }
 
