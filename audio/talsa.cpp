@@ -113,7 +113,7 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
     pcm_config.channels = nChannels;
     pcm_config.rate = sampleRateHz;
     pcm_config.period_size = frameCount;     // Approx frames between interrupts
-    pcm_config.period_count = 4;             // Approx interrupts per buffer
+    pcm_config.period_count = 8;             // Approx interrupts per buffer
     pcm_config.format = PCM_FORMAT_S16_LE;
     pcm_config.start_threshold = 0;
     pcm_config.stop_threshold = isOut ? 0 : INT_MAX;
