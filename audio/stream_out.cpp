@@ -119,10 +119,8 @@ struct WriteThread : public IOThread {
 
             if (efState & (MessageQueueFlagBits::NOT_EMPTY | 0)) {
                 if (!mSink) {
-                    mBuffer.reset(new uint8_t[mDataMQ.getQuantumCount()]);
-                    LOG_ALWAYS_FATAL_IF(!mBuffer);
-
-                    mSink = DevicePortSink::create(mStream->getDeviceAddress(),
+                    mSink = DevicePortSink::create(mDataMQ.getQuantumCount(),
+                                                   mStream->getDeviceAddress(),
                                                    mStream->getAudioConfig(),
                                                    mStream->getAudioOutputFlags(),
                                                    mStream->getFrameCounter());
@@ -172,24 +170,30 @@ struct WriteThread : public IOThread {
     }
 
     IStreamOut::WriteStatus doWrite() {
+        struct MQReader : public IReader {
+            explicit MQReader(DataMQ &mq) : dataMQ(mq) {}
+
+            size_t operator()(void *dst, size_t sz) override {
+                if (dataMQ.read(static_cast<uint8_t *>(dst), sz)) {
+                    totalRead += sz;
+                    return sz;
+                } else {
+                    ALOGE("WriteThread::%s:%d: DataMQ::read failed",
+                          __func__, __LINE__);
+                    return 0;
+                }
+            }
+
+            size_t totalRead = 0;
+            DataMQ &dataMQ;
+        };
+
+        MQReader reader(mDataMQ);
+        mSink->write(mStream->getEffectiveVolume(), mDataMQ.availableToRead(), reader);
+
         IStreamOut::WriteStatus status;
-
-        const size_t availToRead = mDataMQ.availableToRead();
-        size_t written = 0;
-        if (mDataMQ.read(&mBuffer[0], availToRead)) {
-
-            int16_t *samples = reinterpret_cast<int16_t *>(&mBuffer[0]);
-            aops::multiplyByVolume(mStream->getEffectiveVolume(),
-                                   samples,
-                                   availToRead / sizeof(*samples));
-
-            status.retval = doWriteImpl(&mBuffer[0], availToRead, written);
-            status.reply.written = written;
-        } else {
-            ALOGE("WriteThread::%s:%d: mDataMQ.read failed", __func__, __LINE__);
-            status.retval = Result::OK;
-        }
-
+        status.retval = Result::OK;
+        status.reply.written = reader.totalRead;
         return status;
     }
 
@@ -212,27 +216,11 @@ struct WriteThread : public IOThread {
         return status;
     }
 
-    Result doWriteImpl(const uint8_t *const data,
-                       const size_t toWrite,
-                       size_t &written) {
-        const int res = mSink->write(data, toWrite);
-        if (res < 0) {
-            ALOGE("WriteThread::%s:%d: DevicePortSink::write failed with %s",
-                  __func__, __LINE__, strerror(-res));
-            written = toWrite;
-        } else {
-            written = res;
-        }
-
-        return Result::OK;
-    }
-
     StreamOut *const mStream;
     CommandMQ mCommandMQ;
     StatusMQ mStatusMQ;
     DataMQ mDataMQ;
     std::unique_ptr<EventFlag, deleters::forEventFlag> mEfGroup;
-    std::unique_ptr<uint8_t[]> mBuffer;
     std::unique_ptr<DevicePortSink> mSink;
     std::thread mThread;
     std::promise<pthread_t> mTid;
