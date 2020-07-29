@@ -80,7 +80,7 @@ on boot
 
     start goldfish-logcat
 
-    # Create a dummy USB gadget to allow sysfs testing
+    # Create an unused USB gadget to allow sysfs testing
     mkdir /config/usb_gadget/g1 0770 root root
 
 service ranchu-setup /vendor/bin/init.ranchu-core.sh
