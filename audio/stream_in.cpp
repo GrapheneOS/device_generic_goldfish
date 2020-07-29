@@ -113,15 +113,12 @@ struct ReadThread : public IOThread {
 
             if (efState & STAND_BY_REQUEST) {
                 mSource.reset();
-                mBuffer.reset();
             }
 
             if (efState & (MessageQueueFlagBits::NOT_FULL | 0)) {
                 if (!mSource) {
-                    mBuffer.reset(new uint8_t[mDataMQ.getQuantumCount()]);
-                    LOG_ALWAYS_FATAL_IF(!mBuffer);
-
-                    mSource = DevicePortSource::create(mStream->getDeviceAddress(),
+                    mSource = DevicePortSource::create(mDataMQ.getQuantumCount(),
+                                                       mStream->getDeviceAddress(),
                                                        mStream->getAudioConfig(),
                                                        mStream->getAudioOutputFlags(),
                                                        mStream->getFrameCounter());
@@ -167,40 +164,38 @@ struct ReadThread : public IOThread {
     }
 
     IStreamIn::ReadStatus doRead(const IStreamIn::ReadParameters &rParameters) {
+        struct MQWriter : public IWriter {
+            explicit MQWriter(DataMQ &mq) : dataMQ(mq) {}
+
+            size_t operator()(const void *dst, size_t sz) override {
+                if (dataMQ.write(static_cast<const uint8_t *>(dst), sz)) {
+                    totalWritten += sz;
+                    return sz;
+                } else {
+                    ALOGE("WriteThread::%s:%d: DataMQ::write failed",
+                          __func__, __LINE__);
+                    return 0;
+                }
+            }
+
+            size_t totalWritten = 0;
+            DataMQ &dataMQ;
+        };
+
         const size_t bytesToRead = std::min(mDataMQ.availableToWrite(),
                                             static_cast<size_t>(rParameters.params.read));
 
+        MQWriter writer(mDataMQ);
+        const size_t framesLost =
+            mSource->read(mStream->getEffectiveVolume(), bytesToRead, writer);
+        if (framesLost > 0) {
+            mStream->addInputFramesLost(framesLost);
+        }
+
         IStreamIn::ReadStatus status;
-        size_t read = 0;
-        status.retval = doReadImpl(&mBuffer[0], bytesToRead, read);
-
-        int16_t *samples = reinterpret_cast<int16_t *>(&mBuffer[0]);
-        aops::multiplyByVolume(mStream->getEffectiveVolume(),
-                               samples,
-                               read / sizeof(*samples));
-
-        if (status.retval == Result::OK) {
-            if (!mDataMQ.write(&mBuffer[0], read)) {
-                ALOGE("ReadThread::%s:%d: mDataMQ.write failed", __func__, __LINE__);
-            }
-            status.reply.read = read;
-        }
-
+        status.retval = Result::OK;
+        status.reply.read = writer.totalWritten;
         return status;
-    }
-
-    Result doReadImpl(uint8_t *const data, const size_t toRead, size_t &read) {
-        const int res = mSource->read(data, toRead);
-        if (res < 0) {
-            memset(data, 0, toRead);
-            read = toRead;
-            ALOGE("StreamInReadThread::%s:%d pcm_read failed with %s",
-                  __func__, __LINE__, strerror(-res));
-        } else {
-            read = res;
-        }
-
-        return Result::OK;
     }
 
     IStreamIn::ReadStatus doGetCapturePosition() {
@@ -218,7 +213,6 @@ struct ReadThread : public IOThread {
     StatusMQ mStatusMQ;
     DataMQ mDataMQ;
     std::unique_ptr<EventFlag, deleters::forEventFlag> mEfGroup;
-    std::unique_ptr<uint8_t[]> mBuffer;
     std::unique_ptr<DevicePortSource> mSource;
     std::thread mThread;
     std::promise<pthread_t> mTid;

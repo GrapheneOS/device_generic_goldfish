@@ -15,10 +15,7 @@
  */
 
 #pragma once
-#include <memory>
-#include <android/hardware/audio/common/6.0/types.h>
-#include <android/hardware/audio/6.0/types.h>
-#include "iwriter.h"
+#include <stdint.h>
 
 namespace android {
 namespace hardware {
@@ -26,19 +23,9 @@ namespace audio {
 namespace V6_0 {
 namespace implementation {
 
-using namespace ::android::hardware::audio::common::V6_0;
-using namespace ::android::hardware::audio::V6_0;
-
-struct DevicePortSource {
-    virtual ~DevicePortSource() {}
-    virtual Result getCapturePosition(uint64_t &frames, uint64_t &time) = 0;
-    virtual size_t read(float volume, size_t bytesToRead, IWriter &) = 0;
-
-    static std::unique_ptr<DevicePortSource> create(size_t writerBufferSizeHint,
-                                                    const DeviceAddress &,
-                                                    const AudioConfig &,
-                                                    const hidl_bitfield<AudioOutputFlag> &,
-                                                    uint64_t &frames);
+struct IWriter {
+    virtual ~IWriter() {}
+    virtual size_t operator()(const void* src, size_t szBytes) = 0;
 };
 
 }  // namespace implementation
