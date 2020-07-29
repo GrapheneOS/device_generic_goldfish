@@ -19,18 +19,18 @@
 #include <fmq/MessageQueue.h>
 #include <hidl/MQDescriptor.h>
 #include <hidl/Status.h>
-#include <math.h>
-#include "stream_out.h"
-#include "device_port_sink.h"
-#include "deleters.h"
-#include "util.h"
-#include "debug.h"
 #include <sys/resource.h>
 #include <pthread.h>
 #include <cutils/sched_policy.h>
 #include <utils/ThreadDefs.h>
 #include <future>
 #include <thread>
+#include "stream_out.h"
+#include "device_port_sink.h"
+#include "deleters.h"
+#include "audio_ops.h"
+#include "util.h"
+#include "debug.h"
 
 namespace android {
 namespace hardware {
@@ -177,7 +177,12 @@ struct WriteThread : public IOThread {
         const size_t availToRead = mDataMQ.availableToRead();
         size_t written = 0;
         if (mDataMQ.read(&mBuffer[0], availToRead)) {
-            applyVolume(&mBuffer[0], availToRead, mStream->getVolumeNumerator());
+
+            int16_t *samples = reinterpret_cast<int16_t *>(&mBuffer[0]);
+            aops::multiplyByVolume(mStream->getEffectiveVolume(),
+                                   samples,
+                                   availToRead / sizeof(*samples));
+
             status.retval = doWriteImpl(&mBuffer[0], availToRead, written);
             status.reply.written = written;
         } else {
@@ -186,21 +191,6 @@ struct WriteThread : public IOThread {
         }
 
         return status;
-    }
-
-    static void applyVolume(void *buf, const size_t szBytes, const int32_t numerator) {
-        constexpr int32_t kDenominator = StreamOut::kVolumeDenominator;
-
-        if (numerator == kDenominator) {
-            return;
-        }
-
-        int16_t *samples = static_cast<int16_t *>(buf);
-        std::for_each(samples,
-                      samples + szBytes / sizeof(*samples),
-                      [numerator](int16_t &x) {
-                          x = (x * numerator + kDenominator / 2) / kDenominator;
-                      });
     }
 
     IStreamOut::WriteStatus doGetPresentationPosition() {
@@ -250,15 +240,13 @@ struct WriteThread : public IOThread {
 
 } // namespace
 
-StreamOut::StreamOut(sp<IDevice> dev,
-                     void (*unrefDevice)(IDevice*),
+StreamOut::StreamOut(sp<PrimaryDevice> dev,
                      int32_t ioHandle,
                      const DeviceAddress& device,
                      const AudioConfig& config,
                      hidl_bitfield<AudioOutputFlag> flags,
                      const SourceMetadata& sourceMetadata)
         : mDev(std::move(dev))
-        , mUnrefDevice(unrefDevice)
         , mCommon(ioHandle, device, config, flags)
         , mSourceMetadata(sourceMetadata) {}
 
@@ -374,7 +362,7 @@ Return<Result> StreamOut::setHwAvSync(uint32_t hwAvSync) {
 Result StreamOut::closeImpl(const bool fromDctor) {
     if (mDev) {
         mWriteThread.reset();
-        mUnrefDevice(mDev.get());
+        mDev->unrefDevice(this);
         mDev = nullptr;
         return Result::OK;
     } else if (fromDctor) {
@@ -420,7 +408,9 @@ Return<Result> StreamOut::setVolume(float left, float right) {
         return FAILURE(Result::INVALID_ARGUMENTS);
     }
 
-    mVolumeNumerator = int16_t((left + right) * kVolumeDenominator / 2);
+    std::lock_guard<std::mutex> guard(mMutex);
+    mStreamVolume = (left + right) / 2.0f;
+    updateEffectiveVolumeLocked();
     return Result::OK;
 }
 
@@ -549,6 +539,16 @@ Return<void> StreamOut::getPlaybackRateParameters(getPlaybackRateParameters_cb _
 Return<Result> StreamOut::setPlaybackRateParameters(const PlaybackRate &playbackRate) {
     (void)playbackRate;
     return FAILURE(Result::NOT_SUPPORTED);
+}
+
+void StreamOut::setMasterVolume(float masterVolume) {
+    std::lock_guard<std::mutex> guard(mMutex);
+    mMasterVolume = masterVolume;
+    updateEffectiveVolumeLocked();
+}
+
+void StreamOut::updateEffectiveVolumeLocked() {
+    mEffectiveVolume = mMasterVolume * mStreamVolume;
 }
 
 }  // namespace implementation

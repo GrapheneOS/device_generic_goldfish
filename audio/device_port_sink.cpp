@@ -33,6 +33,7 @@ struct TinyalsaSink : public DevicePortSink {
     TinyalsaSink(unsigned pcmCard, unsigned pcmDevice,
                  const AudioConfig &cfg, uint64_t &frames)
             : mFrames(frames)
+            , mMixer(pcmCard)
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.channelMask),
                                   cfg.sampleRateHz,
@@ -62,9 +63,9 @@ struct TinyalsaSink : public DevicePortSink {
                                                 unsigned pcmDevice,
                                                 const AudioConfig &cfg,
                                                 uint64_t &frames) {
-        auto src = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice, cfg, frames);
-        if (src->mPcm) {
-            return src;
+        auto sink = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice, cfg, frames);
+        if (sink->mMixer && sink->mPcm) {
+            return sink;
         } else {
             return FAILURE(nullptr);
         }
@@ -72,6 +73,7 @@ struct TinyalsaSink : public DevicePortSink {
 
 private:
     uint64_t &mFrames;
+    talsa::Mixer mMixer;
     talsa::PcmPtr mPcm;
 };
 
