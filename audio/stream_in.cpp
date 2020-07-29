@@ -19,17 +19,18 @@
 #include <fmq/MessageQueue.h>
 #include <hidl/MQDescriptor.h>
 #include <hidl/Status.h>
-#include "stream_in.h"
-#include "device_port_source.h"
-#include "deleters.h"
-#include "util.h"
-#include "debug.h"
 #include <sys/resource.h>
 #include <pthread.h>
 #include <cutils/sched_policy.h>
 #include <utils/ThreadDefs.h>
 #include <future>
 #include <thread>
+#include "stream_in.h"
+#include "device_port_source.h"
+#include "deleters.h"
+#include "audio_ops.h"
+#include "util.h"
+#include "debug.h"
 
 namespace android {
 namespace hardware {
@@ -172,6 +173,12 @@ struct ReadThread : public IOThread {
         IStreamIn::ReadStatus status;
         size_t read = 0;
         status.retval = doReadImpl(&mBuffer[0], bytesToRead, read);
+
+        int16_t *samples = reinterpret_cast<int16_t *>(&mBuffer[0]);
+        aops::multiplyByVolume(mStream->getEffectiveVolume(),
+                               samples,
+                               read / sizeof(*samples));
+
         if (status.retval == Result::OK) {
             if (!mDataMQ.write(&mBuffer[0], read)) {
                 ALOGE("ReadThread::%s:%d: mDataMQ.write failed", __func__, __LINE__);
@@ -219,15 +226,13 @@ struct ReadThread : public IOThread {
 
 } // namespace
 
-StreamIn::StreamIn(sp<IDevice> dev,
-                   void (*unrefDevice)(IDevice*),
+StreamIn::StreamIn(sp<PrimaryDevice> dev,
                    int32_t ioHandle,
                    const DeviceAddress& device,
                    const AudioConfig& config,
                    hidl_bitfield<AudioInputFlag> flags,
                    const SinkMetadata& sinkMetadata)
         : mDev(std::move(dev))
-        , mUnrefDevice(unrefDevice)
         , mCommon(ioHandle, device, config, flags)
         , mSinkMetadata(sinkMetadata) {
 }
@@ -364,7 +369,7 @@ Return<void> StreamIn::getMmapPosition(getMmapPosition_cb _hidl_cb) {
 Result StreamIn::closeImpl(const bool fromDctor) {
     if (mDev) {
         mReadThread.reset();
-        mUnrefDevice(mDev.get());
+        mDev->unrefDevice(this);
         mDev = nullptr;
         return Result::OK;
     } else if (fromDctor) {
@@ -447,6 +452,12 @@ Return<Result> StreamIn::setMicrophoneDirection(MicrophoneDirection direction) {
 Return<Result> StreamIn::setMicrophoneFieldDimension(float zoom) {
     (void)zoom;
     return FAILURE(Result::NOT_SUPPORTED);
+}
+
+void StreamIn::setMicMute(bool mute) {
+    mEffectiveVolume =
+        (mute && (getDeviceAddress().device & AudioDevice::IN_BUILTIN_MIC))
+            ? 0.0f : 1.0f;
 }
 
 }  // namespace implementation

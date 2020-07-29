@@ -33,23 +33,10 @@ constexpr size_t kOutBufferDurationMs = 22;
 
 using ::android::hardware::Void;
 
-PrimaryDevice::PrimaryDevice()
-        : mMixer(talsa::mixerOpen(talsa::kPcmDevice)) {
-    if (mMixer) {
-        mMixerMasterVolumeCtl = mixer_get_ctl_by_name(mMixer.get(), "Master Playback Volume");
-        mMixerCaptureVolumeCtl = mixer_get_ctl_by_name(mMixer.get(), "Capture Volume");
-        mMixerMasterPaybackSwitchCtl = mixer_get_ctl_by_name(mMixer.get(), "Master Playback Switch");
-        mMixerCaptureSwitchCtl = mixer_get_ctl_by_name(mMixer.get(), "Capture Switch");
-
-        talsa::mixerSetPercentAll(mMixerMasterVolumeCtl, 100);
-        talsa::mixerSetPercentAll(mMixerCaptureVolumeCtl, 100);
-        talsa::mixerSetValueAll(mMixerMasterPaybackSwitchCtl, 1);
-        talsa::mixerSetValueAll(mMixerCaptureSwitchCtl, 1);
-    }
-}
+PrimaryDevice::PrimaryDevice() {}
 
 Return<Result> PrimaryDevice::initCheck() {
-    return mMixer ? Result::OK : FAILURE(Result::NOT_INITIALIZED);
+    return Result::OK;
 }
 
 Return<Result> PrimaryDevice::setMasterVolume(float volume) {
@@ -57,61 +44,35 @@ Return<Result> PrimaryDevice::setMasterVolume(float volume) {
         return FAILURE(Result::INVALID_ARGUMENTS);
     }
 
-    if (!mMixerMasterVolumeCtl) {
-        return FAILURE(Result::INVALID_STATE);
-    }
-
-    talsa::mixerSetPercentAll(mMixerMasterVolumeCtl, int(100 * volume));
     mMasterVolume = volume;
+    updateOutputStreamVolume(mMasterMute ? 0.0f : volume);
     return Result::OK;
 }
 
 Return<void> PrimaryDevice::getMasterVolume(getMasterVolume_cb _hidl_cb) {
-    if (mMixerMasterVolumeCtl) {
-        _hidl_cb(Result::OK, mMasterVolume);
-    } else {
-        _hidl_cb(FAILURE(Result::INVALID_STATE), 0);
-    }
-
+    _hidl_cb(Result::OK, mMasterVolume);
     return Void();
 }
 
 Return<Result> PrimaryDevice::PrimaryDevice::setMicMute(bool mute) {
-    if (mMixerCaptureSwitchCtl) {
-        talsa::mixerSetValueAll(mMixerCaptureSwitchCtl, mute ? 0 : 1);
-        return Result::OK;
-    } else {
-        return FAILURE(Result::INVALID_STATE);
-    }
+    mMicMute = mute;
+    updateInputStreamMicMute(mute);
+    return Result::OK;
 }
 
 Return<void> PrimaryDevice::getMicMute(getMicMute_cb _hidl_cb) {
-    if (mMixerCaptureSwitchCtl) {
-        const int value = mixer_ctl_get_value(mMixerCaptureSwitchCtl, 0);
-        _hidl_cb(Result::OK, value == 0);
-    } else {
-        _hidl_cb(FAILURE(Result::INVALID_STATE), 0);
-    }
+    _hidl_cb(Result::OK, mMicMute);
     return Void();
 }
 
 Return<Result> PrimaryDevice::setMasterMute(bool mute) {
-    if (mMixerMasterPaybackSwitchCtl) {
-        talsa::mixerSetValueAll(mMixerMasterPaybackSwitchCtl, mute ? 0 : 1);
-        return Result::OK;
-    } else {
-        return FAILURE(Result::INVALID_STATE);
-    }
+    mMasterMute = mute;
+    updateOutputStreamVolume(mute ? 0.0f : mMasterVolume);
+    return Result::OK;
 }
 
 Return<void> PrimaryDevice::getMasterMute(getMasterMute_cb _hidl_cb) {
-    if (mMixerMasterPaybackSwitchCtl) {
-        const int value = mixer_ctl_get_value(mMixerMasterPaybackSwitchCtl, 0);
-        _hidl_cb(Result::OK, value == 0);
-    } else {
-        _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0);
-    }
-
+    _hidl_cb(Result::OK, mMasterMute);
     return Void();
 }
 
@@ -141,11 +102,17 @@ Return<void> PrimaryDevice::openOutputStream(int32_t ioHandle,
                                              openOutputStream_cb _hidl_cb) {
     AudioConfig suggestedConfig;
     if (util::checkAudioConfig(true, kOutBufferDurationMs, config, suggestedConfig)) {
-        ++mNStreams;
-        _hidl_cb(Result::OK,
-                 new StreamOut(this, &unrefDevice,
-                               ioHandle, device, suggestedConfig, flags, sourceMetadata),
-                 config);
+        auto stream = std::make_unique<StreamOut>(
+            this, ioHandle, device, suggestedConfig, flags, sourceMetadata);
+
+        stream->setMasterVolume(mMasterMute ? 0.0f : mMasterVolume);
+
+        {
+            std::lock_guard<std::mutex> guard(mMutex);
+            LOG_ALWAYS_FATAL_IF(!mOutputStreams.insert(stream.get()).second);
+        }
+
+        _hidl_cb(Result::OK, stream.release(), config);
     } else {
         ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
         _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), nullptr, suggestedConfig);
@@ -162,11 +129,17 @@ Return<void> PrimaryDevice::openInputStream(int32_t ioHandle,
                                             openInputStream_cb _hidl_cb) {
     AudioConfig suggestedConfig;
     if (util::checkAudioConfig(false, kInBufferDurationMs, config, suggestedConfig)) {
-        ++mNStreams;
-        _hidl_cb(Result::OK,
-                 new StreamIn(this, &unrefDevice,
-                              ioHandle, device, suggestedConfig, flags, sinkMetadata),
-                 config);
+        auto stream = std::make_unique<StreamIn>(
+            this, ioHandle, device, suggestedConfig, flags, sinkMetadata);
+
+        stream->setMicMute(mMicMute);
+
+        {
+            std::lock_guard<std::mutex> guard(mMutex);
+            LOG_ALWAYS_FATAL_IF(!mInputStreams.insert(stream.get()).second);
+        }
+
+        _hidl_cb(Result::OK, stream.release(), config);
     } else {
         ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
         _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), nullptr, suggestedConfig);
@@ -282,18 +255,10 @@ Return<Result> PrimaryDevice::setConnectedState(const DeviceAddress& dev_addr, b
 }
 
 Return<Result> PrimaryDevice::close() {
-    if (mNStreams > 0) {
-        return FAILURE(Result::INVALID_STATE);
-    } else if (mMixer) {
-        mMixerMasterVolumeCtl = nullptr;
-        mMixerCaptureVolumeCtl = nullptr;
-        mMixerMasterPaybackSwitchCtl = nullptr;
-        mMixerCaptureSwitchCtl = nullptr;
-        mMixer.reset();
-        return Result::OK;
-    } else {
-        return FAILURE(Result::INVALID_STATE);
-    }
+    std::lock_guard<std::mutex> guard(mMutex);
+
+    return (mInputStreams.empty() && mOutputStreams.empty())
+        ? Result::OK : FAILURE(Result::INVALID_STATE);
 }
 
 Return<Result> PrimaryDevice::addDeviceEffect(AudioPortHandle device, uint64_t effectId) {
@@ -395,12 +360,28 @@ Return<Result> PrimaryDevice::updateRotation(IPrimaryDevice::Rotation rotation) 
     return FAILURE(Result::NOT_SUPPORTED);
 }
 
-void PrimaryDevice::unrefDevice(IDevice *dev) {
-    static_cast<PrimaryDevice *>(dev)->unrefDeviceImpl();
+void PrimaryDevice::unrefDevice(StreamIn *sin) {
+    std::lock_guard<std::mutex> guard(mMutex);
+    LOG_ALWAYS_FATAL_IF(mInputStreams.erase(sin) < 1);
 }
 
-void PrimaryDevice::unrefDeviceImpl() {
-    LOG_ALWAYS_FATAL_IF(--mNStreams < 0);
+void PrimaryDevice::unrefDevice(StreamOut *sout) {
+    std::lock_guard<std::mutex> guard(mMutex);
+    LOG_ALWAYS_FATAL_IF(mOutputStreams.erase(sout) < 1);
+}
+
+void PrimaryDevice::updateOutputStreamVolume(float masterVolume) const {
+    std::lock_guard<std::mutex> guard(mMutex);
+    for (StreamOut *stream : mOutputStreams) {
+        stream->setMasterVolume(masterVolume);
+    }
+}
+
+void PrimaryDevice::updateInputStreamMicMute(bool micMute) const {
+    std::lock_guard<std::mutex> guard(mMutex);
+    for (StreamIn *stream : mInputStreams) {
+        stream->setMicMute(micMute);
+    }
 }
 
 }  // namespace implementation
