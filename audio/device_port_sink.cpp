@@ -18,6 +18,7 @@
 #include <utils/Timers.h>
 #include "device_port_sink.h"
 #include "talsa.h"
+#include "audio_ops.h"
 #include "util.h"
 #include "debug.h"
 
@@ -31,8 +32,12 @@ namespace {
 
 struct TinyalsaSink : public DevicePortSink {
     TinyalsaSink(unsigned pcmCard, unsigned pcmDevice,
-                 const AudioConfig &cfg, uint64_t &frames)
-            : mFrames(frames)
+                 const AudioConfig &cfg,
+                 size_t readerBufferSizeHint,
+                 uint64_t &frames)
+            : mReadBuffer(readerBufferSizeHint / sizeof(int16_t))
+            , mFrames(frames)
+            , mMixer(pcmCard)
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.channelMask),
                                   cfg.sampleRateHz,
@@ -45,33 +50,46 @@ struct TinyalsaSink : public DevicePortSink {
         return Result::OK;
     }
 
-    int write(const void *data, size_t nBytes) override {
-        const int res = ::pcm_write(mPcm.get(), data, nBytes);
-        if (res < 0) {
-            return FAILURE(res);
-        } else if (res == 0) {
-            mFrames += ::pcm_bytes_to_frames(mPcm.get(), nBytes);
-            return nBytes;
-        } else {
-            mFrames += ::pcm_bytes_to_frames(mPcm.get(), res);
-            return res;
+    size_t write(float volume, size_t bytesToWrite, IReader &reader) {
+        LOG_ALWAYS_FATAL_IF(bytesToWrite > (mReadBuffer.size() * sizeof(int16_t)));
+
+        bytesToWrite = reader(mReadBuffer.data(), bytesToWrite);
+        if (!bytesToWrite) {
+            return 0;
         }
+
+        aops::multiplyByVolume(volume,
+                               mReadBuffer.data(),
+                               bytesToWrite / sizeof(int16_t));
+
+        const int res = ::pcm_write(mPcm.get(), mReadBuffer.data(), bytesToWrite);
+        if (res < 0) {
+            ALOGE("TinyalsaSink::%s:%d pcm_write failed with res=%d",
+                  __func__, __LINE__, res);
+        }
+
+        mFrames += ::pcm_bytes_to_frames(mPcm.get(), bytesToWrite);
+        return 0;
     }
 
     static std::unique_ptr<TinyalsaSink> create(unsigned pcmCard,
                                                 unsigned pcmDevice,
                                                 const AudioConfig &cfg,
+                                                size_t readerBufferSizeHint,
                                                 uint64_t &frames) {
-        auto src = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice, cfg, frames);
-        if (src->mPcm) {
-            return src;
+        auto sink = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice,
+                                                   cfg, readerBufferSizeHint, frames);
+        if (sink->mMixer && sink->mPcm) {
+            return sink;
         } else {
             return FAILURE(nullptr);
         }
     }
 
 private:
+    std::vector<int16_t> mReadBuffer;
     uint64_t &mFrames;
+    talsa::Mixer mMixer;
     talsa::PcmPtr mPcm;
 };
 
@@ -89,10 +107,20 @@ struct NullSink : public DevicePortSink {
         return Result::OK;
     }
 
-    int write(const void *, size_t nBytes) override {
-        simulatePresentationPosition();
-        mAvailableFrames += nBytes / mNChannels / sizeof(int16_t);
-        return nBytes;
+    size_t write(float volume, size_t bytesToWrite, IReader &reader) override {
+        (void)volume;
+
+        while (bytesToWrite > 0) {
+            size_t chunkSize = std::min(bytesToWrite, sizeof(mWriteBuffer));
+            chunkSize = reader(mWriteBuffer, chunkSize);
+            if (chunkSize > 0) {
+                bytesToWrite -= chunkSize;
+            } else {
+                break; // reader failed
+            }
+        }
+
+        return 0;
     }
 
     void simulatePresentationPosition() {
@@ -111,7 +139,9 @@ struct NullSink : public DevicePortSink {
     }
 
     static std::unique_ptr<NullSink> create(const AudioConfig &cfg,
+                                            size_t readerBufferSizeHint,
                                             uint64_t &frames) {
+        (void)readerBufferSizeHint;
         return std::make_unique<NullSink>(cfg, frames);
     }
 
@@ -121,12 +151,14 @@ private:
     const unsigned mNChannels;
     uint64_t mAvailableFrames = 0;
     nsecs_t mTimestamp;
+    char mWriteBuffer[1024];
 };
 
 }  // namespace
 
 std::unique_ptr<DevicePortSink>
-DevicePortSink::create(const DeviceAddress &address,
+DevicePortSink::create(size_t readerBufferSizeHint,
+                       const DeviceAddress &address,
                        const AudioConfig &cfg,
                        const hidl_bitfield<AudioOutputFlag> &flags,
                        uint64_t &frames) {
@@ -140,10 +172,10 @@ DevicePortSink::create(const DeviceAddress &address,
     switch (address.device) {
     case AudioDevice::OUT_SPEAKER:
         return TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice,
-                                    cfg, frames);
+                                    cfg, readerBufferSizeHint, frames);
 
     case AudioDevice::OUT_TELEPHONY_TX:
-        return NullSink::create(cfg, frames);
+        return NullSink::create(cfg, readerBufferSizeHint, frames);
 
     default:
         ALOGE("%s:%d unsupported device: %x", __func__, __LINE__, address.device);

@@ -16,9 +16,9 @@
 
 #pragma once
 #include <android/hardware/audio/6.0/IPrimaryDevice.h>
-#include <atomic>
+#include <mutex>
 #include <unordered_map>
-#include "talsa.h"
+#include <unordered_set>
 
 namespace android {
 namespace hardware {
@@ -34,6 +34,9 @@ using ::android::hardware::Return;
 
 using namespace ::android::hardware::audio::common::V6_0;
 using namespace ::android::hardware::audio::V6_0;
+
+struct StreamIn;
+struct StreamOut;
 
 struct PrimaryDevice : public IPrimaryDevice {
     PrimaryDevice();
@@ -100,16 +103,13 @@ struct PrimaryDevice : public IPrimaryDevice {
     Return<Result> updateRotation(IPrimaryDevice::Rotation rotation) override;
 
 private:
-    static void unrefDevice(IDevice*);
-    void unrefDeviceImpl();
+    friend StreamIn;
+    friend StreamOut;
 
-    talsa::MixerPtr     mMixer;
-    talsa::mixer_ctl_t  *mMixerMasterVolumeCtl = nullptr;
-    talsa::mixer_ctl_t  *mMixerCaptureVolumeCtl = nullptr;
-    talsa::mixer_ctl_t  *mMixerMasterPaybackSwitchCtl = nullptr;
-    talsa::mixer_ctl_t  *mMixerCaptureSwitchCtl = nullptr;
-    float               mMasterVolume = 1.0f;
-    std::atomic<int>    mNStreams = 0;
+    void unrefDevice(StreamIn *);
+    void unrefDevice(StreamOut *);
+    void updateOutputStreamVolume(float masterVolume) const;
+    void updateInputStreamMicMute(bool micMute) const;
 
     struct AudioPatch {
         AudioPortConfig source;
@@ -118,6 +118,14 @@ private:
 
     AudioPatchHandle    mNextAudioPatchHandle = 0;
     std::unordered_map<AudioPatchHandle, AudioPatch> mAudioPatches;
+
+    std::unordered_set<StreamIn *>  mInputStreams;  // requires mMutex
+    std::unordered_set<StreamOut *> mOutputStreams; // requires mMutex
+    mutable std::mutex mMutex;
+
+    float  mMasterVolume = 1.0f;
+    bool   mMasterMute = false;
+    bool   mMicMute = false;
 };
 
 }  // namespace implementation

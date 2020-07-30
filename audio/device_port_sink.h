@@ -18,6 +18,7 @@
 #include <memory>
 #include <android/hardware/audio/common/6.0/types.h>
 #include <android/hardware/audio/6.0/types.h>
+#include "ireader.h"
 
 namespace android {
 namespace hardware {
@@ -31,9 +32,10 @@ using namespace ::android::hardware::audio::V6_0;
 struct DevicePortSink {
     virtual ~DevicePortSink() {}
     virtual Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) = 0;
-    virtual int write(const void *data, size_t nBytes) = 0;
+    virtual size_t write(float volume, size_t bytesToWrite, IReader &) = 0;
 
-    static std::unique_ptr<DevicePortSink> create(const DeviceAddress &,
+    static std::unique_ptr<DevicePortSink> create(size_t readerBufferSizeHint,
+                                                  const DeviceAddress &,
                                                   const AudioConfig &,
                                                   const hidl_bitfield<AudioOutputFlag> &,
                                                   uint64_t &frames);
