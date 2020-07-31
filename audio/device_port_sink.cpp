@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
+#include <chrono>
+#include <thread>
 #include <log/log.h>
 #include <utils/Timers.h>
+#include <utils/ThreadDefs.h>
 #include "device_port_sink.h"
 #include "talsa.h"
 #include "audio_ops.h"
+#include "ring_buffer.h"
 #include "util.h"
 #include "debug.h"
 
@@ -30,46 +34,149 @@ namespace implementation {
 
 namespace {
 
+constexpr int kMaxJitterUs = 3000;  // Enforced by CTS, should be <= 6ms
+
 struct TinyalsaSink : public DevicePortSink {
     TinyalsaSink(unsigned pcmCard, unsigned pcmDevice,
                  const AudioConfig &cfg,
-                 size_t readerBufferSizeHint,
                  uint64_t &frames)
-            : mReadBuffer(readerBufferSizeHint / sizeof(int16_t))
+            : mStartNs(systemTime(SYSTEM_TIME_MONOTONIC))
+            , mSampleRateHz(cfg.sampleRateHz)
+            , mFrameSize(util::countChannels(cfg.channelMask) * sizeof(int16_t))
+            , mWriteSizeFrames(cfg.frameCount)
             , mFrames(frames)
+            , mRingBuffer(mFrameSize * cfg.frameCount * 3)
             , mMixer(pcmCard)
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.channelMask),
                                   cfg.sampleRateHz,
                                   cfg.frameCount,
-                                  true /* isOut */)) {}
+                                  true /* isOut */)) {
+        mConsumeThread = std::thread(&TinyalsaSink::consumeThread, this);
+    }
+
+    ~TinyalsaSink() {
+        mConsumeThreadRunning = false;
+        mConsumeThread.join();
+    }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
+        const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
+        const uint64_t nowFrames = getPresentationFrames(nowNs);
+        mFrames += (nowFrames - mPreviousFrames);
+        mPreviousFrames = nowFrames;
+
         frames = mFrames;
-        ts = util::nsecs2TimeSpec(systemTime(SYSTEM_TIME_MONOTONIC));
+        ts = util::nsecs2TimeSpec(nowNs);
         return Result::OK;
     }
 
+    uint64_t getPresentationFrames(const nsecs_t nowNs) const {
+        return uint64_t(mSampleRateHz) * ns2us(nowNs - mStartNs) / 1000000;
+    }
+
+    uint64_t getAvailableFrames(const nsecs_t nowNs) const {
+        return getPresentationFrames(nowNs) - mReceivedFrames;
+    }
+
+    uint64_t getAvailableFramesNow() const {
+        return getAvailableFrames(systemTime(SYSTEM_TIME_MONOTONIC));
+    }
+
+    size_t getWaitFramesNow(const size_t requestedFrames) const {
+        const size_t availableFrames = getAvailableFramesNow();
+        return (requestedFrames > availableFrames)
+            ? (requestedFrames - availableFrames) : 0;
+    }
+
     size_t write(float volume, size_t bytesToWrite, IReader &reader) {
-        LOG_ALWAYS_FATAL_IF(bytesToWrite > (mReadBuffer.size() * sizeof(int16_t)));
+        size_t framesLost = 0;
+        const size_t waitFrames = getWaitFramesNow(bytesToWrite / mFrameSize);
+        const auto blockUntil =
+            std::chrono::high_resolution_clock::now() +
+                + std::chrono::microseconds(waitFrames * 1000000 / mSampleRateHz);
 
-        bytesToWrite = reader(mReadBuffer.data(), bytesToWrite);
-        if (!bytesToWrite) {
-            return 0;
+        while (bytesToWrite > 0) {
+            if (mRingBuffer.waitForProduceAvailable(blockUntil
+                    + std::chrono::microseconds(kMaxJitterUs))) {
+                auto produceChunk = mRingBuffer.getProduceChunk();
+                if (produceChunk.size >= bytesToWrite) {
+                    // Since the ring buffer has more bytes free than we need,
+                    // make sure we are not too early here: tinyalsa is jittery,
+                    // we don't want to go faster than SYSTEM_TIME_MONOTONIC
+                    std::this_thread::sleep_until(blockUntil);
+                }
+
+                const size_t szFrames =
+                    std::min(produceChunk.size, bytesToWrite) / mFrameSize;
+                const size_t szBytes = szFrames * mFrameSize;
+                LOG_ALWAYS_FATAL_IF(reader(produceChunk.data, szBytes) < szBytes);
+
+                aops::multiplyByVolume(volume,
+                                       static_cast<int16_t *>(produceChunk.data),
+                                       szBytes / sizeof(int16_t));
+
+                LOG_ALWAYS_FATAL_IF(mRingBuffer.produce(szBytes) < szBytes);
+                mReceivedFrames += szFrames;
+                bytesToWrite -= szBytes;
+            } else {
+                ALOGW("TinyalsaSink::%s:%d pcm_write was late reading "
+                      "frames, dropping %zu us of audio",
+                      __func__, __LINE__,
+                      size_t(1000000 * bytesToWrite / mFrameSize / mSampleRateHz));
+
+                // drop old audio to make room for new
+                const size_t bytesLost = mRingBuffer.makeRoomForProduce(bytesToWrite);
+                framesLost += bytesLost / mFrameSize;
+
+                while (bytesToWrite > 0) {
+                    auto produceChunk = mRingBuffer.getProduceChunk();
+                    const size_t szFrames =
+                        std::min(produceChunk.size, bytesToWrite) / mFrameSize;
+                    const size_t szBytes = szFrames * mFrameSize;
+                    LOG_ALWAYS_FATAL_IF(reader(produceChunk.data, szBytes) < szBytes);
+
+                    aops::multiplyByVolume(volume,
+                                           static_cast<int16_t *>(produceChunk.data),
+                                           szBytes / sizeof(int16_t));
+
+                    LOG_ALWAYS_FATAL_IF(mRingBuffer.produce(szBytes) < szBytes);
+                    mReceivedFrames += szFrames;
+                    bytesToWrite -= szBytes;
+                }
+                break;
+            }
         }
 
-        aops::multiplyByVolume(volume,
-                               mReadBuffer.data(),
-                               bytesToWrite / sizeof(int16_t));
+        return framesLost;
+    }
 
-        const int res = ::pcm_write(mPcm.get(), mReadBuffer.data(), bytesToWrite);
-        if (res < 0) {
-            ALOGE("TinyalsaSink::%s:%d pcm_write failed with res=%d",
-                  __func__, __LINE__, res);
+    void consumeThread() {
+        util::setThreadPriority(PRIORITY_URGENT_AUDIO);
+        std::vector<uint8_t> writeBuffer(mWriteSizeFrames * mFrameSize);
+
+        while (mConsumeThreadRunning) {
+            if (mRingBuffer.waitForConsumeAvailable(
+                    std::chrono::high_resolution_clock::now()
+                    + std::chrono::microseconds(100000))) {
+                size_t szBytes;
+                {
+                    auto chunk = mRingBuffer.getConsumeChunk();
+                    szBytes = std::min(writeBuffer.size(), chunk.size);
+                    // We have to memcpy because the consumer holds the lock
+                    // into RingBuffer and pcm_write takes too long to hold
+                    // this lock.
+                    memcpy(writeBuffer.data(), chunk.data, szBytes);
+                    LOG_ALWAYS_FATAL_IF(mRingBuffer.consume(chunk, szBytes) < szBytes);
+                }
+
+                int res = ::pcm_write(mPcm.get(), writeBuffer.data(), szBytes);
+                if (res < 0) {
+                    ALOGW("TinyalsaSink::%s:%d pcm_write failed with res=%d",
+                          __func__, __LINE__, res);
+                }
+            }
         }
-
-        mFrames += ::pcm_bytes_to_frames(mPcm.get(), bytesToWrite);
-        return 0;
     }
 
     static std::unique_ptr<TinyalsaSink> create(unsigned pcmCard,
@@ -77,8 +184,9 @@ struct TinyalsaSink : public DevicePortSink {
                                                 const AudioConfig &cfg,
                                                 size_t readerBufferSizeHint,
                                                 uint64_t &frames) {
+        (void)readerBufferSizeHint;
         auto sink = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice,
-                                                   cfg, readerBufferSizeHint, frames);
+                                                   cfg, frames);
         if (sink->mMixer && sink->mPcm) {
             return sink;
         } else {
@@ -87,10 +195,18 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
 private:
-    std::vector<int16_t> mReadBuffer;
+    const nsecs_t mStartNs;
+    const unsigned mSampleRateHz;
+    const unsigned mFrameSize;
+    const unsigned mWriteSizeFrames;
     uint64_t &mFrames;
+    uint64_t mPreviousFrames = 0;
+    uint64_t mReceivedFrames = 0;
+    RingBuffer mRingBuffer;
     talsa::Mixer mMixer;
     talsa::PcmPtr mPcm;
+    std::thread mConsumeThread;
+    std::atomic<bool> mConsumeThreadRunning = true;
 };
 
 struct NullSink : public DevicePortSink {
