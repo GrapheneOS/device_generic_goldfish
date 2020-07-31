@@ -50,6 +50,8 @@ struct RingBuffer {
 
     size_t makeRoomForProduce(size_t atLeast);
 
+    bool waitForProduceAvailable(Timepoint blockUntil) const;
+
     // `getProduceChunk` is a non-blocking function which returns a pointer
     // (`result.data`) inside RingBuffer's buffer, `result.size` is the
     // size of the continious chunk (can be smaller than availableToProduce()).
@@ -84,6 +86,7 @@ struct RingBuffer {
 
 private:
     std::unique_ptr<uint8_t[]> mBuffer;
+    mutable std::condition_variable mProduceAvailable;
     mutable std::condition_variable mConsumeAvailable;
     mutable std::mutex mMutex;
     const int mCapacity;
