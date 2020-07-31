@@ -23,6 +23,7 @@
 #include <utils/Timers.h>
 #include "device_port_source.h"
 #include "talsa.h"
+#include "audio_ops.h"
 #include "util.h"
 #include "debug.h"
 
@@ -36,8 +37,9 @@ namespace {
 
 struct TinyalsaSource : public DevicePortSource {
     TinyalsaSource(unsigned pcmCard, unsigned pcmDevice,
-                   const AudioConfig &cfg, uint64_t &frames)
-            : mFrames(frames)
+                   const AudioConfig &cfg, size_t writerBufferSizeHint, uint64_t &frames)
+            : mWriteBuffer(writerBufferSizeHint / sizeof(int16_t))
+            , mFrames(frames)
             , mMixer(pcmCard)
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.channelMask),
@@ -51,24 +53,33 @@ struct TinyalsaSource : public DevicePortSource {
         return Result::OK;
     }
 
-    int read(void *data, size_t toReadBytes) override {
-        const int res = ::pcm_read(mPcm.get(), data, toReadBytes);
+    size_t read(float volume, size_t bytesToRead, IWriter &writer) override {
+        const size_t samplesToRead = bytesToRead / sizeof(int16_t);
+        mWriteBuffer.resize(samplesToRead);
+
+        const int res = ::pcm_read(mPcm.get(), mWriteBuffer.data(), bytesToRead);
         if (res < 0) {
-            return FAILURE(res);
-        } else if (res == 0) {
-            mFrames += ::pcm_bytes_to_frames(mPcm.get(), toReadBytes);
-            return toReadBytes;
+            ALOGE("TinyalsaSource::%s:%d pcm_read failed with res=%d",
+                  __func__, __LINE__, res);
+            memset(mWriteBuffer.data(), 0, bytesToRead);
         } else {
-            mFrames += ::pcm_bytes_to_frames(mPcm.get(), res);
-            return res;
+            aops::multiplyByVolume(volume,
+                                   mWriteBuffer.data(),
+                                   samplesToRead);
         }
+
+        writer(mWriteBuffer.data(), bytesToRead);
+        mFrames += ::pcm_bytes_to_frames(mPcm.get(), bytesToRead);
+        return 0;
     }
 
     static std::unique_ptr<TinyalsaSource> create(unsigned pcmCard,
                                                   unsigned pcmDevice,
                                                   const AudioConfig &cfg,
+                                                  size_t writerBufferSizeHint,
                                                   uint64_t &frames) {
-        auto src = std::make_unique<TinyalsaSource>(pcmCard, pcmDevice, cfg, frames);
+        auto src = std::make_unique<TinyalsaSource>(pcmCard, pcmDevice,
+                                                    cfg, writerBufferSizeHint, frames);
         if (src->mMixer && src->mPcm) {
             return src;
         } else {
@@ -77,14 +88,19 @@ struct TinyalsaSource : public DevicePortSource {
     }
 
 private:
+    std::vector<int16_t> mWriteBuffer;
     uint64_t &mFrames;
     talsa::Mixer mMixer;
     talsa::PcmPtr mPcm;
 };
 
 template <class G> struct GeneratedSource : public DevicePortSource {
-    GeneratedSource(const AudioConfig &cfg, uint64_t &frames, G generator)
-            : mFrames(frames)
+    GeneratedSource(const AudioConfig &cfg,
+                    size_t writerBufferSizeHint,
+                    uint64_t &frames,
+                    G generator)
+            : mWriteBuffer(writerBufferSizeHint / sizeof(int16_t))
+            , mFrames(frames)
             , mStartNs(systemTime(SYSTEM_TIME_MONOTONIC))
             , mSampleRateHz(cfg.sampleRateHz)
             , mNChannels(util::countChannels(cfg.channelMask))
@@ -104,10 +120,12 @@ template <class G> struct GeneratedSource : public DevicePortSource {
         return uint64_t(mSampleRateHz) * ns2ms(nowNs - mStartNs) / 1000;
     }
 
-    int read(void *data, size_t toReadBytes) override {
-        int16_t *samples = static_cast<int16_t *>(data);
+    size_t read(float volume, size_t bytesToRead, IWriter &writer) override {
+        mWriteBuffer.resize(bytesToRead / sizeof(int16_t));
+
+        int16_t *samples = mWriteBuffer.data();
         const unsigned nChannels = mNChannels;
-        const unsigned requestedFrames = toReadBytes / nChannels / sizeof(*samples);
+        const unsigned requestedFrames = bytesToRead / nChannels / sizeof(*samples);
 
         unsigned availableFrames;
         while (true) {
@@ -130,12 +148,18 @@ template <class G> struct GeneratedSource : public DevicePortSource {
             adjust_channels(samples, 1, samples, nChannels,
                             sizeof(*samples), sizeBytes);
         }
-
         mSentFrames += nFrames;
-        return sizeBytes;
+
+        aops::multiplyByVolume(volume,
+                               mWriteBuffer.data(),
+                               sizeBytes / sizeof(int16_t));
+
+        writer(mWriteBuffer.data(), sizeBytes);
+        return 0;
     }
 
 private:
+    std::vector<int16_t> mWriteBuffer;
     uint64_t &mFrames;
     const nsecs_t mStartNs;
     const unsigned mSampleRateHz;
@@ -238,14 +262,21 @@ std::vector<float> generateSinePattern(uint32_t sampleRateHz,
 }
 
 template <class G> std::unique_ptr<GeneratedSource<G>>
-createGeneratedSource(const AudioConfig &cfg, uint64_t &frames, G generator) {
-    return std::make_unique<GeneratedSource<G>>(cfg, frames, std::move(generator));
+createGeneratedSource(const AudioConfig &cfg,
+                      size_t writerBufferSizeHint,
+                      uint64_t &frames,
+                      G generator) {
+    return std::make_unique<GeneratedSource<G>>(cfg,
+                                                writerBufferSizeHint,
+                                                frames,
+                                                std::move(generator));
 }
 
 }  // namespace
 
 std::unique_ptr<DevicePortSource>
-DevicePortSource::create(const DeviceAddress &address,
+DevicePortSource::create(size_t writerBufferSizeHint,
+                         const DeviceAddress &address,
                          const AudioConfig &cfg,
                          const hidl_bitfield<AudioOutputFlag> &flags,
                          uint64_t &frames) {
@@ -259,15 +290,15 @@ DevicePortSource::create(const DeviceAddress &address,
     switch (address.device) {
     case AudioDevice::IN_BUILTIN_MIC:
         return TinyalsaSource::create(talsa::kPcmCard, talsa::kPcmDevice,
-                                      cfg, frames);
+                                      cfg, writerBufferSizeHint, frames);
 
     case AudioDevice::IN_TELEPHONY_RX:
-        return createGeneratedSource(cfg, frames,
+        return createGeneratedSource(cfg, writerBufferSizeHint, frames,
                                      BusySignalGenerator(cfg.sampleRateHz));
 
     case AudioDevice::IN_FM_TUNER:
         return createGeneratedSource(
-            cfg, frames,
+            cfg, writerBufferSizeHint, frames,
             RepeatGenerator(generateSinePattern(cfg.sampleRateHz, 440.0, 1.0)));
 
     default:

@@ -93,6 +93,7 @@ struct StreamIn : public IStreamIn {
 
     uint64_t &getFrameCounter() { return mFrames; }
     void setMicMute(bool mute);
+    void addInputFramesLost(size_t n) { mInputFramesLost += n; }
     float getEffectiveVolume() const { return mEffectiveVolume; }
 
 private:
@@ -106,6 +107,7 @@ private:
     // The count is not reset to zero when output enters standby.
     uint64_t mFrames = 0;
 
+    std::atomic<uint32_t> mInputFramesLost = 0;
     std::atomic<float> mEffectiveVolume = 1.0f;
 };
 
