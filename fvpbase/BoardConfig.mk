@@ -63,7 +63,7 @@ BOARD_KERNEL_CMDLINE := \
 	console=ttyAMA0 \
 	earlycon=pl011,0x1c090000 \
 	androidboot.hardware=fvpbase \
-	androidboot.boot_device=bus@8000000/bus@8000000:motherboard/bus@8000000:motherboard:iofpga@3,00000000/1c130000.virtio-block \
+	androidboot.boot_device=bus@8000000/bus@8000000:motherboard-bus/bus@8000000:motherboard-bus:iofpga-bus@300000000/1c130000.virtio-block \
 	loglevel=9 \
 
 BOARD_SEPOLICY_DIRS += device/generic/goldfish/fvpbase/sepolicy
