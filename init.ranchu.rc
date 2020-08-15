@@ -59,7 +59,7 @@ on zygote-start
 
 on boot
     setprop ro.hardware.egl emulation
-    setprop debug.sf.vsync_reactor 0
+    setprop debug.sf.vsync_reactor_ignore_present_fences true
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
     setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
