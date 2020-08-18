@@ -12,6 +12,5 @@ net.radio0.             u:object_r:net_radio0_prop:s0
 net.shared_net_ip       u:object_r:net_share_prop:s0
 net.wifi_mac_prefix     u:object_r:net_share_prop:s0
 ro.zygote.disable_gl_preload            u:object_r:qemu_prop:s0
-persist.dumpstate.verbose_logging.enabled u:object_r:hal_dumpstate_default_prop:s0
 vendor.bt.rootcanal_mac_address  u:object_r:hal_bluetooth_sim_prop:s0
 vendor.bt.rootcanal_test_console  u:object_r:hal_bluetooth_sim_prop:s0
