@@ -1,2 +1,0 @@
-vendor_internal_prop(hal_dumpstate_default_prop)
-set_prop(hal_dumpstate_default, hal_dumpstate_default_prop)
