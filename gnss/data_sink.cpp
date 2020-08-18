@@ -60,7 +60,7 @@ void DataSink::cleanup() {
 
 void DataSink::start() {
     std::unique_lock<std::mutex> lock(mtx);
-    warmedUpTime = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    warmedUpTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(3500);
 }
 
 bool DataSink::isWarmedUd() const {
