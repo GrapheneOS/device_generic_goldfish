@@ -65,6 +65,10 @@ on boot
     setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
     setprop ro.zygote.disable_gl_preload 1
 
+    # 0: omx; 4: c2 default now
+    setprop debug.stagefright.ccodec 4
+    setprop debug.stagefright.ccodec ${ro.kernel.qemu.media.ccodec}
+
     setprop dalvik.vm.heapsize 192m
     setprop dalvik.vm.heapsize ${ro.kernel.qemu.dalvik.vm.heapsize}
     chown root system /sys/power/wake_lock
@@ -159,8 +163,7 @@ service goldfish-logcat /system/bin/logcat -Q
     group log
     oneshot
 
-service bugreport /system/bin/dumpstate -d -p -B -z \
-        -o /data/user_de/0/com.android.shell/files/bugreports/bugreport
+service bugreport /system/bin/dumpstate -d -p -z
     class main
     disabled
     oneshot
@@ -170,6 +173,7 @@ service wpa_supplicant /vendor/bin/hw/wpa_supplicant -Dnl80211 -iwlan0 -c/vendor
     interface android.hardware.wifi.supplicant@1.0::ISupplicant default
     interface android.hardware.wifi.supplicant@1.1::ISupplicant default
     interface android.hardware.wifi.supplicant@1.2::ISupplicant default
+    interface android.hardware.wifi.supplicant@1.3::ISupplicant default
     socket wpa_wlan0 dgram 660 wifi wifi
     group system wifi inet
     oneshot

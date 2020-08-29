@@ -452,6 +452,11 @@ Return<Result> StreamOut::clearCallback() {
     return FAILURE(Result::NOT_SUPPORTED);
 }
 
+Return<Result> StreamOut::setEventCallback(const sp<IStreamOutEventCallback>& callback) {
+    (void)callback;
+    return FAILURE(Result::NOT_SUPPORTED);
+}
+
 Return<void> StreamOut::supportsPauseAndResume(supportsPauseAndResume_cb _hidl_cb) {
     _hidl_cb(false, false);
     return Void();
@@ -487,6 +492,36 @@ Return<Result> StreamOut::selectPresentation(int32_t presentationId,
                                              int32_t programId) {
     (void)presentationId;
     (void)programId;
+    return FAILURE(Result::NOT_SUPPORTED);
+}
+
+Return<void> StreamOut::getDualMonoMode(getDualMonoMode_cb _hidl_cb) {
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
+    return Void();
+}
+
+Return<Result> StreamOut::setDualMonoMode(DualMonoMode mode) {
+    (void)mode;
+    return FAILURE(Result::NOT_SUPPORTED);
+}
+
+Return<void> StreamOut::getAudioDescriptionMixLevel(getAudioDescriptionMixLevel_cb _hidl_cb) {
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0);
+    return Void();
+}
+
+Return<Result> StreamOut::setAudioDescriptionMixLevel(float leveldB) {
+    (void)leveldB;
+    return FAILURE(Result::NOT_SUPPORTED);
+}
+
+Return<void> StreamOut::getPlaybackRateParameters(getPlaybackRateParameters_cb _hidl_cb) {
+    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
+    return Void();
+}
+
+Return<Result> StreamOut::setPlaybackRateParameters(const PlaybackRate &playbackRate) {
+    (void)playbackRate;
     return FAILURE(Result::NOT_SUPPORTED);
 }
 

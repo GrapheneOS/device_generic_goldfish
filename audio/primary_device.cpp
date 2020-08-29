@@ -177,6 +177,29 @@ Return<void> PrimaryDevice::createAudioPatch(const hidl_vec<AudioPortConfig>& so
     return Void();
 }
 
+Return<void> PrimaryDevice::updateAudioPatch(AudioPatchHandle previousPatchHandle,
+                                             const hidl_vec<AudioPortConfig>& sources,
+                                             const hidl_vec<AudioPortConfig>& sinks,
+                                             updateAudioPatch_cb _hidl_cb) {
+    const auto i = mAudioPatches.find(previousPatchHandle);
+    if (i == mAudioPatches.end()) {
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), previousPatchHandle);
+    } else {
+        if (sources.size() == 1 && sinks.size() == 1) {
+            AudioPatch patch;
+            patch.source = sources[0];
+            patch.sink = sinks[0];
+            i->second = patch;
+
+            _hidl_cb(Result::OK, previousPatchHandle);
+        } else {
+            _hidl_cb(Result::NOT_SUPPORTED, previousPatchHandle);
+        }
+    }
+
+    return Void();
+}
+
 Return<Result> PrimaryDevice::releaseAudioPatch(AudioPatchHandle patchHandle) {
     return (mAudioPatches.erase(patchHandle) == 1) ? Result::OK : FAILURE(Result::INVALID_ARGUMENTS);
 }
