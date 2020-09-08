@@ -86,6 +86,9 @@ wifi_error Interface::getName(char* name, size_t size) {
     return WIFI_SUCCESS;
 }
 
+// Wifi legacy HAL implicitly assumes getLinkStats is blocking and
+// handler will be set to nullptr immediately after invocation.
+// Therefore, this function will wait until onLinkStatsReply is called.
 wifi_error Interface::getLinkStats(wifi_request_id requestId,
                                    wifi_stats_result_handler handler) {
     NetlinkMessage message(RTM_GETLINK, mNetlink.getSequenceNumber());
@@ -97,12 +100,21 @@ wifi_error Interface::getLinkStats(wifi_request_id requestId,
     info->ifi_flags = 0;
     info->ifi_change = 0xFFFFFFFF;
 
-    bool success = mNetlink.sendMessage(message,
-                                        std::bind(&Interface::onLinkStatsReply,
-                                                  this,
-                                                  requestId,
-                                                  handler,
-                                                  std::placeholders::_1));
+    std::condition_variable condition;
+    std::mutex mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+    bool stopped = false;
+    auto callback = [this, requestId, &handler,
+        &mutex, &condition, &stopped] (const NetlinkMessage& message) {
+        stopped = true;
+        std::unique_lock<std::mutex> lock(mutex);
+        onLinkStatsReply(requestId, handler, message);
+        condition.notify_all();
+    };
+    bool success = mNetlink.sendMessage(message, callback);
+    while (!stopped) {
+        condition.wait(lock);
+    }
     return success ? WIFI_SUCCESS : WIFI_ERROR_UNKNOWN;
 }
 
