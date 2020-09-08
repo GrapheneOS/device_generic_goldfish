@@ -285,7 +285,8 @@ typedef enum {
     RAF_HSPAP = (1 << RADIO_TECH_HSPAP),
     RAF_GSM = (1 << RADIO_TECH_GSM),
     RAF_TD_SCDMA = (1 << RADIO_TECH_TD_SCDMA),
-    RAF_LTE_CA = (1 << RADIO_TECH_LTE_CA)
+    RAF_LTE_CA = (1 << RADIO_TECH_LTE_CA),
+    RAF_NR = (1 << RADIO_TECH_NR)
 } RIL_RadioAccessFamily;
 
 typedef enum {

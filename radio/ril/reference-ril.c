@@ -2462,10 +2462,10 @@ static void requestGetRadioCapability(void *data, size_t datalen, RIL_Token t)
    radioCapability.version = RIL_RADIO_CAPABILITY_VERSION;
    radioCapability.session = 0;
    radioCapability.phase   = 0;
-   radioCapability.rat     = RAF_LTE;
+   radioCapability.rat     = RAF_NR | RAF_LTE | RAF_UMTS | RAF_GSM;
    radioCapability.logicalModemUuid[0] = '\0';
    radioCapability.status  = RC_STATUS_SUCCESS;
-
+  
    RIL_onRequestComplete(t, RIL_E_SUCCESS, &radioCapability, sizeof(radioCapability));
 }
 

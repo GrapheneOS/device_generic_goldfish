@@ -86,6 +86,7 @@ struct StreamOut : public IStreamOut {
     Return<void> getNextWriteTimestamp(getNextWriteTimestamp_cb _hidl_cb) override;
     Return<Result> setCallback(const sp<IStreamOutCallback>& callback) override;
     Return<Result> clearCallback() override;
+    Return<Result> setEventCallback(const sp<IStreamOutEventCallback>& callback) override;
     Return<void> supportsPauseAndResume(supportsPauseAndResume_cb _hidl_cb) override;
     Return<Result> pause() override;
     Return<Result> resume() override;
@@ -94,6 +95,12 @@ struct StreamOut : public IStreamOut {
     Return<Result> flush() override;
     Return<void> getPresentationPosition(getPresentationPosition_cb _hidl_cb) override;
     Return<Result> selectPresentation(int32_t presentationId, int32_t programId) override;
+    Return<void> getDualMonoMode(getDualMonoMode_cb _hidl_cb) override;
+    Return<Result> setDualMonoMode(DualMonoMode mode) override;
+    Return<void> getAudioDescriptionMixLevel(getAudioDescriptionMixLevel_cb _hidl_cb) override;
+    Return<Result> setAudioDescriptionMixLevel(float leveldB) override;
+    Return<void> getPlaybackRateParameters(getPlaybackRateParameters_cb _hidl_cb) override;
+    Return<Result> setPlaybackRateParameters(const PlaybackRate &playbackRate) override;
 
     void setMasterVolume(float volume);
     float getEffectiveVolume() const { return mEffectiveVolume; }

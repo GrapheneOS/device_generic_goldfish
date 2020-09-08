@@ -458,12 +458,11 @@ void EmulatedCameraFactory::waitForQemuSfFakeCameraPropertyAvailable() {
 }
 
 bool EmulatedCameraFactory::isFakeCameraEmulationOn(bool backCamera) {
-    /*
-     * Defined by 'qemu.sf.fake_camera' boot property. If the property exists,
-     * and if it's set to 'both', then fake cameras are used to emulate both
-     * sides. If it's set to 'back' or 'front', then a fake camera is used only
-     * to emulate the back or front camera, respectively.
-     */
+    // Always return false, because another HAL (Google Camera HAL)
+    // will create the fake cameras
+    if (!property_get_bool("ro.kernel.qemu.legacy_fake_camera", false)) {
+        return false;
+    }
     char prop[PROPERTY_VALUE_MAX];
     if ((property_get("qemu.sf.fake_camera", prop, nullptr) > 0) &&
         (!strcmp(prop, "both") ||
