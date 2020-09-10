@@ -30,6 +30,8 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 DISABLE_RILD_OEM_HOOK := true
 
 DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
+PRODUCT_SOONG_NAMESPACES += hardware/google/camera
+PRODUCT_SOONG_NAMESPACES += hardware/google/camera/devices/EmulatedCamera
 
 # Device modules
 PRODUCT_PACKAGES += \
@@ -43,8 +45,8 @@ PRODUCT_PACKAGES += \
     qemu-props \
     stagefright \
     fingerprint.ranchu \
-    android.hardware.graphics.composer@2.1-impl \
-    android.hardware.graphics.composer@2.1-service \
+    android.hardware.graphics.composer@2.3-impl \
+    android.hardware.graphics.composer@2.3-service \
     android.hardware.graphics.allocator@3.0-service \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
     hwcomposer.ranchu \
@@ -56,6 +58,7 @@ PRODUCT_PACKAGES += \
     iw_vendor \
     local_time.default \
     SdkSetup \
+    EmulatorRadioConfig \
     libstagefrighthw \
     libstagefright_goldfish_vpxdec \
     libstagefright_goldfish_avcdec \
@@ -93,7 +96,8 @@ PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.1-service
 
 PRODUCT_PACKAGES += \
-    DisplayCutoutEmulationEmu01Overlay
+    DisplayCutoutEmulationEmu01Overlay \
+    NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
 PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
@@ -101,10 +105,10 @@ endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
 PRODUCT_PACKAGES += \
-    android.hardware.sensors@2.0-service.multihal \
-    android.hardware.sensors@2.0-impl.ranchu
+    android.hardware.sensors@2.1-service.multihal \
+    android.hardware.sensors@2.1-impl.ranchu
 # TODO(rkir):
-# add a soong namespace and move this into a.h.sensors@2.0-impl.ranchu
+# add a soong namespace and move this into a.h.sensors@2.1-impl.ranchu
 # as prebuilt_etc. For now soong_namespace causes a build break because the fw
 # refers to our wifi HAL in random places.
 PRODUCT_COPY_FILES += \
@@ -114,8 +118,8 @@ endif
 PRODUCT_PACKAGES += \
     android.hardware.drm@1.0-service \
     android.hardware.drm@1.0-impl \
-    android.hardware.drm@1.2-service.clearkey \
-    android.hardware.drm@1.2-service.widevine
+    android.hardware.drm@1.3-service.clearkey \
+    android.hardware.drm@1.3-service.widevine
 
 PRODUCT_PACKAGES += \
     android.hardware.power-service.example \
@@ -138,7 +142,10 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.4-service \
     android.hardware.camera.provider@2.4-impl \
     camera.ranchu \
-    camera.ranchu.jpeg
+    camera.ranchu.jpeg \
+    android.hardware.camera.provider@2.6-service-google \
+    libgooglecamerahwl_impl \
+    android.hardware.camera.provider@2.6-impl-google
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
 endif
 
@@ -209,13 +216,35 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.power.stats@1.0-service.mock
 
+# Reboot escrow
+PRODUCT_PACKAGES += \
+    android.hardware.rebootescrow-service.default
+
+# Extension implementation for Jetpack WindowManager
+PRODUCT_PACKAGES += \
+    androidx.window.sidecar
+
+PRODUCT_PACKAGES += \
+    android.hardware.biometrics.face@1.0-service.example
+
+PRODUCT_PACKAGES += \
+    android.hardware.contexthub@1.1-service.mock
+
 # Goldfish does not support ION needed for Codec 2.0
-PRODUCT_PROPERTY_OVERRIDES += \
-    debug.stagefright.ccodec=0
+# still disable it until b/143473631 is fixed
+# now this is setup on init.ranchu.rc
+# -qemu -append qemu.media.ccodec=<value> can override it; default 0
+#PRODUCT_PROPERTY_OVERRIDES += \
+#    debug.stagefright.ccodec=0
+
+# Enable Incremental on the device via kernel driver
+PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
+
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/dtb.img:dtb.img \
     device/generic/goldfish/data/etc/apns-conf.xml:data/misc/apns/apns-conf.xml \
+    device/generic/goldfish/radio/RadioConfig/radioconfig.xml:data/misc/emulator/config/radioconfig.xml \
     device/generic/goldfish/data/etc/local.prop:data/local.prop \
     device/generic/goldfish/init.ranchu-core.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-core.sh \
     device/generic/goldfish/init.ranchu-net.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-net.sh \
@@ -256,6 +285,7 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
     frameworks/native/data/etc/android.hardware.camera.ar.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.ar.xml \
     frameworks/native/data/etc/android.hardware.camera.autofocus.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.autofocus.xml \
+    frameworks/native/data/etc/android.hardware.camera.front.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.front.xml \
     frameworks/native/data/etc/android.hardware.camera.full.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.full.xml \
     frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml \
     frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
@@ -264,4 +294,14 @@ PRODUCT_COPY_FILES += \
 	frameworks/native/data/etc/android.software.vulkan.deqp.level-2020-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level.xml \
     frameworks/native/data/etc/android.software.autofill.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.autofill.xml \
     frameworks/native/data/etc/android.software.verified_boot.xml:${TARGET_COPY_OUT_PRODUCT}/etc/permissions/android.software.verified_boot.xml \
-    device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-goldfish.xml
+    frameworks/av/media/libeffects/data/audio_effects.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_effects.xml \
+    frameworks/av/services/audiopolicy/config/audio_policy_volumes.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_volumes.xml \
+    frameworks/av/services/audiopolicy/config/default_volume_tables.xml:$(TARGET_COPY_OUT_VENDOR)/etc/default_volume_tables.xml \
+    device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-goldfish.xml \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_back.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_back.json \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_front.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_front.json \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_depth.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_depth.json \
+
+# Windowing settings config files
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/display_settings_freeform.xml:$(TARGET_COPY_OUT_DATA)/system/display_settings_freeform.xml

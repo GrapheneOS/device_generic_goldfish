@@ -86,3 +86,5 @@ fi
 
 # Start hostapd, the access point software
 setprop ctl.start emu_hostapd
+
+ifconfig radio0 -multicast

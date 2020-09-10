@@ -31,6 +31,7 @@
              android.hardware.sensor.proximity
              android.hardware.sensor.relative_humidity
              android.hardware.sensor.gyroscope
+             android.hardware.sensor.hinge_angle
              android.hardware.telephony
              android.hardware.telephony.gsm
              android.software.midi
@@ -50,6 +51,7 @@
     <feature name="android.hardware.sensor.proximity" />
     <feature name="android.hardware.sensor.relative_humidity" />
     <feature name="android.hardware.sensor.gyroscope" />
+    <feature name="android.hardware.sensor.hinge_angle" />
     <feature name="android.hardware.telephony" />
     <feature name="android.hardware.telephony.gsm" />
     <feature name="android.hardware.touchscreen" />
@@ -68,6 +70,7 @@
     <feature name="android.software.print" />
     <feature name="android.software.cant_save_state" />
     <feature name="android.software.secure_lock_screen" />
+    <feature name="android.software.companion_device_setup" />
 
     <!-- Feature to specify if the device supports adding device admins. -->
     <feature name="android.software.device_admin" />

@@ -66,6 +66,10 @@ struct PrimaryDevice : public IPrimaryDevice {
     Return<void> createAudioPatch(const hidl_vec<AudioPortConfig>& sources,
                                   const hidl_vec<AudioPortConfig>& sinks,
                                   createAudioPatch_cb _hidl_cb) override;
+    Return<void> updateAudioPatch(AudioPatchHandle previousPatch,
+                                  const hidl_vec<AudioPortConfig>& sources,
+                                  const hidl_vec<AudioPortConfig>& sinks,
+                                  updateAudioPatch_cb _hidl_cb) override;
     Return<Result> releaseAudioPatch(AudioPatchHandle patch) override;
     Return<void> getAudioPort(const AudioPort& port, getAudioPort_cb _hidl_cb) override;
     Return<Result> setAudioPortConfig(const AudioPortConfig& config) override;
