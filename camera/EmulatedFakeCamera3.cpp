@@ -1109,7 +1109,7 @@ status_t EmulatedFakeCamera3::getCameraCapabilities() {
         mCapabilities.add(FULL_LEVEL);
         // "RAW" causes several CTS failures: b/68723953, disable it so far.
         // TODO: add "RAW" back when all failures are resolved.
-        //mCapabilities.add(RAW);
+        mCapabilities.add(RAW);
         mCapabilities.add(MOTION_TRACKING);
     }
 
@@ -1330,7 +1330,7 @@ status_t EmulatedFakeCamera3::constructStaticInfo() {
 
     // android.flash
 
-    static const uint8_t flashAvailable = 0;
+    static const uint8_t flashAvailable = 1;
     ADD_STATIC_ENTRY(ANDROID_FLASH_INFO_AVAILABLE, &flashAvailable, 1);
 
     // android.hotPixel
