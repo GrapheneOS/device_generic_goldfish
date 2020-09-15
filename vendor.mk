@@ -59,6 +59,7 @@ PRODUCT_PACKAGES += \
     local_time.default \
     SdkSetup \
     EmulatorRadioConfig \
+    EmulatorTetheringConfigOverlay \
     libstagefrighthw \
     libstagefright_goldfish_vpxdec \
     libstagefright_goldfish_avcdec \
