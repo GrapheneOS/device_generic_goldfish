@@ -276,17 +276,14 @@ bool MultihalSensors::isSensorHandleValid(int sensorHandle) const {
 }
 
 void MultihalSensors::batchThread() {
-    using high_resolution_clock = std::chrono::high_resolution_clock;
-
     while (m_batchRunning) {
         std::unique_lock<std::mutex> lock(m_mtx);
         if (m_batchQueue.empty()) {
             m_batchUpdated.wait(lock);
         } else {
-            const int64_t t = m_batchQueue.top().timestamp;
-            const auto d = std::chrono::nanoseconds(t);
-            high_resolution_clock::time_point waitUntil(d);
-            m_batchUpdated.wait_until(lock, waitUntil);
+            const int64_t d =
+                m_batchQueue.top().timestamp - ::android::elapsedRealtimeNano();
+            m_batchUpdated.wait_for(lock, std::chrono::nanoseconds(d));
         }
 
         const int64_t nowNs = ::android::elapsedRealtimeNano();
