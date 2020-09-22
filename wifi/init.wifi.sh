@@ -47,7 +47,6 @@ if [ -n "$wifi_mac_prefix" ]; then
 fi
 
 NAMESPACE="router"
-createns ${NAMESPACE}
 
 # createns will have created a file that contains the process id (pid) of a
 # process running in the network namespace. This pid is needed for some commands

@@ -49,7 +49,7 @@ on post-fs-data
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
     mkdir /data/vendor/var/run/netns 0755 root root
-    start ranchu-net
+    start create_router_ns
 
 on zygote-start
     # Create the directories used by the Wireless subsystem
@@ -99,6 +99,9 @@ on property:dev.bootcomplete=1
     setprop vendor.qemu.dev.bootcomplete 1
     start ranchu-setup
 
+on property:qemu.networknamespace=ready
+    start ranchu-net
+
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
     user root
@@ -115,6 +118,12 @@ service netmgr /vendor/bin/execns router /vendor/bin/netmgr --if-prefix wlan1 --
     user root
     group root wifi
     disabled
+
+service create_router_ns /vendor/bin/createns router
+    user root
+    group root
+    disabled
+    oneshot
 
 service wifi_forwarder /vendor/bin/wifi_forwarder
     user root
