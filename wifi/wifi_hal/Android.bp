@@ -28,6 +28,7 @@ cc_library_static {
         "wifi_hal.cpp",
     ],
     shared_libs: [
+        "libnl",
         "liblog",
         "libcutils",
         "libhardware_legacy",
