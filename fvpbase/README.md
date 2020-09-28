@@ -5,9 +5,17 @@ the ARM Fixed Virtual Platform.
 
 ```
 . build/envsetup.sh
-lunch fvp-eng # or fvp-userdebug
+lunch $TARGET
 m
 ```
+
+Where $TARGET above is one of: fvp-eng, fvp-userdebug, fvp_mini-eng or fvp_mini-userdebug
+The fvp-* will build a full Android with UI support, while fvp_mini-* will build a small
+subset needed to boot to shell and support command line executables.
+
+It is possible to disable 32 bit support in fvp_mini-* targets with the following command
+before ``m``:
+`export FVP_MULTILIB_BUILD=false`
 
 Note that running ``m`` requires that the kernel is built first following
 the instructions below.
