@@ -290,6 +290,8 @@ static char s_ipv6_gateway[INET6_ADDRSTRLEN];
 // A string containing the IPv6 DNS servers of the radio interface
 static char s_ipv6_dns[8192];
 static pthread_mutex_t s_addresses_mutex = PTHREAD_MUTEX_INITIALIZER;
+// Next available handle for keep alive session
+static uint32_t s_session_handle = 1;
 
 static void pollSIMState (void *param);
 static void setRadioState(RIL_RadioState newState);
@@ -2588,6 +2590,13 @@ static void requestSetCarrierRestrictions(const RIL_CarrierRestrictions *restric
     }
 }
 
+static void requestStartKeepalive(RIL_Token t) {
+    RIL_KeepaliveStatus resp;
+    resp.sessionHandle = s_session_handle++;
+    resp.code = KEEPALIVE_ACTIVE;
+    RIL_onRequestComplete(t, RIL_E_SUCCESS, &resp, sizeof(resp));
+}
+
 /*** Callback methods from the RIL library to us ***/
 
 /**
@@ -3064,6 +3073,12 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             }
             break;
 
+        case RIL_REQUEST_START_KEEPALIVE:
+            requestStartKeepalive(t);
+            break;
+        case RIL_REQUEST_STOP_KEEPALIVE:
+            RIL_onRequestComplete(t, RIL_E_SUCCESS, NULL, 0);
+            break;
         default:
             RLOGD("Request not supported. Tech: %d",TECH(sMdmInfo));
             RIL_onRequestComplete(t, RIL_E_REQUEST_NOT_SUPPORTED, NULL, 0);
