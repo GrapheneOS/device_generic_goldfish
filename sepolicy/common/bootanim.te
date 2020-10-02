@@ -5,3 +5,4 @@ dontaudit bootanim system_data_file:dir read;
 
 allow bootanim graphics_device:chr_file { read ioctl open };
 allow bootanim gpu_device:chr_file { read ioctl open };
+allow bootanim self:{ socket vsock_socket } create_socket_perms_no_ioctl;

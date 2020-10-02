@@ -1,0 +1,1 @@
+allow platform_app self:{ socket vsock_socket } create_socket_perms_no_ioctl;
