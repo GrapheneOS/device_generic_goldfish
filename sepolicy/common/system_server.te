@@ -1,1 +1,2 @@
 get_prop(system_server, radio_noril_prop)
+allow system_server self:{ socket vsock_socket } create_socket_perms_no_ioctl;
