@@ -10,3 +10,4 @@ hal_client_domain(hal_camera_default, hal_thermal);
 # For camera hal to talk with sensor service
 binder_call(hal_camera_default, sensor_service_server)
 binder_call(sensor_service_server, hal_camera_default)
+allow hal_camera_default self:{ socket vsock_socket } create_socket_perms_no_ioctl;
