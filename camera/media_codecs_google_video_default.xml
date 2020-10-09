@@ -50,6 +50,21 @@
             <Limit name="measured-frame-rate-3840x2160" range="235-247" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
+        <MediaCodec name="c2.goldfish.h264.decoder" type="video/avc">
+            <Limit name="size" min="96x96" max="3840x2160" />
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Limit name="blocks-per-second" range="24-2073600" />
+            <Limit name="bitrate" range="1-120000000" />
+            <Limit name="frame-rate" range="1-480" />
+            <Limit name="performance-point-3840x2160" value="60" />
+            <Limit name="measured-frame-rate-320x240" range="257-266" />
+            <Limit name="measured-frame-rate-720x480" range="262-264" />
+            <Limit name="measured-frame-rate-1280x720" range="227-251" />
+            <Limit name="measured-frame-rate-1920x1080" range="235-247" />
+            <Limit name="measured-frame-rate-3840x2160" range="235-247" />
+            <Feature name="adaptive-playback" />
+        </MediaCodec>
         <MediaCodec name="OMX.google.h264.decoder" type="video/avc">
             <Limit name="size" min="2x2" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
@@ -104,6 +119,39 @@
             <Limit name="measured-frame-rate-1280x720" range="237-258" />
             <Limit name="measured-frame-rate-1920x1080" range="30-160" />
             <Limit name="measured-frame-rate-3840x2160" range="30-90" />
+            <Feature name="adaptive-playback" />
+        </MediaCodec>
+        <MediaCodec name="c2.goldfish.vp8.decoder" type="video/x-vnd.on2.vp8" variant="slow-cpu,!slow-cpu">
+            <Limit name="size" min="2x2" max="2048x2048" />
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Variant name="!slow-cpu">
+                <Limit name="block-count" range="1-16384" />
+                <Limit name="blocks-per-second" range="1-1000000" />
+                <Limit name="bitrate" range="1-40000000" />
+            </Variant>
+            <Variant name="slow-cpu">
+                <Limit name="block-count" range="1-8192" /> <!-- max 2048x1024 -->
+                <Limit name="blocks-per-second" range="1-1000000" />
+                <Limit name="bitrate" range="1-40000000" />
+            </Variant>
+            <Feature name="adaptive-playback" />
+        </MediaCodec>
+        <MediaCodec name="c2.goldfish.vp9.decoder" type="video/x-vnd.on2.vp9" variant="slow-cpu,!slow-cpu">
+            <Limit name="alignment" value="2x2" />
+            <Limit name="block-size" value="16x16" />
+            <Variant name="!slow-cpu">
+                <Limit name="size" min="2x2" max="2048x2048" />
+                <Limit name="block-count" range="1-16384" />
+                <Limit name="blocks-per-second" range="1-500000" />
+                <Limit name="bitrate" range="1-40000000" />
+            </Variant>
+            <Variant name="slow-cpu">
+                <Limit name="size" min="2x2" max="1280x1280" />
+                <Limit name="block-count" range="1-3600" /> <!-- max 1280x720 -->
+                <Limit name="blocks-per-second" range="1-108000" />
+                <Limit name="bitrate" range="1-5000000" />
+            </Variant>
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.vp8.decoder" type="video/x-vnd.on2.vp8">

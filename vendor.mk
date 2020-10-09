@@ -55,6 +55,10 @@ PRODUCT_PACKAGES += \
     toybox_vendor \
     android.hardware.wifi@1.0-service \
     android.hardware.biometrics.fingerprint@2.1-service \
+    android.hardware.media.c2@1.0-service-goldfish \
+    libcodec2_goldfish_vp8dec \
+    libcodec2_goldfish_vp9dec \
+    libcodec2_goldfish_avcdec \
     sh_vendor \
     ip_vendor \
     iw_vendor \
