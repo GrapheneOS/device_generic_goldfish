@@ -3,7 +3,5 @@
 /vendor/bin/hw/android\.hardware\.bluetooth@1\.1-service\.sim  u:object_r:hal_bluetooth_sim_exec:s0
 /vendor/bin/hw/android\.hardware\.drm@[0-9]+\.[0-9]+-service\.clearkey u:object_r:hal_drm_clearkey_exec:s0
 /vendor/bin/hw/android\.hardware\.gatekeeper@1\.0-service.software     u:object_r:hal_gatekeeper_default_exec:s0
-/vendor/lib(64)?/libEGL_swiftshader\.so          u:object_r:same_process_hal_file:s0
-/vendor/lib(64)?/libGLESv1_CM_swiftshader\.so    u:object_r:same_process_hal_file:s0
-/vendor/lib(64)?/libGLESv2_swiftshader\.so       u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/libdrm\.so                      u:object_r:same_process_hal_file:s0
 /system/bin/mini_network.sh                      u:object_r:mini_network_exec:s0
