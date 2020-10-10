@@ -4,3 +4,4 @@ GLAsyncSwap = on
 GLESDynamicVersion = on
 GLDMA = on
 DynamicPartition = on
+ModemSimulator= on
