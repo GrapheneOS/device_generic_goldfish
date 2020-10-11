@@ -1,5 +1,13 @@
+on early-fs
+    start vold
+
 on fs
+    exec_start wait_for_keymaster
     mount_all /vendor/etc/fstab.ranchu
+
+on late-fs
+    # Mount RW partitions which need run fsck
+    mount_all /vendor/etc/fstab.ranchu --late
 
 on early-init
     mount proc proc /proc remount hidepid=2,gid=3009
