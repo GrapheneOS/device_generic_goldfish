@@ -10,7 +10,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # build quite specifically for the emulator, and might not be
 # entirely appropriate to inherit from for on-device configurations.
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/etc/config.ini.nexus5:config.ini \
+    device/generic/goldfish/data/etc/config.ini.xl:config.ini \
     device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     device/generic/goldfish/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json \
@@ -26,7 +26,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.crypto.dm_default_key.options_format.version=2
 
-PRODUCT_SHIPPING_API_LEVEL := 28
+PRODUCT_SHIPPING_API_LEVEL := 30
+PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
 TARGET_USES_MKE2FS := true
 
 ifeq ($(QEMU_DISABLE_AVB),true)
