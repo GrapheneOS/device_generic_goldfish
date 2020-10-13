@@ -12,7 +12,6 @@
 /dev/block/zram0             u:object_r:swap_block_device:s0
 
 /dev/goldfish_pipe           u:object_r:qemu_device:s0
-/dev/vport.*p.*                u:object_r:qemu_device:s0
 /dev/goldfish_sync           u:object_r:qemu_device:s0
 /dev/goldfish_address_space  u:object_r:qemu_device:s0
 /dev/qemu_.*                 u:object_r:qemu_device:s0

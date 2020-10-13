@@ -52,7 +52,6 @@ int s_QemuMiscPipe = -1;
 void static notifyHostBootComplete();
 void static sendHeartBeat();
 void static sendMessage(const char* mesg);
-extern void parse_virtio_serial();
 
 int  main(void)
 {
@@ -137,8 +136,6 @@ int  main(void)
     }
 
     close(qemud_fd);
-
-    parse_virtio_serial();
 
     char temp[BUFF_SIZE];
     sendHeartBeat();
