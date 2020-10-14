@@ -32,6 +32,4 @@ ifeq ($(QEMU_CUSTOMIZATIONS),true)
 
   subdir_makefiles=$(call first-makefiles-under,$(LOCAL_PATH))
   $(foreach mk,$(subdir_makefiles),$(info including $(mk) ...)$(eval include $(mk)))
-CUTTLEFISH_LIBRIL_NAME := libril-modem-lib
--include device/google/cuttlefish/guest/hals/ril/Android.mk
 endif
