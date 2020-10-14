@@ -19,12 +19,8 @@
 cc_binary {
     name: "qemu-props",
     vendor: true,
-    srcs: [
-        "qemu-props.cpp",
-        "vport_parser.cpp",
-    ],
+    srcs: ["qemu-props.cpp"],
     shared_libs: [
-        "libbase",
         "libcutils",
         "liblog",
     ],
@@ -32,8 +28,4 @@ cc_binary {
         "libqemud.ranchu",
         "libqemupipe.ranchu",
     ],
-    cflags: [
-        "-DLOG_TAG=\"qemu-props\"",
-    ],
-
 }
