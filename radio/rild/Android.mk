@@ -12,7 +12,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libdl \
 	liblog \
-	libril-modem-lib
+	libril-goldfish-fork
 
 # Temporary hack for broken vendor RILs.
 LOCAL_WHOLE_STATIC_LIBRARIES := \
