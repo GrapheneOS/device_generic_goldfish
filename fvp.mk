@@ -40,6 +40,7 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_product.mk)
 # All components inherited here go to vendor image
 #
 $(call inherit-product, $(SRC_TARGET_DIR)/product/media_vendor.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
 PRODUCT_SOONG_NAMESPACES += device/generic/goldfish
 
