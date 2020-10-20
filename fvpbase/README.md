@@ -27,8 +27,8 @@ mkdir android-kernel-mainline
 cd android-kernel-mainline
 repo init -u https://android.googlesource.com/kernel/manifest -b common-android-mainline
 repo sync
-repo start android-mainline common && repo download -c common 1145352
-BUILD_CONFIG=common/build.config.fvp build/build.sh
+BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j72
+BUILD_CONFIG=common-modules/virtual-device/build.config.fvp build/build.sh  -j72
 ```
 
 The resulting kernel image and DTB must then be copied into the product output directory:
@@ -36,6 +36,15 @@ The resulting kernel image and DTB must then be copied into the product output d
 ```
 cp out/android-mainline/dist/Image $ANDROID_PRODUCT_OUT/kernel
 cp out/android-mainline/dist/fvp-base-revc.dtb out/android-mainline/dist/initramfs.img $ANDROID_PRODUCT_OUT/
+```
+
+The above instructions currently only work for the ``fvp_mini``
+target. If you would like to use the ``fvp`` target instead, the
+following commands must be run after ``repo sync``:
+
+```
+repo start android-mainline common
+repo download -c common 1463463
 ```
 
 ### Building the firmware (ARM Trusted Firmware and U-Boot)
@@ -120,6 +129,7 @@ for i in $PWD/inst/bin/*; do
   ln -sf $i /path/to/android-kernel-mainline/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/$(basename $i)
   ln -sf $i /path/to/android-kernel-mainline/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/$(basename $i | sed -e 's/gnu/android/g')
 done
+ln -sf $PWD/inst/bin/aarch64-linux-gnu-as /path/to/android-kernel-mainline/prebuilts/gas/linux-x86/aarch64-linux-android-as
 ```
 
 ### Accessing the model via adb
