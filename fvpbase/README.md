@@ -125,10 +125,6 @@ cd binutils-2.33.1
 ./configure --prefix=$PWD/inst --target=aarch64-linux-gnu
 make
 make install
-for i in $PWD/inst/bin/*; do
-  ln -sf $i /path/to/android-kernel-mainline/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/$(basename $i)
-  ln -sf $i /path/to/android-kernel-mainline/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/$(basename $i | sed -e 's/gnu/android/g')
-done
 ln -sf $PWD/inst/bin/aarch64-linux-gnu-as /path/to/android-kernel-mainline/prebuilts/gas/linux-x86/aarch64-linux-android-as
 ```
 
