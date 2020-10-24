@@ -9,3 +9,5 @@ set_prop(qemu_props, net_share_prop)
 # TODO(b/79502552): Invalid property access from emulator vendor
 #set_prop(qemu_props, qemu_cmdline)
 set_prop(qemu_props, qemu_cmdline)
+allow qemu_props self:vsock_socket create_socket_perms_no_ioctl;
+dontaudit qemu_props self:capability { net_admin };
