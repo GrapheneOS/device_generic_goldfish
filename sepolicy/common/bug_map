@@ -19,3 +19,5 @@ gsid device file b/133324244
 gmscore_app varrun_file dir b/131598844
 system_suspend sysfs dir b/170560077
 system_suspend sysfs file b/170560077
+untrusted_app untrusted_app vsock_socket b/162770284
+untrusted_app hal_graphics_allocator_default vsock_socket b/162770284
