@@ -4,3 +4,5 @@ GLAsyncSwap = on
 GLESDynamicVersion = on
 GLDMA = on
 DynamicPartition = on
+EncryptUserData = on
+Wifi = on
