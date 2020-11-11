@@ -82,6 +82,10 @@
     <feature name="android.software.activities_on_secondary_displays" />
 
     <feature name="android.software.cts" />
+
+    <!-- Feature to specify if the device supports controls. -->
+    <feature name="android.software.controls" />
+
     <!-- devices with GPS must include android.hardware.location.gps.xml -->
     <!-- devices with an autofocus camera and/or flash must include either
          android.hardware.camera.autofocus.xml or
