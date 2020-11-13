@@ -14,7 +14,17 @@
 
 cc_prebuilt_binary {
     name: "emulatorip",
-    srcs: ["x86/emulatorip"],
+    arch: {
+        arm64: {
+            srcs: ["arm64/emulatorip"],
+        },
+        x86: {
+            srcs: ["x86/emulatorip"],
+        },
+        x86_64: {
+            srcs: ["x86/emulatorip"],
+        },
+    },
     stem: "ip",
     shared_libs: [
         "libc",
@@ -22,7 +32,6 @@ cc_prebuilt_binary {
         "libdl",
         "libm",
     ],
-    compile_multilib: "32",
     vendor: true,
     strip: {
         none: true,
