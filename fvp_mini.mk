@@ -37,6 +37,9 @@ OVERRIDE_TARGET_FLATTEN_APEX := true
 # Use a multilib setup (see fvpbase/BoardConfig.mk).
 FVP_MULTILIB_BUILD ?= true
 
+# The check would fail because there are no boot jars.
+SKIP_BOOT_JARS_CHECK ?= true
+
 PRODUCT_PACKAGES += \
     com.android.runtime \
     gdbserver \
