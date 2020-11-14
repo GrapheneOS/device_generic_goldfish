@@ -6,3 +6,5 @@ GLDMA = on
 DynamicPartition = on
 EncryptUserData = on
 Wifi = on
+RefCountPipe = on
+HostComposition = on
