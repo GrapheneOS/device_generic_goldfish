@@ -1,4 +1,0 @@
-# neverallow prevents allowing access to vsock_socket which is required
-# for graphics, see bug_map and b/162770284.
-
-permissive untrusted_app;
