@@ -8,3 +8,4 @@ EncryptUserData = on
 Wifi = on
 RefCountPipe = on
 HostComposition = on
+ModemSimulator= on
