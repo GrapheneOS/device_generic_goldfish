@@ -22,6 +22,8 @@
 
 #include <linux/rtnetlink.h>
 
+#include <future>
+
 // Provide some arbitrary firmware and driver versions for now
 static const char kFirmwareVersion[] = "1.0";
 static const char kDriverVersion[] = "1.0";
@@ -100,20 +102,19 @@ wifi_error Interface::getLinkStats(wifi_request_id requestId,
     info->ifi_flags = 0;
     info->ifi_change = 0xFFFFFFFF;
 
-    std::condition_variable condition;
-    std::mutex mutex;
-    std::unique_lock<std::mutex> lock(mutex);
-    bool stopped = false;
+    std::promise<void> p;
+
     auto callback = [this, requestId, &handler,
-        &mutex, &condition, &stopped] (const NetlinkMessage& message) {
-        stopped = true;
-        std::unique_lock<std::mutex> lock(mutex);
+        &p] (const NetlinkMessage& message) {
         onLinkStatsReply(requestId, handler, message);
-        condition.notify_all();
+        p.set_value();
     };
+
     bool success = mNetlink.sendMessage(message, callback);
-    while (!stopped) {
-        condition.wait(lock);
+    // Only wait when callback will be invoked. Therefore, test if the message
+    // is sent successfully first.
+    if (success) {
+        p.get_future().wait();
     }
     return success ? WIFI_SUCCESS : WIFI_ERROR_UNKNOWN;
 }
