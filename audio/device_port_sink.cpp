@@ -287,15 +287,22 @@ DevicePortSink::create(size_t readerBufferSizeHint,
 
     switch (address.device) {
     case AudioDevice::OUT_SPEAKER:
-        return TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice,
-                                    cfg, readerBufferSizeHint, frames);
+        {
+            auto sinkptr = TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice, cfg, readerBufferSizeHint, frames);
+            if (sinkptr == nullptr) {
+                ALOGW("%s:%d failed to create alsa sink; created nullsink instead.", __func__, __LINE__);
+                return NullSink::create(cfg, readerBufferSizeHint, frames);
+            } else {
+                return sinkptr;
+            }
+        }
 
     case AudioDevice::OUT_TELEPHONY_TX:
         return NullSink::create(cfg, readerBufferSizeHint, frames);
 
     default:
-        ALOGE("%s:%d unsupported device: %x", __func__, __LINE__, address.device);
-        return FAILURE(nullptr);
+        ALOGW("%s:%d unsupported device: %x created nullsink", __func__, __LINE__, address.device);
+        return NullSink::create(cfg, readerBufferSizeHint, frames);
     }
 }
 
