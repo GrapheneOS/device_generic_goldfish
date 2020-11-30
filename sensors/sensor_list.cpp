@@ -37,6 +37,7 @@ const char* const kQemuSensorName[] = {
     "hinge-angle0",
     "hinge-angle1",
     "hinge-angle2",
+    "heart-rate",
 };
 
 const SensorInfo kAllSensors[] = {
@@ -294,6 +295,24 @@ const SensorInfo kAllSensors[] = {
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ON_CHANGE_MODE |
                  SensorFlagBits::WAKE_UP
+    },
+    {
+        .sensorHandle = kSensorHandleHeartRate,
+        .name = "Goldfish Heart rate sensor",
+        .vendor = kAospVendor,
+        .version = 1,
+        .type = SensorType::HEART_RATE,
+        .typeAsString = "android.sensor.heart_rate",
+        .maxRange = 500.0,
+        .resolution = 1.0,
+        .power = 20.0,
+        .minDelay = 0,
+        .fifoReservedEventCount = 0,
+        .fifoMaxEventCount = 0,
+        .requiredPermission = "android.permission.BODY_SENSORS",
+        .maxDelay = 500000,
+        .flags = SensorFlagBits::DATA_INJECTION |
+                 SensorFlagBits::ON_CHANGE_MODE
     }};
 
 constexpr int kSensorNumber = sizeof(kAllSensors) / sizeof(kAllSensors[0]);
