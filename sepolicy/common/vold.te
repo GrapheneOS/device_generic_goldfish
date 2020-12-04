@@ -2,5 +2,3 @@ dontaudit vold kernel:system module_request;
 allow vold sysfs_devices_block:file w_file_perms;
 allow vold sysfs_virtio_block:file w_file_perms;
 allow vold nsfs:file r_file_perms;
-allow vold cache_file:dir { add_name create remove_name rename write };
-allow vold cache_file:file { create open write };

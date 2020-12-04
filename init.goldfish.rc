@@ -63,7 +63,11 @@ on boot
 # something else.
 
 on fs
-        mount_all /fstab.goldfish
+    mount_all /fstab.goldfish --early
+
+on late-fs
+    exec_start wait_for_keymaster
+    mount_all /fstab.goldfish --late
 
 #emulator is not much useful before boot complete
 #start it later
