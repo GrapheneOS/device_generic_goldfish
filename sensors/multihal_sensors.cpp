@@ -24,6 +24,7 @@
 namespace goldfish {
 using ahs21::SensorType;
 using ahs10::SensorFlagBits;
+using ahs10::SensorStatus;
 using ahs10::MetaDataEventType;
 
 MultihalSensors::MultihalSensors()
@@ -150,6 +151,16 @@ Return<Result> MultihalSensors::activate(const int32_t sensorHandle,
 
             m_batchQueue.push(batchEventRef);
             m_batchUpdated.notify_one();
+        } else if (sensor->type == SensorType::HEART_RATE){
+            // Heart rate sensor's first data after activation should be
+            // SENSOR_STATUS_UNRELIABLE.
+            Event event;
+            event.u.heartRate.status = SensorStatus::UNRELIABLE;
+            event.u.heartRate.bpm = 0;
+            event.timestamp = ::android::elapsedRealtimeNano();
+            event.sensorHandle = sensorHandle;
+            event.sensorType = SensorType::HEART_RATE;
+            doPostSensorEventLocked(*sensor, event);
         }
 
         m_activeSensorsMask = m_activeSensorsMask | (1u << sensorHandle);
