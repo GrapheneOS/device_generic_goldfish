@@ -17,5 +17,3 @@ vendor_init exported2_default_prop property_service b/131601458
 init serial_device chr_file b/134145307
 gsid device file b/133324244
 gmscore_app varrun_file dir b/131598844
-system_suspend sysfs dir b/170560077
-system_suspend sysfs file b/170560077

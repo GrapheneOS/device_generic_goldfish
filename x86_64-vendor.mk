@@ -1,4 +1,4 @@
-TARGET_KERNEL_USE ?= 5.4
+TARGET_KERNEL_USE ?= 5.10
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
     $(wildcard prebuilts/qemu-kernel/x86_64/$(TARGET_KERNEL_USE)/ko/*.ko)
 
