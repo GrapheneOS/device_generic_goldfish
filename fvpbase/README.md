@@ -1,6 +1,12 @@
 This document describes how to build and run an Android system image targeting
 the ARM Fixed Virtual Platform.
 
+### New to Android?
+
+If you do not already have the ``repo`` tool, or a copy of the Android
+source tree, please follow the Android instructions for [downloading the
+source](https://source.android.com/setup/build/downloading).
+
 ### Building userspace
 
 ```
