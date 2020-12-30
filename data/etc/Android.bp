@@ -22,7 +22,7 @@ cc_prebuilt_binary {
             srcs: ["x86/emulatorip"],
         },
         x86_64: {
-            srcs: ["x86/emulatorip"],
+            srcs: ["x86_64/emulatorip"],
         },
     },
     stem: "ip",
