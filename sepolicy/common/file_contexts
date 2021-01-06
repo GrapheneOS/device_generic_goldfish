@@ -21,6 +21,7 @@
 /dev/dri/renderD128          u:object_r:gpu_device:s0
 /dev/ttyGF[0-9]*             u:object_r:serial_device:s0
 /dev/ttyS2                   u:object_r:console_device:s0
+/dev/hvc0                    u:object_r:serial_device:s0
 /vendor/bin/init\.ranchu-core\.sh u:object_r:goldfish_setup_exec:s0
 /vendor/bin/init\.ranchu-net\.sh u:object_r:goldfish_setup_exec:s0
 /vendor/bin/init\.wifi\.sh   u:object_r:goldfish_setup_exec:s0
