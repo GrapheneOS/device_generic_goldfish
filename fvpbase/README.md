@@ -131,7 +131,7 @@ cd binutils-2.33.1
 ./configure --prefix=$PWD/inst --target=aarch64-linux-gnu
 make
 make install
-ln -sf $PWD/inst/bin/aarch64-linux-gnu-as /path/to/android-kernel-mainline/prebuilts/gas/linux-x86/aarch64-linux-android-as
+ln -sf $PWD/inst/bin/aarch64-linux-gnu-as /path/to/android-kernel-mainline/prebuilts/gas/linux-x86/aarch64-linux-gnu-as
 ```
 
 ### Accessing the model via adb
