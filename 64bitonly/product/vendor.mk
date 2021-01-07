@@ -29,7 +29,7 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 
 DISABLE_RILD_OEM_HOOK := true
 
-DEVICE_MANIFEST_FILE := device/generic/goldfish/manifest.xml
+DEVICE_MANIFEST_FILE := device/generic/goldfish/64bitonly/manifest.xml
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera/devices/EmulatedCamera
 
@@ -66,9 +66,6 @@ PRODUCT_PACKAGES += \
     SdkSetup \
     EmulatorRadioConfig \
     EmulatorTetheringConfigOverlay \
-    libstagefrighthw \
-    libstagefright_goldfish_vpxdec \
-    libstagefright_goldfish_avcdec \
     MultiDisplayProvider
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
@@ -131,7 +128,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.power-service.example \
 
-PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions?=enforce
+PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
 PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
 
@@ -153,7 +150,6 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.6-service-google \
     libgooglecamerahwl_impl \
     android.hardware.camera.provider@2.6-impl-google
-DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.camera.xml
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
