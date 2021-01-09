@@ -34,4 +34,8 @@ ifeq ($(QEMU_CUSTOMIZATIONS),true)
   $(foreach mk,$(subdir_makefiles),$(info including $(mk) ...)$(eval include $(mk)))
 CUTTLEFISH_LIBRIL_NAME := libril-modem-lib
 -include device/google/cuttlefish/guest/hals/ril/Android.mk
+include device/generic/goldfish/tasks/emu_img_zip.mk
+
+
+
 endif
