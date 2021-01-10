@@ -1,6 +1,7 @@
 # Rules to generate a zip file that contains google emulator images
 # and other files for distribution
 
+ifeq ($(filter $(TARGET_PRODUCT), qemu_trusty_arm64),)
 ifeq ($(filter $(MAKECMDGOALS), sdk win_sdk sdk_repo goog_emu_imgs),)
 emulator_img_source_prop := $(TARGET_OUT_INTERMEDIATES)/source.properties
 $(emulator_img_source_prop): $(PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP)
@@ -89,4 +90,5 @@ $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES) $(FINAL_
 .PHONY: emu_img_zip
 emu_img_zip: $(INTERNAL_EMULATOR_PACKAGE_TARGET)
 
+endif
 endif
