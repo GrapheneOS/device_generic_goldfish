@@ -1,11 +1,7 @@
-vendor_restricted_prop(vendor_camera_prop)
-get_prop(hal_camera_default, vendor_camera_prop)
-
 vndbinder_use(hal_camera_default);
 allow hal_camera_default hal_graphics_mapper_hwservice:hwservice_manager find;
 hal_client_domain(hal_camera_default, hal_graphics_allocator);
 hal_client_domain(hal_camera_default, hal_graphics_composer);
-hal_client_domain(hal_camera_default, hal_thermal);
 
 # For camera hal to talk with sensor service
 binder_call(hal_camera_default, sensor_service_server)
