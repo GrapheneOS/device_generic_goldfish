@@ -69,5 +69,3 @@ BOARD_KERNEL_CMDLINE := \
 	loglevel=9 \
 
 BOARD_SEPOLICY_DIRS += device/generic/goldfish/fvpbase/sepolicy
-
-TARGET_EXPERIMENTAL_MTE := true
