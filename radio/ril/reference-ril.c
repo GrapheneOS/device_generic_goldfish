@@ -779,10 +779,10 @@ static void requestOrSendDataCallList(RIL_Token *t)
             /* We are in the emulator - the dns servers are listed
                 * by the following system properties, setup in
                 * /system/etc/init.goldfish.sh:
-                *  - net.eth0.dns1
-                *  - net.eth0.dns2
-                *  - net.eth0.dns3
-                *  - net.eth0.dns4
+                *  - vendor.net.eth0.dns1
+                *  - vendor.net.eth0.dns2
+                *  - vendor.net.eth0.dns3
+                *  - vendor.net.eth0.dns4
                 */
             const int   dnslist_sz = 256;
             char*       dnslist = alloca(dnslist_sz);
@@ -797,7 +797,7 @@ static void requestOrSendDataCallList(RIL_Token *t)
             for (nn = 1; nn <= 4; nn++) {
                 /* Probe net.eth0.dns<n> */
 
-                snprintf(propName, sizeof propName, "net.%s.dns%d",
+                snprintf(propName, sizeof propName, "vendor.net.%s.dns%d",
                          radioInterfaceName, nn);
 
                 /* Ignore if undefined */
@@ -812,7 +812,7 @@ static void requestOrSendDataCallList(RIL_Token *t)
             }
             for (nn = 1; nn <= 4; ++nn) {
                 /* Probe net.eth0.ipv6dns<n> for IPv6 DNS servers */
-                snprintf(propName, sizeof propName, "net.%s.ipv6dns%d",
+                snprintf(propName, sizeof propName, "vendor.net.%s.ipv6dns%d",
                          radioInterfaceName, nn);
                 /* Ignore if undefined */
                 if (property_get(propName, propValue, "") <= 0) {
@@ -826,7 +826,7 @@ static void requestOrSendDataCallList(RIL_Token *t)
             responses[i].dnses = dnslist;
 
             /* There is only one gateway in the emulator. */
-            snprintf(propName, sizeof propName, "net.%s.gw",
+            snprintf(propName, sizeof propName, "vendor.net.%s.gw",
                      radioInterfaceName);
 
             gatewaysSize = strlen(ipv6Gateway);
