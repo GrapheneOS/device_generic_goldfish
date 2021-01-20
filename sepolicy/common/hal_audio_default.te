@@ -1,3 +1,1 @@
-vendor_internal_prop(hal_audio_default_prop)
-get_prop(hal_audio_default, hal_audio_default_prop)
 allow hal_audio_default self:vsock_socket create_socket_perms_no_ioctl;
