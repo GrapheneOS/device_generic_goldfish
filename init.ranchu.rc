@@ -84,8 +84,6 @@ on boot
     setprop wifi.interface wlan0
     setprop wifi.direct.interface p2p-dev-wlan0
 
-    start goldfish-logcat
-
     # Create an unused USB gadget to allow sysfs testing
     mkdir /config/usb_gadget/g1 0770 root root
 
@@ -166,17 +164,10 @@ service qemu-props /vendor/bin/qemu-props
     group root
     oneshot
 
-# -Q is a special logcat option that forces the
-# program to check wether it runs on the emulator
-# if it does, it redirects its output to the device
-# named by the androidboot.console kernel option
-# if not, is simply exits immediately
-# logd user added to prevent logcat from logging content.
-# log group added to support access to read logs socket.
-service goldfish-logcat /system/bin/logcat -Q
+service goldfish-logcat /system/bin/logcat -f /dev/hvc1 ${qemu.logcat_filter}
+    class main
     user logd
-    group log
-    oneshot
+    group root logd
 
 service bugreport /system/bin/dumpstate -d -p -z
     class main
