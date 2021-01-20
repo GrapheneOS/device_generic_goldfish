@@ -18,3 +18,4 @@ Vulkan = on
 VulkanNullOptionalStrings = on
 VulkanIgnoredHandles = on
 Mac80211hwsimUserspaceManaged = on
+VirtconsoleLogcat = on
