@@ -9,3 +9,6 @@
 /dev/dri/card0 0660 system graphics
 /dev/dri/controlD64 0660 system graphics
 /dev/dri/renderD128 0666 system graphics
+
+# logcat virtconsole
+/dev/hvc1                 0660   system     logd
