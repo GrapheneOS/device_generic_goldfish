@@ -11,6 +11,7 @@ on late-fs
 
 on early-init
     mount proc proc /proc remount hidepid=2,gid=3009
+    setprop service.adb.transport goldfish
     setprop ro.hardware.egl emulation
     setprop ro.hardware.vulkan ranchu
 
