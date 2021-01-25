@@ -51,15 +51,20 @@ $(eval $(call copy-one-file,$(INSTALLED_QEMU_VENDORIMAGE),$(FINAL_INSTALLED_QEMU
 INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/encryptionkey.img
 INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/userdata.img
 
+INTERNAL_EMULATOR_FEATURE_DIR := .
+ifneq ($(filter sdk_phone64_% sdk_gphone64_%, $(TARGET_PRODUCT)),)
+INTERNAL_EMULATOR_FEATURE_DIR := 64bit
+endif
+
 ifeq ($(TARGET_BUILD_VARIANT),user)
-INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/user/advancedFeatures.ini
+INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/$(INTERNAL_EMULATOR_FEATURE_DIR)/user/advancedFeatures.ini
 ifeq ($(TARGET_ARCH),arm64)
-INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/user/arm64/advancedFeatures.ini
+INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/$(INTERNAL_EMULATOR_FEATURE_DIR)/user/arm64/advancedFeatures.ini
 endif
 else
-INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/userdebug/advancedFeatures.ini
+INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/$(INTERNAL_EMULATOR_FEATURE_DIR)/userdebug/advancedFeatures.ini
 ifeq ($(TARGET_ARCH),arm64)
-INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/userdebug/arm64/advancedFeatures.ini
+INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/google/$(INTERNAL_EMULATOR_FEATURE_DIR)/userdebug/arm64/advancedFeatures.ini
 endif
 endif
 
