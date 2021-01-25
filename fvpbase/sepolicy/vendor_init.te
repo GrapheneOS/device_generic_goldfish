@@ -1,1 +1,1 @@
-set_prop(vendor_init, hal_bluetooth_sim_prop);
+set_prop(vendor_init, vendor_bt_rootcanal_prop);
