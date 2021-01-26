@@ -1,5 +1,12 @@
-qemu.                   u:object_r:qemu_prop:s0
-vendor.qemu		u:object_r:qemu_prop:s0
+qemu.adb.secure         u:object_r:qemu_prop:s0 exact string
+qemu.keyboard_layout    u:object_r:qemu_prop:s0 exact string
+qemu.networknamespace   u:object_r:qemu_prop:s0 exact string
+qemu.logcat_filter      u:object_r:qemu_prop:s0 exact string
+qemu.sf.lcd_density     u:object_r:qemu_prop:s0 exact string
+qemu.sf.fake_camera     u:object_r:qemu_prop:s0 exact string
+qemu.hw.mainkeys        u:object_r:qemu_prop:s0 exact string
+qemu.vport.modem        u:object_r:qemu_prop:s0 exact string
+qemu.timezone           u:object_r:qemu_prop:s0 exact string
 vendor.network          u:object_r:vendor_net:s0
 vendor.net.wlan0.               u:object_r:vendor_net_wlan0_prop:s0
 vendor.net.eth0.               u:object_r:vendor_net_eth0_prop:s0
