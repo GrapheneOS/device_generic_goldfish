@@ -161,12 +161,11 @@ in a lunched environment to start the emulator:
 device/generic/goldfish/fvpbase/run_qemu
 ```
 Additional QEMU arguments may be passed by appending them to the ``run_qemu``
-command. One useful argument is ``-nographic``, which disables the GUI and
-sends the serial output to stdout, which may be useful when working with
-``fvp_mini`` or if the GUI is not needed.
+command. One useful argument is ``-nographic``, which disables the GUI, which
+may be useful when working with ``fvp_mini`` or if the GUI is not needed.
 
-To terminate the emulator, press ``Ctrl-C`` or close the GUI window,
-or ``Ctrl-A c q <Enter>`` when using ``-nographic``.
+To terminate the emulator, press ``Ctrl-A c q <Enter>`` or close the GUI
+window.
 
 ### Accessing the model via adb
 
