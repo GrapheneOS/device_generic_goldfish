@@ -62,6 +62,8 @@ PRODUCT_PACKAGES += \
     android.hardware.health@2.0-service \
     android.hardware.keymaster@4.0-service \
     android.hardware.keymaster@4.0-impl \
+    gralloc.minigbm \
+    hwcomposer.drm_minigbm \
     libEGL_swiftshader \
     libGLESv1_CM_swiftshader \
     libGLESv2_swiftshader \
@@ -88,8 +90,11 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml \
     system/bt/vendor_libs/test_vendor_lib/data/controller_properties.json:vendor/etc/bluetooth/controller_properties.json \
     device/generic/goldfish/fvpbase/fstab.fvpbase:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.fvpbase \
-    device/generic/goldfish/fvpbase/fstab.fvpbase.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.fvpbase \
+    device/generic/goldfish/fvpbase/fstab.qemu:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.qemu \
+    device/generic/goldfish/fvpbase/fstab.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.fvpbase \
+    device/generic/goldfish/fvpbase/fstab.initrd:$(TARGET_COPY_OUT_RAMDISK)/fstab.qemu \
     device/generic/goldfish/fvpbase/init.fvpbase.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.fvpbase.rc \
+    device/generic/goldfish/fvpbase/init.qemu.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.qemu.rc \
     device/generic/goldfish/fvpbase/required_images:required_images \
     device/generic/goldfish/fvpbase/ueventd.fvp.rc:$(TARGET_COPY_OUT_VENDOR)/ueventd.rc \
     frameworks/av/services/audiopolicy/config/audio_policy_configuration_generic.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
@@ -102,7 +107,9 @@ PRODUCT_COPY_FILES += \
 PRODUCT_BUILD_BOOT_IMAGE := true
 
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
+    qemu.hw.mainkeys=0 \
     ro.hardware.egl=swiftshader \
+    ro.timeout_multiplier=50 \
     debug.sf.nobootanimation=1 \
 
 PRODUCT_REQUIRES_INSECURE_EXECMEM_FOR_SWIFTSHADER := true
