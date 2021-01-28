@@ -1,9 +1,28 @@
-qemu.                   u:object_r:qemu_prop:s0
-vendor.qemu		u:object_r:qemu_prop:s0
-vendor.network          u:object_r:vendor_net:s0
-vendor.net.wlan0.               u:object_r:vendor_net_wlan0_prop:s0
-vendor.net.eth0.               u:object_r:vendor_net_eth0_prop:s0
-vendor.net.radio0.             u:object_r:vendor_net_radio0_prop:s0
+qemu.adb.secure         u:object_r:qemu_prop:s0 exact string
+qemu.keyboard_layout    u:object_r:qemu_prop:s0 exact string
+qemu.networknamespace   u:object_r:qemu_prop:s0 exact string
+qemu.logcat_filter      u:object_r:qemu_prop:s0 exact string
+qemu.sf.lcd_density     u:object_r:qemu_prop:s0 exact string
+qemu.sf.fake_camera     u:object_r:qemu_prop:s0 exact string
+qemu.hw.mainkeys        u:object_r:qemu_prop:s0 exact string
+qemu.vport.modem        u:object_r:qemu_prop:s0 exact string
+qemu.timezone           u:object_r:qemu_prop:s0 exact string
+vendor.network.bridged  u:object_r:vendor_net:s0 exact string
+vendor.net.wlan0.gw     u:object_r:vendor_net_wlan0_prop:s0 exact string
+vendor.net.wlan0.dns1   u:object_r:vendor_net_wlan0_prop:s0 exact string
+vendor.net.wlan0.dns2   u:object_r:vendor_net_wlan0_prop:s0 exact string
+vendor.net.wlan0.dns3   u:object_r:vendor_net_wlan0_prop:s0 exact string
+vendor.net.wlan0.dns4   u:object_r:vendor_net_wlan0_prop:s0 exact string
+vendor.net.eth0.gw      u:object_r:vendor_net_eth0_prop:s0 exact string
+vendor.net.eth0.dns1    u:object_r:vendor_net_eth0_prop:s0 exact string
+vendor.net.eth0.dns2    u:object_r:vendor_net_eth0_prop:s0 exact string
+vendor.net.eth0.dns3    u:object_r:vendor_net_eth0_prop:s0 exact string
+vendor.net.eth0.dns4    u:object_r:vendor_net_eth0_prop:s0 exact string
+vendor.net.radio0.gw    u:object_r:vendor_net_radio0_prop:s0 exact string
+vendor.net.radio0.dns1  u:object_r:vendor_net_radio0_prop:s0 exact string
+vendor.net.radio0.dns2  u:object_r:vendor_net_radio0_prop:s0 exact string
+vendor.net.radio0.dns3  u:object_r:vendor_net_radio0_prop:s0 exact string
+vendor.net.radio0.dns4  u:object_r:vendor_net_radio0_prop:s0 exact string
 net.shared_net_ip       u:object_r:vendor_net_share_prop:s0
 net.wifi_mac_prefix     u:object_r:vendor_net_share_prop:s0
 vendor.bt.rootcanal_mac_address  u:object_r:vendor_bt_rootcanal_prop:s0
