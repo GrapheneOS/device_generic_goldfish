@@ -106,8 +106,10 @@ connection.
 
 ### MTE support
 
-**WARNING**: The kernel MTE support patches are experimental and the userspace
-interface is subject to change.
+By default only a small subset of platform binaries enables memory tagging. To
+build everything with MTE, add ``export SANITIZE_TARGET=memtag_heap`` before
+running ``m`` for Async mode, or ``export SANITIZE_TARGET=memtag_heap
+SANITIZE_TARGET_DIAG=memtag_heap`` for Sync mode.
 
 To launch the model with MTE support, the following additional parameters
 must be used:
