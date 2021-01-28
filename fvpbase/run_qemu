@@ -34,4 +34,5 @@
   -device usb-ehci \
   -device usb-kbd \
   -device usb-mouse \
+  -serial mon:stdio \
   "$@"
