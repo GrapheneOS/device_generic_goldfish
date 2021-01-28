@@ -120,6 +120,8 @@ PRODUCT_COPY_FILES += \
 endif
 
 PRODUCT_PACKAGES += \
+    android.hardware.drm@1.0-service \
+    android.hardware.drm@1.0-impl \
     android.hardware.drm@1.3-service.clearkey \
 
 PRODUCT_PACKAGES += \
@@ -230,12 +232,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.contexthub@1.1-service.mock
 
-# Goldfish does not support ION needed for Codec 2.0
-# still disable it until b/143473631 is fixed
-# now this is setup on init.ranchu.rc
-# -qemu -append qemu.media.ccodec=<value> can override it; default 0
-#PRODUCT_PROPERTY_OVERRIDES += \
-#    debug.stagefright.ccodec=0
+
+PRODUCT_PROPERTY_OVERRIDES += \
+    debug.stagefright.c2inputsurface=-1 \
+    debug.stagefright.ccodec=4
 
 # Enable Incremental on the device via kernel driver
 PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
