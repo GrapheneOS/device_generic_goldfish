@@ -1,6 +1,6 @@
 qemu.keyboard_layout    u:object_r:vendor_qemu_prop:s0 exact string
 qemu.networknamespace   u:object_r:vendor_qemu_prop:s0 exact string
-qemu.logcat_filter      u:object_r:vendor_qemu_prop:s0 exact string
+vendor.qemu.logcat_filter u:object_r:vendor_qemu_prop:s0 exact string
 qemu.sf.lcd_density     u:object_r:vendor_qemu_prop:s0 exact string
 qemu.sf.fake_camera     u:object_r:vendor_qemu_prop:s0 exact string
 qemu.hw.mainkeys        u:object_r:vendor_qemu_prop:s0 exact string
