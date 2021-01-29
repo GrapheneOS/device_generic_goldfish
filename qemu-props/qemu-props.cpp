@@ -60,8 +60,14 @@ const char* const k_properties_to_ignore[] = {
 
 // These properties will not be prefixed with "vendor.".
 const char* const k_system_properties[] = {
-    "qemu.sf.lcd.density",
+    "qemu.sf.lcd_density",
+    "qemu.sf.fake_camera",
+    "qemu.keyboard_layout",
+    "qemu.logcat_filter",
     "qemu.hw.mainkeys",
+    "qemu.timezone",
+    "net.shared_net_ip",
+    "net.wifi_mac_prefix",
     nullptr,
 };
 
@@ -162,7 +168,7 @@ int main(void)
             snprintf(renamed_property, sizeof(renamed_property), "%.*s%s",
                      int(k_vendor_prefix.size()), k_vendor_prefix.data(), temp);
 
-            final_prop_name = temp; // FIXME, it should be renamed_property
+            final_prop_name = renamed_property;
         } else {
             final_prop_name = temp;
         }
