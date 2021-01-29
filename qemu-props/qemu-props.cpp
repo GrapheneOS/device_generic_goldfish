@@ -54,6 +54,7 @@ namespace {
 const char* const k_properties_to_ignore[] = {
     "dalvik.vm.heapsize",
     "ro.opengles.version",
+    "qemu.adb.secure",
     nullptr,
 };
 

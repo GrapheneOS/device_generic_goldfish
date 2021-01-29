@@ -1,4 +1,3 @@
-qemu.adb.secure         u:object_r:qemu_prop:s0 exact string
 qemu.keyboard_layout    u:object_r:qemu_prop:s0 exact string
 qemu.networknamespace   u:object_r:qemu_prop:s0 exact string
 qemu.logcat_filter      u:object_r:qemu_prop:s0 exact string
