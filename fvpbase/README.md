@@ -106,8 +106,10 @@ connection.
 
 ### MTE support
 
-**WARNING**: The kernel MTE support patches are experimental and the userspace
-interface is subject to change.
+By default only a small subset of platform binaries enables memory tagging. To
+build everything with MTE, add ``export SANITIZE_TARGET=memtag_heap`` before
+running ``m`` for Async mode, or ``export SANITIZE_TARGET=memtag_heap
+SANITIZE_TARGET_DIAG=memtag_heap`` for Sync mode.
 
 To launch the model with MTE support, the following additional parameters
 must be used:
@@ -133,6 +135,39 @@ make
 make install
 ln -sf $PWD/inst/bin/aarch64-linux-gnu-as /path/to/android-kernel-mainline/prebuilts/gas/linux-x86/aarch64-linux-gnu-as
 ```
+
+### Running the image in QEMU
+
+As an alternative to using FVP, the image may also be run in QEMU.
+QEMU is generally much faster than FVP, but its support for the
+latest ARM architectural features is relatively new compared to FVP,
+so it may have more bugs.
+
+As of the time of writing, no released version of QEMU can successfully
+boot the system to GUI due to bugs in its MTE support, so a development
+version with bug fixes must be used. The instructions below check
+out a commit that has been successfully tested.
+```
+git clone https://github.com/qemu/qemu
+cd qemu
+git checkout 9cd69f1a270235b652766f00b94114f48a2d603f
+mkdir build
+cd build
+../configure --target-list=aarch64-softmmu
+ninja qemu-system-aarch64
+```
+Then set the value of the ``QEMU_BIN`` environment variable to the path to
+the resulting ``qemu-system-aarch64`` binary, and run the following command
+in a lunched environment to start the emulator:
+```
+device/generic/goldfish/fvpbase/run_qemu
+```
+Additional QEMU arguments may be passed by appending them to the ``run_qemu``
+command. One useful argument is ``-nographic``, which disables the GUI, which
+may be useful when working with ``fvp_mini`` or if the GUI is not needed.
+
+To terminate the emulator, press ``Ctrl-A c q <Enter>`` or close the GUI
+window.
 
 ### Accessing the model via adb
 
