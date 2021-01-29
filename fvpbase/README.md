@@ -106,8 +106,10 @@ connection.
 
 ### MTE support
 
-**WARNING**: The kernel MTE support patches are experimental and the userspace
-interface is subject to change.
+By default only a small subset of platform binaries enables memory tagging. To
+build everything with MTE, add ``export SANITIZE_TARGET=memtag_heap`` before
+running ``m`` for Async mode, or ``export SANITIZE_TARGET=memtag_heap
+SANITIZE_TARGET_DIAG=memtag_heap`` for Sync mode.
 
 To launch the model with MTE support, the following additional parameters
 must be used:
@@ -161,12 +163,11 @@ in a lunched environment to start the emulator:
 device/generic/goldfish/fvpbase/run_qemu
 ```
 Additional QEMU arguments may be passed by appending them to the ``run_qemu``
-command. One useful argument is ``-nographic``, which disables the GUI and
-sends the serial output to stdout, which may be useful when working with
-``fvp_mini`` or if the GUI is not needed.
+command. One useful argument is ``-nographic``, which disables the GUI, which
+may be useful when working with ``fvp_mini`` or if the GUI is not needed.
 
-To terminate the emulator, press ``Ctrl-C`` or close the GUI window,
-or ``Ctrl-A c q <Enter>`` when using ``-nographic``.
+To terminate the emulator, press ``Ctrl-A c q <Enter>`` or close the GUI
+window.
 
 ### Accessing the model via adb
 
