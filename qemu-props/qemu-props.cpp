@@ -54,7 +54,7 @@ void static sendHeartBeat();
 void static sendMessage(const char* mesg);
 extern void parse_virtio_serial();
 
-int  main(void)
+int main(void)
 {
     int  qemud_fd, count = 0;
 
@@ -62,7 +62,7 @@ int  main(void)
     {
         int  tries = MAX_TRIES;
 
-        while (1) {
+        while (true) {
             qemud_fd = qemud_channel_open( "boot-properties" );
             if (qemud_fd >= 0)
                 break;
@@ -88,8 +88,7 @@ int  main(void)
     /* read each system property as a single line from the service,
      * until exhaustion.
      */
-    for (;;)
-    {
+    while (true) {
 #define  BUFF_SIZE   (PROPERTY_KEY_MAX + PROPERTY_VALUE_MAX + 2)
         DD("receiving..");
         char* q;
@@ -98,8 +97,9 @@ int  main(void)
         int   len = qemud_channel_recv(qemud_fd, temp, sizeof(temp) - 1);
 
         /* lone NUL-byte signals end of properties */
-        if (len < 0 || len > BUFF_SIZE-1 || temp[0] == '\0')
+        if (len < 0 || len > (BUFF_SIZE - 1) || !temp[0]) {
             break;
+        }
 
         temp[len] = '\0';  /* zero-terminate string */
 
