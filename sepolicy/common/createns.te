@@ -12,4 +12,4 @@ allow createns varrun_file:file { create mounton open read write };
 domain_auto_trans(init, createns_exec, createns);
 allow createns goldfish_setup:fd use;
 
-set_prop(createns, qemu_prop);
+set_prop(createns, vendor_qemu_prop);
