@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
     if (!writeNamespacePid(argv[1], ::getpid())) {
         return 1;
     }
-    property_set("qemu.networknamespace", "ready");
+    property_set("vendor.qemu.networknamespace", "ready");
 
     for (;;) {
         pause();
