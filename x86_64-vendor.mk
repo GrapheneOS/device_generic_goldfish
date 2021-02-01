@@ -1,6 +1,7 @@
 TARGET_KERNEL_USE ?= 5.10
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
-    $(wildcard prebuilts/qemu-kernel/x86_64/$(TARGET_KERNEL_USE)/ko/*.ko)
+    $(wildcard kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/x86-64/*.ko)
+KERNEL_FILE := kernel/prebuilts/$(TARGET_KERNEL_USE)/x86_64/kernel-$(TARGET_KERNEL_USE)
 
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
@@ -14,12 +15,12 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     device/generic/goldfish/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json \
-    prebuilts/qemu-kernel/x86_64/$(TARGET_KERNEL_USE)/kernel-qemu2:kernel-ranchu
+    $(KERNEL_FILE):kernel-ranchu
 
 PRODUCT_SDK_ADDON_COPY_FILES += \
     device/generic/goldfish/data/etc/advancedFeatures.ini:images/x86_64/advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:images/x86_64/encryptionkey.img \
-    prebuilts/qemu-kernel/x86_64/$(TARGET_KERNEL_USE)/kernel-qemu2:images/x86_64/kernel-ranchu
+    $(KERNEL_FILE):images/x86_64/kernel-ranchu
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/configs/gpu.config:data/misc/gceconfigs/gpu.config
