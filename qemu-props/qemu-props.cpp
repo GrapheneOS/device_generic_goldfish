@@ -63,7 +63,6 @@ const char* const k_system_properties[] = {
     "qemu.sf.lcd_density",
     "qemu.sf.fake_camera",
     "qemu.hw.mainkeys",
-    "qemu.timezone",
     "net.shared_net_ip",
     "net.wifi_mac_prefix",
     nullptr,
