@@ -154,7 +154,7 @@ git checkout 9cd69f1a270235b652766f00b94114f48a2d603f
 mkdir build
 cd build
 ../configure --target-list=aarch64-softmmu
-ninja qemu-system-aarch64
+ninja
 ```
 Then set the value of the ``QEMU_BIN`` environment variable to the path to
 the resulting ``qemu-system-aarch64`` binary, and run the following command
