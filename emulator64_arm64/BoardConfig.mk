@@ -25,9 +25,6 @@ TARGET_2ND_CPU_VARIANT := generic
 include build/make/target/board/BoardConfigGsiCommon.mk
 include build/make/target/board/BoardConfigEmuCommon.mk
 
-TARGET_NO_KERNEL := false
-BOARD_USES_RECOVERY_AS_BOOT := true
-
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0x02000000
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
 
