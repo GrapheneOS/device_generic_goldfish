@@ -436,7 +436,7 @@ void EmulatedCameraFactory::createFakeCamera(bool backCamera) {
 void EmulatedCameraFactory::waitForQemuSfFakeCameraPropertyAvailable() {
     /*
      * Camera service may start running before qemu-props sets
-     * qemu.sf.fake_camera to any of the follwing four values:
+     * vendor.qemu.sf.fake_camera to any of the following four values:
      * "none,front,back,both"; so we need to wait.
      *
      * android/camera/camera-service.c
@@ -446,14 +446,14 @@ void EmulatedCameraFactory::waitForQemuSfFakeCameraPropertyAvailable() {
     char prop[PROPERTY_VALUE_MAX];
     bool timeout = true;
     for (int i = 0; i < numAttempts; ++i) {
-        if (property_get("qemu.sf.fake_camera", prop, nullptr) != 0 ) {
+        if (property_get("vendor.qemu.sf.fake_camera", prop, nullptr) != 0 ) {
             timeout = false;
             break;
         }
         usleep(5000);
     }
     if (timeout) {
-        ALOGE("timeout (%dms) waiting for property qemu.sf.fake_camera to be set\n", 5 * numAttempts);
+        ALOGE("timeout (%dms) waiting for property vendor.qemu.sf.fake_camera to be set\n", 5 * numAttempts);
     }
 }
 
@@ -464,7 +464,7 @@ bool EmulatedCameraFactory::isFakeCameraEmulationOn(bool backCamera) {
         return false;
     }
     char prop[PROPERTY_VALUE_MAX];
-    if ((property_get("qemu.sf.fake_camera", prop, nullptr) > 0) &&
+    if ((property_get("vendor.qemu.sf.fake_camera", prop, nullptr) > 0) &&
         (!strcmp(prop, "both") ||
          !strcmp(prop, backCamera ? "back" : "front"))) {
         return true;
