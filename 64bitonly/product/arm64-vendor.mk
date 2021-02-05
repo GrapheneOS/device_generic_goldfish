@@ -1,6 +1,6 @@
 TARGET_KERNEL_USE ?= 5.10
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
-    $(wildcard prebuilts/qemu-kernel/arm64/$(TARGET_KERNEL_USE)/ko/*.ko)
+    $(wildcard kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/arm64/*.ko)
 
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
@@ -36,7 +36,7 @@ endif
 
 
 PRODUCT_COPY_FILES += \
-    prebuilts/qemu-kernel/arm64/$(TARGET_KERNEL_USE)/kernel-qemu2:kernel-ranchu \
+    kernel/prebuilts/$(TARGET_KERNEL_USE)/arm64/kernel-$(TARGET_KERNEL_USE)-lz4:kernel-ranchu \
     device/generic/goldfish/data/etc/advancedFeatures.ini.arm:advancedFeatures.ini \
 
 EMULATOR_VENDOR_NO_GNSS := true
