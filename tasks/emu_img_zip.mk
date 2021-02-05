@@ -93,14 +93,14 @@ EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
 EMULATOR_KERNEL_VERSION := 5.10
 EMULATOR_KERNEL_FILE := kernel/prebuilts/$(EMULATOR_KERNEL_VERSION)/$(EMULATOR_KERNEL_ARCH)/kernel-$(EMULATOR_KERNEL_VERSION)-lz4
 else
-ifeq ($(TARGET_ARCH), arm32)
+ifeq ($(TARGET_ARCH), arm)
 EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
 EMULATOR_KERNEL_VERSION := 3.18
 EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/$(EMULATOR_KERNEL_ARCH)/$(EMULATOR_KERNEL_VERSION)/kernel-qemu2
 else
 $(error unsupported arch: $(TARGET_ARCH))
-endif # arm32
+endif # arm
 endif # arm64
 endif # x86_64
 endif # x86
