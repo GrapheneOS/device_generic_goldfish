@@ -1,7 +1,4 @@
-TARGET_KERNEL_USE ?= 5.10
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
-    $(wildcard kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/x86-64/*.ko)
-KERNEL_FILE := kernel/prebuilts/$(TARGET_KERNEL_USE)/x86_64/kernel-$(TARGET_KERNEL_USE)
+include device/generic/goldfish/x86_64-kernel.mk
 
 PRODUCT_PROPERTY_OVERRIDES += \
        vendor.rild.libpath=/vendor/lib/libgoldfish-ril.so
@@ -15,11 +12,12 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     device/generic/goldfish/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json \
-    $(KERNEL_FILE):kernel-ranchu-64
+    $(EMULATOR_KERNEL_FILE):kernel-ranchu-64
+
 PRODUCT_SDK_ADDON_COPY_FILES += \
     device/generic/goldfish/data/etc/advancedFeatures.ini:images/x86/advancedFeatures.ini \
     device/generic/goldfish/data/etc/encryptionkey.img:images/x86/encryptionkey.img \
-    $(KERNEL_FILE):images/x86/kernel-ranchu-64
+    $(EMULATOR_KERNEL_FILE):images/x86/kernel-ranchu-64
 
 PRODUCT_PACKAGES += \
     emulatorip
