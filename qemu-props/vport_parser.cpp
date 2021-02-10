@@ -19,7 +19,7 @@
  * system. It does so by connecting to the 'boot-properties' qemud service.
  *
  * This file parses the sys/class/virtio-ports/<id>/name
- * and set up qemu.vport.modem.serial=/dev/<id> so that reference-ril
+ * and set up vendor.qemu.vport.modem=/dev/<id> so that reference-ril
  * can open it later
  */
 
@@ -44,7 +44,7 @@ static void set_port_prop(const char* filename, const char* portname) {
             if (serialname.empty()) {
                 continue;
             }
-            serialname = std::string("qemu.vport.") + serialname;
+            serialname = std::string("vendor.qemu.vport.") + serialname;
             if(property_set(serialname.c_str(), portdev.c_str()) < 0) {
                 ALOGW("could not set property '%s' to '%s'", serialname.c_str(),
                       portdev.c_str());
