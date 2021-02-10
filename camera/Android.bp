@@ -60,7 +60,6 @@ cc_library_shared {
         "libdl",
         "libjpeg",
         "libcamera_metadata",
-        "libui",
         "android.hardware.graphics.mapper@2.0",
         "libqemupipe.ranchu",
     ],
