@@ -53,6 +53,8 @@ static void set_port_prop(const char* filename, const char* portname) {
             }
         }
         myfile.close();
+    } else {
+        ALOGW("could not open '%s'", filename);
     }
 }
 
