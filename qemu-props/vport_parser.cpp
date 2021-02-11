@@ -19,7 +19,7 @@
  * system. It does so by connecting to the 'boot-properties' qemud service.
  *
  * This file parses the sys/class/virtio-ports/<id>/name
- * and set up qemu.vport.modem.serial=/dev/<id> so that reference-ril
+ * and set up vendor.qemu.vport.modem=/dev/<id> so that reference-ril
  * can open it later
  */
 
@@ -35,16 +35,16 @@
 #include <unistd.h>
 
 static void set_port_prop(const char* filename, const char* portname) {
-    std::string line;
     std::ifstream myfile(filename);
-    std::string portdev = std::string{"/dev/"} + portname;
     if (myfile.is_open()) {
-        while (std::getline(myfile, line)) {
+        const std::string portdev = std::string{"/dev/"} + portname;
+
+        for (std::string line; std::getline(myfile, line); ) {
             std::string serialname = android::base::Trim(line);
             if (serialname.empty()) {
                 continue;
             }
-            serialname = std::string("qemu.vport.") + serialname;
+            serialname = std::string("vendor.qemu.vport.") + serialname;
             if(property_set(serialname.c_str(), portdev.c_str()) < 0) {
                 ALOGW("could not set property '%s' to '%s'", serialname.c_str(),
                       portdev.c_str());
@@ -53,6 +53,8 @@ static void set_port_prop(const char* filename, const char* portname) {
             }
         }
         myfile.close();
+    } else {
+        ALOGW("could not open '%s'", filename);
     }
 }
 
@@ -60,14 +62,16 @@ static void close_dir(DIR *dp) { closedir(dp); }
 
 static void read_virio_ports_dir(const char *cpath)
 {
-    std::string path(cpath);
-    std::unique_ptr<DIR, decltype(&close_dir)> mydp(opendir(path.c_str()),
-                                                    &(close_dir));
+    std::unique_ptr<DIR, decltype(&close_dir)> mydp(opendir(cpath),
+                                                    &close_dir);
 
     if (!mydp) {
         ALOGW("cannot open dir %s; %s\n", cpath, strerror(errno));
         return;
     }
+
+    const std::string path(cpath);
+
     struct dirent *files;
     while ((files = readdir(mydp.get())) != NULL) {
         if (strcmp(files->d_name, ".") == 0 ||
