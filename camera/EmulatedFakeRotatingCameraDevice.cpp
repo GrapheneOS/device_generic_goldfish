@@ -34,7 +34,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <ui/DisplayInfo.h>
 #include <fcntl.h>
 
 #undef min
