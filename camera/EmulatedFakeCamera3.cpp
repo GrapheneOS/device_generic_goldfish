@@ -952,7 +952,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
                     android_ycbcr ycbcr = {};
                     res = mGBM->lockYCbCr(
                         *(destBuf.buffer),
-                        GRALLOC_USAGE_HW_CAMERA_WRITE,
+                        GRALLOC_USAGE_SW_READ_OFTEN | GRALLOC_USAGE_SW_WRITE_OFTEN,
                         Rect(0, 0, destBuf.width, destBuf.height),
                         &ycbcr);
                     // This is only valid because we know that emulator's
@@ -966,7 +966,7 @@ status_t EmulatedFakeCamera3::processCaptureRequest(
             } else {
                 res = mGBM->lock(
                     *(destBuf.buffer),
-                    GRALLOC_USAGE_HW_CAMERA_WRITE,
+                    GRALLOC_USAGE_SW_READ_OFTEN | GRALLOC_USAGE_SW_WRITE_OFTEN,
                     Rect(0, 0, destBuf.width, destBuf.height),
                     (void**)&(destBuf.img));
 
