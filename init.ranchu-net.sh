@@ -21,7 +21,7 @@ esac
 
 # set up the second interface (for inter-emulator connections)
 # if required
-my_ip=`getprop net.shared_net_ip`
+my_ip=`getprop vendor.net.shared_net_ip`
 case "$my_ip" in
     "")
     ;;
