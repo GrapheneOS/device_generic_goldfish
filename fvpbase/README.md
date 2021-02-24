@@ -33,7 +33,7 @@ BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc)
 BUILD_CONFIG=common-modules/virtual-device/build.config.fvp build/build.sh -j$(nproc)
 ```
 
-## Building the firmware (ARM Trusted Firmware and U-Boot)
+## Building the firmware (ARM Trusted Firmware and U-Boot) (FVP only, not required on QEMU)
 
 First, install ``dtc``, the device tree compiler. On Debian, this is in the
 ``device-tree-compiler`` package. Return to the top level directory (`cd ..`), and run:
@@ -82,6 +82,8 @@ this target yet.
 mkdir -p $ANDROID_PRODUCT_OUT
 cp $FVP_KERNEL_PATH/out/android-mainline/dist/Image $ANDROID_PRODUCT_OUT/kernel
 cp $FVP_KERNEL_PATH/out/android-mainline/dist/{fvp-base-revc.dtb,initramfs.img} $ANDROID_PRODUCT_OUT/
+
+# FVP only! QEMU doesn't require custom-built firmware.
 cp $FVP_FIRMWARE_PATH/output/fvp/fvp-uboot/uboot/{bl1,fip}.bin $ANDROID_PRODUCT_OUT/
 ```
 
