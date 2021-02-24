@@ -62,8 +62,6 @@ const char* const k_properties_to_ignore[] = {
 const char* const k_system_properties[] = {
     "qemu.sf.lcd_density",
     "qemu.hw.mainkeys",
-    "net.shared_net_ip",
-    "net.wifi_mac_prefix",
     nullptr,
 };
 
