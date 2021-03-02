@@ -86,6 +86,7 @@ int s_QemuMiscPipe = -1;
 void static notifyHostBootComplete();
 void static sendHeartBeat();
 void static sendMessage(const char* mesg);
+void static closeMiscPipe();
 extern void parse_virtio_serial();
 
 int main(void)
@@ -199,10 +200,7 @@ int main(void)
     }
 
     /* finally, close the channel and exit */
-    if (s_QemuMiscPipe >= 0) {
-        close(s_QemuMiscPipe);
-        s_QemuMiscPipe = -1;
-    }
+    closeMiscPipe();
     DD("exiting (%d properties set).", count);
     return 0;
 }
@@ -223,13 +221,33 @@ void sendMessage(const char* mesg) {
             return;
         }
     }
-    char set[64];
-    snprintf(set, sizeof(set), "%s", mesg);
-    int pipe_command_length = strlen(set)+1; //including trailing '\0'
-    qemu_pipe_write_fully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
-    qemu_pipe_write_fully(s_QemuMiscPipe, set, pipe_command_length);
-    qemu_pipe_read_fully(s_QemuMiscPipe, &pipe_command_length, sizeof(pipe_command_length));
-    if (pipe_command_length > (int)(sizeof(set)) || pipe_command_length <= 0)
+
+    int32_t cmd_len = strlen(mesg) + 1; //including trailing '\0'
+    qemu_pipe_write_fully(s_QemuMiscPipe, &cmd_len, sizeof(cmd_len));
+    qemu_pipe_write_fully(s_QemuMiscPipe, mesg, cmd_len);
+
+    int r = qemu_pipe_read_fully(s_QemuMiscPipe, &cmd_len, sizeof(cmd_len));
+    if (r || (cmd_len < 0)) {
+        closeMiscPipe();
         return;
-    qemu_pipe_read_fully(s_QemuMiscPipe, set, pipe_command_length);
+    }
+
+    while (cmd_len > 0) {
+        char buf[64];
+        const size_t chunk = std::min<size_t>(cmd_len, sizeof(buf));
+        r = qemu_pipe_read_fully(s_QemuMiscPipe, buf, chunk);
+        if (r) {
+            closeMiscPipe();
+            return;
+        } else {
+            cmd_len -= chunk;
+        }
+    }
+}
+
+void closeMiscPipe() {
+    if (s_QemuMiscPipe >= 0) {
+        close(s_QemuMiscPipe);
+        s_QemuMiscPipe = -1;
+    }
 }
