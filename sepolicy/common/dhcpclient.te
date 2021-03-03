@@ -11,7 +11,7 @@ set_prop(dhcpclient, vendor_net_wlan0_prop);
 set_prop(dhcpclient, vendor_net_eth0_prop);
 set_prop(dhcpclient, vendor_net_radio0_prop);
 dontaudit dhcpclient kernel:system module_request;
-allow dhcpclient self:capability { net_admin net_raw };
+allow dhcpclient self:capability { net_admin net_raw sys_module };
 allow dhcpclient self:netlink_route_socket { ioctl write nlmsg_write };
 allow dhcpclient varrun_file:dir search;
 allow dhcpclient self:packet_socket { create bind write read };
