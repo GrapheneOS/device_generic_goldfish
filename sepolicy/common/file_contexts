@@ -15,7 +15,6 @@
 /dev/vport.*p.*                u:object_r:qemu_device:s0
 /dev/goldfish_sync           u:object_r:qemu_device:s0
 /dev/goldfish_address_space  u:object_r:qemu_device:s0
-/dev/qemu_.*                 u:object_r:qemu_device:s0
 /dev/dri/card0               u:object_r:gpu_device:s0
 /dev/dri/controlD64          u:object_r:gpu_device:s0
 /dev/dri/renderD128          u:object_r:gpu_device:s0
