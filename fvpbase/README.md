@@ -105,8 +105,8 @@ with QEMU. Slowdown from QEMU is roughly 10-20x, where ARM's FVP is 100-200x.
 ### Running the image in FVP
 
 The model may be obtained from [ARM's
-website](https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms)
-(under "Armv8-A Base Platform FVP").
+website](https://developer.arm.com/tools-and-software/simulation-models/fixed-virtual-platforms/arm-ecosystem-models)
+(under "Armv-A Base RevC AEM FVP").
 
 From a lunched environment, first set the value of the ``MODEL_BIN`` environment
 variable to the path to the model executable (it should end with something like
