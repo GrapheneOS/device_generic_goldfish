@@ -1,2 +1,2 @@
 # Emulator (stable) version
-require version-emulator=7185211
+require version-emulator=7192929
