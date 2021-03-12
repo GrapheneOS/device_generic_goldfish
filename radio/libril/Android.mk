@@ -47,7 +47,9 @@ LOCAL_C_INCLUDES += device/generic/goldfish/
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/../include
 
 LOCAL_MODULE:= libril-goldfish-fork
+LOCAL_LICENSE_KINDS:= SPDX-license-identifier-Apache-2.0
+LOCAL_LICENSE_CONDITIONS:= notice
+LOCAL_NOTICE_FILE:= $(LOCAL_PATH)/NOTICE
 LOCAL_SANITIZE := integer
 
 include $(BUILD_SHARED_LIBRARY)
-
