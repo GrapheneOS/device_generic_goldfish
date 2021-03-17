@@ -110,7 +110,7 @@ PRODUCT_BUILD_BOOT_IMAGE := true
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
     qemu.hw.mainkeys=0 \
     ro.hardware.egl=swiftshader \
-    ro.timeout_multiplier=50 \
+    ro.hw_timeout_multiplier=50 \
     debug.sf.nobootanimation=1 \
 
 PRODUCT_REQUIRES_INSECURE_EXECMEM_FOR_SWIFTSHADER := true
