@@ -157,8 +157,6 @@ PRODUCT_PACKAGES += \
     android.hardware.audio@6.0-impl.ranchu \
     android.hardware.soundtrigger@2.2-impl.ranchu \
     android.hardware.audio.effect@6.0-impl \
-    android.hardware.audio@2.0-service
-
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/audio/policy/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
