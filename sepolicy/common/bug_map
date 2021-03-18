@@ -1,6 +1,4 @@
 gsid gsid capability b/146356992
-hal_wifi_default default_prop file b/131598173
-hal_wifi_default vendor_default_prop property_service b/131598173
 init unlabeled dir b/131596633
 init vendor_toolbox_exec file b/132695863
 installd device file b/131595213
