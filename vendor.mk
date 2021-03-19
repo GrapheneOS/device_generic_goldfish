@@ -39,7 +39,6 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    libgoldfish-ril \
     libcuttlefish-ril-2 \
     libgoldfish-rild \
     qemu-props \
