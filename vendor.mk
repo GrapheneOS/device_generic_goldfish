@@ -39,8 +39,11 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
+    libgoldfish-ril \
     libril-modem-lib \
     libcuttlefish-ril-2 \
+    libgoldfish-rild \
+    libril-goldfish-fork \
     qemu-props \
     stagefright \
     fingerprint.ranchu \
@@ -159,6 +162,7 @@ PRODUCT_PACKAGES += \
     android.hardware.audio@6.0-impl.ranchu \
     android.hardware.soundtrigger@2.2-impl.ranchu \
     android.hardware.audio.effect@6.0-impl \
+    android.hardware.audio@2.0-service
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/audio/policy/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
@@ -247,6 +251,7 @@ PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/dtb.img:dtb.img \
     device/generic/goldfish/data/etc/apns-conf.xml:data/misc/apns/apns-conf.xml \
+    device/generic/goldfish/radio/RadioConfig/radioconfig.xml:data/misc/emulator/config/radioconfig.xml \
     device/generic/goldfish/data/etc/iccprofile_for_sim0.xml:data/misc/modem_simulator/iccprofile_for_sim0.xml \
     device/generic/goldfish/data/etc/numeric_operator.xml:data/misc/modem_simulator/etc/modem_simulator/files/numeric_operator.xml \
     device/generic/goldfish/data/etc/local.prop:data/local.prop \
