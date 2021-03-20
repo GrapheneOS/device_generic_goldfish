@@ -1,5 +1,4 @@
 set_prop(vendor_init, vendor_qemu_prop)
-allow vendor_init kernel:system module_request;
 allow vendor_init ram_device:blk_file setattr;
 set_prop(vendor_init, vendor_bt_rootcanal_prop)
 set_prop(vendor_init, vendor_build_prop);
