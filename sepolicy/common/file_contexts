@@ -72,6 +72,6 @@
 /data/vendor/var/run(/.*)?             u:object_r:varrun_file:s0
 
 # not yet AOSP HALs
-/vendor/bin/hw/android\.hardware\.camera\.provider@2\.6-service-google u:object_r:hal_camera_default_exec:s0
+/vendor/bin/hw/android\.hardware\.camera\.provider@2\.7-service-google u:object_r:hal_camera_default_exec:s0
 /vendor/bin/hw/android\.hardware\.rebootescrow-service\.default        u:object_r:hal_rebootescrow_default_exec:s0
 /vendor/bin/hw/android\.hardware\.contexthub@1\.1-service\.mock        u:object_r:hal_contexthub_default_exec:s0

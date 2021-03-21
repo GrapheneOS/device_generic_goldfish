@@ -39,11 +39,8 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    libgoldfish-ril \
-    libril-modem-lib \
     libcuttlefish-ril-2 \
     libgoldfish-rild \
-    libril-goldfish-fork \
     qemu-props \
     stagefright \
     fingerprint.ranchu \
@@ -146,9 +143,9 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.4-impl \
     camera.ranchu \
     camera.ranchu.jpeg \
-    android.hardware.camera.provider@2.6-service-google \
+    android.hardware.camera.provider@2.7-service-google \
     libgooglecamerahwl_impl \
-    android.hardware.camera.provider@2.6-impl-google
+    android.hardware.camera.provider@2.7-impl-google
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
