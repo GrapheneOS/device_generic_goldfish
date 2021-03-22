@@ -15,6 +15,7 @@ cd android-kernel-mainline
 export FVP_KERNEL_PATH=$(pwd)
 repo init -u https://android.googlesource.com/kernel/manifest -b common-android-mainline
 repo sync
+repo start fvp-patches common -r 79f312ba371eeba2f3ab043b9b56823a459052c8
 ```
 
 To support graphics on FVP, one additional cherry pick is required. This only
@@ -22,7 +23,6 @@ applies to the ``fvp`` target, and not ``fvp_mini``, and it is also not required
 for QEMU.
 
 ```
-repo start android-mainline common
 repo download -c common 1463463
 ```
 
@@ -30,7 +30,7 @@ Then, build the kernel.
 
 ```
 BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc)
-BUILD_CONFIG=common-modules/virtual-device/build.config.fvp build/build.sh -j$(nproc)
+BUILD_CONFIG=common-modules/virtual-device/build.config.virtual_device.aarch64 build/build.sh -j$(nproc)
 ```
 
 ## Building the firmware (ARM Trusted Firmware and U-Boot) (FVP only, not required on QEMU)
@@ -145,7 +145,7 @@ the list of build dependencies. Common missing packages include `ninja-build`,
 ```
 git clone https://github.com/qemu/qemu
 cd qemu
-git checkout 9cd69f1a270235b652766f00b94114f48a2d603f
+git checkout 5c6295a45b4fceac913c11abc62488c49c02b9fd
 mkdir build
 cd build
 ../configure --target-list=aarch64-softmmu
