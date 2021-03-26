@@ -1,5 +1,8 @@
-init unlabeled dir b/131596633
-init vendor_toolbox_exec file b/132695863
-toolbox unlabeled dir b/131599097
-toolbox toolbox capability b/131599097
-
+init vendor_toolbox_exec file b/183668221
+toolbox dropbox_data_file dir b/183668221
+toolbox heapdump_data_file dir b/183668221
+toolbox system_unsolzygote_socket sock_file b/183668221
+toolbox packages_list_file file b/183668221
+toolbox environ_system_data_file dir b/183668221
+toolbox system_ndebug_socket sock_file b/183668221
+toolbox unlabeled dir b/183668221
