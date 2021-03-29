@@ -15,6 +15,15 @@
 // The ARM FVP binds to all network interfaces for telnet and adb. This library
 // is a workaround to that. The corresponding LD_PRELOAD additions in
 // fvpbase/run_model ensure that we only bind to localhost.
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "device_generic_goldfish_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["device_generic_goldfish_license"],
+}
+
 cc_library_host_shared {
   name: "bind_to_localhost",
   srcs: ["bind_to_localhost.cpp"],
