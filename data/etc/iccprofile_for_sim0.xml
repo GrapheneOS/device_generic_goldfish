@@ -75,7 +75,7 @@
             </EF>
             <EF name="EF_MSISDN" id="6F40" structure="linear fixed">
                 <SIMIO cmd="C0" p1="0" p2="0" p3="F" data="">144,0,621982054221001C0283026F408A01058B036F0605800200388800</SIMIO>
-                <SIMIO cmd="B2" p1="1" p2="4" p3="1C" data="">144,0,000000000000000000000000000008915155255155F4FFFFFFFFFFFF</SIMIO>
+                <SIMIO cmd="B2" p1="1" p2="4" p3="1C" data="">144,0,000000000000000000000000000007915155255155F4FFFFFFFFFFFF</SIMIO>
             </EF>
             <EF name="EF_MBI" id="6FC9" structure="linear fixed">
                 <SIMIO cmd="C0" p1="0" p2="0" p3="F" data="">106,130</SIMIO>
