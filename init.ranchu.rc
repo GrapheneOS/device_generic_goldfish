@@ -69,7 +69,7 @@ on boot
     setprop debug.sf.vsync_reactor 0
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
-    setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
+    setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop ro.zygote.disable_gl_preload 1
 
     setprop debug.stagefright.ccodec ${ro.kernel.qemu.media.ccodec}
