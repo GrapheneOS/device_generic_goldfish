@@ -68,7 +68,7 @@ on boot
     setprop ro.hardware.egl emulation
     setprop debug.sf.vsync_reactor 0
     setprop debug.hwui.renderer opengl
-    setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
+    setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer}
     setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop ro.zygote.disable_gl_preload 1
 
