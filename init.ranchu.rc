@@ -69,13 +69,13 @@ on boot
     setprop debug.sf.vsync_reactor_ignore_present_fences true
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
-    setprop ro.opengles.version ${ro.kernel.qemu.opengles.version}
+    setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop ro.zygote.disable_gl_preload 1
 
     setprop debug.stagefright.ccodec ${ro.kernel.qemu.media.ccodec}
 
     setprop dalvik.vm.heapsize 192m
-    setprop dalvik.vm.heapsize ${ro.kernel.qemu.dalvik.vm.heapsize}
+    setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize}
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
     setprop ro.hardware.audio.primary goldfish
