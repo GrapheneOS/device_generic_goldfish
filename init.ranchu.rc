@@ -72,7 +72,7 @@ on boot
     setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop ro.zygote.disable_gl_preload 1
 
-    setprop debug.stagefright.ccodec ${ro.kernel.qemu.media.ccodec}
+    setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
 
     setprop dalvik.vm.heapsize 192m
     setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize}
