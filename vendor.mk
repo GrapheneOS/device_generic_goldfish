@@ -309,4 +309,5 @@ PRODUCT_COPY_FILES += \
 
 # Windowing settings config files
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/display_settings_freeform.xml:$(TARGET_COPY_OUT_DATA)/system/display_settings_freeform.xml
+    device/generic/goldfish/display_settings_freeform.xml:$(TARGET_COPY_OUT_DATA)/system/display_settings_freeform.xml \
+    device/generic/goldfish/device_state_configuration.xml:$(TARGET_COPY_OUT_DATA)/system/devicestate/device_state_configuration.xml
