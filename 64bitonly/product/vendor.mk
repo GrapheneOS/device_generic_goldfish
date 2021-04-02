@@ -138,7 +138,6 @@ PRODUCT_PROPERTY_OVERRIDES += ro.logd.size=1M \
 
 ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
 PRODUCT_PACKAGES += \
-    camera.device@1.0-impl \
     android.hardware.camera.provider@2.4-service_64 \
     android.hardware.camera.provider@2.4-impl \
     camera.ranchu \
