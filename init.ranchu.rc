@@ -92,6 +92,9 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
     group root
     oneshot
 
+on property:vendor.qemu.vport.gnss=*
+    symlink ${vendor.qemu.vport.gnss} /dev/gnss0
+
 on property:vendor.qemu.timezone=*
     setprop persist.sys.timezone ${vendor.qemu.timezone}
 
