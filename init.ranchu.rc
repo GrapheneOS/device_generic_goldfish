@@ -15,7 +15,7 @@ on early-init
     setprop ro.hardware.vulkan ranchu
 
     # true if ram is <= 2G
-    setprop ro.config.low_ram ${ro.kernel.qemu.config.low_ram}
+    setprop ro.config.low_ram ${ro.boot.config.low_ram}
 
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
@@ -68,11 +68,11 @@ on boot
     setprop ro.hardware.egl emulation
     setprop debug.sf.vsync_reactor_ignore_present_fences true
     setprop debug.hwui.renderer opengl
-    setprop debug.hwui.renderer ${ro.kernel.qemu.uirenderer}
+    setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer}
     setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop ro.zygote.disable_gl_preload 1
 
-    setprop debug.stagefright.ccodec ${ro.kernel.qemu.media.ccodec}
+    setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
 
     setprop dalvik.vm.heapsize 192m
     setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize}
@@ -91,6 +91,9 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
     user root
     group root
     oneshot
+
+on property:vendor.qemu.vport.gnss=*
+    symlink ${vendor.qemu.vport.gnss} /dev/gnss0
 
 on property:vendor.qemu.timezone=*
     setprop persist.sys.timezone ${vendor.qemu.timezone}

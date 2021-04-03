@@ -101,7 +101,7 @@ PRODUCT_PACKAGES += \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
-PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
+PRODUCT_PACKAGES += android.hardware.gnss-service.example
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
@@ -138,8 +138,7 @@ PRODUCT_PROPERTY_OVERRIDES += ro.logd.size=1M \
 
 ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
 PRODUCT_PACKAGES += \
-    camera.device@1.0-impl \
-    android.hardware.camera.provider@2.4-service \
+    android.hardware.camera.provider@2.4-service_64 \
     android.hardware.camera.provider@2.4-impl \
     camera.ranchu \
     camera.ranchu.jpeg \
