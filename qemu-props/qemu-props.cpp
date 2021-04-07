@@ -19,7 +19,7 @@
  * system. It does so by connecting to the 'boot-properties' qemud service.
  *
  * This program should be run as root and called from
- * /system/etc/init.goldfish.rc exclusively.
+ * /system/etc/init.ranchu.rc exclusively.
  */
 
 #define LOG_TAG  "qemu-props"
