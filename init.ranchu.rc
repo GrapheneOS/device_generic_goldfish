@@ -98,7 +98,7 @@ on property:vendor.qemu.vport.gnss=*
 on property:vendor.qemu.timezone=*
     setprop persist.sys.timezone ${vendor.qemu.timezone}
 
-on property:vendor.qemu.android.bootanim=0
+on property:ro.boot.debug.sf.nobootanimation=1
     setprop debug.sf.nobootanimation 1
 
 on property:dev.bootcomplete=1
