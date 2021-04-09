@@ -82,8 +82,6 @@ genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup29   
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup29/event_count u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup30      u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup30/event_count u:object_r:sysfs_wakeup:s0
-genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup32      u:object_r:sysfs_wakeup:s0
-genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup32/event_count u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/wakeup                                 u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/wakeup/wakeup                                   u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/virtual/wakeup/wakeup                                      u:object_r:sysfs_wakeup:s0
@@ -94,8 +92,6 @@ genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup35                     
 genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup35/event_count            u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup36                        u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup36/event_count            u:object_r:sysfs_wakeup:s0
-genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup38                        u:object_r:sysfs_wakeup:s0
-genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup38/event_count            u:object_r:sysfs_wakeup:s0
 
 genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup35                        u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup35/event_count            u:object_r:sysfs_wakeup:s0
@@ -103,8 +99,6 @@ genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup36                     
 genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup36/event_count            u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup37                        u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup37/event_count            u:object_r:sysfs_wakeup:s0
-genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup39                        u:object_r:sysfs_wakeup:s0
-genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup39/event_count            u:object_r:sysfs_wakeup:s0
 
 genfscon sysfs /bus/iio/devices                                                    u:object_r:sysfs_iio_devices:s0
 
