@@ -11,7 +11,7 @@ esac
 # Check if WiFi with mac80211_hwsim is enabled. If so, run the WiFi init script. If not we just
 # have to run the DHCP client in the default namespace and that will set up
 # all the networking.
-wifi_hwsim=`getprop ro.kernel.qemu.wifi`
+wifi_hwsim=`getprop ro.boot.qemu.wifi`
 case "$wifi_hwsim" in
     1) /vendor/bin/init.wifi.sh
        ;;
