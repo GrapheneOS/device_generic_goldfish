@@ -39,6 +39,7 @@ PRODUCT_PACKAGES += \
     linkerconfig \
     logcat \
     logd \
+    odsign \
     run-as \
     selinux_policy_system \
     servicemanager \
