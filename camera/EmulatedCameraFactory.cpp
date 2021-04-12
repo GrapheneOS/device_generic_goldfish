@@ -399,7 +399,7 @@ EmulatedCameraFactory::createFakeCameraImpl(bool backCamera,
         return std::make_unique<EmulatedFakeCamera2>(cameraId, backCamera, module, mGBM);
 
     case 3: {
-            static const char key[] = "ro.kernel.qemu.camera.fake.rotating";
+            static const char key[] = "ro.boot.qemu.camera.fake.rotating";
             char prop[PROPERTY_VALUE_MAX];
 
             if (property_get(key, prop, nullptr) > 0) {
@@ -460,7 +460,7 @@ void EmulatedCameraFactory::waitForQemuSfFakeCameraPropertyAvailable() {
 bool EmulatedCameraFactory::isFakeCameraEmulationOn(bool backCamera) {
     // Always return false, because another HAL (Google Camera HAL)
     // will create the fake cameras
-    if (!property_get_bool("ro.kernel.qemu.legacy_fake_camera", false)) {
+    if (!property_get_bool("ro.boot.qemu.legacy_fake_camera", false)) {
         return false;
     }
     char prop[PROPERTY_VALUE_MAX];
