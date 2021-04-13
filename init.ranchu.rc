@@ -105,7 +105,7 @@ on property:dev.bootcomplete=1
 on post-fs-data && property:ro.boot.qemu.wifi=1
     start create_router_ns
 
-on post-fs-data && property:ro.kernel.qemu.virtiowifi=1
+on post-fs-data && property:ro.boot.qemu.virtiowifi=1
     start ranchu-net
 
 on property:vendor.qemu.networknamespace=ready
