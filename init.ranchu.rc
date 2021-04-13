@@ -105,7 +105,7 @@ on property:dev.bootcomplete=1
     setprop vendor.qemu.dev.bootcomplete 1
     start ranchu-setup
 
-on post-fs-data && property:ro.kernel.qemu.wifi=1
+on post-fs-data && property:ro.boot.qemu.wifi=1
     start create_router_ns
 
 on post-fs-data && property:ro.kernel.qemu.virtiowifi=1
