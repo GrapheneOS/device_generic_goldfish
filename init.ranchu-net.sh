@@ -2,7 +2,7 @@
 
 # Check if VirtIO Wi-Fi is enabled. If so, run the DHCP client
 
-wifi_virtio=`getprop ro.kernel.qemu.virtiowifi`
+wifi_virtio=`getprop ro.boot.qemu.virtiowifi`
 case "$wifi_virtio" in
     1) setprop ctl.start dhcpclient_wifi
        ;;
