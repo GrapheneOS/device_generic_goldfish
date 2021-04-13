@@ -1,7 +1,7 @@
 #!/vendor/bin/sh
 
 # take the wake lock
-allowsuspend=`getprop ro.kernel.qemu.allowsuspend`
+allowsuspend=`getprop ro.boot.qemu.allowsuspend`
 case "$allowsuspend" in
     "") echo "emulator_wake_lock" > /sys/power/wake_lock
     ;;
