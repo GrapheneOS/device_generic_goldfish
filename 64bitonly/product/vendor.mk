@@ -73,7 +73,11 @@ PRODUCT_PACKAGES += \
     libGLESv2_enc \
     libvulkan_enc \
     libGLESv2_emulation \
-    libGLESv1_enc
+    libGLESv1_enc \
+    libEGL_angle \
+    libGLESv1_CM_angle \
+    libGLESv2_angle \
+    libfeature_support_angle.so
 endif
 
 PRODUCT_PACKAGES += \
