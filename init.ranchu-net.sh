@@ -2,7 +2,7 @@
 
 # Check if VirtIO Wi-Fi is enabled. If so, run the DHCP client
 
-wifi_virtio=`getprop ro.kernel.qemu.virtiowifi`
+wifi_virtio=`getprop ro.boot.qemu.virtiowifi`
 case "$wifi_virtio" in
     1) setprop ctl.start dhcpclient_wifi
        ;;
@@ -11,7 +11,7 @@ esac
 # Check if WiFi with mac80211_hwsim is enabled. If so, run the WiFi init script. If not we just
 # have to run the DHCP client in the default namespace and that will set up
 # all the networking.
-wifi_hwsim=`getprop ro.kernel.qemu.wifi`
+wifi_hwsim=`getprop ro.boot.qemu.wifi`
 case "$wifi_hwsim" in
     1) /vendor/bin/init.wifi.sh
        ;;

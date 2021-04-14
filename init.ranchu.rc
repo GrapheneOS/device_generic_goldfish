@@ -11,7 +11,6 @@ on late-fs
 
 on early-init
     mount proc proc /proc remount hidepid=2,gid=3009
-    setprop ro.hardware.egl emulation
     setprop ro.hardware.vulkan ranchu
 
     # true if ram is <= 2G
@@ -106,10 +105,10 @@ on property:dev.bootcomplete=1
     setprop vendor.qemu.dev.bootcomplete 1
     start ranchu-setup
 
-on post-fs-data && property:ro.kernel.qemu.wifi=1
+on post-fs-data && property:ro.boot.qemu.wifi=1
     start create_router_ns
 
-on post-fs-data && property:ro.kernel.qemu.virtiowifi=1
+on post-fs-data && property:ro.boot.qemu.virtiowifi=1
     start ranchu-net
 
 on property:vendor.qemu.networknamespace=ready
