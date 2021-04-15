@@ -3,7 +3,7 @@
 # to sdcard/test
 
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/adbscripts/media.adb:data/adbscripts/media.adb
+    device/generic/goldfish/data/media/test/media.adb:data/adbscripts/media.adb
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/media/test/swirl_136x144_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_136x144_mpeg4.mp4 \
