@@ -64,7 +64,7 @@ on zygote-start
     mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
 
 on boot
-    setprop ro.hardware.egl emulation
+    setprop ro.hardware.egl ${ro.boot.hardware.egl:-emulation}
     setprop debug.sf.vsync_reactor_ignore_present_fences true
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer}
