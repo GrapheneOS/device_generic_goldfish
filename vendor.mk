@@ -108,7 +108,7 @@ PRODUCT_PACKAGES += \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
-PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
+PRODUCT_PACKAGES += android.hardware.gnss-service.example
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
