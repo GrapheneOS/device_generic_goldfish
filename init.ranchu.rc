@@ -54,9 +54,12 @@ on init
 
 on post-fs-data
     setprop vold.post_fs_data_done 1
+    mkdir /data/vendor/adb 0755 root root
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
     mkdir /data/vendor/var/run/netns 0755 root root
+
+    start qemu-adb-keys
 
 on zygote-start
     # Create the directories used by the Wireless subsystem
@@ -91,6 +94,13 @@ service ranchu-setup /vendor/bin/init.ranchu-core.sh
     class core
     user root
     group root
+    oneshot
+
+service qemu-adb-setup /system_ext/bin/init.qemu-adb-keys.sh
+    class core
+    user root
+    group shell
+    disabled  # Started when qemu-adb-keys is stopped
     oneshot
 
 on property:vendor.qemu.timezone=*
@@ -165,6 +175,12 @@ service dhcpclient_def /vendor/bin/dhcpclient -i eth0 --no-gateway
 # class 'core'
 #
 service qemu-props /vendor/bin/qemu-props
+    class core
+    user root
+    group root
+    oneshot
+
+service qemu-adb-keys /vendor/bin/qemu-adb-keys
     class core
     user root
     group root
