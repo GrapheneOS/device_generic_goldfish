@@ -172,7 +172,7 @@ service qemu-props /vendor/bin/qemu-props
     group root
     oneshot
 
-service goldfish-logcat /system/bin/logcat -f /dev/hvc1 ${vendor.qemu.logcat_filter}
+service goldfish-logcat /system/bin/logcat -f /dev/hvc1 ${ro.boot.logcat}
     class main
     user logd
     group root logd
