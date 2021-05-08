@@ -52,7 +52,7 @@ const nsecs_t QemuSensor::kMinVerticalBlank = 10000L;
 const int32_t QemuSensor::kSensitivityRange[2] = {100, 1600};
 const uint32_t QemuSensor::kDefaultSensitivity = 100;
 
-const char QemuSensor::kHostCameraVerString[] = "ro.bool.qemu.camera_protocol_ver";
+const char QemuSensor::kHostCameraVerString[] = "ro.boot.qemu.camera_protocol_ver";
 
 #define GRALLOC_PROP "ro.hardware.gralloc"
 
