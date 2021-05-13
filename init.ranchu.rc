@@ -15,6 +15,7 @@ on early-init
 
     # true if ram is <= 2G
     setprop ro.config.low_ram ${ro.boot.config.low_ram}
+    setprop dalvik.vm.dex2oat64.enabled 1
 
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
