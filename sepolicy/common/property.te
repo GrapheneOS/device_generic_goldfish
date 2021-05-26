@@ -1,3 +1,4 @@
+system_restricted_prop(vendor_qemu_adb_prop)
 vendor_restricted_prop(vendor_qemu_prop)
 vendor_restricted_prop(vendor_net_wlan0_prop)
 vendor_restricted_prop(vendor_net_eth0_prop)
