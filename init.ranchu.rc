@@ -17,6 +17,9 @@ on early-init
     setprop ro.config.low_ram ${ro.boot.config.low_ram}
     setprop dalvik.vm.dex2oat64.enabled 1
 
+    setprop ro.soc.manufacturer AOSP
+    setprop ro.soc.model ranchu
+
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
     setrlimit memlock 8388608 8388608
