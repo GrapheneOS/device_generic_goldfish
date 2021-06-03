@@ -73,6 +73,7 @@ on boot
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer}
     setprop ro.opengles.version ${ro.boot.opengles.version}
+    setprop ro.surface_flinger.supports_background_blur 1
     setprop ro.zygote.disable_gl_preload 1
 
     setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
