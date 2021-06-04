@@ -147,6 +147,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
 PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
+PRODUCT_VENDOR_PROPERTIES += graphics.gpu.profiler.support=true
 
 PRODUCT_PROPERTY_OVERRIDES += persist.sys.zram_enabled=1 \
 
