@@ -57,7 +57,7 @@
             <Limit name="blocks-per-second" range="24-2073600" />
             <Limit name="bitrate" range="1-120000000" />
             <Limit name="frame-rate" range="1-480" />
-            <Limit name="performance-point-3840x2160" value="60" />
+            <Limit name="performance-point-3840x2160" value="30" />
             <Limit name="measured-frame-rate-320x240" range="257-266" />
             <Limit name="measured-frame-rate-720x480" range="262-264" />
             <Limit name="measured-frame-rate-1280x720" range="227-251" />
