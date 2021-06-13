@@ -51,8 +51,8 @@
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.h264.decoder" type="video/avc">
-            <Limit name="size" min="96x96" max="3840x2160" />
-            <Limit name="alignment" value="16x16" />
+            <Limit name="size" min="96x96" max="4096x4096" />
+            <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
             <Limit name="blocks-per-second" range="24-2073600" />
             <Limit name="bitrate" range="1-120000000" />
@@ -122,8 +122,8 @@
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.vp8.decoder" type="video/x-vnd.on2.vp8">
-            <Limit name="size" min="2x2" max="2048x2048" />
-            <Limit name="alignment" value="16x16" />
+            <Limit name="size" min="96x96" max="3840x2160" />
+            <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
             <Limit name="blocks-per-second" min="24" max="2073600" />
             <Limit name="bitrate" range="1-120000000" />
@@ -137,7 +137,8 @@
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.vp9.decoder" type="video/x-vnd.on2.vp9">
-            <Limit name="alignment" value="16x16" />
+            <Limit name="size" min="96x96" max="3840x2160" />
+            <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
             <Limit name="blocks-per-second" min="24" max="2073600" />
             <Limit name="bitrate" range="1-120000000" />
