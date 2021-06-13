@@ -51,8 +51,8 @@
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.h264.decoder" type="video/avc">
-            <Limit name="size" min="96x96" max="3840x2160" />
-            <Limit name="alignment" value="16x16" />
+            <Limit name="size" min="96x96" max="4096x4096" />
+            <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
             <Limit name="blocks-per-second" range="24-2073600" />
             <Limit name="bitrate" range="1-120000000" />
