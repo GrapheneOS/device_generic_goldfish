@@ -20,6 +20,11 @@ on early-init
     setprop ro.soc.manufacturer AOSP
     setprop ro.soc.model ranchu
 
+    # DEPRECATED, use ro.boot.qemu instead. The GTS tests still refer to
+    # ro.kernel.qemu to decide if a device is emulator. Should be removed once
+    # GTS tests are migrated to ro.boot.qemu.
+    setprop ro.kernel.qemu 1
+
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
     setrlimit memlock 8388608 8388608
