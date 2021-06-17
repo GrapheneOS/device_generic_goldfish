@@ -6,7 +6,6 @@ on fs
 
 on late-fs
     # Mount RW partitions which need run fsck
-    exec_start wait_for_keymaster
     mount_all /vendor/etc/fstab.ranchu --late
 
 on early-init
