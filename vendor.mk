@@ -68,6 +68,7 @@ PRODUCT_PACKAGES += \
     libstagefright_goldfish_vpxdec \
     libstagefright_goldfish_avcdec \
     MultiDisplayProvider \
+    libGoldfishProfiler \
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
 PRODUCT_PACKAGES += \

@@ -64,7 +64,8 @@ PRODUCT_PACKAGES += \
     SdkSetup \
     EmulatorRadioConfig \
     EmulatorTetheringConfigOverlay \
-    MultiDisplayProvider
+    MultiDisplayProvider \
+    libGoldfishProfiler
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
 PRODUCT_PACKAGES += \
