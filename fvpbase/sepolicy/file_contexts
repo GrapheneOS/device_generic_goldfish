@@ -9,3 +9,7 @@
 /vendor/lib(64)?/hw/gralloc\.minigbm\.so         u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/libdrm\.so                      u:object_r:same_process_hal_file:s0
 /system/bin/mini_network.sh                      u:object_r:mini_network_exec:s0
+/vendor/lib(64)?/hw/vulkan.pastel.so             u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/libEGL_angle\.so                u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/libGLESv1_CM_angle\.so          u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/libGLESv2_angle\.so             u:object_r:same_process_hal_file:s0
