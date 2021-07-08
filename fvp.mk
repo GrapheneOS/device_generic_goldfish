@@ -64,9 +64,10 @@ PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.0-impl \
     gralloc.minigbm \
     hwcomposer.drm_minigbm \
-    libEGL_swiftshader \
-    libGLESv1_CM_swiftshader \
-    libGLESv2_swiftshader \
+    libEGL_angle \
+    libGLESv1_CM_angle \
+    libGLESv2_angle \
+    vulkan.pastel \
 
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.1-service.sim \
@@ -109,9 +110,10 @@ PRODUCT_BUILD_BOOT_IMAGE := true
 
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
     qemu.hw.mainkeys=0 \
-    ro.hardware.egl=swiftshader \
     ro.hw_timeout_multiplier=50 \
     debug.sf.nobootanimation=1 \
+    ro.hardware.egl=angle \
+    ro.hardware.vulkan=pastel \
 
 PRODUCT_REQUIRES_INSECURE_EXECMEM_FOR_SWIFTSHADER := true
 
