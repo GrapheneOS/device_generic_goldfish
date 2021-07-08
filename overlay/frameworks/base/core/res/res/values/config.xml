@@ -60,4 +60,7 @@
       <item>0</item> <!-- CLOSED -->
     </integer-array>
 
+    <!-- This device is able to support the microphone and camera global toggles. -->
+    <bool name="config_supportsMicToggle">true</bool>
+    <bool name="config_supportsCamToggle">true</bool>
 </resources>
