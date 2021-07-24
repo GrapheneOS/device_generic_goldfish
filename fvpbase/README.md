@@ -9,13 +9,25 @@ source](https://source.android.com/setup/build/downloading).
 
 ## Building the kernel
 
+If you're building the kernel for the first time, get the kernel source
+code by running the following:
+
 ```
 mkdir android-kernel-mainline
 cd android-kernel-mainline
-export FVP_KERNEL_PATH=$(pwd)
 repo init -u https://android.googlesource.com/kernel/manifest -b common-android-mainline
-repo sync
-repo start fvp-patches common -r 79f312ba371eeba2f3ab043b9b56823a459052c8
+```
+
+Now, update the kernel and setup for building:
+```
+export FVP_KERNEL_PATH=$(pwd)
+# Remove any old fvp-patches cherry-pick branch.
+cd common && git checkout aosp/android-mainline && \
+  git branch -D fvp-patches 2> /dev/null; cd ..
+repo sync -j$(nproc) -q
+# One cherrypick currently required due to a bug with BoundsSan+EHCI.
+repo start fvp-patches common
+repo download -c kernel/common 1634850
 ```
 
 To support graphics on FVP, one additional cherry pick is required. This only
@@ -23,7 +35,7 @@ applies to the ``fvp`` target, and not ``fvp_mini``, and it is also not required
 for QEMU.
 
 ```
-repo download -c common 1463463
+repo download -c kernel/common 1768866
 ```
 
 Then, build the kernel.
