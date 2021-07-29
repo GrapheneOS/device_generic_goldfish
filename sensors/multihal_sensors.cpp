@@ -64,8 +64,10 @@ MultihalSensors::MultihalSensors()
         ALOGE("%s:%d: Can't parse qemud response", __func__, __LINE__);
         ::abort();
     }
-    m_availableSensorsMask =
-        hostSensorsMask & ((1u << getSensorNumber()) - 1);
+
+    m_availableSensorsMask = hostSensorsMask
+        & ~(1U << kSensorHandleGyroscopeFieldUncalibrated)
+        & ((1u << getSensorNumber()) - 1);
 
     ALOGI("%s:%d: host sensors mask=%x, available sensors mask=%x",
           __func__, __LINE__, hostSensorsMask, m_availableSensorsMask);
