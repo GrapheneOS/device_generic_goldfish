@@ -34,6 +34,14 @@ genfscon sysfs /devices/pci0000:00/0000:00:08.0/virtio5/block/vdf u:object_r:sys
 genfscon sysfs /devices/platform/9020000.goldfish_battery/power_supply u:object_r:sysfs_batteryinfo:s0
 
 # symlinks from /sys/class/wakeup
+# On arm64 emulator, wakup[0-5] are symlinks to the following nodes under /sys
+genfscon sysfs /devices/platform/9010000.pl031/wakeup/wakeup0                              u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/9010000.pl031/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup1   u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/a040000.goldfish_battery/power_supply/ac/wakeup2          u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/a040000.goldfish_battery/power_supply/battery/wakeup3     u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/rtc-test.1/wakeup/wakeup4                                 u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup5                                 u:object_r:sysfs_wakeup:s0
+
 genfscon sysfs /devices/LNXSYSTM:00/LNXPWRBN:00/wakeup/wakeup                      u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/LNXSYSTM:00/LNXSYBUS:00/GFSH0001:00/wakeup/wakeup          u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/LNXSYSTM:00/LNXSYBUS:00/GFSH0003:00/wakeup/wakeup          u:object_r:sysfs_wakeup:s0
