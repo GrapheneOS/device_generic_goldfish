@@ -27,6 +27,7 @@
 #include "EmulatedFakeCamera.h"
 #include "EmulatedFakeCamera2.h"
 #include "EmulatedFakeCamera3.h"
+#include "EmulatedFakeRotatingCamera3.h"
 #include "EmulatedQemuCamera.h"
 #include "EmulatedQemuCamera3.h"
 
@@ -403,7 +404,7 @@ EmulatedCameraFactory::createFakeCameraImpl(bool backCamera,
             char prop[PROPERTY_VALUE_MAX];
 
             if (property_get(key, prop, nullptr) > 0) {
-                return std::make_unique<EmulatedFakeCamera>(cameraId, backCamera, module, mGBM);
+                return std::make_unique<EmulatedFakeRotatingCamera3>(cameraId, backCamera, module, mGBM);
             } else {
                 return std::make_unique<EmulatedFakeCamera3>(cameraId, backCamera, module, mGBM);
             }
