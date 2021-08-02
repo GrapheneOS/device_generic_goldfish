@@ -50,6 +50,8 @@ cc_library_shared {
         "fake-pipeline2/JpegCompressor.cpp",
         "EmulatedCamera3.cpp",
         "EmulatedFakeCamera3.cpp",
+        "CameraRotator.cpp",
+        "EmulatedFakeRotatingCamera3.cpp",
         "EmulatedQemuCamera3.cpp",
         "qemu-pipeline3/QemuSensor.cpp",
         "Exif.cpp",
