@@ -15,7 +15,11 @@ genfscon sysfs /devices/platform/rtc-test.1/rtc/rtc2/hctosys u:object_r:sysfs_rt
 genfscon sysfs /devices/platform/rtc-test.2/rtc/rtc3/hctosys u:object_r:sysfs_rtc:s0
 
 # /sys/class/net
+# x86_64
 genfscon sysfs /devices/pci0000:00/0000:00:08.0/virtio5/net u:object_r:sysfs_net:s0
+# arm64
+genfscon sysfs /devices/platform/a003400.virtio_mmio/virtio1/net u:object_r:sysfs_net:s0
+
 genfscon sysfs /devices/virtual/mac80211_hwsim/hwsim0/net u:object_r:sysfs_net:s0
 genfscon sysfs /devices/virtual/mac80211_hwsim/hwsim1/net u:object_r:sysfs_net:s0
 
