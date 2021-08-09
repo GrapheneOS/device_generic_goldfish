@@ -25,6 +25,10 @@
 /dev/hvc0                    u:object_r:serial_device:s0
 # logcat
 /dev/hvc1                    u:object_r:serial_device:s0
+# Bluetooth
+/dev/vhci                    u:object_r:bt_device:s0
+/dev/bluetooth0              u:object_r:bt_device:s0
+
 
 /system_ext/bin/init\.qemu-adb-keys\.sh u:object_r:goldfish_system_setup_exec:s0
 /vendor/bin/init\.ranchu-core\.sh u:object_r:goldfish_setup_exec:s0
@@ -42,8 +46,8 @@
 /vendor/bin/hostapd_nohidl   u:object_r:hostapd_nohidl_exec:s0
 /vendor/bin/netmgr           u:object_r:netmgr_exec:s0
 /vendor/bin/wifi_forwarder   u:object_r:wifi_forwarder_exec:s0
+/vendor/bin/bt_vhci_forwarder  u:object_r:bt_vhci_forwarder_exec:s0
 
-/vendor/bin/hw/android\.hardware\.bluetooth@1\.1-service\.sim  u:object_r:hal_bluetooth_sim_exec:s0
 /vendor/bin/hw/android\.hardware\.drm@[0-9]+\.[0-9]+-service\.widevine          u:object_r:hal_drm_widevine_exec:s0
 /vendor/bin/hw/android\.hardware\.drm@[0-9]+\.[0-9]+-service\.clearkey          u:object_r:hal_drm_clearkey_exec:s0
 /vendor/bin/hw/android\.hardware\.gatekeeper@1\.0-service.software    u:object_r:hal_gatekeeper_default_exec:s0
