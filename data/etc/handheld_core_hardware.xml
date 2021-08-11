@@ -84,6 +84,8 @@
 
     <feature name="android.software.cts" />
 
+    <feature name="android.hardware.security.model.compatible" />
+
     <!-- Feature to specify if the device supports controls. -->
     <feature name="android.software.controls" />
 
