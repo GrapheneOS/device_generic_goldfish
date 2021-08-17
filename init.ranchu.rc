@@ -25,6 +25,8 @@ on early-init
     # GTS tests are migrated to ro.boot.qemu.
     setprop ro.kernel.qemu 1
 
+    verity_update_state
+
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
     setrlimit memlock 8388608 8388608
