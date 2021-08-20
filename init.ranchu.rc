@@ -65,11 +65,13 @@ on init
 on post-fs-data
     setprop vold.post_fs_data_done 1
     mkdir /data/vendor/adb 0755 root root
+    mkdir /data/vendor/devicestate 0755 root root
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
     mkdir /data/vendor/var/run/netns 0755 root root
 
     start qemu-adb-keys
+    start qemu-device-state
 
 on zygote-start
     # Create the directories used by the Wireless subsystem
@@ -195,6 +197,12 @@ service qemu-props /vendor/bin/qemu-props
     oneshot
 
 service qemu-adb-keys /vendor/bin/qemu-adb-keys
+    class core
+    user root
+    group root
+    oneshot
+
+service qemu-device-state /vendor/bin/qemu-device-state
     class core
     user root
     group root
