@@ -495,7 +495,22 @@ Return<Result> StreamOut::flush() {
 }
 
 Return<void> StreamOut::getPresentationPosition(getPresentationPosition_cb _hidl_cb) {
-    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {}, {});    // see WriteThread::doGetPresentationPosition
+    const auto w = static_cast<WriteThread*>(mWriteThread.get());
+    if (!w) {
+        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {});
+        return Void();
+    }
+
+    const auto s = w->mSink.get();
+    if (!s) {
+        _hidl_cb(Result::OK, mFrames, util::nsecs2TimeSpec(systemTime(SYSTEM_TIME_MONOTONIC)));
+    } else {
+        uint64_t frames;
+        TimeSpec ts;
+        const Result r = s->getPresentationPosition(frames, ts);
+        _hidl_cb(r, frames, ts);
+    }
+
     return Void();
 }
 
