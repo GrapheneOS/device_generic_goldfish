@@ -63,4 +63,8 @@
     <!-- This device is able to support the microphone and camera global toggles. -->
     <bool name="config_supportsMicToggle">true</bool>
     <bool name="config_supportsCamToggle">true</bool>
+    <!-- Restricting eth0 -->
+    <string-array translatable="false" name="config_ethernet_interfaces">
+        <item>eth0;11,12,14;;</item>
+    </string-array>
 </resources>
