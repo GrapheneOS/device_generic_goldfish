@@ -214,6 +214,15 @@ service wpa_supplicant /vendor/bin/hw/wpa_supplicant -Dnl80211 -iwlan0 -c/vendor
     oneshot
     disabled
 
+on property:vendor.qemu.vport.bluetooth=*
+    symlink ${vendor.qemu.vport.bluetooth} /dev/bluetooth0
+
+
+service bt_vhci_forwarder /vendor/bin/bt_vhci_forwarder -virtio_console_dev=/dev/bluetooth0
+    class main
+    user bluetooth
+    group root bluetooth
+
 # Enable zram only once per boot. From:
 
 # We want one opportunity per boot to enable zram, so we
