@@ -86,6 +86,8 @@ genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup31   
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup31/event_count u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup32      u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup32/event_count u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup33      u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/alarmtimer.0.auto/wakeup/wakeup33/event_count u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/rtc/rtc0/wakeup                                 u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/pnp0/00:00/wakeup/wakeup                                   u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/virtual/wakeup/wakeup                                      u:object_r:sysfs_wakeup:s0
