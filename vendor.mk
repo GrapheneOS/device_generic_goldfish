@@ -83,11 +83,15 @@ PRODUCT_PACKAGES += \
     libGLESv1_CM_angle \
     libGLESv2_angle
 endif
-
+#
+# Enable bluetooth
 PRODUCT_PACKAGES += \
-    android.hardware.bluetooth@1.1-service.sim \
-    android.hardware.bluetooth.audio@2.0-impl
-PRODUCT_PROPERTY_OVERRIDES += vendor.bt.rootcanal_test_console=off
+    bt_vhci_forwarder \
+    android.hardware.bluetooth@1.1-service.btlinux \
+    android.hardware.bluetooth.audio@2.1-impl
+ #
+# Bluetooth se policies
+BOARD_SEPOLICY_DIRS += system/bt/vendor_libs/linux/sepolicy
 
 PRODUCT_PACKAGES += \
     android.hardware.health@2.1-service \
