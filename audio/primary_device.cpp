@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <android_audio_policy_configuration_V7_0-enums.h>
 #include <log/log.h>
 #include <system/audio.h>
 #include "primary_device.h"
@@ -23,14 +22,10 @@
 #include "util.h"
 #include "debug.h"
 
-namespace xsd {
-using namespace ::android::audio::policy::configuration::V7_0;
-}
-
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace V6_0 {
 namespace implementation {
 
 constexpr size_t kInBufferDurationMs = 15;
@@ -87,11 +82,12 @@ Return<void> PrimaryDevice::getInputBufferSize(const AudioConfig& config,
     if (util::checkAudioConfig(false, kInBufferDurationMs, config, suggestedConfig)) {
         const size_t sz =
             suggestedConfig.frameCount
-            * util::countChannels(suggestedConfig.base.channelMask)
-            * util::getBytesPerSample(suggestedConfig.base.format);
+            * util::countChannels(suggestedConfig.channelMask)
+            * util::getBytesPerSample(suggestedConfig.format);
 
         _hidl_cb(Result::OK, sz);
     } else {
+        ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
         _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), 0);
     }
 
@@ -101,22 +97,9 @@ Return<void> PrimaryDevice::getInputBufferSize(const AudioConfig& config,
 Return<void> PrimaryDevice::openOutputStream(int32_t ioHandle,
                                              const DeviceAddress& device,
                                              const AudioConfig& config,
-                                             const hidl_vec<AudioInOutFlag>& flags,
+                                             hidl_bitfield<AudioOutputFlag> flags,
                                              const SourceMetadata& sourceMetadata,
                                              openOutputStream_cb _hidl_cb) {
-    if (!StreamOut::validateDeviceAddress(device)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamOut::validateFlags(flags)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamOut::validateSourceMetadata(sourceMetadata)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-
     AudioConfig suggestedConfig;
     if (util::checkAudioConfig(true, kOutBufferDurationMs, config, suggestedConfig)) {
         auto stream = std::make_unique<StreamOut>(
@@ -129,9 +112,10 @@ Return<void> PrimaryDevice::openOutputStream(int32_t ioHandle,
             LOG_ALWAYS_FATAL_IF(!mOutputStreams.insert(stream.get()).second);
         }
 
-        _hidl_cb(Result::OK, stream.release(), suggestedConfig);
+        _hidl_cb(Result::OK, stream.release(), config);
     } else {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, suggestedConfig);
+        ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), nullptr, suggestedConfig);
     }
 
     return Void();
@@ -140,22 +124,9 @@ Return<void> PrimaryDevice::openOutputStream(int32_t ioHandle,
 Return<void> PrimaryDevice::openInputStream(int32_t ioHandle,
                                             const DeviceAddress& device,
                                             const AudioConfig& config,
-                                            const hidl_vec<AudioInOutFlag>& flags,
+                                            hidl_bitfield<AudioInputFlag> flags,
                                             const SinkMetadata& sinkMetadata,
                                             openInputStream_cb _hidl_cb) {
-    if (!StreamIn::validateDeviceAddress(device)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamIn::validateFlags(flags)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamIn::validateSinkMetadata(sinkMetadata)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-
     AudioConfig suggestedConfig;
     if (util::checkAudioConfig(false, kInBufferDurationMs, config, suggestedConfig)) {
         auto stream = std::make_unique<StreamIn>(
@@ -168,9 +139,10 @@ Return<void> PrimaryDevice::openInputStream(int32_t ioHandle,
             LOG_ALWAYS_FATAL_IF(!mInputStreams.insert(stream.get()).second);
         }
 
-        _hidl_cb(Result::OK, stream.release(), suggestedConfig);
+        _hidl_cb(Result::OK, stream.release(), config);
     } else {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, suggestedConfig);
+        ALOGE("PrimaryDevice::%s:%d failed", __func__, __LINE__);
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), nullptr, suggestedConfig);
     }
 
     return Void();
@@ -413,7 +385,7 @@ void PrimaryDevice::updateInputStreamMicMute(bool micMute) const {
 }
 
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace V6_0
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android
