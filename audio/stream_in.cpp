@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <android_audio_policy_configuration_V7_0-enums.h>
 #include <log/log.h>
 #include <fmq/EventFlag.h>
 #include <fmq/MessageQueue.h>
@@ -30,14 +29,10 @@
 #include "util.h"
 #include "debug.h"
 
-namespace xsd {
-using namespace ::android::audio::policy::configuration::V7_0;
-}
-
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace V6_0 {
 namespace implementation {
 
 using ::android::hardware::Void;
@@ -225,10 +220,10 @@ StreamIn::StreamIn(sp<PrimaryDevice> dev,
                    int32_t ioHandle,
                    const DeviceAddress& device,
                    const AudioConfig& config,
-                   hidl_vec<AudioInOutFlag> flags,
+                   hidl_bitfield<AudioInputFlag> flags,
                    const SinkMetadata& sinkMetadata)
         : mDev(std::move(dev))
-        , mCommon(ioHandle, device, config, std::move(flags))
+        , mCommon(ioHandle, device, config, flags)
         , mSinkMetadata(sinkMetadata) {
 }
 
@@ -248,19 +243,50 @@ Return<uint64_t> StreamIn::getBufferSize() {
     return mCommon.getBufferSize();
 }
 
-Return<void> StreamIn::getSupportedProfiles(getSupportedProfiles_cb _hidl_cb) {
-    mCommon.getSupportedProfiles(_hidl_cb);
+Return<uint32_t> StreamIn::getSampleRate() {
+    return mCommon.getSampleRate();
+}
+
+Return<void> StreamIn::getSupportedSampleRates(AudioFormat format,
+                                               getSupportedSampleRates_cb _hidl_cb) {
+    mCommon.getSupportedSampleRates(format, _hidl_cb);
     return Void();
+}
+
+Return<Result> StreamIn::setSampleRate(uint32_t sampleRateHz) {
+    return mCommon.setSampleRate(sampleRateHz);
+}
+
+Return<hidl_bitfield<AudioChannelMask>> StreamIn::getChannelMask() {
+    return mCommon.getChannelMask();
+}
+
+Return<void> StreamIn::getSupportedChannelMasks(AudioFormat format,
+                                                IStream::getSupportedChannelMasks_cb _hidl_cb) {
+    mCommon.getSupportedChannelMasks(format, _hidl_cb);
+    return Void();
+}
+
+Return<Result> StreamIn::setChannelMask(hidl_bitfield<AudioChannelMask> mask) {
+    return mCommon.setChannelMask(mask);
+}
+
+Return<AudioFormat> StreamIn::getFormat() {
+    return mCommon.getFormat();
+}
+
+Return<void> StreamIn::getSupportedFormats(getSupportedFormats_cb _hidl_cb) {
+    mCommon.getSupportedFormats(_hidl_cb);
+    return Void();
+}
+
+Return<Result> StreamIn::setFormat(AudioFormat format) {
+    return mCommon.setFormat(format);
 }
 
 Return<void> StreamIn::getAudioProperties(getAudioProperties_cb _hidl_cb) {
     mCommon.getAudioProperties(_hidl_cb);
     return Void();
-}
-
-Return<Result> StreamIn::setAudioProperties(const AudioConfigBaseOptional& config) {
-    (void)config;
-    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamIn::addEffect(uint64_t effectId) {
@@ -359,21 +385,21 @@ Return<Result> StreamIn::setGain(float gain) {
     return FAILURE(Result::NOT_SUPPORTED);
 }
 
-Return<Result> StreamIn::updateSinkMetadata(const SinkMetadata& sinkMetadata) {
+Return<void> StreamIn::updateSinkMetadata(const SinkMetadata& sinkMetadata) {
     (void)sinkMetadata;
-    return FAILURE(Result::NOT_SUPPORTED);
+    return Void();
 }
 
 Return<void> StreamIn::prepareForReading(uint32_t frameSize,
                                          uint32_t framesCount,
                                          prepareForReading_cb _hidl_cb) {
     if (!frameSize || !framesCount || frameSize > 256 || framesCount > (1u << 20)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, -1);
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, {});
         return Void();
     }
 
     if (mReadThread) {  // INVALID_STATE if the method was already called.
-        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {}, {}, -1);
+        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {}, {}, {});
         return Void();
     }
 
@@ -384,11 +410,11 @@ Return<void> StreamIn::prepareForReading(uint32_t frameSize,
                  *(t->mCommandMQ.getDesc()),
                  *(t->mDataMQ.getDesc()),
                  *(t->mStatusMQ.getDesc()),
-                 t->getTid().get());
+                 {.pid = getpid(), .tid = t->getTid().get()});
 
         mReadThread = std::move(t);
     } else {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, -1);
+        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {}, {}, {});
     }
 
     return Void();
@@ -420,28 +446,12 @@ Return<Result> StreamIn::setMicrophoneFieldDimension(float zoom) {
 
 void StreamIn::setMicMute(bool mute) {
     mEffectiveVolume =
-        (mute && (xsd::stringToAudioDevice(getDeviceAddress().deviceType) ==
-                      xsd::AudioDevice::AUDIO_DEVICE_IN_BUILTIN_MIC))
+        (mute && (getDeviceAddress().device & AudioDevice::IN_BUILTIN_MIC))
             ? 0.0f : 1.0f;
 }
 
-bool StreamIn::validateDeviceAddress(const DeviceAddress& device) {
-    return DevicePortSource::validateDeviceAddress(device);
-}
-
-bool StreamIn::validateFlags(const hidl_vec<AudioInOutFlag>& flags) {
-    return std::all_of(flags.begin(), flags.end(), [](const AudioInOutFlag& flag){
-        return xsd::stringToAudioInOutFlag(flag) != xsd::AudioInOutFlag::UNKNOWN;
-    });
-}
-
-bool StreamIn::validateSinkMetadata(const SinkMetadata& sinkMetadata) {
-    (void)sinkMetadata;
-    return true;
-}
-
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace V6_0
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android
