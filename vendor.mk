@@ -253,7 +253,7 @@ PRODUCT_PACKAGES += \
 
 # Extension implementation for Jetpack WindowManager
 PRODUCT_PACKAGES += \
-    androidx.window.sidecar
+    androidx.window.extensions
 
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.face@1.0-service.example
