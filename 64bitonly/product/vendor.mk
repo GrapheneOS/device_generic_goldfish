@@ -79,8 +79,7 @@ PRODUCT_PACKAGES += \
     libGLESv1_enc \
     libEGL_angle \
     libGLESv1_CM_angle \
-    libGLESv2_angle \
-    libfeature_support_angle.so
+    libGLESv2_angle
 endif
 
 PRODUCT_PACKAGES += \
@@ -245,7 +244,7 @@ PRODUCT_PACKAGES += \
 
 # Extension implementation for Jetpack WindowManager
 PRODUCT_PACKAGES += \
-    androidx.window.sidecar
+    androidx.window.extensions
 
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.face@1.0-service.example
