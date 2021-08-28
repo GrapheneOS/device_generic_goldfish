@@ -185,6 +185,8 @@ PRODUCT_PACKAGES += \
     android.hardware.soundtrigger@2.2-impl.ranchu \
     android.hardware.audio.effect@7.0-impl \
 
+DEVICE_MANIFEST_FILE += device/generic/goldfish/audio/android.hardware.audio.effects@7.0.xml
+
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/audio/policy/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
     device/generic/goldfish/audio/policy/primary_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/primary_audio_policy_configuration.xml \
@@ -251,7 +253,7 @@ PRODUCT_PACKAGES += \
 
 # Extension implementation for Jetpack WindowManager
 PRODUCT_PACKAGES += \
-    androidx.window.sidecar
+    androidx.window.extensions
 
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.face@1.0-service.example
