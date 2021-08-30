@@ -174,9 +174,11 @@ endif
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
 PRODUCT_PACKAGES += \
     android.hardware.audio.service \
-    android.hardware.audio@6.0-impl.ranchu \
+    android.hardware.audio@7.0-impl.ranchu \
     android.hardware.soundtrigger@2.2-impl.ranchu \
-    android.hardware.audio.effect@6.0-impl \
+    android.hardware.audio.effect@7.0-impl \
+
+DEVICE_MANIFEST_FILE := device/generic/goldfish/audio/android.hardware.audio.effects@7.0.xml
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/audio/policy/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
