@@ -15,6 +15,7 @@
  */
 
 #include <android_audio_policy_configuration_V7_0-enums.h>
+#include <android-base/properties.h>
 #include <chrono>
 #include <thread>
 #include <log/log.h>
@@ -26,6 +27,8 @@
 #include "ring_buffer.h"
 #include "util.h"
 #include "debug.h"
+
+using ::android::base::GetBoolProperty;
 
 namespace xsd {
 using namespace ::android::audio::policy::configuration::V7_0;
@@ -290,6 +293,10 @@ DevicePortSink::create(size_t readerBufferSizeHint,
         return FAILURE(nullptr);
     }
 
+    if (GetBoolProperty("ro.boot.audio.tinyalsa.ignore_output", false)) {
+        goto nullsink;
+    }
+
     switch (xsd::stringToAudioDevice(address.deviceType)) {
     case xsd::AudioDevice::AUDIO_DEVICE_OUT_DEFAULT:
     case xsd::AudioDevice::AUDIO_DEVICE_OUT_SPEAKER:
@@ -315,6 +322,7 @@ DevicePortSink::create(size_t readerBufferSizeHint,
         break;
     }
 
+nullsink:
     return NullSink::create(cfg, readerBufferSizeHint, frames);
 }
 
