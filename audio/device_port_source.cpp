@@ -15,6 +15,7 @@
  */
 
 #include <android_audio_policy_configuration_V7_0-enums.h>
+#include <android-base/properties.h>
 #include <cmath>
 #include <chrono>
 #include <thread>
@@ -30,6 +31,8 @@
 #include "audio_ops.h"
 #include "util.h"
 #include "debug.h"
+
+using ::android::base::GetBoolProperty;
 
 namespace xsd {
 using namespace ::android::audio::policy::configuration::V7_0;
@@ -415,7 +418,11 @@ DevicePortSource::create(size_t writerBufferSizeHint,
     switch (xsd::stringToAudioDevice(address.deviceType)) {
     case xsd::AudioDevice::AUDIO_DEVICE_IN_DEFAULT:
     case xsd::AudioDevice::AUDIO_DEVICE_IN_BUILTIN_MIC:
-        {
+        if (GetBoolProperty("ro.boot.audio.tinyalsa.simulate_input", false)) {
+            return createGeneratedSource(
+                cfg, writerBufferSizeHint, frames,
+                RepeatGenerator(generateSinePattern(cfg.base.sampleRateHz, 300.0, 1.0)));
+        } else {
             auto sourceptr = TinyalsaSource::create(talsa::kPcmCard, talsa::kPcmDevice,
                                                     cfg, writerBufferSizeHint, frames);
             if (sourceptr != nullptr) {
