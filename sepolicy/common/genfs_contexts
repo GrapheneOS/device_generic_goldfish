@@ -27,17 +27,7 @@ genfscon sysfs /devices/virtual/mac80211_hwsim/hwsim1/net u:object_r:sysfs_net:s
 genfscon sysfs /devices/virtual/block/ram u:object_r:sysfs_devices_block:s0
 genfscon sysfs /devices/virtual/block/md u:object_r:sysfs_devices_block:s0
 
-# Old PCI IDs
-genfscon sysfs /devices/pci0000:00/0000:00:03.0/virtio0/block/vda u:object_r:sysfs_virtio_block:s0
-genfscon sysfs /devices/pci0000:00/0000:00:04.0/virtio1/block/vdb u:object_r:sysfs_virtio_block:s0
-genfscon sysfs /devices/pci0000:00/0000:00:05.0/virtio2/block/vdc u:object_r:sysfs_virtio_block:s0
-genfscon sysfs /devices/pci0000:00/0000:00:06.0/virtio3/block/vdd u:object_r:sysfs_virtio_block:s0
-genfscon sysfs /devices/pci0000:00/0000:00:07.0/virtio4/block/vde u:object_r:sysfs_virtio_block:s0
-genfscon sysfs /devices/pci0000:00/0000:00:08.0/virtio5/block/vdf u:object_r:sysfs_virtio_block:s0
-# New PCI IDs
-genfscon sysfs /devices/pci0000:00/0000:00:08.0/virtio7/block/vda u:object_r:sysfs_virtio_block:s0
-genfscon sysfs /devices/pci0000:00/0000:00:09.0/virtio8/block/vdb u:object_r:sysfs_virtio_block:s0
-genfscon sysfs /devices/pci0000:00/0000:00:0a.0/virtio9/block/vdc u:object_r:sysfs_virtio_block:s0
+genfscon sysfs /devices/pci.*/.*/virtio[0-9]+/block/vd[a-z]+ u:object_r:sysfs_virtio_block:s0
 
 # /sys/class/power_supply
 genfscon sysfs /devices/platform/9020000.goldfish_battery/power_supply u:object_r:sysfs_batteryinfo:s0
