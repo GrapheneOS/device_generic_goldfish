@@ -122,7 +122,7 @@
             <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.vp8.decoder" type="video/x-vnd.on2.vp8">
-            <Limit name="size" min="96x96" max="2560x560" />
+            <Limit name="size" min="96x96" max="2560x2560" />
             <Limit name="alignment" value="2x2" />
             <Limit name="block-size" value="16x16" />
             <Limit name="blocks-per-second" min="24" max="2073600" />
