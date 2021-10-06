@@ -13,6 +13,8 @@ $(emulator_img_source_prop): $(PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP)
 		-e 's/$${PLATFORM_VERSION_CODENAME}/$(subst REL,,$(PLATFORM_VERSION_CODENAME))/' \
 		-e 's/$${TARGET_ARCH}/$(TARGET_ARCH)/' \
 		-e 's/$${TARGET_CPU_ABI}/$(TARGET_CPU_ABI)/' \
+		-e 's/$${SYSTEM_IMAGE_TAG_ID}/$(SYSTEM_IMAGE_TAG_ID)/' \
+		-e 's/$${SYSTEM_IMAGE_TAG_DISPLAY}/$(SYSTEM_IMAGE_TAG_DISPLAY)/' \
 		$< > $@ && sed -i -e '/^AndroidVersion.CodeName=\s*$$/d' $@
 
 INTERNAL_EMULATOR_PACKAGE_FILES := \
