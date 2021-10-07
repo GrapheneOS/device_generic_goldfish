@@ -74,11 +74,12 @@ on zygote-start
     mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
 
 on boot
-    setprop ro.hardware.egl emulation
-    setprop debug.sf.vsync_reactor 0
+    setprop ro.hardware.egl ${ro.boot.hardwareegl:-emulation}
+    setprop debug.sf.vsync_reactor_ignore_present_fences true
     setprop debug.hwui.renderer opengl
     setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer}
     setprop ro.opengles.version ${ro.boot.opengles.version}
+    setprop ro.surface_flinger.supports_background_blur 1
     setprop ro.zygote.disable_gl_preload 1
 
     setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
@@ -108,6 +109,9 @@ service qemu-adb-setup /system_ext/bin/init.qemu-adb-keys.sh
     group shell
     disabled  # Started when qemu-adb-keys is stopped
     oneshot
+
+on property:vendor.qemu.vport.gnss=*
+    symlink ${vendor.qemu.vport.gnss} /dev/gnss0
 
 on property:vendor.qemu.timezone=*
     setprop persist.sys.timezone ${vendor.qemu.timezone}
