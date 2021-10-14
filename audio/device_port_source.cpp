@@ -263,18 +263,18 @@ template <class G> struct GeneratedSource : public DevicePortSource {
 
         const unsigned nFrames = std::min(requestedFrames, availableFrames);
         mGenerator(samples, nFrames);
-        const size_t sizeBytes = nFrames * nChannels * sizeof(*samples);
+        const size_t nSamples = nFrames * nChannels;
         if (nChannels > 1) {
             adjust_channels(samples, 1, samples, nChannels,
-                            sizeof(*samples), sizeBytes);
+                            sizeof(*samples), nFrames * sizeof(*samples));
         }
         mSentFrames += nFrames;
 
         aops::multiplyByVolume(volume,
                                mWriteBuffer.data(),
-                               sizeBytes / sizeof(int16_t));
+                               nSamples);
 
-        writer(mWriteBuffer.data(), sizeBytes);
+        writer(mWriteBuffer.data(), nSamples * sizeof(*samples));
         return 0;
     }
 
