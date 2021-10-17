@@ -166,7 +166,7 @@ static bool nativeResizeListener(JNIEnv* env, jobject obj, jint id, jint w, jint
     return false;
 }
 
-static JNINativeMethod sMethods[] = {
+static const JNINativeMethod sMethods[] = {
     { "nativeOpen", "()I", (void*) nativeOpen },
     { "nativeCreateSurface", "(III)Landroid/view/Surface;", (void*) nativeCreateSurface },
     { "nativeReadPipe", "([I)Z", (void*) nativeReadPipe},
