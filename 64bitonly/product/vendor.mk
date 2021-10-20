@@ -58,8 +58,6 @@ PRODUCT_PACKAGES += \
     libcodec2_goldfish_vp9dec \
     libcodec2_goldfish_avcdec \
     sh_vendor \
-    ip_vendor \
-    iw_vendor \
     local_time.default \
     SdkSetup \
     EmulatorRadioConfig \
@@ -195,13 +193,8 @@ PRODUCT_PACKAGES += \
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
 	mac80211_create_radios \
-	createns \
 	dhcpclient \
-	execns \
 	hostapd \
-	hostapd_nohidl \
-	netmgr \
-	wifi_forwarder \
 	wpa_supplicant \
 
 PRODUCT_PACKAGES += \
@@ -275,7 +268,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/init.qemu-adb-keys.sh:$(TARGET_COPY_OUT_SYSTEM_EXT)/bin/init.qemu-adb-keys.sh \
     device/generic/goldfish/init.ranchu-core.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-core.sh \
     device/generic/goldfish/init.ranchu-net.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-net.sh \
-    device/generic/goldfish/wifi/init.wifi.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.wifi.sh \
     device/generic/goldfish/init.ranchu.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.ranchu.rc \
     device/generic/goldfish/init.system_ext.rc:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/init/init.system_ext.rc \
     device/generic/goldfish/fstab.ranchu:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
