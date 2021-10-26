@@ -20,3 +20,5 @@ PRODUCT_DEVICE := emulator64_x86_64
 PRODUCT_BRAND := Android
 PRODUCT_MODEL := PC on x86_64 emulator
 PRODUCT_PACKAGE_OVERLAYS := device/generic/goldfish/pc/overlay
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/pc/data/etc/pc.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/pc.xml
