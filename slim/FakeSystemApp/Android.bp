@@ -1,0 +1,11 @@
+android_app {
+    name: "FakeSystemApp",
+    platform_apis: true,
+    certificate: "platform",
+    manifest:  "AndroidManifest.xml",
+    srcs: [
+        "src/**/*.java",
+    ],
+    system_ext_specific: true,
+    overrides: ["DocumentsUI"],
+}
