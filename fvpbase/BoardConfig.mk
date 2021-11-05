@@ -46,7 +46,8 @@ BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1153433600
 
-BOARD_BOOTIMAGE_PARTITION_SIZE := 33554432
+BOARD_BOOTIMAGE_PARTITION_SIZE := 50331648
+
 
 # Normally, the bootloader is supposed to concatenate the Android initramfs
 # and the initramfs for the kernel modules and let the kernel combine
