@@ -53,9 +53,10 @@ $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_ven
 $(call inherit-product, device/generic/goldfish/emulator64_x86_64/device.mk)
 # include the overlay that overrides systemui definitions with fakesystemapp
 DEVICE_PACKAGE_OVERLAYS := device/generic/goldfish/slim/overlay
-# Define the host tools and libs that are parts of the SDK.
-$(call inherit-product-if-exists, sdk/build/product_sdk.mk)
-$(call inherit-product-if-exists, development/build/product_sdk.mk)
+
+PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
+    development/sys-img/images_atd_source.prop_template
+
 # Overrides
 PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_slim_x86_64
