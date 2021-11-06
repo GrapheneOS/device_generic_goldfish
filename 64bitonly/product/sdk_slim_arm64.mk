@@ -24,8 +24,9 @@ PRODUCT_USE_DYNAMIC_PARTITIONS := true
 #
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system.mk)
+
 # Enable mainline checking for exact this product name
-ifeq (sdk_slim_x86_64,$(TARGET_PRODUCT))
+ifeq (sdk_slim_arm64,$(TARGET_PRODUCT))
 PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
 endif
 #
@@ -48,20 +49,21 @@ PRODUCT_PACKAGES += \
 #
 # this must go first - overwrites the goldfish handheld_core_hardware.xml
 $(call inherit-product, device/generic/goldfish/slim/vendor.mk)
-$(call inherit-product, device/generic/goldfish/64bitonly/product/x86_64-vendor.mk)
+$(call inherit-product, device/generic/goldfish/64bitonly/product/arm64-vendor.mk)
 $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_vendor.mk)
 $(call inherit-product, device/generic/goldfish/emulator64_x86_64/device.mk)
+
 # include the overlay that overrides systemui definitions with fakesystemapp
 DEVICE_PACKAGE_OVERLAYS := device/generic/goldfish/slim/overlay
 
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
-    development/sys-img/images_atd_source.prop_template
+     development/sys-img/images_atd_source.prop_template
 
 # Overrides
 PRODUCT_BRAND := Android
-PRODUCT_NAME := sdk_slim_x86_64
-PRODUCT_DEVICE := emulator64_x86_64
-PRODUCT_MODEL := Android SDK built for x86_64
+PRODUCT_NAME := sdk_slim_arm64
+PRODUCT_DEVICE := emulator64_arm64
+PRODUCT_MODEL := Android ATD built for arm64
 # Disable <uses-library> checks for SDK product. It lacks some libraries (e.g.
 # RadioConfigLib), which makes it impossible to translate their module names to
 # library name, so the check fails.
