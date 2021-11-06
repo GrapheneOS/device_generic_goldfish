@@ -80,7 +80,7 @@ public final class FallbackHome extends Activity {
             final Intent homeIntent = new Intent(Intent.ACTION_MAIN)
                     .addCategory(Intent.CATEGORY_HOME);
             final ResolveInfo homeInfo = getPackageManager().resolveActivity(homeIntent, 0);
-            if (Objects.equals(getPackageName(), homeInfo.activityInfo.packageName)) {
+            if (Objects.equals(this.getClass().getName(), homeInfo.activityInfo.name)) {
                 if (UserManager.isSplitSystemUser()
                         && UserHandle.myUserId() == UserHandle.USER_SYSTEM) {
                     // This avoids the situation where the system user has no home activity after
@@ -90,7 +90,7 @@ public final class FallbackHome extends Activity {
                 Log.d(TAG, "User unlocked but no home; let's hope someone enables one soon?");
                 mHandler.sendEmptyMessageDelayed(0, 500);
             } else {
-                Log.d(TAG, "User unlocked and real home found; let's go!");
+                Log.d(TAG, String.format("User unlocked and real home %s found; let's go!", homeInfo.activityInfo.name));
                 getSystemService(PowerManager.class).userActivity(
                         SystemClock.uptimeMillis(), false);
                 finish();
