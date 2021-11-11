@@ -1,4 +1,4 @@
-TARGET_KERNEL_USE ?= 5.10
+TARGET_KERNEL_USE ?= 5.15
 
 KERNEL_MODULES_PATH := kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/arm64
 
