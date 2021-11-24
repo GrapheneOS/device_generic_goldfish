@@ -131,6 +131,9 @@ on property:dev.bootcomplete=1
 on post-fs-data && property:ro.boot.qemu.virtiowifi=1
     start ranchu-net
 
+on property:ro.boot.qemu.cpuvulkan.version=*
+    setprop ro.cpuvulkan.version ${ro.boot.qemu.cpuvulkan.version}
+
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
     user root
