@@ -334,7 +334,8 @@ const SensorInfo kAllSensors[] = {
         .fifoMaxEventCount = 0,
         .maxDelay = 500000,
         .flags = SensorFlagBits::DATA_INJECTION |
-                 SensorFlagBits::SPECIAL_REPORTING_MODE
+                 SensorFlagBits::SPECIAL_REPORTING_MODE |
+                 SensorFlagBits::WAKE_UP
     }};
 
 constexpr int kSensorNumber = sizeof(kAllSensors) / sizeof(kAllSensors[0]);
