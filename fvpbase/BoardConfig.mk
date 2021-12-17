@@ -49,14 +49,9 @@ BOARD_USERDATAIMAGE_PARTITION_SIZE := 1153433600
 BOARD_BOOTIMAGE_PARTITION_SIZE := 50331648
 
 
-# Normally, the bootloader is supposed to concatenate the Android initramfs
-# and the initramfs for the kernel modules and let the kernel combine
-# them. However, the bootloader that we're using with FVP (U-Boot) doesn't
-# support concatenation, so we implement it in the build system.
-$(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/boot.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img
-
-$(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/ramdisk.img $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/initramfs.img
-	cat $^ > $@
+# This enables the rules defined in
+# device/generic/goldfish/build/tasks/combine_initramfs.mk
+GOLDFISH_COMBINE_INITRAMFS := true
 
 BOARD_MKBOOTIMG_ARGS := --header_version 2 --ramdisk $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img
 BOARD_INCLUDE_DTB_IN_BOOTIMG := true
