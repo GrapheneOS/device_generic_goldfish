@@ -23,6 +23,12 @@
          touchpad. Touchscreen optional. -->
     <feature name="android.hardware.type.pc" />
 
+     <!-- For PC-like device we mainly uses hardware keyboards. -->
+    <unavailable-feature name="android.software.input_methods" />
+
+     <!-- For PC-like device we usually don't have telephony. -->
+    <unavailable-feature name="android.hardware.telephony" />
+
     <!-- PC-like device should not support MOTION_TRACKING capability level. -->
     <unavailable-feature name="android.hardware.camera.ar" />
 </permissions>
