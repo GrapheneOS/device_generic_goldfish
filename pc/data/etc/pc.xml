@@ -31,4 +31,7 @@
 
     <!-- PC-like device should not support MOTION_TRACKING capability level. -->
     <unavailable-feature name="android.hardware.camera.ar" />
+
+    <!-- Currently, Picture-In-Picture is not enabled for PC. -->
+    <unavailable-feature name="android.software.picture_in_picture" />
 </permissions>
