@@ -17,4 +17,6 @@
 <resources>
     <!-- Disabling content capture service by setting an empty string here -->
     <string name="config_defaultContentCaptureService" translatable="false"></string>
+    <!-- Disable Dream (VR) -->
+    <bool name="config_dreamsSupported">false</bool>
 </resources>
