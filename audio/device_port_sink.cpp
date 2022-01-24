@@ -44,6 +44,7 @@ struct TinyalsaSink : public DevicePortSink {
             , mSampleRateHz(cfg.sampleRateHz)
             , mFrameSize(util::countChannels(cfg.channelMask) * sizeof(int16_t))
             , mWriteSizeFrames(cfg.frameCount)
+            , mInitialFrames(frames)
             , mFrames(frames)
             , mRingBuffer(mFrameSize * cfg.frameCount * 3)
             , mMixer(pcmCard)
@@ -63,8 +64,7 @@ struct TinyalsaSink : public DevicePortSink {
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
         const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
         const uint64_t nowFrames = getPresentationFrames(nowNs);
-        mFrames += (nowFrames - mPreviousFrames);
-        mPreviousFrames = nowFrames;
+        mFrames = std::min(nowFrames - mMissedFrames, mReceivedFrames) + mInitialFrames;
 
         frames = mFrames;
         ts = util::nsecs2TimeSpec(nowNs);
@@ -75,27 +75,26 @@ struct TinyalsaSink : public DevicePortSink {
         return uint64_t(mSampleRateHz) * ns2us(nowNs - mStartNs) / 1000000;
     }
 
-    uint64_t getAvailableFrames(const nsecs_t nowNs) const {
+    size_t calcAvailableFramesNow() {
+        const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
         auto presentationFrames = getPresentationFrames(nowNs);
-        auto pendingFrames = mReceivedFrames > presentationFrames
-                                 ? mReceivedFrames - presentationFrames
-                                 : 0;
-        return  mRingBuffer.capacity() / mFrameSize - pendingFrames;
+        if (mReceivedFrames + mMissedFrames < presentationFrames) {
+            // There has been an underrun
+            mMissedFrames = presentationFrames - mReceivedFrames;
+        }
+        size_t pendingFrames = mReceivedFrames + mMissedFrames - presentationFrames;
+        return mRingBuffer.capacity() / mFrameSize - pendingFrames;
     }
 
-    uint64_t getAvailableFramesNow() const {
-        return getAvailableFrames(systemTime(SYSTEM_TIME_MONOTONIC));
-    }
-
-    size_t getWaitFramesNow(const size_t requestedFrames) const {
-        const size_t availableFrames = getAvailableFramesNow();
+    size_t calcWaitFramesNow(const size_t requestedFrames) {
+        const size_t availableFrames = calcAvailableFramesNow();
         return (requestedFrames > availableFrames)
             ? (requestedFrames - availableFrames) : 0;
     }
 
     size_t write(float volume, size_t bytesToWrite, IReader &reader) {
         size_t framesLost = 0;
-        const size_t waitFrames = getWaitFramesNow(bytesToWrite / mFrameSize);
+        const size_t waitFrames = calcWaitFramesNow(bytesToWrite / mFrameSize);
         const auto blockUntil =
             std::chrono::high_resolution_clock::now() +
                 + std::chrono::microseconds(waitFrames * 1000000 / mSampleRateHz);
@@ -203,8 +202,9 @@ private:
     const unsigned mSampleRateHz;
     const unsigned mFrameSize;
     const unsigned mWriteSizeFrames;
+    const uint64_t mInitialFrames;
     uint64_t &mFrames;
-    uint64_t mPreviousFrames = 0;
+    uint64_t mMissedFrames = 0;
     uint64_t mReceivedFrames = 0;
     RingBuffer mRingBuffer;
     talsa::Mixer mMixer;
