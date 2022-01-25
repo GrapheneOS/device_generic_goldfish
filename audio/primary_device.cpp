@@ -104,15 +104,10 @@ Return<void> PrimaryDevice::openOutputStream(int32_t ioHandle,
                                              const hidl_vec<AudioInOutFlag>& flags,
                                              const SourceMetadata& sourceMetadata,
                                              openOutputStream_cb _hidl_cb) {
-    if (!StreamOut::validateDeviceAddress(device)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamOut::validateFlags(flags)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamOut::validateSourceMetadata(sourceMetadata)) {
+    if (!StreamOut::validateDeviceAddress(device)
+            || !util::checkAudioConfig(config)
+            || !StreamOut::validateFlags(flags)
+            || !StreamOut::validateSourceMetadata(sourceMetadata)) {
         _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
         return Void();
     }
@@ -143,15 +138,10 @@ Return<void> PrimaryDevice::openInputStream(int32_t ioHandle,
                                             const hidl_vec<AudioInOutFlag>& flags,
                                             const SinkMetadata& sinkMetadata,
                                             openInputStream_cb _hidl_cb) {
-    if (!StreamIn::validateDeviceAddress(device)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamIn::validateFlags(flags)) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
-        return Void();
-    }
-    if (!StreamIn::validateSinkMetadata(sinkMetadata)) {
+    if (!StreamIn::validateDeviceAddress(device)
+            || !util::checkAudioConfig(config)
+            || !StreamIn::validateFlags(flags)
+            || !StreamIn::validateSinkMetadata(sinkMetadata)) {
         _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
         return Void();
     }
@@ -185,6 +175,10 @@ Return<void> PrimaryDevice::createAudioPatch(const hidl_vec<AudioPortConfig>& so
                                              createAudioPatch_cb _hidl_cb) {
     if (sources.size() == 1 && sinks.size() == 1) {
         AudioPatch patch;
+        if (!util::checkAudioPortConfig(sources[0]) || !util::checkAudioPortConfig(sinks[0])) {
+            _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), 0);
+            return Void();
+        }
         patch.source = sources[0];
         patch.sink = sinks[0];
 

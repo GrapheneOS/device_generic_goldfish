@@ -535,7 +535,18 @@ bool StreamOut::validateFlags(const hidl_vec<AudioInOutFlag>& flags) {
 }
 
 bool StreamOut::validateSourceMetadata(const SourceMetadata& sourceMetadata) {
-    (void)sourceMetadata;
+    for (const auto& track : sourceMetadata.tracks) {
+        if (xsd::isUnknownAudioUsage(track.usage)
+                || xsd::isUnknownAudioContentType(track.contentType)
+                || xsd::isUnknownAudioChannelMask(track.channelMask)) {
+            return false;
+        }
+        for (const auto& tag : track.tags) {
+            if (!xsd::isVendorExtension(tag)) {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
