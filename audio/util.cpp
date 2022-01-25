@@ -35,6 +35,9 @@ namespace V7_0 {
 namespace implementation {
 namespace util {
 
+using ::android::hardware::audio::common::V7_0::AudioConfigBaseOptional;
+using ::android::hardware::audio::common::V7_0::AudioPortExtendedInfo;
+
 namespace {
 
 const std::array<uint32_t, 8> kSupportedRatesHz = {
@@ -128,6 +131,24 @@ size_t getBytesPerSample(const AudioFormat &format) {
     }
 }
 
+bool checkAudioConfig(const AudioConfig &cfg) {
+    if (xsd::isUnknownAudioFormat(cfg.base.format)
+            || xsd::isUnknownAudioChannelMask(cfg.base.channelMask)) {
+        return false;
+    }
+    if (cfg.offloadInfo.getDiscriminator() ==
+            AudioConfig::OffloadInfo::hidl_discriminator::info) {
+        if (const auto& info = cfg.offloadInfo.info();
+                xsd::isUnknownAudioFormat(info.base.format)
+                || xsd::isUnknownAudioChannelMask(info.base.channelMask)
+                || xsd::isUnknownAudioStreamType(info.streamType)
+                || xsd::isUnknownAudioUsage(info.usage)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool checkAudioConfig(const bool isOut,
                       size_t duration_ms,
                       const AudioConfig &src,
@@ -152,6 +173,56 @@ bool checkAudioConfig(const bool isOut,
     }
 
     return result;
+}
+
+bool checkAudioPortConfig(const AudioPortConfig &cfg) {
+    if (cfg.base.format.getDiscriminator() ==
+            AudioConfigBaseOptional::Format::hidl_discriminator::value) {
+        if (xsd::isUnknownAudioFormat(cfg.base.format.value())) {
+            return false;
+        }
+    }
+    if (cfg.base.channelMask.getDiscriminator() ==
+            AudioConfigBaseOptional::ChannelMask::hidl_discriminator::value) {
+        if (xsd::isUnknownAudioChannelMask(cfg.base.channelMask.value())) {
+            return false;
+        }
+    }
+    if (cfg.gain.getDiscriminator() ==
+            AudioPortConfig::OptionalGain::hidl_discriminator::config) {
+        for (const auto& gainMode : cfg.gain.config().mode) {
+            if (xsd::isUnknownAudioGainMode(gainMode)) {
+                return false;
+            }
+        }
+        if (xsd::isUnknownAudioChannelMask(cfg.gain.config().channelMask)) {
+            return false;
+        }
+    }
+    switch (cfg.ext.getDiscriminator()) {
+        case AudioPortExtendedInfo::hidl_discriminator::device:
+            if (xsd::isUnknownAudioDevice(cfg.ext.device().deviceType)) {
+                return false;
+            }
+            break;
+        case AudioPortExtendedInfo::hidl_discriminator::mix:
+            switch (cfg.ext.mix().useCase.getDiscriminator()) {
+                case AudioPortExtendedInfo::AudioPortMixExt::UseCase::hidl_discriminator::stream:
+                    if (xsd::isUnknownAudioStreamType(cfg.ext.mix().useCase.stream())) {
+                        return false;
+                    }
+                    break;
+                case AudioPortExtendedInfo::AudioPortMixExt::UseCase::hidl_discriminator::source:
+                    if (xsd::isUnknownAudioSource(cfg.ext.mix().useCase.source())) {
+                        return false;
+                    }
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    return true;
 }
 
 TimeSpec nsecs2TimeSpec(nsecs_t ns) {
