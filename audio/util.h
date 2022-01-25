@@ -32,6 +32,7 @@ using ::android::hardware::hidl_string;
 using ::android::hardware::audio::common::V7_0::AudioFormat;
 using ::android::hardware::audio::common::V7_0::AudioChannelMask;
 using ::android::hardware::audio::common::V7_0::AudioConfig;
+using ::android::hardware::audio::common::V7_0::AudioPortConfig;
 using ::android::hardware::audio::V7_0::MicrophoneInfo;
 
 MicrophoneInfo getMicrophoneInfo();
@@ -39,10 +40,13 @@ MicrophoneInfo getMicrophoneInfo();
 size_t countChannels(const AudioChannelMask &mask);
 size_t getBytesPerSample(const AudioFormat &format);
 
+bool checkAudioConfig(const AudioConfig &cfg);
 bool checkAudioConfig(bool isOut,
                       size_t duration_ms,
                       const AudioConfig &cfg,
                       AudioConfig &suggested);
+
+bool checkAudioPortConfig(const AudioPortConfig& cfg);
 
 TimeSpec nsecs2TimeSpec(nsecs_t);
 
