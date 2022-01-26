@@ -460,7 +460,7 @@ Return<Result> StreamOut::flush() {
 Return<void> StreamOut::getPresentationPosition(getPresentationPosition_cb _hidl_cb) {
     const auto w = static_cast<WriteThread*>(mWriteThread.get());
     if (!w) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {});
         return Void();
     }
 
