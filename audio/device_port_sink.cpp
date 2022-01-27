@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <android_audio_policy_configuration_V7_0-enums.h>
+#include PATH(APM_XSD_ENUMS_H_FILENAME)
 #include <android-base/properties.h>
 #include <chrono>
 #include <thread>
@@ -31,13 +31,13 @@
 using ::android::base::GetBoolProperty;
 
 namespace xsd {
-using namespace ::android::audio::policy::configuration::V7_0;
+using namespace ::android::audio::policy::configuration::CPP_VERSION;
 }
 
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace CPP_VERSION {
 namespace implementation {
 
 namespace {
@@ -355,7 +355,7 @@ bool DevicePortSink::validateDeviceAddress(const DeviceAddress& address) {
 }
 
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace CPP_VERSION
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android
