@@ -399,7 +399,22 @@ Return<uint32_t> StreamIn::getInputFramesLost() {
 }
 
 Return<void> StreamIn::getCapturePosition(getCapturePosition_cb _hidl_cb) {
-    _hidl_cb(FAILURE(Result::NOT_SUPPORTED), 0, 0);  // see ReadThread::doGetCapturePosition
+    const auto r = static_cast<ReadThread*>(mReadThread.get());
+    if (!r) {
+        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {});
+        return Void();
+    }
+
+    const auto s = r->mSource.get();
+    if (!s) {
+        _hidl_cb(Result::OK, mFrames, systemTime(SYSTEM_TIME_MONOTONIC));
+    } else {
+        uint64_t frames;
+        uint64_t time;
+        const Result r = s->getCapturePosition(frames, time);
+        _hidl_cb(r, frames, time);
+    }
+
     return Void();
 }
 
@@ -436,7 +451,23 @@ bool StreamIn::validateFlags(const hidl_vec<AudioInOutFlag>& flags) {
 }
 
 bool StreamIn::validateSinkMetadata(const SinkMetadata& sinkMetadata) {
-    (void)sinkMetadata;
+    for (const auto& track : sinkMetadata.tracks) {
+        if (xsd::isUnknownAudioSource(track.source)
+                || xsd::isUnknownAudioChannelMask(track.channelMask)) {
+            return false;
+        }
+        if (track.destination.getDiscriminator() ==
+                RecordTrackMetadata::Destination::hidl_discriminator::device) {
+            if (!validateDeviceAddress(track.destination.device())) {
+                return false;
+            }
+        }
+        for (const auto& tag : track.tags) {
+            if (!xsd::isVendorExtension(tag)) {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
