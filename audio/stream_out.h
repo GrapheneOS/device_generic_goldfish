@@ -38,7 +38,7 @@ using namespace ::android::hardware::audio::CORE_TYPES_CPP_VERSION;
 using ::android::hardware::audio::CPP_VERSION::IStreamOut;
 
 struct StreamOut : public IStreamOut {
-    StreamOut(sp<PrimaryDevice> dev,
+    StreamOut(sp<Device> dev,
               int32_t ioHandle,
               const DeviceAddress& device,
               const AudioConfig& config,
@@ -112,7 +112,7 @@ private:
     Result closeImpl(bool fromDctor);
     void updateEffectiveVolumeLocked();
 
-    sp<PrimaryDevice> mDev;
+    sp<Device> mDev;
     const StreamCommon mCommon;
     const SourceMetadata mSourceMetadata;
     std::unique_ptr<IOThread> mWriteThread;
