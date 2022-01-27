@@ -460,7 +460,7 @@ Return<Result> StreamOut::flush() {
 Return<void> StreamOut::getPresentationPosition(getPresentationPosition_cb _hidl_cb) {
     const auto w = static_cast<WriteThread*>(mWriteThread.get());
     if (!w) {
-        _hidl_cb(FAILURE(Result::INVALID_ARGUMENTS), {}, {});
+        _hidl_cb(FAILURE(Result::INVALID_STATE), {}, {});
         return Void();
     }
 
@@ -535,7 +535,18 @@ bool StreamOut::validateFlags(const hidl_vec<AudioInOutFlag>& flags) {
 }
 
 bool StreamOut::validateSourceMetadata(const SourceMetadata& sourceMetadata) {
-    (void)sourceMetadata;
+    for (const auto& track : sourceMetadata.tracks) {
+        if (xsd::isUnknownAudioUsage(track.usage)
+                || xsd::isUnknownAudioContentType(track.contentType)
+                || xsd::isUnknownAudioChannelMask(track.channelMask)) {
+            return false;
+        }
+        for (const auto& tag : track.tags) {
+            if (!xsd::isVendorExtension(tag)) {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
