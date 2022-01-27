@@ -221,7 +221,7 @@ struct ReadThread : public IOThread {
 
 } // namespace
 
-StreamIn::StreamIn(sp<PrimaryDevice> dev,
+StreamIn::StreamIn(sp<Device> dev,
                    int32_t ioHandle,
                    const DeviceAddress& device,
                    const AudioConfig& config,

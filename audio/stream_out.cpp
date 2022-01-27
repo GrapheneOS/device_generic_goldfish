@@ -229,7 +229,7 @@ struct WriteThread : public IOThread {
 
 } // namespace
 
-StreamOut::StreamOut(sp<PrimaryDevice> dev,
+StreamOut::StreamOut(sp<Device> dev,
                      int32_t ioHandle,
                      const DeviceAddress& device,
                      const AudioConfig& config,
