@@ -100,10 +100,7 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_PACKAGES += \
     android.hardware.neuralnetworks@1.3-service-sample-all \
-    android.hardware.neuralnetworks@1.3-service-sample-float-fast \
-    android.hardware.neuralnetworks@1.3-service-sample-float-slow \
-    android.hardware.neuralnetworks@1.3-service-sample-minimal \
-    android.hardware.neuralnetworks@1.3-service-sample-quant
+    android.hardware.neuralnetworks@1.3-service-sample-limited
 
 PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.1-service
