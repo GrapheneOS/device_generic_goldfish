@@ -118,11 +118,13 @@ PRODUCT_PACKAGES += \
     SystemUIEmulationPixel4aOverlay \
     EmulationPixel3XLOverlay \
     SystemUIEmulationPixel3XLOverlay \
+    EmulationPixel3Overlay \
     SystemUIEmulationPixel3Overlay \
+    EmulationPixel3aOverlay \
     SystemUIEmulationPixel3aOverlay \
+    EmulationPixel3aXLOverlay \
     SystemUIEmulationPixel3aXLOverlay \
     EmulationPixel2XLOverlay \
-    SystemUIEmulationPixel2XLOverlay \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
