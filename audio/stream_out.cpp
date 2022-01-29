@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <android_audio_policy_configuration_V7_0-enums.h>
 #include <log/log.h>
 #include <fmq/EventFlag.h>
 #include <fmq/MessageQueue.h>
 #include <hidl/MQDescriptor.h>
 #include <hidl/Status.h>
 #include <utils/ThreadDefs.h>
+#include PATH(APM_XSD_ENUMS_H_FILENAME)
 #include <future>
 #include <thread>
 #include "stream_out.h"
@@ -31,18 +31,18 @@
 #include "debug.h"
 
 namespace xsd {
-using namespace ::android::audio::policy::configuration::V7_0;
+using namespace ::android::audio::policy::configuration::CPP_VERSION;
 }
 
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace CPP_VERSION {
 namespace implementation {
 
 using ::android::hardware::Void;
-using namespace ::android::hardware::audio::common::V7_0;
-using namespace ::android::hardware::audio::V7_0;
+using namespace ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION;
+using namespace ::android::hardware::audio::CORE_TYPES_CPP_VERSION;
 
 namespace {
 
@@ -229,7 +229,7 @@ struct WriteThread : public IOThread {
 
 } // namespace
 
-StreamOut::StreamOut(sp<PrimaryDevice> dev,
+StreamOut::StreamOut(sp<Device> dev,
                      int32_t ioHandle,
                      const DeviceAddress& device,
                      const AudioConfig& config,
@@ -551,7 +551,7 @@ bool StreamOut::validateSourceMetadata(const SourceMetadata& sourceMetadata) {
 }
 
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace CPP_VERSION
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android

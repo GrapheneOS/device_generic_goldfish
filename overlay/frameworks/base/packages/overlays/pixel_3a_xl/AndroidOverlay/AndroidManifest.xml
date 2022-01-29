@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
+/**
  * Copyright (c) 2019, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 -->
-<resources>
-    <!-- the padding on the top of the statusbar (usually 0) -->
-    <dimen name="status_bar_padding_top">1dp</dimen>
-
-    <!-- Location on the screen of the center of the physical power button. -->
-    <dimen name="physical_power_button_center_screen_location_y">480px</dimen>
-
-    <!-- Location on the screen of the center of the physical volume up/down buttons. -->
-    <dimen name="physical_volume_up_button_center_screen_location_y">805px</dimen>
-    <dimen name="physical_volume_down_button_center_screen_location_y">1005px</dimen>
-</resources>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.android.internal.emulation.pixel_3a_xl"
+    android:versionCode="1"
+    android:versionName="1.0">
+    <overlay android:targetPackage="android" android:priority="1"/>
+    <application android:label="Filled" android:hasCode="false"/>
+</manifest>
