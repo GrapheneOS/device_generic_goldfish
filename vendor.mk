@@ -98,10 +98,7 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_PACKAGES += \
     android.hardware.neuralnetworks@1.3-service-sample-all \
-    android.hardware.neuralnetworks@1.3-service-sample-float-fast \
-    android.hardware.neuralnetworks@1.3-service-sample-float-slow \
-    android.hardware.neuralnetworks@1.3-service-sample-minimal \
-    android.hardware.neuralnetworks@1.3-service-sample-quant
+    android.hardware.neuralnetworks@1.3-service-sample-limited
 
 PRODUCT_PACKAGES += \
     android.hardware.keymaster@4.1-service
@@ -118,11 +115,13 @@ PRODUCT_PACKAGES += \
     SystemUIEmulationPixel4aOverlay \
     EmulationPixel3XLOverlay \
     SystemUIEmulationPixel3XLOverlay \
+    EmulationPixel3Overlay \
     SystemUIEmulationPixel3Overlay \
+    EmulationPixel3aOverlay \
     SystemUIEmulationPixel3aOverlay \
+    EmulationPixel3aXLOverlay \
     SystemUIEmulationPixel3aXLOverlay \
     EmulationPixel2XLOverlay \
-    SystemUIEmulationPixel2XLOverlay \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
