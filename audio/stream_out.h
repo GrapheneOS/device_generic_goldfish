@@ -95,6 +95,12 @@ struct StreamOut : public IStreamOut {
     Return<Result> setAudioDescriptionMixLevel(float leveldB) override;
     Return<void> getPlaybackRateParameters(getPlaybackRateParameters_cb _hidl_cb) override;
     Return<Result> setPlaybackRateParameters(const PlaybackRate &playbackRate) override;
+#if MAJOR_VERSION == 7 && MINOR_VERSION == 1
+    Return<Result> setLatencyMode(LatencyMode mode) override;
+    Return<void> getRecommendedLatencyModes(getRecommendedLatencyModes_cb _hidl_cb) override;
+    Return<Result> setLatencyModeCallback(
+            const sp<IStreamOutLatencyModeCallback>& callback) override;
+#endif
 
     void setMasterVolume(float volume);
     float getEffectiveVolume() const { return mEffectiveVolume; }
