@@ -101,7 +101,7 @@ PRODUCT_PACKAGES += \
     android.hardware.neuralnetworks@1.3-service-sample-limited
 
 PRODUCT_PACKAGES += \
-    android.hardware.keymaster@4.1-service
+    android.hardware.security.keymint-service
 
 PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay \
