@@ -348,6 +348,13 @@ Return<void> Device::openInputStream_7_1(int32_t ioHandle, const DeviceAddress& 
     _hidl_cb(result, stream, cfg);
     return Void();
 }
+
+Return<Result> Device::setConnectedState_7_1(const AudioPort& devicePort,
+                                             bool connected) {
+    (void)devicePort;
+    (void)connected;
+    return FAILURE(Result::NOT_SUPPORTED);
+}
 #endif
 
 // ==================
