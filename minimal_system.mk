@@ -26,6 +26,7 @@ PRODUCT_PACKAGES += \
     com.android.adbd \
     com.android.conscrypt \
     debuggerd \
+    gsid \
     hwservicemanager \
     init.environ.rc \
     init_system \
@@ -40,6 +41,7 @@ PRODUCT_PACKAGES += \
     logcat \
     logd \
     odsign \
+    remount \
     run-as \
     selinux_policy_system \
     servicemanager \
