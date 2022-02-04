@@ -22,4 +22,7 @@
     <!-- This is a 'PC' device controlled primarily via keyboard, mouse and
          touchpad. Touchscreen optional. -->
     <feature name="android.hardware.type.pc" />
+
+    <!-- PC-like device should not support MOTION_TRACKING capability level. -->
+    <unavailable-feature name="android.hardware.camera.ar" />
 </permissions>
