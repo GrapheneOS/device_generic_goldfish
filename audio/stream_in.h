@@ -37,7 +37,7 @@ using namespace ::android::hardware::audio::CORE_TYPES_CPP_VERSION;
 using ::android::hardware::audio::CPP_VERSION::IStreamIn;
 
 struct StreamIn : public IStreamIn {
-    StreamIn(sp<PrimaryDevice> dev,
+    StreamIn(sp<Device> dev,
              int32_t ioHandle,
              const DeviceAddress& device,
              const AudioConfig& config,
@@ -97,7 +97,7 @@ struct StreamIn : public IStreamIn {
 private:
     Result closeImpl(bool fromDctor);
 
-    sp<PrimaryDevice> mDev;
+    sp<Device> mDev;
     const StreamCommon mCommon;
     const SinkMetadata mSinkMetadata;
     std::unique_ptr<IOThread> mReadThread;

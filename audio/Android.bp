@@ -102,3 +102,34 @@ cc_library_shared {
         "audio.r_submix.default",
     ],
 }
+
+cc_library_shared {
+    name: "android.hardware.audio.legacy@7.1-impl.ranchu",
+    defaults: ["android.hardware.audio@7.1-impl_default"],
+    relative_install_path: "hw",
+    vendor: true,
+}
+
+cc_library_shared {
+    name: "android.hardware.audio@7.1-impl.ranchu",
+    defaults: ["android.hardware.audio@7.x-impl.ranchu_default"],
+    vintf_fragments: ["android.hardware.audio@7.1-impl.ranchu.xml"],
+    shared_libs: [
+        "android.hardware.audio@7.1",
+        "android.hardware.audio.common@7.1-enums",
+    ],
+    cflags: [
+        "-DLOG_TAG=\"android.hardware.audio@7.1-impl.ranchu\"",
+        "-DMAJOR_VERSION=7",
+        "-DMINOR_VERSION=1",
+        "-DCOMMON_TYPES_MINOR_VERSION=0",
+        "-DCORE_TYPES_MINOR_VERSION=0",
+    ],
+    // a.h.audio@X.0-impl.ranchu (see above) loads a.h.audio.legacy@X.0-impl
+    // which loads audio.r_submix.default which provides the r_submix device,
+    // see b/161485545. Should be retired once a better r_submix is available.
+    required: [
+        "android.hardware.audio.legacy@7.1-impl.ranchu",
+        "audio.r_submix.default",
+    ],
+}
