@@ -16,8 +16,8 @@
 
 #pragma once
 #include <atomic>
-#include <android/hardware/audio/7.0/IStreamOut.h>
-#include <android/hardware/audio/7.0/IDevice.h>
+#include PATH(android/hardware/audio/FILE_VERSION/IStreamOut.h)
+#include PATH(android/hardware/audio/FILE_VERSION/IDevice.h)
 #include "stream_common.h"
 #include "io_thread.h"
 #include "primary_device.h"
@@ -25,7 +25,7 @@
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace CPP_VERSION {
 namespace implementation {
 
 using ::android::sp;
@@ -33,11 +33,12 @@ using ::android::hardware::hidl_bitfield;
 using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::Return;
-using namespace ::android::hardware::audio::common::V7_0;
-using namespace ::android::hardware::audio::V7_0;
+using namespace ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION;
+using namespace ::android::hardware::audio::CORE_TYPES_CPP_VERSION;
+using ::android::hardware::audio::CPP_VERSION::IStreamOut;
 
 struct StreamOut : public IStreamOut {
-    StreamOut(sp<PrimaryDevice> dev,
+    StreamOut(sp<Device> dev,
               int32_t ioHandle,
               const DeviceAddress& device,
               const AudioConfig& config,
@@ -111,7 +112,7 @@ private:
     Result closeImpl(bool fromDctor);
     void updateEffectiveVolumeLocked();
 
-    sp<PrimaryDevice> mDev;
+    sp<Device> mDev;
     const StreamCommon mCommon;
     const SourceMetadata mSourceMetadata;
     std::unique_ptr<IOThread> mWriteThread;
@@ -126,7 +127,7 @@ private:
 };
 
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace CPP_VERSION
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android
