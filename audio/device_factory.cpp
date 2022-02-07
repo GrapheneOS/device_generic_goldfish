@@ -67,6 +67,28 @@ Return<void> DevicesFactory::openPrimaryDevice(openPrimaryDevice_cb _hidl_cb) {
     return Void();
 }
 
+#if MAJOR_VERSION == 7 && MINOR_VERSION == 1
+Return<void> DevicesFactory::openDevice_7_1(const hidl_string& device, openDevice_7_1_cb _hidl_cb) {
+    if (device == AUDIO_HARDWARE_MODULE_ID_PRIMARY) {
+        auto primary = sp<PrimaryDevice>::make();
+        auto getDeviceRet = primary->getDevice();
+        if (getDeviceRet.isOk()) {
+            _hidl_cb(Result::OK, getDeviceRet);
+        } else {
+            _hidl_cb(Result::NOT_INITIALIZED, nullptr);
+        }
+    } else {
+        mLegacyFactory->openDevice_7_1(device, _hidl_cb);
+    }
+    return Void();
+}
+
+Return<void> DevicesFactory::openPrimaryDevice_7_1(openPrimaryDevice_7_1_cb _hidl_cb) {
+    _hidl_cb(Result::OK, new PrimaryDevice);
+    return Void();
+}
+#endif
+
 }  // namespace implementation
 }  // namespace CPP_VERSION
 }  // namespace audio
