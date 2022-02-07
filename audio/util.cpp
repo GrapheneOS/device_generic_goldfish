@@ -14,29 +14,30 @@
  * limitations under the License.
  */
 
-#include <android_audio_policy_configuration_V7_0-enums.h>
 #include <log/log.h>
 //#include <cutils/bitops.h>
 #include <cutils/sched_policy.h>
 #include <system/audio.h>
 #include <sys/resource.h>
 #include <pthread.h>
+#include PATH(APM_XSD_ENUMS_H_FILENAME)
 #include "util.h"
 #include "debug.h"
 
 namespace xsd {
-using namespace ::android::audio::policy::configuration::V7_0;
+using namespace ::android::audio::policy::configuration::CPP_VERSION;
 }
 
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace CPP_VERSION {
 namespace implementation {
 namespace util {
 
-using ::android::hardware::audio::common::V7_0::AudioConfigBaseOptional;
-using ::android::hardware::audio::common::V7_0::AudioPortExtendedInfo;
+using ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION::AudioConfigBaseOptional;
+using ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION::AudioPortExtendedInfo;
+using ::android::hardware::audio::CORE_TYPES_CPP_VERSION::AudioMicrophoneDirectionality;
 
 namespace {
 
@@ -239,7 +240,7 @@ void setThreadPriority(int prio) {
 
 }  // namespace util
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace CPP_VERSION
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android

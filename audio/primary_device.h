@@ -15,15 +15,15 @@
  */
 
 #pragma once
-#include <android/hardware/audio/7.0/IPrimaryDevice.h>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
+#include PATH(android/hardware/audio/FILE_VERSION/IPrimaryDevice.h)
 
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace CPP_VERSION {
 namespace implementation {
 
 using ::android::sp;
@@ -32,8 +32,11 @@ using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::Return;
 
-using namespace ::android::hardware::audio::common::V7_0;
-using namespace ::android::hardware::audio::V7_0;
+using namespace ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION;
+using namespace ::android::hardware::audio::CORE_TYPES_CPP_VERSION;
+using ::android::hardware::audio::CPP_VERSION::IPrimaryDevice;
+using ::android::hardware::audio::CPP_VERSION::IStreamIn;
+using ::android::hardware::audio::CPP_VERSION::IStreamOut;
 
 struct StreamIn;
 struct StreamOut;
@@ -129,7 +132,7 @@ private:
 };
 
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace CPP_VERSION
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android
