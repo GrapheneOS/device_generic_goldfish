@@ -224,10 +224,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.identity-service.example
 
-# Input Classifier HAL
-PRODUCT_PACKAGES += \
-    android.hardware.input.classifier@1.0-service.default
-
 # lights
 PRODUCT_PACKAGES += \
     android.hardware.lights-service.example
