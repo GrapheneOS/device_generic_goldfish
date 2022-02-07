@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <android_audio_policy_configuration_V7_0-enums.h>
 #include <log/log.h>
 #include <system/audio.h>
+#include PATH(APM_XSD_ENUMS_H_FILENAME)
 #include "primary_device.h"
 #include "stream_in.h"
 #include "stream_out.h"
@@ -24,13 +24,13 @@
 #include "debug.h"
 
 namespace xsd {
-using namespace ::android::audio::policy::configuration::V7_0;
+using namespace ::android::audio::policy::configuration::CPP_VERSION;
 }
 
 namespace android {
 namespace hardware {
 namespace audio {
-namespace V7_0 {
+namespace CPP_VERSION {
 namespace implementation {
 
 constexpr size_t kInBufferDurationMs = 15;
@@ -407,7 +407,7 @@ void PrimaryDevice::updateInputStreamMicMute(bool micMute) const {
 }
 
 }  // namespace implementation
-}  // namespace V7_0
+}  // namespace CPP_VERSION
 }  // namespace audio
 }  // namespace hardware
 }  // namespace android
