@@ -514,6 +514,23 @@ Return<Result> StreamOut::setPlaybackRateParameters(const PlaybackRate &playback
     return FAILURE(Result::NOT_SUPPORTED);
 }
 
+#if MAJOR_VERSION == 7 && MINOR_VERSION == 1
+Return<Result> StreamOut::setLatencyMode(LatencyMode mode __unused) {
+    return FAILURE(Result::NOT_SUPPORTED);
+};
+
+Return<void> StreamOut::getRecommendedLatencyModes(getRecommendedLatencyModes_cb _hidl_cb) {
+    hidl_vec<LatencyMode> hidlModes;
+    _hidl_cb(Result::NOT_SUPPORTED, hidlModes);
+    return Void();
+};
+
+Return<Result> StreamOut::setLatencyModeCallback(
+        const sp<IStreamOutLatencyModeCallback>& callback __unused) {
+    return FAILURE(Result::NOT_SUPPORTED);
+};
+#endif
+
 void StreamOut::setMasterVolume(float masterVolume) {
     std::lock_guard<std::mutex> guard(mMutex);
     mMasterVolume = masterVolume;
