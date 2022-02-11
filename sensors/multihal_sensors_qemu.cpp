@@ -293,7 +293,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
      } else if (const char* values = testPrefix(buf, end, "guest-sync", ':')) {
         long long value;
         if ((sscanf(values, "%lld", &value) == 1) && (value >= 0)) {
-            const int64_t guestTimeNs = static_cast<int64_t>(value * 1000ll);
+            const int64_t guestTimeNs = static_cast<int64_t>(value * 1000LL);
             const int64_t timeBiasNs = guestTimeNs - nowNs;
             state->timeBiasNs =
                 std::min(int64_t(0),
