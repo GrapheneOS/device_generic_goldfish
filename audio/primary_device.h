@@ -34,8 +34,8 @@ using ::android::hardware::Return;
 
 using namespace ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION;
 using namespace ::android::hardware::audio::CORE_TYPES_CPP_VERSION;
+using ::android::hardware::audio::CORE_TYPES_CPP_VERSION::IStreamIn;
 using ::android::hardware::audio::CPP_VERSION::IPrimaryDevice;
-using ::android::hardware::audio::CPP_VERSION::IStreamIn;
 using ::android::hardware::audio::CPP_VERSION::IStreamOut;
 
 struct StreamIn;
@@ -94,11 +94,8 @@ struct Device : public IDevice {
                                       const hidl_vec<AudioInOutFlag>& flags,
                                       const SourceMetadata& sourceMetadata,
                                       openOutputStream_7_1_cb _hidl_cb) override;
-    Return<void> openInputStream_7_1(int32_t ioHandle, const DeviceAddress& device,
-                                     const AudioConfig& config,
-                                     const hidl_vec<AudioInOutFlag>& flags,
-                                     const SinkMetadata& sinkMetadata,
-                                     openInputStream_7_1_cb _hidl_cb) override;
+    Return<Result> setConnectedState_7_1(const AudioPort& devicePort,
+                                         bool connected) override;
 #endif
 
   private:

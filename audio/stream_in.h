@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include PATH(android/hardware/audio/FILE_VERSION/IStreamIn.h)
+#include PATH(android/hardware/audio/CORE_TYPES_FILE_VERSION/IStreamIn.h)
 #include PATH(android/hardware/audio/FILE_VERSION/IDevice.h)
 #include "stream_common.h"
 #include "io_thread.h"
@@ -34,7 +34,7 @@ using ::android::hardware::hidl_vec;
 using ::android::hardware::Return;
 using namespace ::android::hardware::audio::common::COMMON_TYPES_CPP_VERSION;
 using namespace ::android::hardware::audio::CORE_TYPES_CPP_VERSION;
-using ::android::hardware::audio::CPP_VERSION::IStreamIn;
+using ::android::hardware::audio::CORE_TYPES_CPP_VERSION::IStreamIn;
 
 struct StreamIn : public IStreamIn {
     StreamIn(sp<Device> dev,

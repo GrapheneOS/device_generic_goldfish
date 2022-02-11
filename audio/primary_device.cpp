@@ -340,13 +340,11 @@ Return<void> Device::openOutputStream_7_1(int32_t ioHandle, const DeviceAddress&
     return Void();
 }
 
-Return<void> Device::openInputStream_7_1(int32_t ioHandle, const DeviceAddress& device,
-        const AudioConfig& config, const hidl_vec<AudioInOutFlag>& flags,
-        const SinkMetadata& sinkMetadata, openInputStream_7_1_cb _hidl_cb) {
-    auto [result, stream, cfg] = openInputStreamImpl(ioHandle, device,
-            config, flags, sinkMetadata);
-    _hidl_cb(result, stream, cfg);
-    return Void();
+Return<Result> Device::setConnectedState_7_1(const AudioPort& devicePort,
+                                             bool connected) {
+    (void)devicePort;
+    (void)connected;
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 #endif
 
