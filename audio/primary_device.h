@@ -99,6 +99,8 @@ struct Device : public IDevice {
                                      const hidl_vec<AudioInOutFlag>& flags,
                                      const SinkMetadata& sinkMetadata,
                                      openInputStream_7_1_cb _hidl_cb) override;
+    Return<Result> setConnectedState_7_1(const AudioPort& devicePort,
+                                         bool connected) override;
 #endif
 
   private:
