@@ -24,6 +24,8 @@ on early-init
     # GTS tests are migrated to ro.boot.qemu.
     setprop ro.kernel.qemu 1
 
+    verity_update_state
+
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
     setrlimit memlock 8388608 8388608
@@ -62,10 +64,12 @@ on init
 on post-fs-data
     setprop vold.post_fs_data_done 1
     mkdir /data/vendor/adb 0755 root root
+    mkdir /data/vendor/devicestate 0755 root root
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
 
     start qemu-adb-keys
+    start qemu-device-state
 
 on zygote-start
     # Create the directories used by the Wireless subsystem
@@ -126,6 +130,9 @@ on property:dev.bootcomplete=1
 on post-fs-data && property:ro.boot.qemu.virtiowifi=1
     start ranchu-net
 
+on property:ro.boot.qemu.cpuvulkan.version=*
+    setprop ro.cpuvulkan.version ${ro.boot.qemu.cpuvulkan.version}
+
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
     user root
@@ -156,6 +163,12 @@ service qemu-props /vendor/bin/qemu-props
     oneshot
 
 service qemu-adb-keys /vendor/bin/qemu-adb-keys
+    class core
+    user root
+    group root
+    oneshot
+
+service qemu-device-state /vendor/bin/qemu-device-state
     class core
     user root
     group root
