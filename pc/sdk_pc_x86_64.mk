@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+PRODUCT_COPY_FILES += device/generic/goldfish/pc/config.ini.pc:config.ini
+
 $(call inherit-product, $(SRC_TARGET_DIR)/product/sdk_x86_64.mk)
 
 PRODUCT_NAME := sdk_pc_x86_64

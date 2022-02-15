@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ifneq ($(filter generic_% generic, $(TARGET_DEVICE)),)
+ifneq ($(filter generic_% generic emulator_% emulator64_% emu64%, $(TARGET_DEVICE)),)
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
