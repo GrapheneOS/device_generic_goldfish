@@ -46,8 +46,6 @@ BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1153433600
 
-BOARD_BOOTIMAGE_PARTITION_SIZE := 50331648
-
 
 # This enables the rules defined in
 # device/generic/goldfish/build/tasks/combine_initramfs.mk
