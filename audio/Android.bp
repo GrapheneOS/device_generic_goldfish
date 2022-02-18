@@ -67,7 +67,7 @@ cc_defaults {
         "libcutils",
         "libhidlbase",
         "liblog",
-        "libtinyalsa",
+        "libtinyalsav2",
         "libutils",
         "libfmq",
         "libprocessgroup",
