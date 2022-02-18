@@ -61,12 +61,21 @@ struct TinyalsaSink : public DevicePortSink {
                                   cfg.base.sampleRateHz,
                                   cfg.frameCount,
                                   true /* isOut */)) {
+        LOG_ALWAYS_FATAL_IF(::pcm_prepare(mPcm.get()));
         mConsumeThread = std::thread(&TinyalsaSink::consumeThread, this);
     }
 
     ~TinyalsaSink() {
         mConsumeThreadRunning = false;
         mConsumeThread.join();
+    }
+
+    Result start() override {
+        return ::pcm_start(mPcm.get()) ? FAILURE(Result::INVALID_STATE) : Result::OK;
+    }
+
+    Result stop() override {
+        return ::pcm_stop(mPcm.get()) ? FAILURE(Result::INVALID_STATE) : Result::OK;
     }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
@@ -235,6 +244,9 @@ struct NullSink : public DevicePortSink {
             , mSampleRateHz(cfg.base.sampleRateHz)
             , mNChannels(util::countChannels(cfg.base.channelMask))
             , mTimestamp(systemTime(SYSTEM_TIME_MONOTONIC)) {}
+
+    Result start() override { return Result::OK; }
+    Result stop() override { return Result::OK; }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
         simulatePresentationPosition();
