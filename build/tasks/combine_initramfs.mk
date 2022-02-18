@@ -25,7 +25,7 @@ ifneq (,$(GOLDFISH_COMBINE_INITRAMFS))
 # support concatenation, so we implement it in the build system.
 $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/boot.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img
 
-$(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/ramdisk.img $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/initramfs.img
+$(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img: $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/ramdisk.img kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/arm64/initramfs.img
 	cat $^ > $@
 
 endif
