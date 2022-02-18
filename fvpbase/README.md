@@ -9,8 +9,11 @@ source](https://source.android.com/setup/build/downloading).
 
 ## Building the kernel
 
-If you're building the kernel for the first time, get the kernel source
-code by running the following:
+It is not normally necessary to build the kernel manually. By
+default, the ``fvp`` target will use the GKI prebuilts for kernel
+version 5.10. If you need to modify the kernel, if you need to use
+a different kernel branch, or if you need graphics in FVP, please
+follow the instructions below.
 
 ```
 mkdir android-kernel-mainline
@@ -86,18 +89,27 @@ The fvp-* lunch targets will build a full Android with UI support, while
 `fvp_mini-*` will build a small subset needed to boot to shell and support
 command line executables.
 
-Prepopulate the build directory with the kernel and firmware binaries. Normally,
-these are copied from the source tree as part of the build process, but not for
-this target yet.
+If you are using FVP, prepopulate the build directory with the
+firmware binaries. Normally, these are copied from the source tree
+as part of the build process, but not for this target yet. This step
+is not required when using QEMU.
 
 ```
 mkdir -p $ANDROID_PRODUCT_OUT
-cp $FVP_KERNEL_PATH/out/android-mainline/dist/Image $ANDROID_PRODUCT_OUT/kernel
-cp $FVP_KERNEL_PATH/out/android-mainline/dist/{fvp-base-revc.dtb,initramfs.img} $ANDROID_PRODUCT_OUT/
-
-# FVP only! QEMU doesn't require custom-built firmware.
 cp $FVP_FIRMWARE_PATH/output/fvp/fvp-uboot/uboot/{bl1,fip}.bin $ANDROID_PRODUCT_OUT/
 ```
+
+If you built a custom kernel, copy or symlink the newly built kernel into your
+source tree. For example:
+```
+mkdir -p kernel/prebuilts/mykernel/arm64
+ln -s $FVP_KERNEL_PATH/out/android-mainline/dist/Image kernel/prebuilts/mykernel/arm64/kernel-mykernel
+
+mkdir -p kernel/prebuilts/common-modules/virtual-device/mykernel
+ln -s $FVP_KERNEL_PATH/out/android-mainline/dist kernel/prebuilts/common-modules/virtual-device/mykernel/arm64
+```
+Then set the ``TARGET_KERNEL_USE`` environment variable to the name that you
+gave to your kernel. For example, ``export TARGET_KERNEL_USE=mykernel``.
 
 Set any additional build environment variables.
 * To enable MTE on all platform binaries (by default it is only enabled on a
