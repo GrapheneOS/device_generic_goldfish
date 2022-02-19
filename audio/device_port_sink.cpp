@@ -17,6 +17,7 @@
 #include PATH(APM_XSD_ENUMS_H_FILENAME)
 #include <android-base/properties.h>
 #include <chrono>
+#include <mutex>
 #include <thread>
 #include <log/log.h>
 #include <utils/Timers.h>
@@ -61,6 +62,7 @@ struct TinyalsaSink : public DevicePortSink {
                                   cfg.base.sampleRateHz,
                                   cfg.frameCount,
                                   true /* isOut */)) {
+        LOG_ALWAYS_FATAL_IF(::pcm_prepare(mPcm.get()));
         mConsumeThread = std::thread(&TinyalsaSink::consumeThread, this);
     }
 
@@ -69,9 +71,19 @@ struct TinyalsaSink : public DevicePortSink {
         mConsumeThread.join();
     }
 
+    Result start() override {
+        return ::pcm_start(mPcm.get()) ? FAILURE(Result::INVALID_STATE) : Result::OK;
+    }
+
+    Result stop() override {
+        return ::pcm_stop(mPcm.get()) ? FAILURE(Result::INVALID_STATE) : Result::OK;
+    }
+
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
+        const std::lock_guard<std::mutex> lock(mFrameCountersMutex);
+
         nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
-        const uint64_t nowFrames = getPresentationFrames(nowNs);
+        const uint64_t nowFrames = getPresentationFramesLocked(nowNs);
         auto presentedFrames = nowFrames - mMissedFrames;
         if (presentedFrames > mReceivedFrames) {
           // There is another underrun that is not yet accounted for in mMissedFrames
@@ -87,13 +99,13 @@ struct TinyalsaSink : public DevicePortSink {
         return Result::OK;
     }
 
-    uint64_t getPresentationFrames(const nsecs_t nowNs) const {
+    uint64_t getPresentationFramesLocked(const nsecs_t nowNs) const {
         return uint64_t(mSampleRateHz) * ns2us(nowNs - mStartNs) / 1000000;
     }
 
-    size_t calcAvailableFramesNow() {
+    size_t calcAvailableFramesNowLocked() {
         const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
-        auto presentationFrames = getPresentationFrames(nowNs);
+        auto presentationFrames = getPresentationFramesLocked(nowNs);
         if (mReceivedFrames + mMissedFrames < presentationFrames) {
             // There has been an underrun
             mMissedFrames = presentationFrames - mReceivedFrames;
@@ -102,15 +114,17 @@ struct TinyalsaSink : public DevicePortSink {
         return mRingBuffer.capacity() / mFrameSize - pendingFrames;
     }
 
-    size_t calcWaitFramesNow(const size_t requestedFrames) {
-        const size_t availableFrames = calcAvailableFramesNow();
+    size_t calcWaitFramesNowLocked(const size_t requestedFrames) {
+        const size_t availableFrames = calcAvailableFramesNowLocked();
         return (requestedFrames > availableFrames)
             ? (requestedFrames - availableFrames) : 0;
     }
 
     size_t write(float volume, size_t bytesToWrite, IReader &reader) {
+        const std::lock_guard<std::mutex> lock(mFrameCountersMutex);
+
         size_t framesLost = 0;
-        const size_t waitFrames = calcWaitFramesNow(bytesToWrite / mFrameSize);
+        const size_t waitFrames = calcWaitFramesNowLocked(bytesToWrite / mFrameSize);
         const auto blockUntil =
             std::chrono::high_resolution_clock::now() +
                 + std::chrono::microseconds(waitFrames * 1000000 / mSampleRateHz);
@@ -227,6 +241,7 @@ private:
     talsa::PcmPtr mPcm;
     std::thread mConsumeThread;
     std::atomic<bool> mConsumeThreadRunning = true;
+    mutable std::mutex mFrameCountersMutex;
 };
 
 struct NullSink : public DevicePortSink {
@@ -235,6 +250,9 @@ struct NullSink : public DevicePortSink {
             , mSampleRateHz(cfg.base.sampleRateHz)
             , mNChannels(util::countChannels(cfg.base.channelMask))
             , mTimestamp(systemTime(SYSTEM_TIME_MONOTONIC)) {}
+
+    Result start() override { return Result::OK; }
+    Result stop() override { return Result::OK; }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
         simulatePresentationPosition();
