@@ -46,8 +46,9 @@ BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1153433600
 
-BOARD_BOOTIMAGE_PARTITION_SIZE := 50331648
+TARGET_KERNEL_USE ?= 5.10
 
+PRODUCT_COPY_FILES += kernel/prebuilts/$(TARGET_KERNEL_USE)/arm64/kernel-$(TARGET_KERNEL_USE):kernel
 
 # This enables the rules defined in
 # device/generic/goldfish/build/tasks/combine_initramfs.mk
@@ -55,7 +56,7 @@ GOLDFISH_COMBINE_INITRAMFS := true
 
 BOARD_MKBOOTIMG_ARGS := --header_version 2 --ramdisk $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)/combined-ramdisk.img
 BOARD_INCLUDE_DTB_IN_BOOTIMG := true
-BOARD_PREBUILT_DTBIMAGE_DIR := $(OUT_DIR)/target/product/$(PRODUCT_DEVICE)
+BOARD_PREBUILT_DTBIMAGE_DIR := kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/arm64
 
 BOARD_KERNEL_CMDLINE := \
 	console=ttyAMA0 \
