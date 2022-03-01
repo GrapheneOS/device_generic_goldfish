@@ -37,4 +37,7 @@
 
     <!-- Disabling voice recognizers for fixing CTS b/215277148 -->
     <unavailable-feature name="android.software.voice_recognizers" />
+
+    <!-- For PC-like device we usually don't have GPS. b/221120472 -->
+    <unavailable-feature name="android.hardware.location.gps" />
 </permissions>
