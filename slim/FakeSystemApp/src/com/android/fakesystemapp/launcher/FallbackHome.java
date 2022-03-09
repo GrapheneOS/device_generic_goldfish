@@ -72,6 +72,7 @@ public final class FallbackHome extends Activity {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         unregisterReceiver(mReceiver);
     }
 
