@@ -72,7 +72,7 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_HOST_PACKAGES += bind_to_localhost
 
-PRODUCT_PACKAGE_OVERLAYS := device/generic/goldfish/overlay
+PRODUCT_PACKAGE_OVERLAYS := device/generic/goldfish/fvpbase/overlay
 
 PRODUCT_NAME := fvp
 PRODUCT_DEVICE := fvpbase
