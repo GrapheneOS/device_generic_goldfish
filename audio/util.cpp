@@ -142,7 +142,7 @@ bool checkAudioConfig(const AudioConfig &cfg) {
         if (const auto& info = cfg.offloadInfo.info();
                 xsd::isUnknownAudioFormat(info.base.format)
                 || xsd::isUnknownAudioChannelMask(info.base.channelMask)
-                || xsd::isUnknownAudioStreamType(info.streamType)
+                || (!info.streamType.empty() && xsd::isUnknownAudioStreamType(info.streamType))
                 || xsd::isUnknownAudioUsage(info.usage)) {
             return false;
         }
@@ -209,7 +209,8 @@ bool checkAudioPortConfig(const AudioPortConfig &cfg) {
         case AudioPortExtendedInfo::hidl_discriminator::mix:
             switch (cfg.ext.mix().useCase.getDiscriminator()) {
                 case AudioPortExtendedInfo::AudioPortMixExt::UseCase::hidl_discriminator::stream:
-                    if (xsd::isUnknownAudioStreamType(cfg.ext.mix().useCase.stream())) {
+                    if (const auto& stream = cfg.ext.mix().useCase.stream();
+                            !stream.empty() && xsd::isUnknownAudioStreamType(stream)) {
                         return false;
                     }
                     break;
