@@ -456,12 +456,6 @@ bool StreamIn::validateSinkMetadata(const SinkMetadata& sinkMetadata) {
                 || xsd::isUnknownAudioChannelMask(track.channelMask)) {
             return false;
         }
-        if (track.destination.getDiscriminator() ==
-                RecordTrackMetadata::Destination::hidl_discriminator::device) {
-            if (!validateDeviceAddress(track.destination.device())) {
-                return false;
-            }
-        }
         for (const auto& tag : track.tags) {
             if (!xsd::isVendorExtension(tag)) {
                 return false;
