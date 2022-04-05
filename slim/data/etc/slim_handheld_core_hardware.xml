@@ -53,7 +53,7 @@ This file should be almost identical to device/generic/goldfish/data/etc/handhel
 
     <!-- basic system services -->
     <feature name="android.software.app_widgets" />
-    <feature name="android.software.connectionservice" />
+    <feature name="android.software.telecom" />
     <feature name="android.software.voice_recognizers" notLowRam="true" />
     <feature name="android.software.backup" />
     <feature name="android.software.home_screen" />
