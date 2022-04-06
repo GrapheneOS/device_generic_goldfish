@@ -66,6 +66,7 @@ PRODUCT_PACKAGES += \
     local_time.default \
     SdkSetup \
     EmulatorRadioConfig \
+    EmulatorConnectivityOverlay \
     EmulatorTetheringConfigOverlay \
     MultiDisplayProvider \
     libGoldfishProfiler
