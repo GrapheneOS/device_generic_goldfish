@@ -2,7 +2,6 @@ abi.type=x86_64
 avd.ini.displayname=Android PC
 avd.ini.encoding=UTF-8
 disk.dataPartition.size=6G
-display.settings.xml=freeform
 fastboot.forceColdBoot=yes
 hw.accelerometer=no
 hw.audioInput=yes
