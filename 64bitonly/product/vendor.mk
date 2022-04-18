@@ -29,7 +29,7 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 
 DISABLE_RILD_OEM_HOOK := true
 
-DEVICE_MANIFEST_FILE := device/generic/goldfish/64bitonly/manifest.xml
+DEVICE_MANIFEST_FILE += device/generic/goldfish/64bitonly/manifest.xml
 
 ifneq ($(EMULATOR_DISABLE_RADIO),true)
 DEVICE_MANIFEST_FILE += device/generic/goldfish/64bitonly/manifest.radio.xml
