@@ -14,7 +14,6 @@ DynamicPartition = on
 HardwareDecoder = on
 YUVCache = on
 GLDirectMem = on
-Vulkan = on
 MultiDisplay = on
 VulkanNullOptionalStrings = on
 VulkanIgnoredHandles = on
