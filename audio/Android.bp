@@ -95,11 +95,19 @@ cc_library_shared {
         "-include common/all-versions/VersionMacro.h",
     ],
     // a.h.audio@X.0-impl.ranchu (see above) loads a.h.audio.legacy@X.0-impl
-    // which loads audio.r_submix.default which provides the r_submix device,
-    // see b/161485545. Should be retired once a better r_submix is available.
+    // which loads:
+    //  - audio.r_submix.default which provides the r_submix device (b/161485545)
+    //  - audio.a2dp.default which provides the a2dp device (b/228804498)
+    //  - audio.bluetooth.default which provides the bluetooth device (b/228804498)
+    // This should be retired once we don't need to load the
+    // deprecated libhardware modules listed above.
+    //
+    // audio.a2dp.default is not part of the required list as it's already in the
+    // generic system image
     required: [
         "android.hardware.audio.legacy@7.0-impl.ranchu",
         "audio.r_submix.default",
+        "audio.bluetooth.default",
     ],
 }
 
@@ -126,10 +134,18 @@ cc_library_shared {
         "-DCORE_TYPES_MINOR_VERSION=0",
     ],
     // a.h.audio@X.0-impl.ranchu (see above) loads a.h.audio.legacy@X.0-impl
-    // which loads audio.r_submix.default which provides the r_submix device,
-    // see b/161485545. Should be retired once a better r_submix is available.
+    // which loads:
+    //  - audio.r_submix.default which provides the r_submix device (b/161485545)
+    //  - audio.a2dp.default which provides the a2dp device (b/228804498)
+    //  - audio.bluetooth.default which provides the bluetooth device (b/228804498)
+    // This should be retired once we don't need to load the
+    // deprecated libhardware modules listed above.
+    //
+    // audio.a2dp.default is not part of the required list as it's already in the
+    // generic system image
     required: [
         "android.hardware.audio.legacy@7.1-impl.ranchu",
         "audio.r_submix.default",
+        "audio.bluetooth.default",
     ],
 }
