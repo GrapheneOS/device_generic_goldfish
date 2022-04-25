@@ -42,7 +42,7 @@ using ::android::hardware::audio::CORE_TYPES_CPP_VERSION::AudioMicrophoneDirecti
 namespace {
 
 const std::array<uint32_t, 8> kSupportedRatesHz = {
-    8000, 11025, 16000, 22050, 24000, 32000, 44100, 48000
+    8000, 11025, 16000, 22050, 32000, 44100, 48000
 };
 
 bool checkSampleRateHz(uint32_t value, uint32_t &suggested) {
