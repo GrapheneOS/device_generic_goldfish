@@ -27,6 +27,10 @@ using ahs10::SensorFlagBits;
 using ahs10::SensorStatus;
 using ahs10::MetaDataEventType;
 
+namespace {
+constexpr int64_t kMaxSamplingPeriodNs = 1000000000;
+}
+
 MultihalSensors::MultihalSensors()
         : m_qemuSensorsFd(qemud_channel_open("sensors"))
         , m_batchInfo(getSensorNumber()) {
@@ -191,6 +195,29 @@ Return<Result> MultihalSensors::batch(const int32_t sensorHandle,
     std::unique_lock<std::mutex> lock(m_mtx);
     if (m_opMode == OperationMode::NORMAL) {
         m_batchInfo[sensorHandle].samplingPeriodNs = samplingPeriodNs;
+
+        auto minSamplingPeriodNs = kMaxSamplingPeriodNs;
+        auto activeSensorsMask = m_activeSensorsMask;
+        for (const auto& b : m_batchInfo) {
+            if (activeSensorsMask & 1) {
+                const auto periodNs = b.samplingPeriodNs;
+                if ((periodNs > 0) && (periodNs < minSamplingPeriodNs)) {
+                    minSamplingPeriodNs = periodNs;
+                }
+            }
+
+            activeSensorsMask >>= 1;
+        }
+
+        const int delayMs = std::max(1, int(minSamplingPeriodNs / 1000000));
+
+        char buffer[64];
+        const int len = snprintf(buffer, sizeof(buffer), "set-delay:%d", delayMs);
+
+        if (qemud_channel_send(m_qemuSensorsFd.get(), buffer, len) < 0) {
+            ALOGE("%s:%d: qemud_channel_send failed", __func__, __LINE__);
+            ::abort();
+        }
     }
 
     return Result::OK;
