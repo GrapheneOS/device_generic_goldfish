@@ -168,9 +168,9 @@ int printUsage(FILE* dst, const int ret) {
     "   where\n"
     "       n_radios - int, [1,100], e.g. 2;\n"
     "       mac_prefix - int, [0, 65535], e.g. 5555.\n\n"
-    "   mac80211_create_radios will delete all existing radios and\n"
-    "   create n_radios with MAC addresses\n"
-    "   02:pp:pp:00:nn:00, where nn is incremented (from zero)\n");
+    "   mac80211_create_radios will create n_radios with MAC addresses\n"
+    "   02:pp:pp:00:nn:00, where nn is incremented (from zero)\n"
+    "   and pp:pp is the mac_prefix specified.\n");
 
     return ret;
 }
