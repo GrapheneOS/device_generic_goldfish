@@ -78,6 +78,7 @@
             <Limit name="measured-frame-rate-1280x720" range="227-251" />
             <Limit name="measured-frame-rate-1920x1080" range="235-247" />
             <Limit name="measured-frame-rate-3840x2160" range="235-247" />
+            <Feature name="adaptive-playback" />
         </MediaCodec>
         <MediaCodec name="OMX.google.h264.decoder" type="video/avc">
             <Limit name="size" min="2x2" max="2560x2560" />
