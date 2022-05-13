@@ -59,6 +59,7 @@ const SensorInfo kAllSensors[] = {
         .requiredPermission = "",
         .maxDelay = 500000,
         .flags = SensorFlagBits::DATA_INJECTION |
+                 SensorFlagBits::ADDITIONAL_INFO |
                  SensorFlagBits::CONTINUOUS_MODE
     },
     {
@@ -77,6 +78,7 @@ const SensorInfo kAllSensors[] = {
         .requiredPermission = "",
         .maxDelay = 500000,
         .flags = SensorFlagBits::DATA_INJECTION |
+                 SensorFlagBits::ADDITIONAL_INFO |
                  SensorFlagBits::CONTINUOUS_MODE
     },
     {
