@@ -11,6 +11,7 @@ on late-fs
 on early-init
     mount proc proc /proc remount hidepid=2,gid=3009
     setprop ro.hardware.vulkan ranchu
+    setprop ro.hardware.gralloc minigbm
 
     # true if ram is <= 2G
     setprop ro.config.low_ram ${ro.boot.config.low_ram}
