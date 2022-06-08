@@ -51,8 +51,8 @@ PRODUCT_PACKAGES += \
     qemu-props \
     stagefright \
     android.hardware.graphics.composer@2.4-service \
-    android.hardware.graphics.allocator@3.0-service \
-    android.hardware.graphics.mapper@3.0-impl-ranchu \
+    android.hardware.graphics.allocator@4.0-service.minigbm \
+    android.hardware.graphics.mapper@4.0-impl.minigbm \
     hwcomposer.ranchu \
     toybox_vendor \
     android.hardware.wifi@1.0-service \
