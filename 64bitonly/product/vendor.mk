@@ -51,8 +51,8 @@ PRODUCT_PACKAGES += \
     qemu-props \
     stagefright \
     android.hardware.graphics.composer@2.4-service \
-    android.hardware.graphics.allocator@3.0-service \
-    android.hardware.graphics.mapper@3.0-impl-ranchu \
+    android.hardware.graphics.allocator@4.0-service.minigbm \
+    android.hardware.graphics.mapper@4.0-impl.minigbm \
     hwcomposer.ranchu \
     toybox_vendor \
     android.hardware.wifi@1.0-service \
@@ -111,8 +111,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.security.keymint-service
 PRODUCT_COPY_FILES += \
-    frameworks/native/data/etc/android.hardware.keystore.app_attest_key.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.keystore.app_attest_key.xml \
-    frameworks/native/data/etc/android.software.device_id_attestation.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.device_id_attestation.xml
+    frameworks/native/data/etc/android.hardware.keystore.app_attest_key.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.keystore.app_attest_key.xml
 
 PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay \
