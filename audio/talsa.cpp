@@ -132,6 +132,61 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
     }
 }
 
+bool pcmPrepare(pcm_t *pcm) {
+    const int r = ::pcm_prepare(pcm);
+    if (r) {
+        ALOGE("%s:%d pcm_prepare failed with %s",
+              __func__, __LINE__, ::pcm_get_error(pcm));
+        return FAILURE(false);
+    } else {
+        return true;
+    }
+}
+
+bool pcmStart(pcm_t *pcm) {
+    const int r = ::pcm_start(pcm);
+    if (r) {
+        ALOGE("%s:%d pcm_start failed with %s",
+              __func__, __LINE__, ::pcm_get_error(pcm));
+        return FAILURE(false);
+    } else {
+        return true;
+    }
+}
+
+bool pcmStop(pcm_t *pcm) {
+    const int r = ::pcm_stop(pcm);
+    if (r) {
+        ALOGE("%s:%d pcm_stop failed with %s",
+              __func__, __LINE__, ::pcm_get_error(pcm));
+        return FAILURE(false);
+    } else {
+        return true;
+    }
+}
+
+bool pcmRead(pcm_t *pcm, void *data, unsigned int count) {
+    const int r = ::pcm_read(pcm, data, count);
+    if (r) {
+        ALOGE("%s:%d pcm_read failed with %s (%d)",
+              __func__, __LINE__, ::pcm_get_error(pcm), r);
+        return FAILURE(false);
+    } else {
+        return true;
+    }
+}
+
+bool pcmWrite(pcm_t *pcm, const void *data, unsigned int count) {
+    const int r = ::pcm_write(pcm, data, count);
+    if (r) {
+        ALOGE("%s:%d pcm_write failed with %s (%d)",
+              __func__, __LINE__, ::pcm_get_error(pcm), r);
+        return FAILURE(false);
+    } else {
+        return true;
+    }
+}
+
 Mixer::Mixer(unsigned card): mMixer(mixerGetOrOpen(card)) {}
 
 Mixer::~Mixer() {
