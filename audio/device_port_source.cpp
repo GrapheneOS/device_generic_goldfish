@@ -63,12 +63,21 @@ struct TinyalsaSource : public DevicePortSource {
                                   cfg.base.sampleRateHz,
                                   cfg.frameCount,
                                   false /* isOut */)) {
+        LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
         mProduceThread = std::thread(&TinyalsaSource::producerThread, this);
     }
 
     ~TinyalsaSource() {
         mProduceThreadRunning = false;
         mProduceThread.join();
+    }
+
+    Result start() override {
+        return talsa::pcmStart(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
+    }
+
+    Result stop() override {
+        return talsa::pcmStop(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
     }
 
     Result getCapturePosition(uint64_t &frames, uint64_t &time) override {
@@ -176,14 +185,7 @@ struct TinyalsaSource : public DevicePortSource {
     }
 
     size_t doRead(void *dst, size_t sz) {
-        const int res = ::pcm_read(mPcm.get(), dst, sz);
-        if (res < 0) {
-            ALOGW("TinyalsaSource::%s:%d pcm_read failed with res=%d",
-                  __func__, __LINE__, res);
-            return 0;
-        }
-
-        return sz;
+        return talsa::pcmRead(mPcm.get(), dst, sz) ? sz : 0;
     }
 
     static std::unique_ptr<TinyalsaSource> create(unsigned pcmCard,
@@ -229,6 +231,9 @@ template <class G> struct GeneratedSource : public DevicePortSource {
             , mSampleRateHz(cfg.base.sampleRateHz)
             , mNChannels(util::countChannels(cfg.base.channelMask))
             , mGenerator(std::move(generator)) {}
+
+    Result start() override { return Result::OK; }
+    Result stop() override { return Result::OK; }
 
     Result getCapturePosition(uint64_t &frames, uint64_t &time) override {
         const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
