@@ -70,9 +70,17 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
-        const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
+        nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
         const uint64_t nowFrames = getPresentationFrames(nowNs);
-        mFrames = std::min(nowFrames - mMissedFrames, mReceivedFrames) + mInitialFrames;
+        auto presentedFrames = nowFrames - mMissedFrames;
+        if (presentedFrames > mReceivedFrames) {
+          // There is another underrun that is not yet accounted for in mMissedFrames
+          auto delta = presentedFrames - mReceivedFrames;
+          presentedFrames -= delta;
+          // The last frame was presented some time ago, reflect that in the result
+          nowNs -= delta * 1000000000 / mSampleRateHz;
+        }
+        mFrames = presentedFrames + mInitialFrames;
 
         frames = mFrames;
         ts = util::nsecs2TimeSpec(nowNs);
