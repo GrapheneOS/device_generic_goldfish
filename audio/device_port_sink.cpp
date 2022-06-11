@@ -84,7 +84,11 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     uint64_t getAvailableFrames(const nsecs_t nowNs) const {
-        return getPresentationFrames(nowNs) - mReceivedFrames;
+        auto presentationFrames = getPresentationFrames(nowNs);
+        auto pendingFrames = mReceivedFrames > presentationFrames
+                                 ? mReceivedFrames - presentationFrames
+                                 : 0;
+        return  mRingBuffer.capacity() / mFrameSize - pendingFrames;
     }
 
     uint64_t getAvailableFramesNow() const {
