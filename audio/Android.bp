@@ -68,7 +68,7 @@ cc_library_shared {
         "libcutils",
         "libhidlbase",
         "liblog",
-        "libtinyalsa",
+        "libtinyalsav2",
         "libutils",
         "libfmq",
         "libprocessgroup",
