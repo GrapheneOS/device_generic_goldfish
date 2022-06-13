@@ -15,9 +15,9 @@
  */
 
 #include <chrono>
-#include <mutex>
 #include <thread>
 #include <log/log.h>
+#include <utils/Mutex.h>
 #include <utils/Timers.h>
 #include <utils/ThreadDefs.h>
 #include "device_port_sink.h"
@@ -72,7 +72,7 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
-        const std::lock_guard<std::mutex> lock(mFrameCountersMutex);
+        const AutoMutex lock(mFrameCountersMutex);
 
         nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
         const uint64_t nowFrames = getPresentationFramesLocked(nowNs);
@@ -113,7 +113,7 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     size_t write(float volume, size_t bytesToWrite, IReader &reader) {
-        const std::lock_guard<std::mutex> lock(mFrameCountersMutex);
+        const AutoMutex lock(mFrameCountersMutex);
 
         size_t framesLost = 0;
         const size_t waitFrames = calcWaitFramesNowLocked(bytesToWrite / mFrameSize);
@@ -225,15 +225,15 @@ private:
     const unsigned mFrameSize;
     const unsigned mWriteSizeFrames;
     const uint64_t mInitialFrames;
-    uint64_t &mFrames;
-    uint64_t mMissedFrames = 0;
-    uint64_t mReceivedFrames = 0;
+    uint64_t &mFrames GUARDED_BY(mFrameCountersMutex);
+    uint64_t mMissedFrames GUARDED_BY(mFrameCountersMutex) = 0;
+    uint64_t mReceivedFrames GUARDED_BY(mFrameCountersMutex) = 0;
     RingBuffer mRingBuffer;
     talsa::Mixer mMixer;
     talsa::PcmPtr mPcm;
     std::thread mConsumeThread;
     std::atomic<bool> mConsumeThreadRunning = true;
-    mutable std::mutex mFrameCountersMutex;
+    mutable Mutex mFrameCountersMutex;
 };
 
 struct NullSink : public DevicePortSink {
