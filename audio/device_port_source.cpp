@@ -168,14 +168,7 @@ struct TinyalsaSource : public DevicePortSource {
     }
 
     size_t doRead(void *dst, size_t sz) {
-        const int res = ::pcm_read(mPcm.get(), dst, sz);
-        if (res < 0) {
-            ALOGW("TinyalsaSource::%s:%d pcm_read failed with res=%d",
-                  __func__, __LINE__, res);
-            return 0;
-        }
-
-        return sz;
+        return talsa::pcmRead(mPcm.get(), dst, sz) ? sz : 0;
     }
 
     static std::unique_ptr<TinyalsaSource> create(unsigned pcmCard,
