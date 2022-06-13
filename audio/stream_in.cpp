@@ -78,6 +78,13 @@ struct ReadThread : public IOThread {
             mEfGroup.reset(rawEfGroup);
         }
 
+        mSource = DevicePortSource::create(mDataMQ.getQuantumCount(),
+                                           stream->getDeviceAddress(),
+                                           stream->getAudioConfig(),
+                                           stream->getAudioOutputFlags(),
+                                           stream->getFrameCounter());
+        LOG_ALWAYS_FATAL_IF(!mSource);
+
         mThread = std::thread(&ReadThread::threadLoop, this);
     }
 
@@ -100,6 +107,14 @@ struct ReadThread : public IOThread {
         return mTid.get_future();
     }
 
+    Result start() {
+        return mSource->start();
+    }
+
+    Result stop() {
+        return mSource->stop();
+    }
+
     void threadLoop() {
         util::setThreadPriority(PRIORITY_URGENT_AUDIO);
         mTid.set_value(pthread_self());
@@ -113,19 +128,11 @@ struct ReadThread : public IOThread {
             }
 
             if (efState & STAND_BY_REQUEST) {
-                mSource.reset();
+                mSource->stop();
             }
 
             if (efState & (MessageQueueFlagBits::NOT_FULL | 0)) {
-                if (!mSource) {
-                    mSource = DevicePortSource::create(mDataMQ.getQuantumCount(),
-                                                       mStream->getDeviceAddress(),
-                                                       mStream->getAudioConfig(),
-                                                       mStream->getAudioOutputFlags(),
-                                                       mStream->getFrameCounter());
-                    LOG_ALWAYS_FATAL_IF(!mSource);
-                }
-
+                mSource->start();
                 processCommand();
             }
         }
@@ -311,11 +318,15 @@ Return<Result> StreamIn::setHwAvSync(uint32_t hwAvSync) {
 }
 
 Return<Result> StreamIn::start() {
-    return FAILURE(Result::NOT_SUPPORTED);
+    return mReadThread
+        ? static_cast<ReadThread*>(mReadThread.get())->start()
+        : FAILURE(Result::INVALID_STATE);
 }
 
 Return<Result> StreamIn::stop() {
-    return FAILURE(Result::NOT_SUPPORTED);
+    return mReadThread
+        ? static_cast<ReadThread*>(mReadThread.get())->stop()
+        : FAILURE(Result::INVALID_STATE);
 }
 
 Return<void> StreamIn::createMmapBuffer(int32_t minSizeFrames,
