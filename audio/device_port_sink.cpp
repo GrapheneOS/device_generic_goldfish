@@ -62,7 +62,7 @@ struct TinyalsaSink : public DevicePortSink {
                                   cfg.base.sampleRateHz,
                                   cfg.frameCount,
                                   true /* isOut */)) {
-        LOG_ALWAYS_FATAL_IF(::pcm_prepare(mPcm.get()));
+        LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
         mConsumeThread = std::thread(&TinyalsaSink::consumeThread, this);
     }
 
@@ -72,11 +72,11 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     Result start() override {
-        return ::pcm_start(mPcm.get()) ? FAILURE(Result::INVALID_STATE) : Result::OK;
+        return talsa::pcmStart(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
     }
 
     Result stop() override {
-        return ::pcm_stop(mPcm.get()) ? FAILURE(Result::INVALID_STATE) : Result::OK;
+        return talsa::pcmStop(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
     }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
@@ -203,11 +203,7 @@ struct TinyalsaSink : public DevicePortSink {
                     LOG_ALWAYS_FATAL_IF(mRingBuffer.consume(chunk, szBytes) < szBytes);
                 }
 
-                int res = ::pcm_write(mPcm.get(), writeBuffer.data(), szBytes);
-                if (res < 0) {
-                    ALOGW("TinyalsaSink::%s:%d pcm_write failed with res=%d",
-                          __func__, __LINE__, res);
-                }
+                talsa::pcmWrite(mPcm.get(), writeBuffer.data(), szBytes);
             }
         }
     }
