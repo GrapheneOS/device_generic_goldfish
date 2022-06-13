@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <android-base/properties.h>
 #include <chrono>
 #include <thread>
 #include <log/log.h>
@@ -26,6 +27,8 @@
 #include "ring_buffer.h"
 #include "util.h"
 #include "debug.h"
+
+using ::android::base::GetBoolProperty;
 
 namespace android {
 namespace hardware {
@@ -343,25 +346,33 @@ DevicePortSink::create(size_t readerBufferSizeHint,
         return FAILURE(nullptr);
     }
 
+    if (GetBoolProperty("ro.boot.audio.tinyalsa.ignore_output", false)) {
+        goto nullsink;
+    }
+
     switch (address.device) {
     case AudioDevice::OUT_SPEAKER:
         {
-            auto sinkptr = TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice, cfg, readerBufferSizeHint, frames);
-            if (sinkptr == nullptr) {
-                ALOGW("%s:%d failed to create alsa sink; created nullsink instead.", __func__, __LINE__);
-                return NullSink::create(cfg, readerBufferSizeHint, frames);
-            } else {
+            auto sinkptr = TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice,
+                                                cfg, readerBufferSizeHint, frames);
+            if (sinkptr != nullptr) {
                 return sinkptr;
+            } else {
+                ALOGW("%s:%d failed to create alsa sink; creating nullsink instead.", __func__, __LINE__);
             }
         }
+        break;
 
     case AudioDevice::OUT_TELEPHONY_TX:
-        return NullSink::create(cfg, readerBufferSizeHint, frames);
+        break;
 
     default:
-        ALOGW("%s:%d unsupported device: %x created nullsink", __func__, __LINE__, address.device);
-        return NullSink::create(cfg, readerBufferSizeHint, frames);
+        ALOGW("%s:%d unsupported device: %x creating nullsink", __func__, __LINE__, address.device);
+        break;
     }
+
+nullsink:
+    return NullSink::create(cfg, readerBufferSizeHint, frames);
 }
 
 }  // namespace implementation

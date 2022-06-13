@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <android-base/properties.h>
 #include <cmath>
 #include <chrono>
 #include <thread>
@@ -29,6 +30,8 @@
 #include "audio_ops.h"
 #include "util.h"
 #include "debug.h"
+
+using ::android::base::GetBoolProperty;
 
 namespace android {
 namespace hardware {
@@ -414,8 +417,14 @@ DevicePortSource::create(size_t writerBufferSizeHint,
 
     switch (address.device) {
     case AudioDevice::IN_BUILTIN_MIC:
-        return TinyalsaSource::create(talsa::kPcmCard, talsa::kPcmDevice,
-                                      cfg, writerBufferSizeHint, frames);
+        if (GetBoolProperty("ro.boot.audio.tinyalsa.simulate_input", false)) {
+            return createGeneratedSource(
+                cfg, writerBufferSizeHint, frames,
+                RepeatGenerator(generateSinePattern(cfg.sampleRateHz, 300.0, 1.0)));
+        } else {
+            return TinyalsaSource::create(talsa::kPcmCard, talsa::kPcmDevice,
+                                          cfg, writerBufferSizeHint, frames);
+        }
 
     case AudioDevice::IN_TELEPHONY_RX:
         return createGeneratedSource(cfg, writerBufferSizeHint, frames,
@@ -428,7 +437,9 @@ DevicePortSource::create(size_t writerBufferSizeHint,
 
     default:
         ALOGE("%s:%d unsupported device: %x", __func__, __LINE__, address.device);
-        return FAILURE(nullptr);
+        return createGeneratedSource(
+            cfg, writerBufferSizeHint, frames,
+            RepeatGenerator(generateSinePattern(cfg.sampleRateHz, 220.0, 1.0)));
     }
 }
 
