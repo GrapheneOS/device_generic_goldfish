@@ -63,8 +63,12 @@ struct TinyalsaSource : public DevicePortSource {
                                   cfg.base.sampleRateHz,
                                   cfg.frameCount,
                                   false /* isOut */)) {
-        LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
-        mProduceThread = std::thread(&TinyalsaSource::producerThread, this);
+        if (mPcm) {
+            LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
+            mProduceThread = std::thread(&TinyalsaSource::producerThread, this);
+        } else {
+            mProduceThread = std::thread([](){});
+        }
     }
 
     ~TinyalsaSource() {
