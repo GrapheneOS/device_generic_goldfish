@@ -57,8 +57,12 @@ struct TinyalsaSink : public DevicePortSink {
                                   cfg.sampleRateHz,
                                   cfg.frameCount,
                                   true /* isOut */)) {
-        LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
-        mConsumeThread = std::thread(&TinyalsaSink::consumeThread, this);
+        if (mPcm) {
+            LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
+            mConsumeThread = std::thread(&TinyalsaSink::consumeThread, this);
+        } else {
+            mConsumeThread = std::thread([](){});
+        }
     }
 
     ~TinyalsaSink() {

@@ -133,6 +133,10 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
 }
 
 bool pcmPrepare(pcm_t *pcm) {
+    if (!pcm) {
+        return FAILURE(false);
+    }
+
     const int r = ::pcm_prepare(pcm);
     if (r) {
         ALOGE("%s:%d pcm_prepare failed with %s",
@@ -144,6 +148,10 @@ bool pcmPrepare(pcm_t *pcm) {
 }
 
 bool pcmStart(pcm_t *pcm) {
+    if (!pcm) {
+        return FAILURE(false);
+    }
+
     const int r = ::pcm_start(pcm);
     if (r) {
         ALOGE("%s:%d pcm_start failed with %s",
@@ -155,6 +163,10 @@ bool pcmStart(pcm_t *pcm) {
 }
 
 bool pcmStop(pcm_t *pcm) {
+    if (!pcm) {
+        return FAILURE(false);
+    }
+
     const int r = ::pcm_stop(pcm);
     if (r) {
         ALOGE("%s:%d pcm_stop failed with %s",
@@ -166,6 +178,10 @@ bool pcmStop(pcm_t *pcm) {
 }
 
 bool pcmRead(pcm_t *pcm, void *data, unsigned int count) {
+    if (!pcm) {
+        return FAILURE(false);
+    }
+
     const int r = ::pcm_read(pcm, data, count);
     if (r) {
         ALOGE("%s:%d pcm_read failed with %s (%d)",
@@ -177,6 +193,10 @@ bool pcmRead(pcm_t *pcm, void *data, unsigned int count) {
 }
 
 bool pcmWrite(pcm_t *pcm, const void *data, unsigned int count) {
+    if (!pcm) {
+        return FAILURE(false);
+    }
+
     const int r = ::pcm_write(pcm, data, count);
     if (r) {
         ALOGE("%s:%d pcm_write failed with %s (%d)",
