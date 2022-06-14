@@ -45,14 +45,12 @@ PRODUCT_PACKAGES += \
     qemu-device-state \
     qemu-props \
     stagefright \
-    fingerprint.ranchu \
     android.hardware.graphics.composer@2.4-service \
     android.hardware.graphics.allocator@4.0-service.minigbm \
     android.hardware.graphics.mapper@4.0-impl.minigbm \
     hwcomposer.ranchu \
     toybox_vendor \
     android.hardware.wifi@1.0-service \
-    android.hardware.biometrics.fingerprint@2.1-service \
     android.hardware.media.c2@1.0-service-goldfish \
     libcodec2_goldfish_vp8dec \
     libcodec2_goldfish_vp9dec \
@@ -68,6 +66,12 @@ PRODUCT_PACKAGES += \
     libstagefright_goldfish_avcdec \
     MultiDisplayProvider \
     libGoldfishProfiler \
+
+ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
+    PRODUCT_PACKAGES += \
+        fingerprint.ranchu \
+        android.hardware.biometrics.fingerprint@2.1-service
+endif
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
 PRODUCT_PACKAGES += \
@@ -126,7 +130,7 @@ PRODUCT_PACKAGES += \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
-PRODUCT_PACKAGES += android.hardware.gnss-service.example
+    PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
@@ -278,7 +282,7 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/init.system_ext.rc:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/init/init.system_ext.rc \
     device/generic/goldfish/fstab.ranchu:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
     device/generic/goldfish/ueventd.ranchu.rc:$(TARGET_COPY_OUT_VENDOR)/ueventd.rc \
-    device/generic/goldfish/input/goldfish_rotary.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/goldfish_rotary.idc \
+    device/generic/goldfish/input/virtio_input_rotary.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/virtio_input_rotary.idc \
     device/generic/goldfish/input/qwerty2.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/qwerty2.idc \
     device/generic/goldfish/input/qwerty.kl:$(TARGET_COPY_OUT_VENDOR)/usr/keylayout/qwerty.kl \
     device/generic/goldfish/input/virtio_input_multi_touch_1.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/virtio_input_multi_touch_1.idc \
@@ -317,7 +321,6 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.camera.front.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.front.xml \
     frameworks/native/data/etc/android.hardware.camera.full.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.full.xml \
     frameworks/native/data/etc/android.hardware.camera.raw.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.raw.xml \
-    frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml \
     frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
     frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \
     frameworks/native/data/etc/android.hardware.vulkan.version-1_1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
@@ -329,3 +332,8 @@ PRODUCT_COPY_FILES += \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_back.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_back.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_front.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_front.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_depth.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_depth.json \
+
+ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
+    PRODUCT_COPY_FILES += \
+        frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml
+endif
