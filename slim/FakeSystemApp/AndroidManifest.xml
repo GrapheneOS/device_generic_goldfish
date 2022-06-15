@@ -124,5 +124,29 @@
                 <data android:scheme="mmsto" />
             </intent-filter>
         </activity>
+        <activity android:name=".browser.StubBrowserActivity"
+                  android:exported="true" >
+            <!-- Catch intents which do not specify a MIME type -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+            </intent-filter>
+            <!-- Catch intents which do specify a MIME type -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:mimeType="text/html"/>
+                <data android:mimeType="text/plain"/>
+                <data android:mimeType="application/xhtml+xml"/>
+                <data android:mimeType="application/vnd.wap.xhtml+xml"/> <!-- XHTML MP -->
+            </intent-filter>
+        </activity>
+
     </application>
 </manifest>
