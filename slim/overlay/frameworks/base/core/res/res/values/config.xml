@@ -32,7 +32,9 @@
   <bool name="config_quickSettingsSupported">false</bool>
   <bool name="config_supportsInsecureLockScreen">false</bool>
   <bool name="config_supportsSplitScreenMultiWindow">false</bool>
+  <bool name ="config_enableWallpaperService">false</bool>
+  <bool name="config_checkWallpaperAtBoot">false</bool>
 
-  <!-- turn off window manager snapshots, which do GL -->
+  <!-- turn off window manager snapshots, which do hardware rendering -->
   <bool name="config_disableTaskSnapshots">true</bool>
 </resources>
