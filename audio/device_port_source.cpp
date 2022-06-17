@@ -71,14 +71,6 @@ struct TinyalsaSource : public DevicePortSource {
         mProduceThread.join();
     }
 
-    Result start() override {
-        return talsa::pcmStart(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
-    }
-
-    Result stop() override {
-        return talsa::pcmStop(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
-    }
-
     Result getCapturePosition(uint64_t &frames, uint64_t &time) override {
         const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);
         const uint64_t nowFrames = getCaptureFrames(nowNs);
@@ -230,9 +222,6 @@ template <class G> struct GeneratedSource : public DevicePortSource {
             , mSampleRateHz(cfg.sampleRateHz)
             , mNChannels(util::countChannels(cfg.channelMask))
             , mGenerator(std::move(generator)) {}
-
-    Result start() override { return Result::OK; }
-    Result stop() override { return Result::OK; }
 
     Result getCapturePosition(uint64_t &frames, uint64_t &time) override {
         const nsecs_t nowNs = systemTime(SYSTEM_TIME_MONOTONIC);

@@ -75,13 +75,6 @@ struct WriteThread : public IOThread {
             mEfGroup.reset(rawEfGroup);
         }
 
-        mSink = DevicePortSink::create(mDataMQ.getQuantumCount(),
-                                       stream->getDeviceAddress(),
-                                       stream->getAudioConfig(),
-                                       stream->getAudioOutputFlags(),
-                                       stream->getFrameCounter());
-        LOG_ALWAYS_FATAL_IF(!mSink);
-
         mThread = std::thread(&WriteThread::threadLoop, this);
     }
 
@@ -104,13 +97,6 @@ struct WriteThread : public IOThread {
         return mTid.get_future();
     }
 
-    Result start() {
-        return mSink->start();
-    }
-
-    Result stop() {
-        return mSink->stop();
-    }
 
     void threadLoop() {
         util::setThreadPriority(PRIORITY_URGENT_AUDIO);
@@ -125,11 +111,19 @@ struct WriteThread : public IOThread {
             }
 
             if (efState & STAND_BY_REQUEST) {
-                mSink->stop();
+                mSink.reset();
             }
 
             if (efState & (MessageQueueFlagBits::NOT_EMPTY | 0)) {
-                mSink->start();
+                if (!mSink) {
+                    mSink = DevicePortSink::create(mDataMQ.getQuantumCount(),
+                                                   mStream->getDeviceAddress(),
+                                                   mStream->getAudioConfig(),
+                                                   mStream->getAudioOutputFlags(),
+                                                   mStream->getFrameCounter());
+                    LOG_ALWAYS_FATAL_IF(!mSink);
+                }
+
                 processCommand();
             }
         }
@@ -370,15 +364,11 @@ Return<Result> StreamOut::close() {
 }
 
 Return<Result> StreamOut::start() {
-    return mWriteThread
-        ? static_cast<WriteThread*>(mWriteThread.get())->start()
-        : FAILURE(Result::INVALID_STATE);
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<Result> StreamOut::stop() {
-    return mWriteThread
-        ? static_cast<WriteThread*>(mWriteThread.get())->stop()
-        : FAILURE(Result::INVALID_STATE);
+    return FAILURE(Result::NOT_SUPPORTED);
 }
 
 Return<void> StreamOut::createMmapBuffer(int32_t minSizeFrames,
