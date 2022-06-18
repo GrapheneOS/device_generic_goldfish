@@ -75,14 +75,6 @@ struct TinyalsaSink : public DevicePortSink {
         mConsumeThread.join();
     }
 
-    Result start() override {
-        return talsa::pcmStart(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
-    }
-
-    Result stop() override {
-        return talsa::pcmStop(mPcm.get()) ? Result::OK : FAILURE(Result::INVALID_STATE);
-    }
-
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
         const AutoMutex lock(mFrameCountersMutex);
 
@@ -251,9 +243,6 @@ struct NullSink : public DevicePortSink {
             , mFrameSize(util::countChannels(cfg.base.channelMask) * sizeof(int16_t))
             , mInitialFrames(frames)
             , mFrames(frames) {}
-
-    Result start() override { return Result::OK; }
-    Result stop() override { return Result::OK; }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
         const AutoMutex lock(mFrameCountersMutex);

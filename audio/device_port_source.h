@@ -31,8 +31,6 @@ using namespace ::android::hardware::audio::V7_0;
 
 struct DevicePortSource {
     virtual ~DevicePortSource() {}
-    virtual Result start() = 0;
-    virtual Result stop() = 0;
     virtual Result getCapturePosition(uint64_t &frames, uint64_t &time) = 0;
     virtual size_t read(float volume, size_t bytesToRead, IWriter &) = 0;
 
