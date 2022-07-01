@@ -7,6 +7,7 @@ GLESDynamicVersion = on
 EncryptUserData = on
 VirtioWifi = on
 HostComposition = on
+RefCountPipe = on
 VirtioInput = on
 DynamicPartition = on
 HardwareDecoder = on
