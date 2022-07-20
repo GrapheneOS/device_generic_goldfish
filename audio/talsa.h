@@ -31,7 +31,9 @@ constexpr unsigned int kPcmCard = 0;
 typedef struct pcm pcm_t;
 struct PcmDeleter { void operator()(pcm_t *x) const; };
 typedef std::unique_ptr<pcm_t, PcmDeleter> PcmPtr;
-PcmPtr pcmOpen(unsigned int dev, unsigned int card, unsigned int nChannels, size_t sampleRateHz, size_t frameCount, bool isOut);
+PcmPtr pcmOpen(unsigned int dev, unsigned int card, unsigned int nChannels,
+               size_t sampleRateHz, size_t periodCount, size_t periodSize,
+               bool isOut);
 bool pcmPrepare(pcm_t *pcm);
 bool pcmStart(pcm_t *pcm);
 bool pcmStop(pcm_t *pcm);
