@@ -105,16 +105,16 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
                                            const unsigned int card,
                                            const unsigned int nChannels,
                                            const size_t sampleRateHz,
-                                           const size_t frameCount,
+                                           const size_t periodCount,
+                                           const size_t periodSize,
                                            const bool isOut) {
     struct pcm_config pcm_config;
     memset(&pcm_config, 0, sizeof(pcm_config));
 
     pcm_config.channels = nChannels;
     pcm_config.rate = sampleRateHz;
-    pcm_config.period_count = 8; // Approx interrupts per buffer
-    // Approx frames between interrupts
-    pcm_config.period_size = 2 * frameCount / pcm_config.period_count;
+    pcm_config.period_count = periodCount; // Approx interrupts per buffer
+    pcm_config.period_size = periodSize; // Approx frames between interrupts
     pcm_config.format = PCM_FORMAT_S16_LE;
 
     PcmPtr pcm =
@@ -125,8 +125,8 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
         return pcm;
     } else {
         ALOGE("%s:%d pcm_open failed for nChannels=%u sampleRateHz=%zu "
-              "frameCount=%zu isOut=%d with %s", __func__, __LINE__,
-              nChannels, sampleRateHz, frameCount, isOut,
+              "period_count=%zu period_size=%zu isOut=%d with %s", __func__, __LINE__,
+              nChannels, sampleRateHz, periodCount, periodSize, isOut,
               pcm_get_error(pcm.get()));
         return FAILURE(nullptr);
     }
