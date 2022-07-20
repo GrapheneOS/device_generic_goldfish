@@ -39,6 +39,8 @@ struct DevicePortSink {
                                                   const AudioConfig &,
                                                   const hidl_bitfield<AudioOutputFlag> &,
                                                   uint64_t &frames);
+
+    static int getLatencyMs(const DeviceAddress &, const AudioConfig &);
 };
 
 }  // namespace implementation
