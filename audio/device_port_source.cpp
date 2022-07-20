@@ -50,6 +50,13 @@ namespace {
 constexpr int kMaxJitterUs = 3000;  // Enforced by CTS, should be <= 6ms
 
 struct TinyalsaSource : public DevicePortSource {
+    // Mostly magic numbers.
+    // In pcm, the hardware works with `period_size` granularity.
+    // The `period_count` is the number of `period_size` units in the pcm
+    // buffer.
+    static constexpr size_t kPcmPeriodCount = 8;
+    static constexpr size_t kPcmPeriodSizeMultiplier = 2;
+
     TinyalsaSource(unsigned pcmCard, unsigned pcmDevice,
                    const AudioConfig &cfg, uint64_t &frames)
             : mStartNs(systemTime(SYSTEM_TIME_MONOTONIC))
@@ -62,7 +69,8 @@ struct TinyalsaSource : public DevicePortSource {
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.base.channelMask),
                                   cfg.base.sampleRateHz,
-                                  cfg.frameCount,
+                                  kPcmPeriodCount,
+                                  kPcmPeriodSizeMultiplier * cfg.frameCount / kPcmPeriodCount,
                                   false /* isOut */)) {
         if (mPcm) {
             LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
