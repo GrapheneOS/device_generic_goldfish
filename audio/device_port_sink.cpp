@@ -46,6 +46,13 @@ namespace {
 constexpr int kMaxJitterUs = 3000;  // Enforced by CTS, should be <= 6ms
 
 struct TinyalsaSink : public DevicePortSink {
+    // Mostly magic numbers.
+    // In pcm, the hardware works with `period_size` granularity.
+    // The `period_count` is the number of `period_size` units in the pcm
+    // buffer.
+    static constexpr size_t kPcmPeriodCount = 8;
+    static constexpr size_t kPcmPeriodSizeMultiplier = 2;
+
     TinyalsaSink(unsigned pcmCard, unsigned pcmDevice,
                  const AudioConfig &cfg,
                  uint64_t &frames)
@@ -60,7 +67,8 @@ struct TinyalsaSink : public DevicePortSink {
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.base.channelMask),
                                   cfg.base.sampleRateHz,
-                                  cfg.frameCount,
+                                  kPcmPeriodCount,
+                                  kPcmPeriodSizeMultiplier * cfg.frameCount / kPcmPeriodCount,
                                   true /* isOut */)) {
         if (mPcm) {
             LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
@@ -73,6 +81,15 @@ struct TinyalsaSink : public DevicePortSink {
     ~TinyalsaSink() {
         mConsumeThreadRunning = false;
         mConsumeThread.join();
+    }
+
+    static int getLatencyMs(const AudioConfig &cfg) {
+        constexpr size_t inMs = 1000;
+        const size_t numerator = kPcmPeriodSizeMultiplier * cfg.frameCount;
+        const size_t denominator = kPcmPeriodCount * cfg.base.sampleRateHz / inMs;
+
+        // integer division with rounding
+        return (numerator + (denominator >> 1)) / denominator;
     }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
@@ -244,6 +261,10 @@ struct NullSink : public DevicePortSink {
             , mInitialFrames(frames)
             , mFrames(frames) {}
 
+    static int getLatencyMs(const AudioConfig &) {
+        return 1;
+    }
+
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
         const AutoMutex lock(mFrameCountersMutex);
 
@@ -375,6 +396,22 @@ DevicePortSink::create(size_t readerBufferSizeHint,
 
 nullsink:
     return NullSink::create(cfg, readerBufferSizeHint, frames);
+}
+
+int DevicePortSink::getLatencyMs(const DeviceAddress &address, const AudioConfig &cfg) {
+    switch (xsd::stringToAudioDevice(address.deviceType)) {
+    default:
+        ALOGW("%s:%d unsupported device: '%s'", __func__, __LINE__, address.deviceType.c_str());
+        return FAILURE(-1);
+
+    case xsd::AudioDevice::AUDIO_DEVICE_OUT_DEFAULT:
+    case xsd::AudioDevice::AUDIO_DEVICE_OUT_SPEAKER:
+        return TinyalsaSink::getLatencyMs(cfg);
+
+    case xsd::AudioDevice::AUDIO_DEVICE_OUT_TELEPHONY_TX:
+    case xsd::AudioDevice::AUDIO_DEVICE_OUT_BUS:
+        return NullSink::getLatencyMs(cfg);
+    }
 }
 
 bool DevicePortSink::validateDeviceAddress(const DeviceAddress& address) {
