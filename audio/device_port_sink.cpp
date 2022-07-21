@@ -86,7 +86,7 @@ struct TinyalsaSink : public DevicePortSink {
     static int getLatencyMs(const AudioConfig &cfg) {
         constexpr size_t inMs = 1000;
         const size_t numerator = kPcmPeriodSizeMultiplier * cfg.frameCount;
-        const size_t denominator = kPcmPeriodCount * cfg.sampleRateHz / inMs;
+        const size_t denominator = kPcmPeriodCount * cfg.base.sampleRateHz / inMs;
 
         // integer division with rounding
         return (numerator + (denominator >> 1)) / denominator;
@@ -399,7 +399,7 @@ nullsink:
 }
 
 int DevicePortSink::getLatencyMs(const DeviceAddress &address, const AudioConfig &cfg) {
-    switch (address.device) {
+    switch (xsd::stringToAudioDevice(address.deviceType)) {
     default:
         ALOGW("%s:%d unsupported device: '%s'", __func__, __LINE__, address.deviceType.c_str());
         return FAILURE(-1);
