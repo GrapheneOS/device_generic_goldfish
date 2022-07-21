@@ -212,8 +212,16 @@ struct WriteThread : public IOThread {
     IStreamOut::WriteStatus doGetLatency() {
         IStreamOut::WriteStatus status;
 
-        status.retval = Result::OK;
-        status.reply.latencyMs = mStream->getLatency();
+        const int latencyMs =
+            DevicePortSink::getLatencyMs(mStream->getDeviceAddress(),
+                                         mStream->getAudioConfig());
+
+        if (latencyMs >= 0) {
+            status.retval = Result::OK;
+            status.reply.latencyMs = latencyMs;
+        } else {
+            status.retval = Result::INVALID_STATE;
+        }
 
         return status;
     }
@@ -358,7 +366,10 @@ Return<void> StreamOut::getMmapPosition(getMmapPosition_cb _hidl_cb) {
 }
 
 Return<uint32_t> StreamOut::getLatency() {
-    return mCommon.getFrameCount() * 1000 / mCommon.getSampleRate();
+    const int latencyMs = DevicePortSink::getLatencyMs(getDeviceAddress(), getAudioConfig());
+
+    return (latencyMs >= 0) ? latencyMs :
+        (mCommon.getFrameCount() * 1000 / mCommon.getSampleRate());
 }
 
 Return<Result> StreamOut::setVolume(float left, float right) {
