@@ -46,13 +46,6 @@ namespace {
 constexpr int kMaxJitterUs = 3000;  // Enforced by CTS, should be <= 6ms
 
 struct TinyalsaSink : public DevicePortSink {
-    // Mostly magic numbers.
-    // In pcm, the hardware works with `period_size` granularity.
-    // The `period_count` is the number of `period_size` units in the pcm
-    // buffer.
-    static constexpr size_t kPcmPeriodCount = 8;
-    static constexpr size_t kPcmPeriodSizeMultiplier = 2;
-
     TinyalsaSink(unsigned pcmCard, unsigned pcmDevice,
                  const AudioConfig &cfg,
                  uint64_t &frames)
@@ -67,8 +60,7 @@ struct TinyalsaSink : public DevicePortSink {
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
                                   util::countChannels(cfg.base.channelMask),
                                   cfg.base.sampleRateHz,
-                                  kPcmPeriodCount,
-                                  kPcmPeriodSizeMultiplier * cfg.frameCount / kPcmPeriodCount,
+                                  cfg.frameCount,
                                   true /* isOut */)) {
         if (mPcm) {
             LOG_ALWAYS_FATAL_IF(!talsa::pcmPrepare(mPcm.get()));
@@ -85,8 +77,10 @@ struct TinyalsaSink : public DevicePortSink {
 
     static int getLatencyMs(const AudioConfig &cfg) {
         constexpr size_t inMs = 1000;
-        const size_t numerator = kPcmPeriodSizeMultiplier * cfg.frameCount;
-        const size_t denominator = kPcmPeriodCount * cfg.base.sampleRateHz / inMs;
+        const talsa::PcmPeriodSettings periodSettings =
+            talsa::pcmGetPcmPeriodSettings();
+        const size_t numerator = periodSettings.periodSizeMultiplier * cfg.frameCount;
+        const size_t denominator = periodSettings.periodCount * cfg.base.sampleRateHz / inMs;
 
         // integer division with rounding
         return (numerator + (denominator >> 1)) / denominator;
