@@ -15,6 +15,7 @@
  */
 
 #include <mutex>
+#include <cutils/properties.h>
 #include <log/log.h>
 #include "talsa.h"
 #include "debug.h"
@@ -31,6 +32,9 @@ namespace {
 struct mixer *gMixer0 = nullptr;
 int gMixerRefcounter0 = 0;
 std::mutex gMixerMutex;
+const PcmPeriodSettings kDefaultPcmPeriodSettings = { 4, 1 };
+PcmPeriodSettings gPcmPeriodSettings;
+std::once_flag gPcmPeriodSettingsFlag;
 
 void mixerSetValueAll(struct mixer_ctl *ctl, int value) {
     const unsigned int n = mixer_ctl_get_num_values(ctl);
@@ -95,7 +99,37 @@ bool mixerUnref(struct mixer *mixer) {
     return mixerUnrefImpl(mixer, gMixer0, gMixerRefcounter0);
 }
 
+bool initPcmPeriodSettings(PcmPeriodSettings *dst) {
+    char prop_value[PROPERTY_VALUE_MAX];
+
+    if (property_get("ro.hardware.audio.tinyalsa.period_count", prop_value, nullptr) < 0) {
+        return false;
+    }
+    if (sscanf(prop_value, "%u", &dst->periodCount) != 1) {
+        return false;
+    }
+
+    if (property_get("ro.hardware.audio.tinyalsa.period_size_multiplier", prop_value, nullptr) < 0) {
+        return false;
+    }
+    if (sscanf(prop_value, "%u", &dst->periodSizeMultiplier) != 1) {
+        return false;
+    }
+
+    return true;
+}
+
 }  // namespace
+
+PcmPeriodSettings pcmGetPcmPeriodSettings() {
+    std::call_once(gPcmPeriodSettingsFlag, [](){
+        if (!initPcmPeriodSettings(&gPcmPeriodSettings)) {
+            gPcmPeriodSettings = kDefaultPcmPeriodSettings;
+        }
+    });
+
+    return gPcmPeriodSettings;
+}
 
 void PcmDeleter::operator()(pcm_t *x) const {
     LOG_ALWAYS_FATAL_IF(::pcm_close(x) != 0);
@@ -105,16 +139,20 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
                                            const unsigned int card,
                                            const unsigned int nChannels,
                                            const size_t sampleRateHz,
-                                           const size_t periodCount,
-                                           const size_t periodSize,
+                                           const size_t frameCount,
                                            const bool isOut) {
+    const PcmPeriodSettings periodSettings = pcmGetPcmPeriodSettings();
+
     struct pcm_config pcm_config;
     memset(&pcm_config, 0, sizeof(pcm_config));
 
     pcm_config.channels = nChannels;
     pcm_config.rate = sampleRateHz;
-    pcm_config.period_count = periodCount; // Approx interrupts per buffer
-    pcm_config.period_size = periodSize; // Approx frames between interrupts
+    // Approx interrupts per buffer
+    pcm_config.period_count = periodSettings.periodCount;
+    // Approx frames between interrupts
+    pcm_config.period_size =
+        periodSettings.periodSizeMultiplier * frameCount / periodSettings.periodCount;
     pcm_config.format = PCM_FORMAT_S16_LE;
 
     PcmPtr pcm =
@@ -125,8 +163,8 @@ std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
         return pcm;
     } else {
         ALOGE("%s:%d pcm_open failed for nChannels=%u sampleRateHz=%zu "
-              "period_count=%zu period_size=%zu isOut=%d with %s", __func__, __LINE__,
-              nChannels, sampleRateHz, periodCount, periodSize, isOut,
+              "period_count=%d period_size=%d isOut=%d with %s", __func__, __LINE__,
+              nChannels, sampleRateHz, pcm_config.period_count, pcm_config.period_size, isOut,
               pcm_get_error(pcm.get()));
         return FAILURE(nullptr);
     }
