@@ -33,6 +33,7 @@ struct mixer *gMixer0 = nullptr;
 int gMixerRefcounter0 = 0;
 std::mutex gMixerMutex;
 PcmPeriodSettings gPcmPeriodSettings;
+unsigned gPcmHostLatencyMs;
 
 void mixerSetValueAll(struct mixer_ctl *ctl, int value) {
     const unsigned int n = mixer_ctl_get_num_values(ctl);
@@ -115,10 +116,17 @@ void init() {
 
     gPcmPeriodSettings.periodSizeMultiplier =
         readUnsignedProperty("ro.hardware.audio.tinyalsa.period_size_multiplier", 1);
+
+    gPcmHostLatencyMs =
+        readUnsignedProperty("ro.hardware.audio.tinyalsa.host_latency_ms", 0);
 }
 
 PcmPeriodSettings pcmGetPcmPeriodSettings() {
     return gPcmPeriodSettings;
+}
+
+unsigned pcmGetHostLatencyMs() {
+    return gPcmHostLatencyMs;
 }
 
 void PcmDeleter::operator()(pcm_t *x) const {
