@@ -33,6 +33,7 @@ struct PcmPeriodSettings {
     unsigned periodSizeMultiplier;
 };
 
+void init();
 PcmPeriodSettings pcmGetPcmPeriodSettings();
 
 typedef struct pcm pcm_t;
