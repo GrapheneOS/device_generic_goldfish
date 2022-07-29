@@ -83,7 +83,7 @@ struct TinyalsaSink : public DevicePortSink {
         const size_t denominator = periodSettings.periodCount * cfg.base.sampleRateHz / inMs;
 
         // integer division with rounding
-        return (numerator + (denominator >> 1)) / denominator;
+        return (numerator + (denominator >> 1)) / denominator + talsa::pcmGetHostLatencyMs();
     }
 
     Result getPresentationPosition(uint64_t &frames, TimeSpec &ts) override {
