@@ -32,7 +32,6 @@ namespace {
 struct mixer *gMixer0 = nullptr;
 int gMixerRefcounter0 = 0;
 std::mutex gMixerMutex;
-const PcmPeriodSettings kDefaultPcmPeriodSettings = { 4, 1 };
 PcmPeriodSettings gPcmPeriodSettings;
 
 void mixerSetValueAll(struct mixer_ctl *ctl, int value) {
@@ -98,32 +97,24 @@ bool mixerUnref(struct mixer *mixer) {
     return mixerUnrefImpl(mixer, gMixer0, gMixerRefcounter0);
 }
 
-bool initPcmPeriodSettings(PcmPeriodSettings *dst) {
-    char prop_value[PROPERTY_VALUE_MAX];
+unsigned readUnsignedProperty(const char *propName, const unsigned defaultValue) {
+    char propValue[PROPERTY_VALUE_MAX];
 
-    if (property_get("ro.hardware.audio.tinyalsa.period_count", prop_value, nullptr) < 0) {
-        return false;
-    }
-    if (sscanf(prop_value, "%u", &dst->periodCount) != 1) {
-        return false;
+    if (property_get(propName, propValue, nullptr) < 0) {
+        return defaultValue;
     }
 
-    if (property_get("ro.hardware.audio.tinyalsa.period_size_multiplier", prop_value, nullptr) < 0) {
-        return false;
-    }
-    if (sscanf(prop_value, "%u", &dst->periodSizeMultiplier) != 1) {
-        return false;
-    }
-
-    return true;
+    unsigned value;
+    return (sscanf(propValue, "%u", &value) == 1) ? value : defaultValue;
 }
-
 }  // namespace
 
 void init() {
-    if (!initPcmPeriodSettings(&gPcmPeriodSettings)) {
-        gPcmPeriodSettings = kDefaultPcmPeriodSettings;
-    }
+    gPcmPeriodSettings.periodCount =
+        readUnsignedProperty("ro.hardware.audio.tinyalsa.period_count", 4);
+
+    gPcmPeriodSettings.periodSizeMultiplier =
+        readUnsignedProperty("ro.hardware.audio.tinyalsa.period_size_multiplier", 1);
 }
 
 PcmPeriodSettings pcmGetPcmPeriodSettings() {
