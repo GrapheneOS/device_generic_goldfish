@@ -34,7 +34,6 @@ int gMixerRefcounter0 = 0;
 std::mutex gMixerMutex;
 const PcmPeriodSettings kDefaultPcmPeriodSettings = { 4, 1 };
 PcmPeriodSettings gPcmPeriodSettings;
-std::once_flag gPcmPeriodSettingsFlag;
 
 void mixerSetValueAll(struct mixer_ctl *ctl, int value) {
     const unsigned int n = mixer_ctl_get_num_values(ctl);
@@ -121,13 +120,13 @@ bool initPcmPeriodSettings(PcmPeriodSettings *dst) {
 
 }  // namespace
 
-PcmPeriodSettings pcmGetPcmPeriodSettings() {
-    std::call_once(gPcmPeriodSettingsFlag, [](){
-        if (!initPcmPeriodSettings(&gPcmPeriodSettings)) {
-            gPcmPeriodSettings = kDefaultPcmPeriodSettings;
-        }
-    });
+void init() {
+    if (!initPcmPeriodSettings(&gPcmPeriodSettings)) {
+        gPcmPeriodSettings = kDefaultPcmPeriodSettings;
+    }
+}
 
+PcmPeriodSettings pcmGetPcmPeriodSettings() {
     return gPcmPeriodSettings;
 }
 
