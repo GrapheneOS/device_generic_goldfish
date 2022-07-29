@@ -61,6 +61,7 @@ on init
 
     setprop ro.hardware.audio.tinyalsa.period_count 4
     setprop ro.hardware.audio.tinyalsa.period_size_multiplier 4
+    setprop ro.hardware.audio.tinyalsa.host_latency_ms 30
 
     start qemu-props
 
