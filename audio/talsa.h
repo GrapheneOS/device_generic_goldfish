@@ -33,7 +33,9 @@ struct PcmPeriodSettings {
     unsigned periodSizeMultiplier;
 };
 
+void init();
 PcmPeriodSettings pcmGetPcmPeriodSettings();
+unsigned pcmGetHostLatencyMs();
 
 typedef struct pcm pcm_t;
 struct PcmDeleter { void operator()(pcm_t *x) const; };
