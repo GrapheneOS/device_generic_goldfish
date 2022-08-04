@@ -310,7 +310,7 @@ Return<void> StreamOut::getParameters(const hidl_vec<ParameterValue>& context,
                                       const hidl_vec<hidl_string>& keys,
                                       getParameters_cb _hidl_cb) {
     (void)context;
-    _hidl_cb((keys.size() > 0) ? FAILURE(Result::NOT_SUPPORTED) : Result::OK, {});
+    _hidl_cb((keys.size() > 0) ? Result::NOT_SUPPORTED : Result::OK, {});
     return Void();
 }
 
@@ -386,7 +386,7 @@ Return<Result> StreamOut::setVolume(float left, float right) {
 
 Return<Result> StreamOut::updateSourceMetadata(const SourceMetadata& sourceMetadata) {
     (void)sourceMetadata;
-    return FAILURE(Result::NOT_SUPPORTED);
+    return Result::NOT_SUPPORTED;
 }
 
 Return<void> StreamOut::prepareForWriting(uint32_t frameSize,
@@ -440,7 +440,7 @@ Return<Result> StreamOut::clearCallback() {
 
 Return<Result> StreamOut::setEventCallback(const sp<IStreamOutEventCallback>& callback) {
     (void)callback;
-    return FAILURE(Result::NOT_SUPPORTED);
+    return Result::NOT_SUPPORTED;
 }
 
 Return<void> StreamOut::supportsPauseAndResume(supportsPauseAndResume_cb _hidl_cb) {
