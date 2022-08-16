@@ -17,13 +17,13 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_RRO_THEME := SystemUIEmulationPixel2XL
+LOCAL_RRO_THEME := EmulationPixel3
 
 LOCAL_PRODUCT_MODULE := true
 
 LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/res
 
-LOCAL_PACKAGE_NAME := SystemUIEmulationPixel2XLOverlay
+LOCAL_PACKAGE_NAME := EmulationPixel3Overlay
 LOCAL_SDK_VERSION := current
 
 LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0
