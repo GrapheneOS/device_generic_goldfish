@@ -24,8 +24,6 @@ on early-init
     # GTS tests are migrated to ro.boot.qemu.
     setprop ro.kernel.qemu 1
 
-    verity_update_state
-
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
     setrlimit memlock 8388608 8388608
@@ -190,10 +188,7 @@ service bugreport /system/bin/dumpstate -d -p -z
     keycodes 114 115 116
 
 service wpa_supplicant /vendor/bin/hw/wpa_supplicant -Dnl80211 -iwlan0 -c/vendor/etc/wifi/wpa_supplicant.conf -g@android:wpa_wlan0
-    interface android.hardware.wifi.supplicant@1.0::ISupplicant default
-    interface android.hardware.wifi.supplicant@1.1::ISupplicant default
-    interface android.hardware.wifi.supplicant@1.2::ISupplicant default
-    interface android.hardware.wifi.supplicant@1.3::ISupplicant default
+    interface aidl android.hardware.wifi.supplicant.ISupplicant/default
     socket wpa_wlan0 dgram 660 wifi wifi
     group system wifi inet
     oneshot
