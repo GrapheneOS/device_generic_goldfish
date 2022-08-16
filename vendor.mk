@@ -72,6 +72,8 @@ ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
     PRODUCT_PACKAGES += \
         fingerprint.ranchu \
         android.hardware.biometrics.fingerprint@2.1-service
+    PRODUCT_COPY_FILES += \
+        frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml
 endif
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
@@ -335,8 +337,3 @@ PRODUCT_COPY_FILES += \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_back.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_back.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_front.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_front.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_depth.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_depth.json \
-
-ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
-    PRODUCT_COPY_FILES += \
-        frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml
-endif
