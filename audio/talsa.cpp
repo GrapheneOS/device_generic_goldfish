@@ -133,12 +133,12 @@ void PcmDeleter::operator()(pcm_t *x) const {
     LOG_ALWAYS_FATAL_IF(::pcm_close(x) != 0);
 };
 
-std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
-                                           const unsigned int card,
-                                           const unsigned int nChannels,
-                                           const size_t sampleRateHz,
-                                           const size_t frameCount,
-                                           const bool isOut) {
+PcmPtr pcmOpen(const unsigned int dev,
+               const unsigned int card,
+               const unsigned int nChannels,
+               const size_t sampleRateHz,
+               const size_t frameCount,
+               const bool isOut) {
     const PcmPeriodSettings periodSettings = pcmGetPcmPeriodSettings();
 
     struct pcm_config pcm_config;
@@ -176,36 +176,6 @@ bool pcmPrepare(pcm_t *pcm) {
     const int r = ::pcm_prepare(pcm);
     if (r) {
         ALOGE("%s:%d pcm_prepare failed with %s",
-              __func__, __LINE__, ::pcm_get_error(pcm));
-        return FAILURE(false);
-    } else {
-        return true;
-    }
-}
-
-bool pcmStart(pcm_t *pcm) {
-    if (!pcm) {
-        return FAILURE(false);
-    }
-
-    const int r = ::pcm_start(pcm);
-    if (r) {
-        ALOGE("%s:%d pcm_start failed with %s",
-              __func__, __LINE__, ::pcm_get_error(pcm));
-        return FAILURE(false);
-    } else {
-        return true;
-    }
-}
-
-bool pcmStop(pcm_t *pcm) {
-    if (!pcm) {
-        return FAILURE(false);
-    }
-
-    const int r = ::pcm_stop(pcm);
-    if (r) {
-        ALOGE("%s:%d pcm_stop failed with %s",
               __func__, __LINE__, ::pcm_get_error(pcm));
         return FAILURE(false);
     } else {
