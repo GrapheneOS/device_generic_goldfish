@@ -133,12 +133,12 @@ void PcmDeleter::operator()(pcm_t *x) const {
     LOG_ALWAYS_FATAL_IF(::pcm_close(x) != 0);
 };
 
-std::unique_ptr<pcm_t, PcmDeleter> pcmOpen(const unsigned int dev,
-                                           const unsigned int card,
-                                           const unsigned int nChannels,
-                                           const size_t sampleRateHz,
-                                           const size_t frameCount,
-                                           const bool isOut) {
+PcmPtr pcmOpen(const unsigned int dev,
+               const unsigned int card,
+               const unsigned int nChannels,
+               const size_t sampleRateHz,
+               const size_t frameCount,
+               const bool isOut) {
     const PcmPeriodSettings periodSettings = pcmGetPcmPeriodSettings();
 
     struct pcm_config pcm_config;
