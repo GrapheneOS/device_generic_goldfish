@@ -183,36 +183,6 @@ bool pcmPrepare(pcm_t *pcm) {
     }
 }
 
-bool pcmStart(pcm_t *pcm) {
-    if (!pcm) {
-        return FAILURE(false);
-    }
-
-    const int r = ::pcm_start(pcm);
-    if (r) {
-        ALOGE("%s:%d pcm_start failed with %s",
-              __func__, __LINE__, ::pcm_get_error(pcm));
-        return FAILURE(false);
-    } else {
-        return true;
-    }
-}
-
-bool pcmStop(pcm_t *pcm) {
-    if (!pcm) {
-        return FAILURE(false);
-    }
-
-    const int r = ::pcm_stop(pcm);
-    if (r) {
-        ALOGE("%s:%d pcm_stop failed with %s",
-              __func__, __LINE__, ::pcm_get_error(pcm));
-        return FAILURE(false);
-    } else {
-        return true;
-    }
-}
-
 bool pcmRead(pcm_t *pcm, void *data, unsigned int count) {
     if (!pcm) {
         return FAILURE(false);
