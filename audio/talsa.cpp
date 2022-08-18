@@ -153,64 +153,34 @@ PcmPtr pcmOpen(const unsigned int dev,
         periodSettings.periodSizeMultiplier * frameCount / periodSettings.periodCount;
     pcm_config.format = PCM_FORMAT_S16_LE;
 
-    PcmPtr pcm =
-        PcmPtr(::pcm_open(dev, card,
-                          (isOut ? PCM_OUT : PCM_IN) | PCM_MONOTONIC,
-                           &pcm_config));
-    if (::pcm_is_ready(pcm.get())) {
-        return pcm;
-    } else {
+    pcm_t *pcmRaw = ::pcm_open(dev, card,
+                               (isOut ? PCM_OUT : PCM_IN) | PCM_MONOTONIC,
+                               &pcm_config);
+    if (!pcmRaw) {
+        ALOGE("%s:%d pcm_open returned nullptr for nChannels=%u sampleRateHz=%zu "
+              "period_count=%d period_size=%d isOut=%d", __func__, __LINE__,
+              nChannels, sampleRateHz, pcm_config.period_count, pcm_config.period_size, isOut);
+        return FAILURE(nullptr);
+    }
+
+    PcmPtr pcm(pcmRaw);
+    if (!::pcm_is_ready(pcmRaw)) {
         ALOGE("%s:%d pcm_open failed for nChannels=%u sampleRateHz=%zu "
               "period_count=%d period_size=%d isOut=%d with %s", __func__, __LINE__,
               nChannels, sampleRateHz, pcm_config.period_count, pcm_config.period_size, isOut,
-              pcm_get_error(pcm.get()));
+              ::pcm_get_error(pcmRaw));
         return FAILURE(nullptr);
     }
-}
 
-bool pcmPrepare(pcm_t *pcm) {
-    if (!pcm) {
-        return FAILURE(false);
+    if (const int err = ::pcm_prepare(pcmRaw)) {
+        ALOGE("%s:%d pcm_prepare failed for nChannels=%u sampleRateHz=%zu "
+              "period_count=%d period_size=%d isOut=%d with %s (%d)", __func__, __LINE__,
+              nChannels, sampleRateHz, pcm_config.period_count, pcm_config.period_size, isOut,
+              ::pcm_get_error(pcmRaw), err);
+        return FAILURE(nullptr);
     }
 
-    const int r = ::pcm_prepare(pcm);
-    if (r) {
-        ALOGE("%s:%d pcm_prepare failed with %s",
-              __func__, __LINE__, ::pcm_get_error(pcm));
-        return FAILURE(false);
-    } else {
-        return true;
-    }
-}
-
-bool pcmStart(pcm_t *pcm) {
-    if (!pcm) {
-        return FAILURE(false);
-    }
-
-    const int r = ::pcm_start(pcm);
-    if (r) {
-        ALOGE("%s:%d pcm_start failed with %s",
-              __func__, __LINE__, ::pcm_get_error(pcm));
-        return FAILURE(false);
-    } else {
-        return true;
-    }
-}
-
-bool pcmStop(pcm_t *pcm) {
-    if (!pcm) {
-        return FAILURE(false);
-    }
-
-    const int r = ::pcm_stop(pcm);
-    if (r) {
-        ALOGE("%s:%d pcm_stop failed with %s",
-              __func__, __LINE__, ::pcm_get_error(pcm));
-        return FAILURE(false);
-    } else {
-        return true;
-    }
+    return pcm;
 }
 
 bool pcmRead(pcm_t *pcm, void *data, unsigned int count) {

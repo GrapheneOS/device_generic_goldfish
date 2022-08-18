@@ -42,9 +42,6 @@ struct PcmDeleter { void operator()(pcm_t *x) const; };
 typedef std::unique_ptr<pcm_t, PcmDeleter> PcmPtr;
 PcmPtr pcmOpen(unsigned int dev, unsigned int card, unsigned int nChannels,
                size_t sampleRateHz, size_t frameCount, bool isOut);
-bool pcmPrepare(pcm_t *pcm);
-bool pcmStart(pcm_t *pcm);
-bool pcmStop(pcm_t *pcm);
 bool pcmRead(pcm_t *pcm, void *data, unsigned int count);
 bool pcmWrite(pcm_t *pcm, const void *data, unsigned int count);
 
