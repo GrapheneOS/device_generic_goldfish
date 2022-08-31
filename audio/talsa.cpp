@@ -182,13 +182,26 @@ bool pcmRead(pcm_t *pcm, void *data, unsigned int count) {
         return FAILURE(false);
     }
 
-    const int r = ::pcm_read(pcm, data, count);
-    if (r) {
-        ALOGE("%s:%d pcm_read failed with %s (%d)",
-              __func__, __LINE__, ::pcm_get_error(pcm), r);
-        return FAILURE(false);
-    } else {
-        return true;
+    int tries = 3;
+    while (true) {
+        --tries;
+        const int r = ::pcm_read(pcm, data, count);
+        switch (-r) {
+        case 0:
+            return true;
+
+        case EIO:
+        case EAGAIN:
+            if (tries > 0) {
+                break;
+            }
+            [[fallthrough]];
+
+        default:
+            ALOGW("%s:%d pcm_read failed with '%s' (%d)",
+                  __func__, __LINE__, ::pcm_get_error(pcm), r);
+            return FAILURE(false);
+        }
     }
 }
 
@@ -197,13 +210,26 @@ bool pcmWrite(pcm_t *pcm, const void *data, unsigned int count) {
         return FAILURE(false);
     }
 
-    const int r = ::pcm_write(pcm, data, count);
-    if (r) {
-        ALOGE("%s:%d pcm_write failed with %s (%d)",
-              __func__, __LINE__, ::pcm_get_error(pcm), r);
-        return FAILURE(false);
-    } else {
-        return true;
+    int tries = 3;
+    while (true) {
+        --tries;
+        const int r = ::pcm_write(pcm, data, count);
+        switch (-r) {
+        case 0:
+            return true;
+
+        case EIO:
+        case EAGAIN:
+            if (tries > 0) {
+                break;
+            }
+            [[fallthrough]];
+
+        default:
+            ALOGW("%s:%d pcm_write failed with '%s' (%d)",
+                  __func__, __LINE__, ::pcm_get_error(pcm), r);
+            return FAILURE(false);
+        }
     }
 }
 
