@@ -74,10 +74,10 @@ void GnssHwListener::consume(char c) {
         m_buffer.push_back(c);
     }
     if (c == '\n') {
-        const ahg20::ElapsedRealtime ts = util::makeElapsedRealtime(util::nowNanos());
+        const ahg20::ElapsedRealtime ts = util::makeElapsedRealtime(android::elapsedRealtimeNano());
 
         if (parse(m_buffer.data() + 1, m_buffer.data() + m_buffer.size() - 2, ts)) {
-            m_sink->gnssNmea(ts.timestampNs / 1000000,
+            m_sink->gnssNmea(util::nowNanos() / 1000000,
                              hidl_string(m_buffer.data(), m_buffer.size()));
         } else {
             m_buffer.back() = 0;
