@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-#include <chrono>
 #include "util.h"
 
 namespace goldfish {
 namespace util {
-
-int64_t nowNanos() {
-    using namespace std::chrono;
-    return time_point_cast<nanoseconds>(system_clock::now()).time_since_epoch().count();
-}
 
 ahg20::ElapsedRealtime makeElapsedRealtime(long long timestampNs) {
     ahg20::ElapsedRealtime ts = {
