@@ -23,8 +23,6 @@ namespace ahg20 = ::android::hardware::gnss::V2_0;
 
 namespace util {
 
-int64_t nowNanos();
-
 ahg20::ElapsedRealtime makeElapsedRealtime(long long timestampNs);
 
 }  // namespace util
