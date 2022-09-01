@@ -74,11 +74,15 @@ void GnssHwListener::consume(char c) {
         m_buffer.push_back(c);
     }
     if (c == '\n') {
-        const ahg20::ElapsedRealtime ts = util::makeElapsedRealtime(util::nowNanos());
+        using namespace std::chrono;
 
-        if (parse(m_buffer.data() + 1, m_buffer.data() + m_buffer.size() - 2, ts)) {
-            m_sink->gnssNmea(ts.timestampNs / 1000000,
-                             hidl_string(m_buffer.data(), m_buffer.size()));
+        const ahg10::GnssUtcTime t = time_point_cast<milliseconds>(
+                system_clock::now()).time_since_epoch().count();
+        const ahg20::ElapsedRealtime ert = util::makeElapsedRealtime(
+                android::elapsedRealtimeNano());
+
+        if (parse(m_buffer.data() + 1, m_buffer.data() + m_buffer.size() - 2, t, ert)) {
+            m_sink->gnssNmea(t, hidl_string(m_buffer.data(), m_buffer.size()));
         } else {
             m_buffer.back() = 0;
             ALOGW("%s:%d: failed to parse an NMEA message, '%s'",
@@ -92,11 +96,12 @@ void GnssHwListener::consume(char c) {
 }
 
 bool GnssHwListener::parse(const char* begin, const char* end,
-                           const ahg20::ElapsedRealtime& ts) {
+                           const ahg10::GnssUtcTime& t,
+                           const ahg20::ElapsedRealtime& ert) {
     if (const char* fields = testNmeaField(begin, end, "GPRMC", ',')) {
-        return parseGPRMC(fields, end, ts);
+        return parseGPRMC(fields, end, t, ert);
     } else if (const char* fields = testNmeaField(begin, end, "GPGGA", ',')) {
-        return parseGPGGA(fields, end, ts);
+        return parseGPGGA(fields, end, t, ert);
     } else {
         return false;
     }
@@ -118,7 +123,8 @@ bool GnssHwListener::parse(const char* begin, const char* end,
 //     11  W          East/West
 //     12  *70        checksum
 bool GnssHwListener::parseGPRMC(const char* begin, const char*,
-                                const ahg20::ElapsedRealtime& ts) {
+                                const ahg10::GnssUtcTime& t,
+                                const ahg20::ElapsedRealtime& ert) {
     double speedKnots = 0;
     double course = 0;
     double variation = 0;
@@ -155,7 +161,7 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
     const double speed = speedKnots * 0.514444;
 
     ahg20::GnssLocation loc20;
-    loc20.elapsedRealtime = ts;
+    loc20.elapsedRealtime = ert;
 
     auto& loc10 = loc20.v1_0;
 
@@ -166,7 +172,7 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
     loc10.horizontalAccuracyMeters = 5;
     loc10.speedAccuracyMetersPerSecond = .5;
     loc10.bearingAccuracyDegrees = 30;
-    loc10.timestamp = ts.timestampNs / 1000000;
+    loc10.timestamp = t;
 
     using ahg10::GnssLocationFlags;
     loc10.gnssLocationFlags =
@@ -205,6 +211,7 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
 //    dgps age         <dontcare> time in seconds since last DGPS fix
 //    dgps sid         <dontcare> DGPS station id
 bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
+                                const ahg10::GnssUtcTime&,
                                 const ahg20::ElapsedRealtime&) {
     double altitude = 0;
     int latdmm = 0;
