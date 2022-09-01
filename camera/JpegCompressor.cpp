@@ -46,7 +46,11 @@ typedef size_t (*GetCompressedSizeFunc)(JpegStub* stub);
 
 NV21JpegCompressor::NV21JpegCompressor()
 {
+#ifdef __LP64__
+    const char dlName[] = "/vendor/lib64/hw/camera.ranchu.jpeg.so";
+#else
     const char dlName[] = "/vendor/lib/hw/camera.ranchu.jpeg.so";
+#endif
     if (mDl == NULL) {
         mDl = dlopen(dlName, RTLD_NOW);
     }
