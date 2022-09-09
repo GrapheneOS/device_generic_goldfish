@@ -46,6 +46,7 @@ PRODUCT_PACKAGES += \
     selinux_policy_system \
     servicemanager \
     shell_and_utilities_system \
+    task_profiles.json \
     tombstoned \
     vold \
 
