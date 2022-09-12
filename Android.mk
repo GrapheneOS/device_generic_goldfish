@@ -34,7 +34,6 @@ $(eval $(call declare-1p-copy-files,device/generic/goldfish,display_settings_fre
 $(eval $(call declare-1p-copy-files,device/generic/goldfish,device_state_configuration.xml))
 $(eval $(call declare-1p-copy-files,device/generic/goldfish,init.ranchu-core.sh))
 $(eval $(call declare-1p-copy-files,device/generic/goldfish,init.ranchu-net.sh))
-$(eval $(call declare-1p-copy-files,device/generic/goldfish,task_profiles.json))
 $(eval $(call declare-1p-copy-files,device/generic/goldfish,audio_policy_configuration.xml))
 
 ifeq ($(BUILD_QEMU_IMAGES),true)
