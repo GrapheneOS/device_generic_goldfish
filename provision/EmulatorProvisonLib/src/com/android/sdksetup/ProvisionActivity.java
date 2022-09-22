@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.sdksetup;
+package com.android.emulatorprovisionlib;
 
 import android.app.Activity;
 import android.app.StatusBarManager;
@@ -36,14 +36,9 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.InputDevice;
 
-/**
- * Entry point for SDK SetupWizard.
- *
- */
-public class DefaultActivity extends Activity {
-    private static final String TAG = "SdkSetup";
-
-    StatusBarManager mStatusBarManager;
+public abstract class ProvisionActivity extends Activity {
+    protected abstract String TAG();
+    private StatusBarManager mStatusBarManager;
 
     @Override
     protected void onCreate(Bundle icicle) {
@@ -58,19 +53,19 @@ public class DefaultActivity extends Activity {
         finish();  // terminate the activity.
     }
 
-    private void preProvivion() {
+    protected void preProvivion() {
         final Context appContext = getApplicationContext();
         mStatusBarManager = appContext.getSystemService(StatusBarManager.class);
 
         mStatusBarManager.setDisabledForSetup(true);
     }
 
-    private void postProvision() {
+    protected void postProvision() {
         mStatusBarManager.setDisabledForSetup(false);
 
         // remove this activity from the package manager.
         final PackageManager pm = getPackageManager();
-        final ComponentName name = new ComponentName(this, DefaultActivity.class);
+        final ComponentName name = new ComponentName(this, this.getClass());
         pm.setComponentEnabledSetting(name, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0);
 
         // Add a persistent setting to allow other apps to know the device has been provisioned.
@@ -78,7 +73,7 @@ public class DefaultActivity extends Activity {
         Settings.Global.putInt(getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 1);
     }
 
-    private void doProvision() {
+    protected void doProvision() {
         provisionWifi("AndroidWifi");
         provisionKeyboard("qwerty2");
         provisionDisplay();
@@ -89,7 +84,7 @@ public class DefaultActivity extends Activity {
         Settings.Secure.putInt(getContentResolver(), Settings.Secure.INSTALL_NON_MARKET_APPS, 1);
     }
 
-    private void provisionWifi(final String ssid) {
+    protected void provisionWifi(final String ssid) {
         final int ADD_NETWORK_FAIL = -1;
         final String quotedSsid = "\"" + ssid + "\"";
 
@@ -101,14 +96,14 @@ public class DefaultActivity extends Activity {
         final int netId = mWifiManager.addNetwork(config);
 
         if (netId == ADD_NETWORK_FAIL || mWifiManager.enableNetwork(netId, true)) {
-            Log.e(TAG, "Unable to add Wi-Fi network " + quotedSsid + ".");
+            Log.e(TAG(), "Unable to add Wi-Fi network " + quotedSsid + ".");
         }
 
         Settings.Global.putInt(getContentResolver(), Settings.Global.TETHER_OFFLOAD_DISABLED, 1);
     }
 
     // Set physical keyboard layout based on the system property set by emulator host.
-    private void provisionKeyboard(final String deviceName) {
+    protected void provisionKeyboard(final String deviceName) {
         final String layoutName = SystemProperties.get("vendor.qemu.keyboard_layout");
         final InputDevice device = getKeyboardDevice(deviceName);
         if (device != null && !layoutName.isEmpty()) {
@@ -116,12 +111,12 @@ public class DefaultActivity extends Activity {
         }
     }
 
-    private void provisionDisplay() {
+    protected void provisionDisplay() {
         final int screen_off_timeout =
             SystemProperties.getInt("ro.boot.qemu.settings.system.screen_off_timeout", 0);
         if (screen_off_timeout > 0) {
             Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, screen_off_timeout);
-            Log.i(TAG, "Setting system screen_off_timeout to be " + screen_off_timeout + " ms");
+            Log.i(TAG(), "Setting system screen_off_timeout to be " + screen_off_timeout + " ms");
         }
 
         final String displaySettingsName = SystemProperties.get("ro.boot.qemu.display.settings.xml");
@@ -140,14 +135,14 @@ public class DefaultActivity extends Activity {
         }
     }
 
-    private void provisionTelephony() {
+    protected void provisionTelephony() {
         // b/193418404
         // the following blocks, TODO: find out why and fix it. disable this for now.
         // TelephonyManager mTelephony = getApplicationContext().getSystemService(TelephonyManager.class);
         // mTelephony.setPreferredNetworkTypeBitmask(TelephonyManager.NETWORK_TYPE_BITMASK_NR);
     }
 
-    private void provisionLocation() {
+    protected void provisionLocation() {
         final LocationManager lm = getSystemService(LocationManager.class);
         lm.setLocationEnabledForUser(true, Process.myUserHandle());
 
@@ -157,12 +152,12 @@ public class DefaultActivity extends Activity {
                 LocationManager.GPS_PROVIDER);
     }
 
-    private void provisionAdb() {
+    protected void provisionAdb() {
         Settings.Global.putInt(getContentResolver(), Settings.Global.ADB_ENABLED, 1);
         Settings.Global.putInt(getContentResolver(), Settings.Global.PACKAGE_VERIFIER_INCLUDE_ADB, 0);
     }
 
-    private InputDevice getKeyboardDevice(final String keyboardDeviceName) {
+    protected InputDevice getKeyboardDevice(final String keyboardDeviceName) {
         final int[] deviceIds = InputDevice.getDeviceIds();
 
         for (int deviceId : deviceIds) {
@@ -177,7 +172,7 @@ public class DefaultActivity extends Activity {
         return null;
     }
 
-    private void setKeyboardLayout(final InputDevice keyboardDevice, final String layoutName) {
+    protected void setKeyboardLayout(final InputDevice keyboardDevice, final String layoutName) {
         final InputManager im = InputManager.getInstance();
 
         final KeyboardLayout[] keyboardLayouts =
