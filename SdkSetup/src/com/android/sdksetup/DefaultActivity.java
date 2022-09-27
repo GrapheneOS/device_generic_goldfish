@@ -90,6 +90,8 @@ public class DefaultActivity extends Activity {
     }
 
     private void provisionWifi(final String ssid) {
+        Settings.Global.putInt(getContentResolver(), Settings.Global.TETHER_OFFLOAD_DISABLED, 1);
+
         final int ADD_NETWORK_FAIL = -1;
         final String quotedSsid = "\"" + ssid + "\"";
 
@@ -103,8 +105,6 @@ public class DefaultActivity extends Activity {
         if (netId == ADD_NETWORK_FAIL || mWifiManager.enableNetwork(netId, true)) {
             Log.e(TAG, "Unable to add Wi-Fi network " + quotedSsid + ".");
         }
-
-        Settings.Global.putInt(getContentResolver(), Settings.Global.TETHER_OFFLOAD_DISABLED, 1);
     }
 
     // Set physical keyboard layout based on the system property set by emulator host.
