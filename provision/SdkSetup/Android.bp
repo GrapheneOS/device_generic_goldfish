@@ -7,6 +7,7 @@ android_app {
     name: "SdkSetup",
     privileged: true,
     srcs: ["**/*.java"],
+    static_libs: ["EmulatorProvisonLib"],
     platform_apis: true,
     certificate: "platform",
     optimize: {
@@ -14,6 +15,7 @@ android_app {
     },
     system_ext_specific: true,
     required: ["privapp_whitelist_com.android.sdksetup"],
+    overrides: ["Provision"],
 }
 
 prebuilt_etc {
