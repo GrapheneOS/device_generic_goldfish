@@ -124,7 +124,8 @@ public class DefaultActivity extends Activity {
             Log.i(TAG, "Setting system screen_off_timeout to be " + screen_off_timeout + " ms");
         }
 
-        final String displaySettingsName = SystemProperties.get("ro.boot.qemu.display.settings.xml");
+        final String displaySettingsProp = "ro.boot.qemu.display.settings.xml";
+        final String displaySettingsName = SystemProperties.get(displaySettingsProp);
         if ("freeform".equals(displaySettingsName)) {
             Settings.Global.putInt(getContentResolver(), "sf", 1);
             Settings.Global.putString(getContentResolver(),
@@ -137,6 +138,8 @@ public class DefaultActivity extends Activity {
         } else if ("resizable".equals(displaySettingsName)) {
             // Enable auto rotate for resizable AVD
             Settings.System.putString(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, "1");
+        } else {
+            Log.e(TAG, "Unexpected value `" + displaySettingsName + "` in " + displaySettingsProp);
         }
     }
 
