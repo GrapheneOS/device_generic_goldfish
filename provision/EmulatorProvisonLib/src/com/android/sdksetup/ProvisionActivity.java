@@ -64,9 +64,10 @@ public abstract class ProvisionActivity extends Activity {
         mStatusBarManager.setDisabledForSetup(false);
 
         // remove this activity from the package manager.
-        final PackageManager pm = getPackageManager();
-        final ComponentName name = new ComponentName(this, this.getClass());
-        pm.setComponentEnabledSetting(name, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0);
+        getPackageManager().setComponentEnabledSetting(
+            new ComponentName(this, this.getClass()),
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP);
 
         // Add a persistent setting to allow other apps to know the device has been provisioned.
         Settings.Secure.putInt(getContentResolver(), Settings.Secure.USER_SETUP_COMPLETE, 1);
@@ -85,6 +86,8 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     protected void provisionWifi(final String ssid) {
+        Settings.Global.putInt(getContentResolver(), Settings.Global.TETHER_OFFLOAD_DISABLED, 1);
+
         final int ADD_NETWORK_FAIL = -1;
         final String quotedSsid = "\"" + ssid + "\"";
 
@@ -98,8 +101,6 @@ public abstract class ProvisionActivity extends Activity {
         if (netId == ADD_NETWORK_FAIL || mWifiManager.enableNetwork(netId, true)) {
             Log.e(TAG(), "Unable to add Wi-Fi network " + quotedSsid + ".");
         }
-
-        Settings.Global.putInt(getContentResolver(), Settings.Global.TETHER_OFFLOAD_DISABLED, 1);
     }
 
     // Set physical keyboard layout based on the system property set by emulator host.
@@ -119,7 +120,8 @@ public abstract class ProvisionActivity extends Activity {
             Log.i(TAG(), "Setting system screen_off_timeout to be " + screen_off_timeout + " ms");
         }
 
-        final String displaySettingsName = SystemProperties.get("ro.boot.qemu.display.settings.xml");
+        final String displaySettingsProp = "ro.boot.qemu.display.settings.xml";
+        final String displaySettingsName = SystemProperties.get(displaySettingsProp);
         if ("freeform".equals(displaySettingsName)) {
             Settings.Global.putInt(getContentResolver(), "sf", 1);
             Settings.Global.putString(getContentResolver(),
@@ -132,6 +134,8 @@ public abstract class ProvisionActivity extends Activity {
         } else if ("resizable".equals(displaySettingsName)) {
             // Enable auto rotate for resizable AVD
             Settings.System.putString(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, "1");
+        } else {
+            Log.e(TAG(), "Unexpected value `" + displaySettingsName + "` in " + displaySettingsProp);
         }
     }
 
