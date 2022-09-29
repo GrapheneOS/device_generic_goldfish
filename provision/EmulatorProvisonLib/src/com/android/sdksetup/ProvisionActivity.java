@@ -48,6 +48,9 @@ public abstract class ProvisionActivity extends Activity {
             preProvivion();
             doProvision();
             postProvision();
+        } else {
+            Log.w(TAG(), "Already provisioned, remove itself.");
+            removeSelf();
         }
 
         finish();  // terminate the activity.
@@ -63,15 +66,19 @@ public abstract class ProvisionActivity extends Activity {
     protected void postProvision() {
         mStatusBarManager.setDisabledForSetup(false);
 
-        // remove this activity from the package manager.
-        getPackageManager().setComponentEnabledSetting(
-            new ComponentName(this, this.getClass()),
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP);
+        removeSelf();
 
         // Add a persistent setting to allow other apps to know the device has been provisioned.
         Settings.Secure.putInt(getContentResolver(), Settings.Secure.USER_SETUP_COMPLETE, 1);
         Settings.Global.putInt(getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 1);
+    }
+
+    // remove this activity from the package manager.
+    protected void removeSelf() {
+        getPackageManager().setComponentEnabledSetting(
+                new ComponentName(this, this.getClass()),
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP);
     }
 
     protected void doProvision() {
@@ -98,7 +105,7 @@ public abstract class ProvisionActivity extends Activity {
         final WifiManager mWifiManager = getApplicationContext().getSystemService(WifiManager.class);
         final int netId = mWifiManager.addNetwork(config);
 
-        if (netId == ADD_NETWORK_FAIL || mWifiManager.enableNetwork(netId, true)) {
+        if (netId == ADD_NETWORK_FAIL || !mWifiManager.enableNetwork(netId, true)) {
             Log.e(TAG(), "Unable to add Wi-Fi network " + quotedSsid + ".");
         }
     }
@@ -134,7 +141,7 @@ public abstract class ProvisionActivity extends Activity {
         } else if ("resizable".equals(displaySettingsName)) {
             // Enable auto rotate for resizable AVD
             Settings.System.putString(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, "1");
-        } else {
+        } else if (!displaySettingsName.isEmpty()) {
             Log.e(TAG(), "Unexpected value `" + displaySettingsName + "` in " + displaySettingsProp);
         }
     }
