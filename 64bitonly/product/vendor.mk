@@ -90,12 +90,16 @@ PRODUCT_PACKAGES += \
     libGLESv2_angle
 endif
 
+#
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     bt_vhci_forwarder \
     android.hardware.bluetooth@1.1-service.btlinux \
     android.hardware.bluetooth.audio@2.1-impl
- #
+
+# Bluetooth hardware properties.
+TARGET_PRODUCT_PROP := $(LOCAL_PATH)/../../bluetooth.prop
+
 # Bluetooth se policies
 BOARD_SEPOLICY_DIRS += system/bt/vendor_libs/linux/sepolicy
 
