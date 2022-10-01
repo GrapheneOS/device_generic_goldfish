@@ -50,6 +50,8 @@ PRODUCT_PACKAGES += \
     android.hardware.audio.effect@6.0-impl:32 \
     audio.primary.default \
     audio.r_submix.default \
+    android.hardware.drm@1.0-service \
+    android.hardware.drm@1.0-impl \
     android.hardware.drm-service.clearkey \
     android.hardware.gatekeeper@1.0-service.software \
     android.hardware.graphics.allocator@2.0-service \
