@@ -100,15 +100,6 @@ PRODUCT_PACKAGES += \
 BOARD_SEPOLICY_DIRS += system/bt/vendor_libs/linux/sepolicy
 
 PRODUCT_PACKAGES += \
-    android.hardware.health@2.1-service \
-    android.hardware.health@2.1-impl \
-    android.hardware.health.storage@1.0-service \
-
-PRODUCT_PACKAGES += \
-    android.hardware.neuralnetworks@1.3-service-sample-all \
-    android.hardware.neuralnetworks@1.3-service-sample-limited
-
-PRODUCT_PACKAGES += \
     android.hardware.security.keymint-service
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.keystore.app_attest_key.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.keystore.app_attest_key.xml
@@ -155,19 +146,12 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.0-impl \
     android.hardware.drm-service.clearkey
 
-
-PRODUCT_PACKAGES += \
-    android.hardware.power-service.example \
-
 PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions?=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
 PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
 PRODUCT_VENDOR_PROPERTIES += graphics.gpu.profiler.support=true
 
 PRODUCT_PROPERTY_OVERRIDES += persist.sys.zram_enabled=1 \
-
-PRODUCT_PACKAGES += \
-    android.hardware.dumpstate@1.1-service.example \
 
 # Prevent logcat from getting canceled early on in boot
 PRODUCT_PROPERTY_OVERRIDES += ro.logd.size=1M \
@@ -218,38 +202,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.usb@1.0-service
 
-# Thermal
-PRODUCT_PACKAGES += \
-	android.hardware.thermal@2.0-service.mock
-
-# Atrace
-PRODUCT_PACKAGES += \
-	android.hardware.atrace@1.0-service
-
-# Vibrator
-PRODUCT_PACKAGES += \
-	android.hardware.vibrator-service.example
-
-# Authsecret
-PRODUCT_PACKAGES += \
-    android.hardware.authsecret@1.0-service
-
-# Identity
-PRODUCT_PACKAGES += \
-    android.hardware.identity-service.example
-
-# lights
-PRODUCT_PACKAGES += \
-    android.hardware.lights-service.example
-
-# power stats
-PRODUCT_PACKAGES += \
-    android.hardware.power.stats@1.0-service.mock
-
-# Reboot escrow
-PRODUCT_PACKAGES += \
-    android.hardware.rebootescrow-service.default
-
 # Extension implementation for Jetpack WindowManager
 PRODUCT_PACKAGES += \
     androidx.window.extensions \
@@ -257,9 +209,6 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.face@1.0-service.example
-
-PRODUCT_PACKAGES += \
-    android.hardware.contexthub@1.1-service.mock
 
 # for 32, 32+64 guest, default using omx, but can be
 # modified at command line as follows
@@ -270,6 +219,24 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # Enable Incremental on the device via kernel driver
 PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
 
+# "Hello, world!" HAL implementations, mostly for compliance
+PRODUCT_PACKAGES += \
+    android.hardware.atrace@1.0-service \
+    android.hardware.authsecret@1.0-service \
+    android.hardware.contexthub@1.1-service.mock \
+    android.hardware.dumpstate@1.1-service.example \
+    android.hardware.health@2.1-service \
+    android.hardware.health@2.1-impl \
+    android.hardware.health.storage@1.0-service \
+    android.hardware.identity-service.example \
+    android.hardware.lights-service.example \
+    android.hardware.neuralnetworks@1.3-service-sample-all \
+    android.hardware.neuralnetworks@1.3-service-sample-limited \
+    android.hardware.power-service.example \
+    android.hardware.power.stats@1.0-service.mock \
+    android.hardware.rebootescrow-service.default \
+    android.hardware.thermal@2.0-service.mock \
+    android.hardware.vibrator-service.example
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/dtb.img:dtb.img \
