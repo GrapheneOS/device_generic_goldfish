@@ -224,7 +224,7 @@ PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
 PRODUCT_PACKAGES += \
     android.hardware.atrace@1.0-service \
     android.hardware.authsecret-service.example \
-    android.hardware.contexthub@1.1-service.mock \
+    android.hardware.contexthub-service.example \
     android.hardware.dumpstate@1.1-service.example \
     android.hardware.health@2.1-service \
     android.hardware.health@2.1-impl \
