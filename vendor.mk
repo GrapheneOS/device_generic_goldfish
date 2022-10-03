@@ -225,9 +225,8 @@ PRODUCT_PACKAGES += \
     android.hardware.authsecret-service.example \
     android.hardware.contexthub-service.example \
     android.hardware.dumpstate-service.example \
-    android.hardware.health@2.1-service \
-    android.hardware.health@2.1-impl \
-    android.hardware.health.storage@1.0-service \
+    android.hardware.health-service.example \
+    android.hardware.health.storage-service.default \
     android.hardware.identity-service.example \
     android.hardware.lights-service.example \
     android.hardware.neuralnetworks@1.3-service-sample-all \
