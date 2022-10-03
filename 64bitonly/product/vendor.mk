@@ -119,7 +119,7 @@ PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay \
     EmulationPixel5Overlay \
     SystemUIEmulationPixel5Overlay \
-    EmulationPixel4XLOverlay 4\
+    EmulationPixel4XLOverlay \
     SystemUIEmulationPixel4XLOverlay \
     EmulationPixel4Overlay \
     SystemUIEmulationPixel4Overlay \
