@@ -232,7 +232,7 @@ PRODUCT_PACKAGES += \
     android.hardware.neuralnetworks@1.3-service-sample-all \
     android.hardware.neuralnetworks@1.3-service-sample-limited \
     android.hardware.power-service.example \
-    android.hardware.power.stats@1.0-service.mock \
+    android.hardware.power.stats-service.example \
     android.hardware.rebootescrow-service.default \
     android.hardware.thermal@2.0-service.mock \
     android.hardware.vibrator-service.example
