@@ -223,17 +223,16 @@ PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
 PRODUCT_PACKAGES += \
     android.hardware.atrace@1.0-service \
     android.hardware.authsecret-service.example \
-    android.hardware.contexthub@1.1-service.mock \
-    android.hardware.dumpstate@1.1-service.example \
-    android.hardware.health@2.1-service \
-    android.hardware.health@2.1-impl \
-    android.hardware.health.storage@1.0-service \
+    android.hardware.contexthub-service.example \
+    android.hardware.dumpstate-service.example \
+    android.hardware.health-service.example \
+    android.hardware.health.storage-service.default \
     android.hardware.identity-service.example \
     android.hardware.lights-service.example \
     android.hardware.neuralnetworks@1.3-service-sample-all \
     android.hardware.neuralnetworks@1.3-service-sample-limited \
     android.hardware.power-service.example \
-    android.hardware.power.stats@1.0-service.mock \
+    android.hardware.power.stats-service.example \
     android.hardware.rebootescrow-service.default \
     android.hardware.thermal@2.0-service.mock \
     android.hardware.vibrator-service.example
