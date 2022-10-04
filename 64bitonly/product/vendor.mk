@@ -21,19 +21,13 @@ $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvi
 # Enable Scoped Storage related
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
+DEVICE_MANIFEST_FILE += device/generic/goldfish/64bitonly/manifest.xml
+
 PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
     device/generic/goldfish-opengl
 
 PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
-
-DISABLE_RILD_OEM_HOOK := true
-
-DEVICE_MANIFEST_FILE += device/generic/goldfish/64bitonly/manifest.xml
-
-ifneq ($(EMULATOR_DISABLE_RADIO),true)
-DEVICE_MANIFEST_FILE += device/generic/goldfish/64bitonly/manifest.radio.xml
-endif
 
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera/devices/EmulatedCamera
@@ -44,8 +38,6 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    libcuttlefish-ril-2 \
-    libgoldfish-rild \
     qemu-adb-keys \
     qemu-device-state \
     qemu-props \
@@ -64,11 +56,20 @@ PRODUCT_PACKAGES += \
     sh_vendor \
     local_time.default \
     SdkSetup \
-    EmulatorRadioConfig \
     goldfish_overlay_connectivity_gsi \
-    EmulatorTetheringConfigOverlay \
     MultiDisplayProvider \
     libGoldfishProfiler
+
+ifneq ($(EMULATOR_DISABLE_RADIO),true)
+PRODUCT_PACKAGES += \
+    libcuttlefish-ril-2 \
+    libgoldfish-rild \
+    EmulatorRadioConfig \
+    EmulatorTetheringConfigOverlay
+
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.radio.xml
+DISABLE_RILD_OEM_HOOK := true
+endif
 
 ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
     PRODUCT_PACKAGES += \
