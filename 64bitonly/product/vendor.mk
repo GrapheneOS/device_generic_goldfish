@@ -31,6 +31,11 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 
 # Device modules
 PRODUCT_PACKAGES += \
+    android.hardware.drm@1.0-service \
+    android.hardware.drm@1.0-impl \
+    android.hardware.drm-service.clearkey \
+    android.hardware.gatekeeper@1.0-service.software \
+    android.hardware.usb@1.0-service \
     vulkan.ranchu \
     libandroidemu \
     libOpenglCodecCommon \
@@ -144,11 +149,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
 endif
 
-PRODUCT_PACKAGES += \
-    android.hardware.drm@1.0-service \
-    android.hardware.drm@1.0-impl \
-    android.hardware.drm-service.clearkey
-
 PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
 PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
@@ -212,18 +212,12 @@ PRODUCT_COPY_FILES += \
 
 endif
 
-PRODUCT_PACKAGES += \
-    android.hardware.gatekeeper@1.0-service.software
-
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
     mac80211_create_radios \
     dhcpclient \
     hostapd \
     wpa_supplicant \
-
-PRODUCT_PACKAGES += \
-    android.hardware.usb@1.0-service
 
 # Extension implementation for Jetpack WindowManager
 PRODUCT_PACKAGES += \
