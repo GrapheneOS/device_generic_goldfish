@@ -92,7 +92,7 @@ PRODUCT_PACKAGES += \
     libGLESv1_CM_angle \
     libGLESv2_angle
 endif
-#
+
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     bt_vhci_forwarder \
@@ -131,7 +131,7 @@ PRODUCT_PACKAGES += \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
-    PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
+PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
@@ -218,10 +218,10 @@ PRODUCT_PACKAGES += \
 
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
-	mac80211_create_radios \
-	dhcpclient \
-	hostapd \
-	wpa_supplicant \
+    mac80211_create_radios \
+    dhcpclient \
+    hostapd \
+    wpa_supplicant \
 
 PRODUCT_PACKAGES += \
     android.hardware.usb@1.0-service
