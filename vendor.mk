@@ -222,7 +222,7 @@ PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
 # "Hello, world!" HAL implementations, mostly for compliance
 PRODUCT_PACKAGES += \
     android.hardware.atrace@1.0-service \
-    android.hardware.authsecret@1.0-service \
+    android.hardware.authsecret-service.example \
     android.hardware.contexthub@1.1-service.mock \
     android.hardware.dumpstate@1.1-service.example \
     android.hardware.health@2.1-service \
