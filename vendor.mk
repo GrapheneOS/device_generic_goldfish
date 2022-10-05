@@ -29,8 +29,6 @@ PRODUCT_SOONG_NAMESPACES += \
 
 PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 
-DISABLE_RILD_OEM_HOOK := true
-
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera/devices/EmulatedCamera
 
