@@ -31,6 +31,11 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 
 # Device modules
 PRODUCT_PACKAGES += \
+    android.hardware.drm@1.0-service \
+    android.hardware.drm@1.0-impl \
+    android.hardware.drm-service.clearkey \
+    android.hardware.gatekeeper@1.0-service.software \
+    android.hardware.usb@1.0-service \
     vulkan.ranchu \
     libandroidemu \
     libOpenglCodecCommon \
@@ -88,7 +93,6 @@ PRODUCT_PACKAGES += \
     libGLESv2_angle
 endif
 
-#
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     bt_vhci_forwarder \
@@ -128,8 +132,6 @@ PRODUCT_PACKAGES += \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
-#disable the following as it does not support gnss yet
-#PRODUCT_PACKAGES += android.hardware.gnss-service.example
 PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
 endif
 
@@ -144,11 +146,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
 endif
-
-PRODUCT_PACKAGES += \
-    android.hardware.drm@1.0-service \
-    android.hardware.drm@1.0-impl \
-    android.hardware.drm-service.clearkey
 
 PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
@@ -213,18 +210,12 @@ PRODUCT_COPY_FILES += \
 
 endif
 
-PRODUCT_PACKAGES += \
-    android.hardware.gatekeeper@1.0-service.software
-
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
-	mac80211_create_radios \
-	dhcpclient \
-	hostapd \
-	wpa_supplicant \
-
-PRODUCT_PACKAGES += \
-    android.hardware.usb@1.0-service
+    mac80211_create_radios \
+    dhcpclient \
+    hostapd \
+    wpa_supplicant \
 
 # Extension implementation for Jetpack WindowManager
 PRODUCT_PACKAGES += \
