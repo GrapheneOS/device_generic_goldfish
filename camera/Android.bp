@@ -25,6 +25,7 @@ cc_library_shared {
     name: "camera.ranchu",
     vendor: true,
     relative_install_path: "hw",
+    vintf_fragments: ["android.hardware.camera.provider.ranchu.xml"],
     srcs: [
         "EmulatedCameraHal.cpp",
         "EmulatedCameraFactory.cpp",
@@ -71,7 +72,7 @@ cc_library_shared {
         "libdl",
         "libjpeg",
         "libcamera_metadata",
-	"libqemupipe.ranchu",
+        "libqemupipe.ranchu",
     ],
     static_libs: [
         "libqemud.ranchu",
