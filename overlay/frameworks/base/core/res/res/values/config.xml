@@ -82,4 +82,5 @@
 
     <bool name="config_supportMicNearUltrasound">false</bool>
     <bool name="config_supportSpeakerNearUltrasound">false</bool>
+    <string name="config_systemContacts">com.google.android.contacts</string>
 </resources>
