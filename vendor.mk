@@ -21,15 +21,14 @@ $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvi
 # Enable Scoped Storage related
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.xml
+
 PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
     device/generic/goldfish-opengl
 
 PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 
-DISABLE_RILD_OEM_HOOK := true
-
-DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.xml
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera
 PRODUCT_SOONG_NAMESPACES += hardware/google/camera/devices/EmulatedCamera
 
@@ -39,8 +38,6 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    libcuttlefish-ril-2 \
-    libgoldfish-rild \
     qemu-adb-keys \
     qemu-device-state \
     qemu-props \
@@ -59,14 +56,23 @@ PRODUCT_PACKAGES += \
     sh_vendor \
     local_time.default \
     SdkSetup \
-    EmulatorRadioConfig \
     goldfish_overlay_connectivity_gsi \
-    EmulatorTetheringConfigOverlay \
     libstagefrighthw \
     libstagefright_goldfish_vpxdec \
     libstagefright_goldfish_avcdec \
     MultiDisplayProvider \
     libGoldfishProfiler \
+
+ifneq ($(EMULATOR_DISABLE_RADIO),true)
+PRODUCT_PACKAGES += \
+    libcuttlefish-ril-2 \
+    libgoldfish-rild \
+    EmulatorRadioConfig \
+    EmulatorTetheringConfigOverlay
+
+DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.radio.xml
+DISABLE_RILD_OEM_HOOK := true
+endif
 
 ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
     PRODUCT_PACKAGES += android.hardware.biometrics.fingerprint-service.ranchu
@@ -146,7 +152,7 @@ PRODUCT_PACKAGES += \
     android.hardware.drm@1.0-impl \
     android.hardware.drm-service.clearkey
 
-PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions?=enforce
+PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
 PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
 PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
 PRODUCT_VENDOR_PROPERTIES += graphics.gpu.profiler.support=true
