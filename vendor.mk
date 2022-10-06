@@ -59,9 +59,6 @@ PRODUCT_PACKAGES += \
     local_time.default \
     SdkSetup \
     goldfish_overlay_connectivity_gsi \
-    libstagefrighthw \
-    libstagefright_goldfish_vpxdec \
-    libstagefright_goldfish_avcdec \
     MultiDisplayProvider \
     libGoldfishProfiler \
 
@@ -178,6 +175,7 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/camera/media_codecs_google_video_default.xml:${TARGET_COPY_OUT_VENDOR}/etc/media_codecs_google_video.xml \
     device/generic/goldfish/camera/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
     device/generic/goldfish/camera/media_codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
+    device/generic/goldfish/camera/media_codecs_performance_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
     frameworks/native/data/etc/android.hardware.camera.ar.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.ar.xml \
     frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.flash-autofocus.xml \
     frameworks/native/data/etc/android.hardware.camera.concurrent.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.concurrent.xml \
@@ -226,11 +224,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.face@1.0-service.example
 
-# for 32, 32+64 guest, default using omx, but can be
-# modified at command line as follows
-# -qemu -append qemu.media.ccodec=<value> can override it; default 0
 PRODUCT_PROPERTY_OVERRIDES += \
-    debug.stagefright.ccodec=0
+    debug.stagefright.c2inputsurface=-1 \
+    debug.stagefright.ccodec=4
 
 # Enable Incremental on the device via kernel driver
 PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
