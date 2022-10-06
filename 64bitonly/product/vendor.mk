@@ -74,9 +74,7 @@ DISABLE_RILD_OEM_HOOK := true
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
-    PRODUCT_PACKAGES += \
-        fingerprint.ranchu \
-        android.hardware.biometrics.fingerprint@2.1-service
+    PRODUCT_PACKAGES += android.hardware.biometrics.fingerprint-service.ranchu
     PRODUCT_COPY_FILES += \
         frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml
 endif
