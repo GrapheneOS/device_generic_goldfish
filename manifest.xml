@@ -1,4 +1,4 @@
-<manifest version="1.0" type="device" target-level="4">
+<manifest version="1.0" type="device" target-level="5">
     <hal format="hidl">
         <name>android.hardware.bluetooth</name>
         <transport>hwbinder</transport>
@@ -14,19 +14,6 @@
         <version>2.0</version>
         <interface>
             <name>IBluetoothAudioProvidersFactory</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="hidl">
-        <name>android.hardware.drm</name>
-        <transport>hwbinder</transport>
-        <version>1.0</version>
-        <interface>
-            <name>ICryptoFactory</name>
-            <instance>default</instance>
-        </interface>
-        <interface>
-            <name>IDrmFactory</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -48,5 +35,4 @@
             <instance>default</instance>
         </interface>
     </hal>
-    <kernel target-level="5"/>
 </manifest>
