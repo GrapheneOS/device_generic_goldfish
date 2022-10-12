@@ -71,7 +71,7 @@ DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.radio.xml
 DISABLE_RILD_OEM_HOOK := true
 endif
 
-ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
+ifneq ($(EMULATOR_VENDOR_NO_BIOMETRICS), true)
     PRODUCT_PACKAGES += android.hardware.biometrics.fingerprint-service.ranchu
     PRODUCT_COPY_FILES += \
         frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml
