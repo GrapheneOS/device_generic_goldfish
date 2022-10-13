@@ -31,8 +31,6 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 
 # Device modules
 PRODUCT_PACKAGES += \
-    android.hardware.drm@1.0-service \
-    android.hardware.drm@1.0-impl \
     android.hardware.drm-service.clearkey \
     android.hardware.gatekeeper@1.0-service.software \
     android.hardware.usb@1.0-service \
@@ -73,7 +71,7 @@ DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.radio.xml
 DISABLE_RILD_OEM_HOOK := true
 endif
 
-ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
+ifneq ($(EMULATOR_VENDOR_NO_BIOMETRICS), true)
     PRODUCT_PACKAGES += android.hardware.biometrics.fingerprint-service.ranchu
     PRODUCT_COPY_FILES += \
         frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml
@@ -171,11 +169,11 @@ PRODUCT_PACKAGES += \
     libgooglecamerahwl_impl \
 
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/camera/media_profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml \
-    device/generic/goldfish/camera/media_codecs_google_video_default.xml:${TARGET_COPY_OUT_VENDOR}/etc/media_codecs_google_video.xml \
-    device/generic/goldfish/camera/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
-    device/generic/goldfish/camera/media_codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
-    device/generic/goldfish/camera/media_codecs_performance_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
+    device/generic/goldfish/camera/media/profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml \
+    device/generic/goldfish/camera/media/codecs_google_video_default.xml:${TARGET_COPY_OUT_VENDOR}/etc/media_codecs_google_video.xml \
+    device/generic/goldfish/camera/media/codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
+    device/generic/goldfish/camera/media/codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
+    device/generic/goldfish/camera/media/codecs_performance_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
     frameworks/native/data/etc/android.hardware.camera.ar.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.ar.xml \
     frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.flash-autofocus.xml \
     frameworks/native/data/etc/android.hardware.camera.concurrent.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.concurrent.xml \
