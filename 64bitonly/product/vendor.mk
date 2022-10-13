@@ -72,9 +72,14 @@ DISABLE_RILD_OEM_HOOK := true
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_BIOMETRICS), true)
-    PRODUCT_PACKAGES += android.hardware.biometrics.fingerprint-service.ranchu
-    PRODUCT_COPY_FILES += \
-        frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml
+PRODUCT_PACKAGES += \
+    android.hardware.biometrics.fingerprint-service.ranchu \
+    android.hardware.biometrics.face-service.example \
+
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml \
+    frameworks/native/data/etc/android.hardware.biometrics.face.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.biometrics.face.xml \
+
 endif
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
@@ -218,9 +223,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     androidx.window.extensions \
     androidx.window.sidecar \
-
-PRODUCT_PACKAGES += \
-    android.hardware.biometrics.face@1.0-service.example
 
 PRODUCT_PROPERTY_OVERRIDES += \
     debug.stagefright.c2inputsurface=-1 \
