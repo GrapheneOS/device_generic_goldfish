@@ -33,7 +33,7 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
 PRODUCT_PACKAGES += \
     android.hardware.drm-service.clearkey \
     android.hardware.gatekeeper@1.0-service.software \
-    android.hardware.usb@1.0-service \
+    android.hardware.usb-service.example \
     vulkan.ranchu \
     libandroidemu \
     libOpenglCodecCommon \
