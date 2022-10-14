@@ -100,7 +100,7 @@ endif
 PRODUCT_PACKAGES += \
     bt_vhci_forwarder \
     android.hardware.bluetooth@1.1-service.btlinux \
-    android.hardware.bluetooth.audio@2.1-impl
+    android.hardware.bluetooth.audio-impl \
 
 TARGET_PRODUCT_PROP := $(LOCAL_PATH)/bluetooth.prop
 
