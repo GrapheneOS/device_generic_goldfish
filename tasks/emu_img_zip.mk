@@ -25,8 +25,8 @@ INTERNAL_EMULATOR_PACKAGE_FILES := \
 
 ifneq ($(filter $(TARGET_PRODUCT), sdk_goog3_x86 sdk_goog3_x86_64 sdk_goog3_x86_arm),)
     INTERNAL_EMULATOR_PACKAGE_FILES += \
-        $(HOST_OUT_EXECUTABLES)/dex2oats \
-        $(HOST_OUT_EXECUTABLES)/dex2oatds
+        $(HOST_OUT_EXECUTABLES)/dex2oat \
+        $(HOST_OUT_EXECUTABLES)/dex2oatd
 endif
 
 ifeq ($(BUILD_QEMU_IMAGES),true)
