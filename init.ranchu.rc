@@ -164,13 +164,13 @@ service qemu-props /vendor/bin/qemu-props
     group root
     oneshot
 
-service qemu-adb-keys /vendor/bin/qemu-adb-keys
+service qemu-adb-keys /vendor/bin/qemu-export-property qemu.adb.pubkey /data/vendor/adb/adb_keys
     class core
     user root
     group root
     oneshot
 
-service qemu-device-state /vendor/bin/qemu-device-state
+service qemu-device-state /vendor/bin/qemu-export-property -f qemu.device_state /data/vendor/devicestate/device_state_configuration.xml
     class core
     user root
     group root

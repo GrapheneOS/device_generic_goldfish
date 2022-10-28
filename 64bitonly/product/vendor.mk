@@ -38,8 +38,7 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    qemu-adb-keys \
-    qemu-device-state \
+    qemu-export-property \
     qemu-props \
     stagefright \
     android.hardware.graphics.composer@2.4-service \
