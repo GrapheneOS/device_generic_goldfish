@@ -26,10 +26,10 @@ package {
 }
 
 cc_binary {
-    name: "qemu-device-state",
+    name: "qemu-export-property",
     vendor: true,
     srcs: [
-        "qemu-device-state.cpp",
+        "main.cpp",
     ],
     shared_libs: [
         "libbase",
@@ -39,6 +39,6 @@ cc_binary {
         "libfstab",
     ],
     cflags: [
-        "-DLOG_TAG=\"qemu-device-state\"",
+        "-DLOG_TAG=\"qemu-export-property\"",
     ],
 }
