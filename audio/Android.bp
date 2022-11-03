@@ -75,6 +75,7 @@ cc_defaults {
     header_libs: [
         "android.hardware.audio.common.util@all-versions",
         "libaudio_system_headers",
+        "libdebug.ranchu",
     ],
     cflags: [
         "-include common/all-versions/VersionMacro.h",
