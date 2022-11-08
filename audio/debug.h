@@ -20,20 +20,11 @@
 
 #include <log/log.h>
 
-#ifdef FAILURE_DEBUG_PREFIX
-
-#define FAILURE(X) \
-    (ALOGE("%s:%s:%d failure: %s", FAILURE_DEBUG_PREFIX, __func__, __LINE__, #X), X)
+#define FAILURE(x) \
+    (ALOGE("%s:%s:%d failure: %s", __FILE__, __func__, __LINE__, #x), x)
 
 #else
 
-#define FAILURE(X) \
-    (ALOGE("%s:%d failure: %s", __func__, __LINE__, #X), X)
-
-#endif
-
-#else
-
-#define FAILURE(X) X
+#define FAILURE(x) x
 
 #endif
