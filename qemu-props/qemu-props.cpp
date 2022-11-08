@@ -83,10 +83,10 @@ bool need_prepend_prefix(const char* prop, const std::string_view prefix) {
 }  // namespace
 
 int s_QemuMiscPipe = -1;
-void static notifyHostBootComplete();
-void static sendHeartBeat();
-void static sendMessage(const char* mesg);
-void static closeMiscPipe();
+static void notifyHostBootComplete();
+static void sendHeartBeat();
+static void sendMessage(const char* mesg);
+static void closeMiscPipe();
 extern void parse_virtio_serial();
 
 int main(void)
