@@ -135,18 +135,20 @@ int setBootProperties() {
 
 }  // namespace
 
-int s_QemuMiscPipe = -1;
-static void notifyHostBootComplete();
+static int s_QemuMiscPipe = -1;
 static void sendHeartBeat();
 static void sendMessage(const char* mesg);
 static void closeMiscPipe();
 extern void parse_virtio_serial();
 
-int main(void)
+int main(const int argc, const char* argv[])
 {
-    int r;
+    if ((argc == 2) && !strcmp(argv[1], "bootcomplete")) {
+        sendMessage("bootcomplete");
+        return 0;
+    }
 
-    r = setBootProperties();
+    int r = setBootProperties();
     if (r) {
         return r;
     }
@@ -160,8 +162,6 @@ int main(void)
         char temp[PROPERTY_VALUE_MAX];
         property_get("vendor.qemu.dev.bootcomplete", temp, "");
         if (strcmp(temp, "1") == 0) {
-            ALOGI("tell the host boot completed");
-            notifyHostBootComplete();
             break;
         }
     }
@@ -177,10 +177,6 @@ int main(void)
 
 void sendHeartBeat() {
     sendMessage("heartbeat");
-}
-
-void notifyHostBootComplete() {
-    sendMessage("bootcomplete");
 }
 
 void sendMessage(const char* mesg) {

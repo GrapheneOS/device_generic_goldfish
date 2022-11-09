@@ -127,6 +127,7 @@ on property:ro.boot.debug.sf.nobootanimation=1
 
 on property:dev.bootcomplete=1
     setprop vendor.qemu.dev.bootcomplete 1
+    start qemu-props-bootcomplete
     start ranchu-setup
 
 on post-fs-data && property:ro.boot.qemu.virtiowifi=1
@@ -159,6 +160,12 @@ service dhcpclient_def /vendor/bin/dhcpclient -i eth0 --no-gateway
 # class 'core'
 #
 service qemu-props /vendor/bin/qemu-props
+    user root
+    group root
+    oneshot
+    disabled
+
+service qemu-props-bootcomplete /vendor/bin/qemu-props "bootcomplete"
     user root
     group root
     oneshot
