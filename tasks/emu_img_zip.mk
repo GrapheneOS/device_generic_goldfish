@@ -69,25 +69,11 @@ name := sdk-repo-linux-system-images-$(FILE_NAME_TAG)
 INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 
 ifeq ($(TARGET_ARCH), x86)
+# Use 64-bit kernel even for 32-bit Android
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu-64
 else
-ifeq ($(TARGET_ARCH), x86_64)
+# All other arches are 64-bit
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), arm64)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), arm)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), riscv64)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-$(error unsupported arch: $(TARGET_ARCH))
-endif # riscv64
-endif # arm
-endif # arm64
-endif # x86_64
 endif # x86
 
 $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES) $(FINAL_INSTALLED_QEMU_SYSTEMIMAGE) $(FINAL_INSTALLED_QEMU_RAMDISKIMAGE) $(FINAL_INSTALLED_QEMU_VENDORIMAGE) $(EMULATOR_KERNEL_FILE)
