@@ -80,19 +80,7 @@ ifeq ($(TARGET_ARCH), arm64)
 EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
 else
-ifeq ($(TARGET_ARCH), arm)
-EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-EMULATOR_KERNEL_VERSION := 3.18
-EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/$(EMULATOR_KERNEL_ARCH)/$(EMULATOR_KERNEL_VERSION)/kernel-qemu2
-else
-ifeq ($(TARGET_ARCH), riscv64)
-EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
 $(error unsupported arch: $(TARGET_ARCH))
-endif # riscv64
-endif # arm
 endif # arm64
 endif # x86_64
 endif # x86
