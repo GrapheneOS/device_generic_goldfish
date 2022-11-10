@@ -50,9 +50,6 @@ EMU_EXTRA_TARGET := $(PRODUCT_OUT)/$(name).zip
 
 EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-# Below should be the same as TARGET_KERNEL_USE set in
-# device/generic/goldfish/(arm|x86)*-vendor.mk
-TARGET_KERNEL_USE ?= 5.15
 
 # Use 64-bit kernel even for 32-bit Android
 ifeq ($(TARGET_ARCH), x86)
