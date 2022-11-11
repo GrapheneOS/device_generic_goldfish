@@ -48,27 +48,12 @@ name := emu-extra-linux-system-images-$(FILE_NAME_TAG)
 
 EMU_EXTRA_TARGET := $(PRODUCT_OUT)/$(name).zip
 
-# Use 64-bit kernel even for 32-bit Android
 ifeq ($(TARGET_ARCH), x86)
+# Use 64-bit kernel even for 32-bit Android
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu-64
 else
-ifeq ($(TARGET_ARCH), x86_64)
+# All other arches are 64-bit
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), arm64)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), arm)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), riscv64)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-$(error unsupported arch: $(TARGET_ARCH))
-endif # riscv
-endif # arm
-endif # arm64
-endif # x86_64
 endif # x86
 
 $(EMU_EXTRA_TARGET): PRIVATE_PACKAGE_SRC := \
