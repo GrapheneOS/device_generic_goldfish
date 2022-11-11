@@ -48,6 +48,11 @@ name := emu-extra-linux-system-images-$(FILE_NAME_TAG)
 
 EMU_EXTRA_TARGET := $(PRODUCT_OUT)/$(name).zip
 
+ifeq ($(TARGET_ARCH), arm)
+# This is wrong and should be retired.
+EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/arm/3.18/kernel-qemu2
+EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
+else
 ifeq ($(TARGET_ARCH), x86)
 # Use 64-bit kernel even for 32-bit Android
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu-64
@@ -55,6 +60,7 @@ else
 # All other arches are 64-bit
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
 endif # x86
+endif # arm
 
 $(EMU_EXTRA_TARGET): PRIVATE_PACKAGE_SRC := \
         $(call intermediates-dir-for, PACKAGING, emu_extra_target)
