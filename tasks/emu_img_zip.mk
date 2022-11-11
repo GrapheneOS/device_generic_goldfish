@@ -68,6 +68,11 @@ name := sdk-repo-linux-system-images-$(FILE_NAME_TAG)
 
 INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 
+ifeq ($(TARGET_ARCH), arm)
+# This is wrong and should be retired.
+EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/arm/3.18/kernel-qemu2
+EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
+else
 ifeq ($(TARGET_ARCH), x86)
 # Use 64-bit kernel even for 32-bit Android
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu-64
@@ -75,6 +80,7 @@ else
 # All other arches are 64-bit
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
 endif # x86
+endif # arm
 
 $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES) $(FINAL_INSTALLED_QEMU_SYSTEMIMAGE) $(FINAL_INSTALLED_QEMU_RAMDISKIMAGE) $(FINAL_INSTALLED_QEMU_VENDORIMAGE) $(EMULATOR_KERNEL_FILE)
 	@echo "Package: $@"
