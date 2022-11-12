@@ -68,34 +68,19 @@ name := sdk-repo-linux-system-images-$(FILE_NAME_TAG)
 
 INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 
+ifeq ($(TARGET_ARCH), arm)
+# This is wrong and should be retired.
+EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/arm/3.18/kernel-qemu2
+EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
+else
 ifeq ($(TARGET_ARCH), x86)
-EMULATOR_KERNEL_ARCH := x86_64
+# Use 64-bit kernel even for 32-bit Android
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu-64
 else
-ifeq ($(TARGET_ARCH), x86_64)
-EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
+# All other arches are 64-bit
 EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), arm64)
-EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-ifeq ($(TARGET_ARCH), arm)
-EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-EMULATOR_KERNEL_VERSION := 3.18
-EMULATOR_KERNEL_FILE := prebuilts/qemu-kernel/$(EMULATOR_KERNEL_ARCH)/$(EMULATOR_KERNEL_VERSION)/kernel-qemu2
-else
-ifeq ($(TARGET_ARCH), riscv64)
-EMULATOR_KERNEL_ARCH := $(TARGET_ARCH)
-EMULATOR_KERNEL_DIST_NAME := kernel-ranchu
-else
-$(error unsupported arch: $(TARGET_ARCH))
-endif # riscv64
-endif # arm
-endif # arm64
-endif # x86_64
 endif # x86
+endif # arm
 
 $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES) $(FINAL_INSTALLED_QEMU_SYSTEMIMAGE) $(FINAL_INSTALLED_QEMU_RAMDISKIMAGE) $(FINAL_INSTALLED_QEMU_VENDORIMAGE) $(EMULATOR_KERNEL_FILE)
 	@echo "Package: $@"
