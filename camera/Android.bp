@@ -75,6 +75,7 @@ cc_library_shared {
         "libqemupipe.ranchu",
     ],
     static_libs: [
+        "libjpeg.ranchu",
         "libqemud.ranchu",
         "android.hardware.camera.common@1.0-helper",
         "libyuv_static",
