@@ -14,33 +14,30 @@
  * limitations under the License.
  */
 
-#include "Compressor.h"
+#undef LOG_TAG
+#define LOG_TAG "JpegCompressorImpl"
 
-#define LOG_NDEBUG 0
-#define LOG_TAG "EmulatedCamera_JPEGStub_Compressor"
-#include <log/log.h>
 #include <libexif/exif-data.h>
+#include <log/log.h>
+#include "jpeg-stub/Compressor.h"
 
-Compressor::Compressor() {
-
-}
-
-bool Compressor::compress(const unsigned char* data,
-                          int width, int height, int quality,
-                          ExifData* exifData) {
+bool JpegCompressorImpl::compress(const void* data,
+                                  int width, int height, int quality,
+                                  const ExifData* exifData) {
     if (!configureCompressor(width, height, quality)) {
         // The method will have logged a more detailed error message than we can
         // provide here so just return.
         return false;
     }
+
     return compressData(data, exifData);
 }
 
-const std::vector<uint8_t>& Compressor::getCompressedData() const {
+const std::vector<uint8_t>& JpegCompressorImpl::getCompressedData() const {
     return mDestManager.mBuffer;
 }
 
-bool Compressor::configureCompressor(int width, int height, int quality) {
+bool JpegCompressorImpl::configureCompressor(int width, int height, int quality) {
     mCompressInfo.err = jpeg_std_error(&mErrorManager);
     // NOTE! DANGER! Do not construct any non-trivial objects below setjmp!
     // The compiler will not generate code to destroy them during the return
@@ -79,7 +76,7 @@ bool Compressor::configureCompressor(int width, int height, int quality) {
     return true;
 }
 
-bool Compressor::compressData(const unsigned char* data, ExifData* exifData) {
+bool JpegCompressorImpl::compressData(const void* data, const ExifData* exifData) {
     const uint8_t* y[16];
     const uint8_t* cb[8];
     const uint8_t* cr[8];
@@ -88,7 +85,7 @@ bool Compressor::compressData(const unsigned char* data, ExifData* exifData) {
     int i;
     int width = mCompressInfo.image_width;
     int height = mCompressInfo.image_height;
-    const uint8_t* yPlanar = data;
+    const uint8_t* yPlanar = static_cast<const uint8_t*>(data);
     const uint8_t* uPlanar = yPlanar + width * height;
     const uint8_t* vPlanar = uPlanar + width * height / 4;
 
@@ -129,7 +126,7 @@ bool Compressor::compressData(const unsigned char* data, ExifData* exifData) {
     return true;
 }
 
-bool Compressor::attachExifData(ExifData* exifData) {
+bool JpegCompressorImpl::attachExifData(const ExifData* exifData) {
     if (exifData == nullptr) {
         // This is not an error, we don't require EXIF data
         return true;
@@ -138,7 +135,7 @@ bool Compressor::attachExifData(ExifData* exifData) {
     // Save the EXIF data to memory
     unsigned char* rawData = nullptr;
     unsigned int size = 0;
-    exif_data_save_data(exifData, &rawData, &size);
+    exif_data_save_data(const_cast<ExifData*>(exifData), &rawData, &size);  // libexif const bug
     if (rawData == nullptr) {
         ALOGE("Failed to create EXIF data block");
         return false;
@@ -149,16 +146,16 @@ bool Compressor::attachExifData(ExifData* exifData) {
     return true;
 }
 
-Compressor::ErrorManager::ErrorManager() {
+JpegCompressorImpl::ErrorManager::ErrorManager() {
     error_exit = &onJpegError;
 }
 
-void Compressor::ErrorManager::onJpegError(j_common_ptr cinfo) {
+void JpegCompressorImpl::ErrorManager::onJpegError(j_common_ptr cinfo) {
     // NOTE! Do not construct any non-trivial objects in this method at the top
     // scope. Their destructors will not be called. If you do need such an
     // object create a local scope that does not include the longjmp call,
     // that ensures the object is destroyed before longjmp is called.
-    ErrorManager* errorManager = reinterpret_cast<ErrorManager*>(cinfo->err);
+    ErrorManager* errorManager = static_cast<ErrorManager*>(cinfo->err);
 
     // Format and log error message
     char errorMessage[JMSG_LENGTH_MAX];
@@ -171,14 +168,14 @@ void Compressor::ErrorManager::onJpegError(j_common_ptr cinfo) {
     longjmp(errorManager->mJumpBuffer, 1);
 }
 
-Compressor::DestinationManager::DestinationManager() {
+JpegCompressorImpl::DestinationManager::DestinationManager() {
     init_destination = &initDestination;
     empty_output_buffer = &emptyOutputBuffer;
     term_destination = &termDestination;
 }
 
-void Compressor::DestinationManager::initDestination(j_compress_ptr cinfo) {
-    auto manager = reinterpret_cast<DestinationManager*>(cinfo->dest);
+void JpegCompressorImpl::DestinationManager::initDestination(j_compress_ptr cinfo) {
+    auto manager = static_cast<DestinationManager*>(cinfo->dest);
 
     // Start out with some arbitrary but not too large buffer size
     manager->mBuffer.resize(16 * 1024);
@@ -186,9 +183,9 @@ void Compressor::DestinationManager::initDestination(j_compress_ptr cinfo) {
     manager->free_in_buffer = manager->mBuffer.size();
 }
 
-boolean Compressor::DestinationManager::emptyOutputBuffer(
+boolean JpegCompressorImpl::DestinationManager::emptyOutputBuffer(
         j_compress_ptr cinfo) {
-    auto manager = reinterpret_cast<DestinationManager*>(cinfo->dest);
+    auto manager = static_cast<DestinationManager*>(cinfo->dest);
 
     // Keep doubling the size of the buffer for a very low, amortized
     // performance cost of the allocations
@@ -199,8 +196,8 @@ boolean Compressor::DestinationManager::emptyOutputBuffer(
     return manager->free_in_buffer != 0;
 }
 
-void Compressor::DestinationManager::termDestination(j_compress_ptr cinfo) {
-    auto manager = reinterpret_cast<DestinationManager*>(cinfo->dest);
+void JpegCompressorImpl::DestinationManager::termDestination(j_compress_ptr cinfo) {
+    auto manager = static_cast<DestinationManager*>(cinfo->dest);
 
     // Resize down to the exact size of the output, that is remove as many
     // bytes as there are left in the buffer

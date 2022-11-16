@@ -22,8 +22,8 @@
  * converter between YV21, and JPEG formats.
  */
 
-#include "jpeg-stub/JpegStub.h"
 #include <utils/threads.h>
+#include "jpeg-stub/Compressor.h"
 
 namespace android {
 
@@ -32,16 +32,10 @@ namespace android {
 class NV21JpegCompressor
 {
 public:
-    /* Constructs JpegCompressor instance. */
-    NV21JpegCompressor();
-    /* Destructs JpegCompressor instance. */
-    ~NV21JpegCompressor();
-
     /****************************************************************************
      * Public API
      ***************************************************************************/
 
-public:
     /* Compresses raw NV21 image into a JPEG.
      * The compressed image will be saved in mStream member of this class. Use
      * getCompressedSize method to obtain buffer size of the compressed image,
@@ -59,7 +53,7 @@ public:
                               int width,
                               int height,
                               int quality,
-                              ExifData* exifData);
+                              const ExifData* exifData);
 
     /* Get size of the compressed JPEG buffer.
      * This method must be called only after a successful completion of
@@ -67,7 +61,7 @@ public:
      * Return:
      *  Size of the compressed JPEG buffer.
      */
-    size_t getCompressedSize();
+    size_t getCompressedSize() const;
 
     /* Copies out compressed JPEG buffer.
      * This method must be called only after a successful completion of
@@ -76,16 +70,14 @@ public:
      *  buff - Buffer where to copy the JPEG. Must be large enough to contain the
      *      entire image.
      */
-    void getCompressedImage(void* buff);
+    void getCompressedImage(void* dst) const;
 
     /****************************************************************************
      * Class data
      ***************************************************************************/
 
 private:
-    // library handle to dlopen
-    static void* mDl;
-    JpegStub mStub;
+    JpegCompressorImpl mStub;
 };
 
 }; /* namespace android */

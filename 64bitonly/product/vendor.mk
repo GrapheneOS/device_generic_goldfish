@@ -169,7 +169,6 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.4-service_64 \
     android.hardware.camera.provider@2.4-impl \
     camera.ranchu \
-    camera.ranchu.jpeg \
     android.hardware.camera.provider@2.7-service-google \
     android.hardware.camera.provider@2.7-impl-google \
     libgooglecamerahwl_impl \
