@@ -21,13 +21,15 @@ package {
     default_applicable_licenses: ["device_generic_goldfish_license"],
 }
 
-cc_library_shared {
-    name: "camera.ranchu.jpeg",
+cc_library_static {
+    name: "libjpeg.ranchu",
     vendor: true,
     relative_install_path: "hw",
     srcs: [
         "Compressor.cpp",
-        "JpegStub.cpp",
+    ],
+    export_include_dirs: [
+        "include",
     ],
     cflags: [
         "-Wall",
