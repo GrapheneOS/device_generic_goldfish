@@ -29,17 +29,17 @@ extern "C" {
 struct _ExifData;
 typedef _ExifData ExifData;
 
-class Compressor {
+class JpegCompressorImpl {
 public:
-    Compressor();
+    JpegCompressorImpl() = default;
 
     /* Compress |data| which represents raw NV21 encoded data of dimensions
      * |width| * |height|. |exifData| is optional EXIF data that will be
      * attached to the compressed data if present, set to null if not needed.
      */
-    bool compress(const unsigned char* data,
+    bool compress(const void* data,
                   int width, int height, int quality,
-                  ExifData* exifData);
+                  const ExifData* exifData);
 
     /* Get a reference to the compressed data, this will return an empty vector
      * if compress has not been called yet
@@ -69,8 +69,8 @@ private:
     ErrorManager mErrorManager;
 
     bool configureCompressor(int width, int height, int quality);
-    bool compressData(const unsigned char* data, ExifData* exifData);
-    bool attachExifData(ExifData* exifData);
+    bool compressData(const void* data, const ExifData* exifData);
+    bool attachExifData(const ExifData* exifData);
 };
 
 #endif  // GOLDFISH_CAMERA_JPEG_STUB_COMPRESSOR_H
