@@ -26,3 +26,4 @@ DeviceSkinOverlay = on
 VulkanQueueSubmitWithCommands = on
 VulkanBatchedDescriptorSetUpdate = on
 DeviceStateOnBoot = on
+VsockSnapshotLoadFixed_b231345789 = on
