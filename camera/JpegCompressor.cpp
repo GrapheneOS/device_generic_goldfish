@@ -22,49 +22,9 @@
 #define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_JPEG"
 #include <log/log.h>
-#include <assert.h>
-#include <dlfcn.h>
 #include "JpegCompressor.h"
 
 namespace android {
-
-void* NV21JpegCompressor::mDl = NULL;
-
-static void* getSymbol(void* dl, const char* signature) {
-    void* res = dlsym(dl, signature);
-    assert (res != NULL);
-
-    return res;
-}
-
-typedef void (*InitFunc)(JpegStub* stub);
-typedef void (*CleanupFunc)(JpegStub* stub);
-typedef int (*CompressFunc)(JpegStub* stub, const void* image,
-        int width, int height, int quality, ExifData* exifData);
-typedef void (*GetCompressedImageFunc)(JpegStub* stub, void* buff);
-typedef size_t (*GetCompressedSizeFunc)(JpegStub* stub);
-
-NV21JpegCompressor::NV21JpegCompressor()
-{
-#ifdef __LP64__
-    const char dlName[] = "/vendor/lib64/hw/camera.ranchu.jpeg.so";
-#else
-    const char dlName[] = "/vendor/lib/hw/camera.ranchu.jpeg.so";
-#endif
-    if (mDl == NULL) {
-        mDl = dlopen(dlName, RTLD_NOW);
-    }
-    assert(mDl != NULL);
-
-    InitFunc f = (InitFunc)getSymbol(mDl, "JpegStub_init");
-    (*f)(&mStub);
-}
-
-NV21JpegCompressor::~NV21JpegCompressor()
-{
-    CleanupFunc f = (CleanupFunc)getSymbol(mDl, "JpegStub_cleanup");
-    (*f)(&mStub);
-}
 
 /****************************************************************************
  * Public API
@@ -74,25 +34,27 @@ status_t NV21JpegCompressor::compressRawImage(const void* image,
                                               int width,
                                               int height,
                                               int quality,
-                                              ExifData* exifData)
-{
-    CompressFunc f = (CompressFunc)getSymbol(mDl, "JpegStub_compress");
-    return (status_t)(*f)(&mStub, image, width, height, quality, exifData);
+                                              const ExifData* exifData) {
+    if (mStub.compress(image, width, height, quality, exifData)) {
+        ALOGV("%s: Compressed JPEG: %d[%dx%d] -> %zu bytes",
+              __func__, (width * height * 12) / 8,
+              width, height, mStub.getCompressedData().size());
+
+        return 0;
+    } else {
+        int const err = errno ? errno : EINVAL;
+        ALOGE("%s: JPEG compression failed with %d", __func__, err);
+        return err;
+    }
 }
 
-
-size_t NV21JpegCompressor::getCompressedSize()
-{
-    GetCompressedSizeFunc f = (GetCompressedSizeFunc)getSymbol(mDl,
-            "JpegStub_getCompressedSize");
-    return (*f)(&mStub);
+size_t NV21JpegCompressor::getCompressedSize() const {
+    return mStub.getCompressedData().size();
 }
 
-void NV21JpegCompressor::getCompressedImage(void* buff)
-{
-    GetCompressedImageFunc f = (GetCompressedImageFunc)getSymbol(mDl,
-            "JpegStub_getCompressedImage");
-    (*f)(&mStub, buff);
+void NV21JpegCompressor::getCompressedImage(void* dst) const {
+    const auto data = mStub.getCompressedData();
+    memcpy(dst, data.data(), data.size());
 }
 
-}; /* namespace android */
+} /* namespace android */
