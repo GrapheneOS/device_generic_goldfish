@@ -29,15 +29,10 @@
 #include "utils/Timers.h"
 
 #include "Base.h"
-#include "../JpegCompressor.h"
 #include <CameraMetadata.h>
 #include <ui/GraphicBufferMapper.h>
 
 #include <stdio.h>
-
-extern "C" {
-#include <jpeglib.h>
-}
 
 using ::android::hardware::camera::common::V1_0::helper::CameraMetadata;
 
