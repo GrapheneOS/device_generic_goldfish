@@ -15,6 +15,9 @@
 
 PRODUCT_PACKAGE_OVERLAYS := device/generic/car/common/overlay
 
+BUILD_EMULATOR_CLUSTER_DISPLAY ?= true
+ENABLE_CLUSTER_OS_DOUBLE := true
+
 $(call inherit-product, device/generic/car/emulator/aosp_car_emulator.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/sdk_x86.mk)
 
