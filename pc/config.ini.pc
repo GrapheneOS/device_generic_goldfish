@@ -1,3 +1,5 @@
+abi.type=x86_64
+avd.ini.displayname=Android PC
 avd.ini.encoding=UTF-8
 disk.dataPartition.size=6G
 display.settings.xml=freeform
@@ -7,6 +9,8 @@ hw.audioInput=yes
 hw.battery=yes
 hw.camera.back=emulated
 hw.camera.front=emulated
+hw.cpu.arch=x86_64
+hw.cpu.ncore=4
 hw.dPad=no
 hw.gps=no
 hw.gpu.enabled=yes
@@ -20,4 +24,3 @@ image.sysdir.1=x86/
 skin.dynamic=no
 skin.name=3000x2000
 skin.path=3000x2000
-
