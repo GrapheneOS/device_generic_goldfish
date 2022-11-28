@@ -67,7 +67,7 @@ static signed clamp_rgb(signed value) {
     return value;
 }
 
-static void rgba8888_to_nv21(uint8_t* input, uint8_t* output, int width, int height) {
+static void rgba8888_to_nv21(const uint8_t* input, uint8_t* output, int width, int height) {
     int align = 16;
     int yStride = (width + (align -1)) & ~(align-1);
     uint8_t* outputVU = output + height*yStride;
@@ -91,13 +91,13 @@ static void rgba8888_to_nv21(uint8_t* input, uint8_t* output, int width, int hei
     }
 }
 
-static void nv21_to_rgba8888(uint8_t* input, uint32_t * output, int width, int height) {
+static void nv21_to_rgba8888(const uint8_t* input, uint32_t * output, int width, int height) {
     int align = 16;
     int yStride = (width + (align -1)) & ~(align-1);
-    uint8_t* inputVU = input + height*yStride;
+    const uint8_t* inputVU = input + height*yStride;
     uint8_t Y, U, V;
     for (int j = 0; j < height; ++j) {
-        uint8_t* inputY = input + j*yStride;
+        const uint8_t* inputY = input + j*yStride;
         for (int i = 0; i < width; ++i) {
             Y = *inputY++;
             bool jeven = (j & 1) == 0;
