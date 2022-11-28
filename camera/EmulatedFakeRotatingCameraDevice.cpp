@@ -167,7 +167,7 @@ static void convert_to_square(uint32_t* src, uint32_t* dest, int sw, int sh, int
 
 void EmulatedFakeRotatingCameraDevice::create_texture_dotx(int width, int height) {
     uint32_t* myrgba = new uint32_t[width * height];
-    nv21_to_rgba8888(rawData, myrgba, width, height);
+    nv21_to_rgba8888(kAcirclesPattern, myrgba, width, height);
     uint32_t* myrgba2 = new uint32_t[width * width];
     convert_to_square(myrgba, myrgba2, width, height, width);
 
