@@ -16,7 +16,7 @@
 
 //#define LOG_NDEBUG 0
 //#define LOG_NNDEBUG 0
-#define LOG_TAG "EmulatedCamera2_Sensor"
+#define LOG_TAG "Sensor"
 #define ATRACE_TAG ATRACE_TAG_CAMERA
 
 #ifdef LOG_NNDEBUG
