@@ -34,7 +34,7 @@ class EmulatedQemuCamera;
 class EmulatedQemuCameraDevice : public EmulatedCameraDevice {
 public:
     /* Constructs EmulatedQemuCameraDevice instance. */
-    explicit EmulatedQemuCameraDevice(EmulatedQemuCamera* camera_hal);
+    explicit EmulatedQemuCameraDevice(EmulatedCamera* camera_hal);
 
     /* Destructs EmulatedQemuCameraDevice instance. */
     ~EmulatedQemuCameraDevice();
