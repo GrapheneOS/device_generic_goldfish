@@ -15,7 +15,7 @@
  */
 
 //#define LOG_NDEBUG 0
-#define LOG_TAG "EmulatedCamera2_JpegCompressor"
+#define LOG_TAG "JpegCompressor"
 
 #include <log/log.h>
 
