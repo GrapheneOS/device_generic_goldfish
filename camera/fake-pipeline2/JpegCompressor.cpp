@@ -22,8 +22,6 @@
 #include <gralloc_cb_bp.h>
 #include "JpegCompressor.h"
 #include "../JpegCompressor.h"
-#include "../EmulatedFakeCamera2.h"
-#include "../EmulatedFakeCamera3.h"
 #include "../Exif.h"
 #include "../Thumbnail.h"
 #include "hardware/camera3.h"

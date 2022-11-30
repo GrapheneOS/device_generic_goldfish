@@ -26,9 +26,10 @@
  */
 
 #include <vector>
-#include "EmulatedCamera2.h"
 #include <utils/String8.h>
 #include <utils/Vector.h>
+#include <utils/Thread.h>
+#include <utils/Mutex.h>
 
 namespace android {
 class EmulatedCameraHotplugThread : public Thread {
