@@ -51,7 +51,6 @@ public:
     EmulatedCamera3(int cameraId,
             struct hw_module_t* module);
 
-    /* Destructs EmulatedCamera2 instance. */
     virtual ~EmulatedCamera3();
 
     /* List of all defined capabilities plus useful HW levels */
