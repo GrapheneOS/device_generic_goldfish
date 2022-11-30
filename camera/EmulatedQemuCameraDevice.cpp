@@ -22,12 +22,11 @@
 #define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_QemuDevice"
 #include <log/log.h>
-#include "EmulatedQemuCamera.h"
 #include "EmulatedQemuCameraDevice.h"
 
 namespace android {
 
-EmulatedQemuCameraDevice::EmulatedQemuCameraDevice(EmulatedQemuCamera* camera_hal)
+EmulatedQemuCameraDevice::EmulatedQemuCameraDevice(EmulatedCamera* camera_hal)
     : EmulatedCameraDevice(camera_hal),
       mQemuClient()
 {
