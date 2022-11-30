@@ -28,7 +28,6 @@
 #include <log/log.h>
 #include <utils/Trace.h>
 
-#include "../EmulatedFakeCamera2.h"
 #include "Sensor.h"
 #include <cmath>
 #include <cstdlib>
