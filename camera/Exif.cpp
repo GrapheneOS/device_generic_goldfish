@@ -24,7 +24,6 @@
 #include <stdint.h>
 
 #include "Exif.h"
-#include <libexif/exif-data.h>
 #include <libexif/exif-entry.h>
 #include <libexif/exif-ifd.h>
 #include <libexif/exif-tag.h>
@@ -336,15 +335,15 @@ static void convertToMetadata(const CameraParameters& src, CameraMetadata& dst) 
 }
 
 // Create Exif data common for both HAL1 and HAL3
-static ExifData* createExifDataCommon(const CameraMetadata& params, int width, int height) {
-    ExifData* exifData = exif_data_new();
+static ExifDataPtr createExifDataCommon(const CameraMetadata& params, int width, int height) {
+    ExifDataPtr exifData(exif_data_new());
 
-    exif_data_set_option(exifData, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
-    exif_data_set_data_type(exifData, EXIF_DATA_TYPE_COMPRESSED);
-    exif_data_set_byte_order(exifData, EXIF_BYTE_ORDER_INTEL);
+    exif_data_set_option(exifData.get(), EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
+    exif_data_set_data_type(exifData.get(), EXIF_DATA_TYPE_COMPRESSED);
+    exif_data_set_byte_order(exifData.get(), EXIF_BYTE_ORDER_INTEL);
 
     // Create mandatory exif fields and set their default values
-    exif_data_fix(exifData);
+    exif_data_fix(exifData.get());
 
     float triplet[3];
     const char* stringValue;
@@ -353,27 +352,27 @@ static ExifData* createExifDataCommon(const CameraMetadata& params, int width, i
 
     // Datetime, creating and initializing a datetime tag will automatically
     // set the current date and time in the tag so just do that.
-    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    createEntry(exifData.get(), EXIF_IFD_0, EXIF_TAG_DATE_TIME);
 
     // Make and model
     std::vector<char> prop(PROPERTY_VALUE_MAX);
     property_get("ro.product.manufacturer", &prop[0], "");
-    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MAKE, &prop[0]);
+    createEntry(exifData.get(), EXIF_IFD_0, EXIF_TAG_MAKE, &prop[0]);
     property_get("ro.product.model", &prop[0], "");
-    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_MODEL, &prop[0]);
+    createEntry(exifData.get(), EXIF_IFD_0, EXIF_TAG_MODEL, &prop[0]);
 
     // Width and height
     if (width > 0 && height > 0) {
-        createEntry(exifData, EXIF_IFD_EXIF,
+        createEntry(exifData.get(), EXIF_IFD_EXIF,
                     EXIF_TAG_PIXEL_X_DIMENSION, width);
-        createEntry(exifData, EXIF_IFD_EXIF,
+        createEntry(exifData.get(), EXIF_IFD_EXIF,
                     EXIF_TAG_PIXEL_Y_DIMENSION, height);
     }
 
     camera_metadata_ro_entry_t entry;
     entry = params.find(ANDROID_LENS_FOCAL_LENGTH);
     focalLength = (entry.count > 0) ? entry.data.f[0] : 5.0f;
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH, focalLength);
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH, focalLength);
     entry = params.find(ANDROID_JPEG_ORIENTATION);
     degrees = (entry.count > 0) ? entry.data.i32[0] : 0;
     ALOGV("degrees %d focalLength %f", degrees, focalLength);
@@ -398,31 +397,31 @@ static ExifData* createExifDataCommon(const CameraMetadata& params, int width, i
             exifOrien = EXIF_ROTATE_CAMERA_CW270;
             break;
     }
-    createEntry(exifData, EXIF_IFD_0, EXIF_TAG_ORIENTATION, exifOrien);
+    createEntry(exifData.get(), EXIF_IFD_0, EXIF_TAG_ORIENTATION, exifOrien);
 
     // GPS information
     entry = params.find(ANDROID_JPEG_GPS_COORDINATES);
     if (entry.count > 0) {
         ALOGV("Latitude %f Longitude %f Altitude %f", entry.data.d[0], entry.data.d[1], entry.data.d[2]);
         convertGpsCoordinate(entry.data.d[0], &triplet);
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE, triplet);
+        createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE, triplet);
 
         const char* ref = entry.data.d[0] < 0.0f ? "S" : "N";
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE_REF, ref);
+        createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE_REF, ref);
 
         // GPS longitude and reference, reference indicates sign, store unsigned
         convertGpsCoordinate(entry.data.d[1], &triplet);
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE, triplet);
+        createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE, triplet);
 
         ref = entry.data.d[1] < 0.0f ? "W" : "E";
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE_REF, ref);
+        createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE_REF, ref);
 
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE,
+        createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE,
                     static_cast<float>(fabs(entry.data.d[2])));
         int ref1;
         // 1 indicated below sea level, 0 indicates above sea level
         ref1 = entry.data.d[2] < 0.0f ? 1 : 0;
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE_REF, ref1);
+        createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE_REF, ref1);
     }
 
     int64_t timestamp = 0;
@@ -431,9 +430,9 @@ static ExifData* createExifDataCommon(const CameraMetadata& params, int width, i
         timestamp = entry.data.i64[0];
         std::string date;
         if (convertTimestampToTimeAndDate(timestamp, &triplet, &date)) {
-            createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP,
+            createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP,
                         triplet, 1.0f);
-            createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_DATE_STAMP,
+            createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_DATE_STAMP,
                         date.c_str());
         }
     }
@@ -451,63 +450,66 @@ static ExifData* createExifDataCommon(const CameraMetadata& params, int width, i
                     std::begin(kAsciiPrefix),
                     std::end(kAsciiPrefix));
         data.insert(data.end(), stringValue, stringValue + entry.count);
-        createEntry(exifData, EXIF_IFD_GPS, EXIF_TAG_GPS_PROCESSING_METHOD,
+        createEntry(exifData.get(), EXIF_IFD_GPS, EXIF_TAG_GPS_PROCESSING_METHOD,
                     &data[0], data.size());
     }
+
     return exifData;
 }
 
-ExifData* createExifData(const CameraMetadata& params, int width, int height) {
-    ExifData* exifData = createExifDataCommon(params, width, height);
+ExifDataPtr createExifData(const CameraMetadata& params, int width, int height) {
+    ExifDataPtr exifData = createExifDataCommon(params, width, height);
+
     // Exposure Time
     camera_metadata_ro_entry entry;
     entry= params.find(ANDROID_SENSOR_EXPOSURE_TIME);
     int64_t exposureTimesNs =
         (entry.count > 0) ? entry.data.i64[0] : Sensor::kExposureTimeRange[0];
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME,
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME,
                 exposureTimesNs/1000000000.0f, 1000000000);
     // Aperture
     entry = params.find(ANDROID_LENS_APERTURE);
     float aperture = (entry.count > 0) ? entry.data.f[0] : 2.8;
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER, aperture);
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_FNUMBER, aperture);
     // Flash, 0 for off
     entry = params.find(ANDROID_FLASH_MODE);
     uint16_t flash = (entry.count > 0) ? entry.data.i32[0] : 0;
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_FLASH, flash);
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_FLASH, flash);
     // White balance, 0 for auto, 1 for manual.
     entry = params.find(ANDROID_CONTROL_AWB_MODE);
     uint16_t awb = 1;
     if (entry.count > 0 && entry.data.i32[0] == ANDROID_CONTROL_AWB_MODE_AUTO) {
         awb = 0;
     }
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_WHITE_BALANCE, awb);
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_WHITE_BALANCE, awb);
+
     // ISO
     entry = params.find(ANDROID_SENSOR_SENSITIVITY);
     int isoSpeedRating = (entry.count > 0) ?
         entry.data.i32[0] : Sensor::kSensitivityRange[0];
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS,
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS,
                 (uint16_t)isoSpeedRating);
+
     // Date and time
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_DIGITIZED);
     // Sub second time
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME, "0");
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME_ORIGINAL, "0");
-    createEntry(exifData, EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME_DIGITIZED, "0");
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME, "0");
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME_ORIGINAL, "0");
+    createEntry(exifData.get(), EXIF_IFD_EXIF, EXIF_TAG_SUB_SEC_TIME_DIGITIZED, "0");
 
     return exifData;
 }
 
-ExifData* createExifData(const CameraParameters& params) {
+ExifDataPtr createExifData(const CameraParameters& params) {
     int width = -1, height = -1;
     CameraMetadata cameraMetadata;
     convertToMetadata(params, cameraMetadata);
     params.getPictureSize(&width, &height);
-    ExifData* exifData =  createExifDataCommon(cameraMetadata, width, height);
-    return exifData;
+    return createExifDataCommon(cameraMetadata, width, height);
 }
 
-void freeExifData(ExifData* exifData) {
-    exif_data_free(exifData);
+void ExifDataDeleter::operator()(ExifData* p) const {
+    exif_data_free(p);
 }
 
 }  // namespace android
