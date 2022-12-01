@@ -24,7 +24,6 @@
 #define LOG_TAG "EmulatedCamera_FakeDevice"
 #define FAKE_CAMERA_SENSOR "FakeRotatingCameraSensor"
 #include <log/log.h>
-#include "EmulatedFakeCamera.h"
 #include "EmulatedFakeRotatingCameraDevice.h"
 #include <qemu_pipe_bp.h>
 
