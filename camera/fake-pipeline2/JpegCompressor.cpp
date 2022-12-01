@@ -15,15 +15,13 @@
  */
 
 //#define LOG_NDEBUG 0
-#define LOG_TAG "EmulatedCamera2_JpegCompressor"
+#define LOG_TAG "JpegCompressor"
 
 #include <log/log.h>
 
 #include <gralloc_cb_bp.h>
 #include "JpegCompressor.h"
 #include "../JpegCompressor.h"
-#include "../EmulatedFakeCamera2.h"
-#include "../EmulatedFakeCamera3.h"
 #include "../Exif.h"
 #include "../Thumbnail.h"
 #include "hardware/camera3.h"
