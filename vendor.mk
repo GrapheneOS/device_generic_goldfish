@@ -101,7 +101,10 @@ PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.1-service.btlinux \
     android.hardware.bluetooth.audio-impl \
 
+# Bluetooth hardware properties.
+ifeq ($(TARGET_PRODUCT_PROP),)
 TARGET_PRODUCT_PROP := $(LOCAL_PATH)/bluetooth.prop
+endif
 
 # Bluetooth se policies
 BOARD_SEPOLICY_DIRS += system/bt/vendor_libs/linux/sepolicy
@@ -168,7 +171,6 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider@2.4-impl \
     camera.ranchu \
     android.hardware.camera.provider@2.7-service-google \
-    android.hardware.camera.provider@2.7-impl-google \
     libgooglecamerahwl_impl \
 
 PRODUCT_COPY_FILES += \
