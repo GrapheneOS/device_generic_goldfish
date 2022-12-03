@@ -38,6 +38,7 @@ using ::android::hardware::camera::common::V1_0::helper::CameraMetadata;
  */
 ExifDataPtr createExifData(const CameraParameters& parameters);
 ExifDataPtr createExifData(const CameraMetadata& params, int width, int height);
+void* exifDataAllocThumbnail(ExifData* edata, size_t size);
 
 }  // namespace android
 
