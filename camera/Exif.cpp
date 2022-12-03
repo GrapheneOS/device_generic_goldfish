@@ -508,6 +508,21 @@ ExifDataPtr createExifData(const CameraParameters& params) {
     return createExifDataCommon(cameraMetadata, width, height);
 }
 
+void* exifDataAllocThumbnail(ExifData* edata, size_t size) {
+    // WARNING: maloc and free must match the functions that are used in
+    // exif_mem_new_default (see above) to manage memory. They will be used in
+    // exif_data_free to deallocate memory allocated here.
+    void* mem = malloc(size);
+    if (mem) {
+        if (edata->data) {
+            free(edata->data);
+        }
+        edata->size = size;
+        edata->data = static_cast<uint8_t*>(mem);
+    }
+    return mem;
+}
+
 void ExifDataDeleter::operator()(ExifData* p) const {
     exif_data_free(p);
 }
