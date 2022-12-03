@@ -36,6 +36,8 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.InputDevice;
 
+import com.android.internal.widget.LockPatternUtils;
+
 public abstract class ProvisionActivity extends Activity {
     protected abstract String TAG();
     private StatusBarManager mStatusBarManager;
@@ -126,6 +128,9 @@ public abstract class ProvisionActivity extends Activity {
             Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, screen_off_timeout);
             Log.i(TAG(), "Setting system screen_off_timeout to be " + screen_off_timeout + " ms");
         }
+
+        (new LockPatternUtils(this)).setLockScreenDisabled(true,
+            android.os.Process.myUserHandle().getIdentifier());
 
         final String displaySettingsProp = "ro.boot.qemu.display.settings.xml";
         final String displaySettingsName = SystemProperties.get(displaySettingsProp);
