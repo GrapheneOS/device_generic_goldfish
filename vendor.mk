@@ -27,6 +27,8 @@ PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
     device/generic/goldfish-opengl
 
+PRODUCT_SYSTEM_EXT_PROPERTIES += ro.lockscreen.disable.default=1
+
 # Device modules
 PRODUCT_PACKAGES += \
     android.hardware.drm-service.clearkey \

@@ -37,7 +37,16 @@ namespace android {
  */
 class EmulatedFakeRotatingCameraDevice {
 public:
-    EmulatedFakeRotatingCameraDevice();
+    explicit EmulatedFakeRotatingCameraDevice();
+
+    /* Destructs EmulatedFakeRotatingCameraDevice instance. */
+    ~EmulatedFakeRotatingCameraDevice();
+
+    /***************************************************************************
+     * Emulated camera device abstract interface implementation.
+     * See declarations of these methods in EmulatedCameraDevice class for
+     * information on each of these methods.
+     **************************************************************************/
 
 public:
     /* Connects to the camera device.
@@ -66,6 +75,7 @@ public:
      * Fake camera device private API
      ***************************************************************************/
 private:
+
     enum EmulatedCameraDeviceState {
         ECDS_INVALID,
         /* Object has been constructed. */
@@ -78,31 +88,32 @@ private:
         ECDS_STARTED,
     };
 
-    enum SENSOR_VALUE_TYPE {
-        SENSOR_VALUE_ACCEL_X=0,
-        SENSOR_VALUE_ACCEL_Y=1,
-        SENSOR_VALUE_ACCEL_Z=2,
-        SENSOR_VALUE_MAGNETIC_X=3,
-        SENSOR_VALUE_MAGNETIC_Y=4,
-        SENSOR_VALUE_MAGNETIC_Z=5,
-        SENSOR_VALUE_ROTATION_X=6,
-        SENSOR_VALUE_ROTATION_Y=7,
-        SENSOR_VALUE_ROTATION_Z=8,
-    };
-
+    /* Object state. */
+    EmulatedCameraDeviceState   mState;
+    
     inline bool isInitialized() const {
         return mState != ECDS_CONSTRUCTED;
     }
-
     inline bool isConnected() const {
         /* Instance is connected when its status is either"connected", or
          * "started". */
         return mState == ECDS_CONNECTED || mState == ECDS_STARTED;
     }
-
     inline bool isStarted() const {
         return mState == ECDS_STARTED;
     }
+
+
+    Mutex                       mObjectLock;
+    /* Frame width */
+    int                         mFrameWidth;
+
+    /* Frame height */
+    int                         mFrameHeight;
+
+    uint32_t                    mPixelFormat;
+
+private:
 
     void fillBuffer(void* buffer);
     void render(int width, int height);
@@ -116,11 +127,6 @@ private:
     void update_scene(float width, float height);
     void create_texture_dotx(int width, int height);
 
-    EmulatedCameraDeviceState   mState = ECDS_INVALID;
-    int                         mFrameWidth;
-    int                         mFrameHeight;
-    uint32_t                    mPixelFormat;
-
     bool mOpenglReady = false;
     EGLDisplay mEglDisplay;
     EGLSurface mEglSurface;
@@ -128,8 +134,20 @@ private:
     GLuint mTexture;
     uint8_t* mPixelBuf;// = new uint8_t[width * height * kGlBytesPerPixel];;
     int mSensorPipe = -1;
+    enum SENSOR_VALUE_TYPE {
+        SENSOR_VALUE_ACCEL_X=0,
+        SENSOR_VALUE_ACCEL_Y=1,
+        SENSOR_VALUE_ACCEL_Z=2,
+        SENSOR_VALUE_MAGNETIC_X=3,
+        SENSOR_VALUE_MAGNETIC_Y=4,
+        SENSOR_VALUE_MAGNETIC_Z=5,
+        SENSOR_VALUE_ROTATION_X=6,
+        SENSOR_VALUE_ROTATION_Y=7,
+        SENSOR_VALUE_ROTATION_Z=8,
+    };
+
     float mSensorValues[9] = {0};
-    Mutex mObjectLock;
+
 };
 
 }; /* namespace android */

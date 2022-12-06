@@ -225,6 +225,7 @@ private:
     void createQemuCameras(const std::vector<QemuCameraInfo> &qemuCameras);
 
     std::unique_ptr<EmulatedBaseCamera> createQemuCameraImpl(
+        int halVersion,
         const QemuCameraInfo& cameraInfo,
         int cameraId,
         struct hw_module_t* module);
@@ -238,6 +239,7 @@ private:
 
     std::unique_ptr<EmulatedBaseCamera> createFakeCameraImpl(
         bool backCamera,
+        int halVersion,
         int cameraId,
         struct hw_module_t* module);
 
@@ -250,6 +252,12 @@ private:
      * Checks if fake camera emulation is on for the camera facing back.
      */
     bool isFakeCameraEmulationOn(bool backCamera);
+
+    /*
+     * Gets camera device version number to use for back camera emulation.
+     */
+    int getCameraHalVersion(bool backCamera);
+
 
 private:
     /****************************************************************************

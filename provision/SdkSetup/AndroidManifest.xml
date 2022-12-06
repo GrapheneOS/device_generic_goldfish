@@ -18,7 +18,6 @@
         package="com.android.sdksetup">
 
     <!-- For miscellaneous settings -->
-    <uses-permission android:name="android.permission.ACCESS_KEYGUARD_SECURE_STORAGE" />
     <uses-permission android:name="android.permission.BACKUP" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" />

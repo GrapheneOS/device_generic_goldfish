@@ -407,8 +407,18 @@ int EmulatedFakeRotatingCameraDevice::init_gl_surface(int width, int height)
 }
 
 EmulatedFakeRotatingCameraDevice::EmulatedFakeRotatingCameraDevice():
-    mState(ECDS_INITIALIZED)
-{}
+    mObjectLock(),
+    mOpenglReady(false),
+    mState(ECDS_CONNECTED)
+{
+    // not much to initialize
+    mState = ECDS_INITIALIZED;
+}
+
+EmulatedFakeRotatingCameraDevice::~EmulatedFakeRotatingCameraDevice()
+{
+    mState = ECDS_INVALID;
+}
 
 /****************************************************************************
  * Emulated camera device abstract interface implementation.
