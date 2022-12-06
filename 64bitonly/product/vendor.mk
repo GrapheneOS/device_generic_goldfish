@@ -30,13 +30,26 @@ PRODUCT_SOONG_NAMESPACES += \
 PRODUCT_VENDOR_PROPERTIES += \
     ro.control_privapp_permissions=enforce \
     ro.crypto.volume.filenames_mode=aes-256-cts \
+    ro.hardware.audio.primary=goldfish \
+    ro.hardware.audio.tinyalsa.period_count=4 \
+    ro.hardware.audio.tinyalsa.period_size_multiplier=4 \
+    ro.hardware.audio.tinyalsa.host_latency_ms=30 \
     ro.hardware.power=ranchu \
+    ro.hardware.vulkan=ranchu \
     ro.incremental.enable=yes \
     ro.logd.size=1M \
-    persist.sys.zram_enabled=1 \
+    ro.kernel.qemu=1 \
+    ro.soc.manufacturer=AOSP \
+    ro.soc.model=ranchu \
+    ro.surface_flinger.supports_background_blur=1 \
+    ro.zygote.disable_gl_preload=1 \
+    debug.sf.vsync_reactor_ignore_present_fences=true \
     debug.stagefright.c2inputsurface=-1 \
     debug.stagefright.ccodec=4 \
     graphics.gpu.profiler.support=true \
+    persist.sys.zram_enabled=1 \
+    wifi.direct.interface=p2p-dev-wlan0 \
+    wifi.interface=wlan0 \
 
 # Device modules
 PRODUCT_PACKAGES += \
