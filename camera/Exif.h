@@ -18,27 +18,27 @@
 #ifndef GOLDFISH_CAMERA_EXIF_H
 #define GOLDFISH_CAMERA_EXIF_H
 
-struct _ExifData;
-typedef struct _ExifData ExifData;
+#include <memory>
+#include <libexif/exif-data.h>
 #undef TRUE
 #undef FALSE
 #include <CameraParameters.h>
 #include <CameraMetadata.h>
-using ::android::hardware::camera::common::V1_0::helper::CameraParameters;
-using ::android::hardware::camera::common::V1_0::helper::Size;
-
-using ::android::hardware::camera::common::V1_0::helper::CameraMetadata;
 
 namespace android {
+struct ExifDataDeleter { void operator()(ExifData*) const; };
+typedef std::unique_ptr<ExifData, ExifDataDeleter> ExifDataPtr;
+
+using ::android::hardware::camera::common::V1_0::helper::CameraParameters;
+using ::android::hardware::camera::common::V1_0::helper::CameraMetadata;
+
 /* Create an EXIF data structure based on camera parameters. This includes
  * things like GPS information that has been set by the camera client.
  * First for Camera HAL1 and the second for Camera HAL3.
  */
-ExifData* createExifData(const CameraParameters& parameters);
-ExifData* createExifData(const CameraMetadata& params, int width, int height);
-
-/* Free EXIF data created in the createExifData call */
-void freeExifData(ExifData* exifData);
+ExifDataPtr createExifData(const CameraParameters& parameters);
+ExifDataPtr createExifData(const CameraMetadata& params, int width, int height);
+void* exifDataAllocThumbnail(ExifData* edata, size_t size);
 
 }  // namespace android
 

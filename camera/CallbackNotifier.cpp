@@ -284,7 +284,7 @@ void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
         if (isMessageEnabled(CAMERA_MSG_COMPRESSED_IMAGE)) {
             // Create EXIF data from the camera parameters, this includes things
             // like EXIF default fields, a timestamp and GPS information.
-            ExifData* exifData = createExifData(mCameraParameters);
+            ExifDataPtr exifData = createExifData(mCameraParameters);
 
             // Hold the frame lock while accessing the current frame to prevent
             // concurrent modifications. Then create our JPEG from that frame.
@@ -303,7 +303,7 @@ void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
             if (thumbWidth > 0 && thumbHeight > 0) {
                 if (!createThumbnail(static_cast<const unsigned char*>(frame),
                                      width, height, thumbWidth, thumbHeight,
-                                     mJpegQuality, exifData)) {
+                                     mJpegQuality, exifData.get())) {
                     // Not really a fatal error, we'll just keep going
                     ALOGE("%s: Failed to create thumbnail for image",
                           __FUNCTION__);
@@ -314,7 +314,7 @@ void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
              * have requested camera device to provide us with NV21 frames. */
             NV21JpegCompressor compressor;
             status_t res = compressor.compressRawImage(frame, width, height,
-                                                       mJpegQuality, exifData);
+                                                       mJpegQuality, exifData.get());
             if (res == NO_ERROR) {
                 camera_memory_t* jpeg_buff =
                     mGetMemoryCB(-1, compressor.getCompressedSize(), 1, mCBOpaque);
@@ -328,8 +328,6 @@ void CallbackNotifier::onNextFrameAvailable(nsecs_t timestamp,
             } else {
                 ALOGE("%s: Compression failure in CAMERA_MSG_VIDEO_FRAME", __FUNCTION__);
             }
-            // The EXIF data has been consumed, free it
-            freeExifData(exifData);
         }
     }
 }

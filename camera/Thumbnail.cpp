@@ -19,12 +19,11 @@
 #define LOG_NDEBUG 0
 #define LOG_TAG "EmulatedCamera_Thumbnail"
 #include <log/log.h>
-#include <libexif/exif-data.h>
 #include <libyuv.h>
+#include <vector>
 
 #include "JpegCompressor.h"
-
-#include <vector>
+#include "Exif.h"
 
 /*
  * The YU12 format is a YUV format with an 8-bit Y-component and the U and V
@@ -109,15 +108,14 @@ bool createThumbnail(const unsigned char* sourceImage,
     // And finally put it in the EXIF data. This transfers ownership of the
     // malloc'd memory to the EXIF data structure. As long as the EXIF data
     // structure is free'd using the EXIF library this memory will be free'd.
-    exifData->size = compressor.getCompressedSize();
-    exifData->data = reinterpret_cast<unsigned char*>(malloc(exifData->size));
-    if (exifData->data == nullptr) {
-        ALOGE("%s: Unable to allocate %u bytes of memory for thumbnail",
-              __FUNCTION__, exifData->size);
-        exifData->size = 0;
+    const size_t thumbnailSize = compressor.getCompressedSize();
+    void* thumbnailData = exifDataAllocThumbnail(exifData, thumbnailSize);
+    if (!thumbnailData) {
+        ALOGE("%s: Unable to allocate %zu bytes of memory for thumbnail",
+              __FUNCTION__, thumbnailSize);
         return false;
     }
-    compressor.getCompressedImage(exifData->data);
+    compressor.getCompressedImage(thumbnailData);
     return true;
 }
 
