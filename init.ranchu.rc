@@ -10,19 +10,9 @@ on late-fs
 
 on early-init
     mount proc proc /proc remount hidepid=2,gid=3009
-    setprop ro.hardware.vulkan ranchu
 
     # true if ram is <= 2G
     setprop ro.config.low_ram ${ro.boot.config.low_ram}
-    setprop dalvik.vm.dex2oat64.enabled 1
-
-    setprop ro.soc.manufacturer AOSP
-    setprop ro.soc.model ranchu
-
-    # DEPRECATED, use ro.boot.qemu instead. The GTS tests still refer to
-    # ro.kernel.qemu to decide if a device is emulator. Should be removed once
-    # GTS tests are migrated to ro.boot.qemu.
-    setprop ro.kernel.qemu 1
 
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
@@ -54,10 +44,6 @@ on init
     chmod 0664 /dev/cpuctl/top-app/tasks
     chmod 0664 /dev/cpuctl/rt/tasks
 
-    setprop ro.hardware.audio.tinyalsa.period_count 4
-    setprop ro.hardware.audio.tinyalsa.period_size_multiplier 4
-    setprop ro.hardware.audio.tinyalsa.host_latency_ms 30
-
     start qemu-props
 
 on post-fs-data
@@ -78,22 +64,14 @@ on zygote-start
 
 on boot
     setprop ro.hardware.egl ${ro.boot.hardwareegl:-emulation}
-    setprop debug.sf.vsync_reactor_ignore_present_fences true
     setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer:-opengl}
     setprop ro.opengles.version ${ro.boot.opengles.version}
-    setprop ro.surface_flinger.supports_background_blur 1
-    setprop ro.zygote.disable_gl_preload 1
-
     setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
-
     setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize:-192m}
     setprop dalvik.vm.checkjni ${ro.boot.dalvik.vm.checkjni}
+
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
-    setprop ro.hardware.audio.primary goldfish
-
-    setprop wifi.interface wlan0
-    setprop wifi.direct.interface p2p-dev-wlan0
 
     # Create an unused USB gadget to allow sysfs testing
     mkdir /config/usb_gadget/g1 0770 root root
@@ -198,7 +176,6 @@ service wpa_supplicant /vendor/bin/hw/wpa_supplicant -Dnl80211 -iwlan0 -c/vendor
 
 on property:vendor.qemu.vport.bluetooth=*
     symlink ${vendor.qemu.vport.bluetooth} /dev/bluetooth0
-
 
 service bt_vhci_forwarder /vendor/bin/bt_vhci_forwarder -virtio_console_dev=/dev/bluetooth0
     class main
