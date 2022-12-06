@@ -27,6 +27,17 @@ PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
     device/generic/goldfish-opengl
 
+PRODUCT_VENDOR_PROPERTIES += \
+    ro.control_privapp_permissions=enforce \
+    ro.crypto.volume.filenames_mode=aes-256-cts \
+    ro.hardware.power=ranchu \
+    ro.incremental.enable=yes \
+    ro.logd.size=1M \
+    persist.sys.zram_enabled=1 \
+    debug.stagefright.c2inputsurface=-1 \
+    debug.stagefright.ccodec=4 \
+    graphics.gpu.profiler.support=true \
+
 # Device modules
 PRODUCT_PACKAGES += \
     android.hardware.drm-service.clearkey \
@@ -150,16 +161,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
 endif
 
-PRODUCT_PROPERTY_OVERRIDES += ro.control_privapp_permissions=enforce
-PRODUCT_PROPERTY_OVERRIDES += ro.hardware.power=ranchu
-PRODUCT_PROPERTY_OVERRIDES += ro.crypto.volume.filenames_mode=aes-256-cts
-PRODUCT_VENDOR_PROPERTIES += graphics.gpu.profiler.support=true
-
-PRODUCT_PROPERTY_OVERRIDES += persist.sys.zram_enabled=1 \
-
-# Prevent logcat from getting canceled early on in boot
-PRODUCT_PROPERTY_OVERRIDES += ro.logd.size=1M \
-
 ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
 PRODUCT_SOONG_NAMESPACES += \
     hardware/google/camera \
@@ -221,13 +222,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     androidx.window.extensions \
     androidx.window.sidecar \
-
-PRODUCT_PROPERTY_OVERRIDES += \
-    debug.stagefright.c2inputsurface=-1 \
-    debug.stagefright.ccodec=4
-
-# Enable Incremental on the device via kernel driver
-PRODUCT_PROPERTY_OVERRIDES += ro.incremental.enable=yes
 
 # "Hello, world!" HAL implementations, mostly for compliance
 PRODUCT_PACKAGES += \

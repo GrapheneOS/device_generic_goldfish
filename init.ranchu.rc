@@ -79,16 +79,14 @@ on zygote-start
 on boot
     setprop ro.hardware.egl ${ro.boot.hardwareegl:-emulation}
     setprop debug.sf.vsync_reactor_ignore_present_fences true
-    setprop debug.hwui.renderer opengl
-    setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer}
+    setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer:-opengl}
     setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop ro.surface_flinger.supports_background_blur 1
     setprop ro.zygote.disable_gl_preload 1
 
     setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
 
-    setprop dalvik.vm.heapsize 192m
-    setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize}
+    setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize:-192m}
     setprop dalvik.vm.checkjni ${ro.boot.dalvik.vm.checkjni}
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
