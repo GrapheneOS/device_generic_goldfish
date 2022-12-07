@@ -13,6 +13,14 @@ on early-init
 
     # true if ram is <= 2G
     setprop ro.config.low_ram ${ro.boot.config.low_ram}
+    setprop ro.cpuvulkan.version ${ro.boot.qemu.cpuvulkan.version}
+    setprop ro.hardware.egl ${ro.boot.hardwareegl:-emulation}
+    setprop ro.opengles.version ${ro.boot.opengles.version}
+    setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize:-192m}
+    setprop dalvik.vm.checkjni ${ro.boot.dalvik.vm.checkjni}
+    setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer:-opengl}
+    setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
+    setprop debug.sf.nobootanimation ${ro.boot.debug.sf.nobootanimation}
 
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
@@ -63,13 +71,6 @@ on zygote-start
     mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi
 
 on boot
-    setprop ro.hardware.egl ${ro.boot.hardwareegl:-emulation}
-    setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer:-opengl}
-    setprop ro.opengles.version ${ro.boot.opengles.version}
-    setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
-    setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize:-192m}
-    setprop dalvik.vm.checkjni ${ro.boot.dalvik.vm.checkjni}
-
     chown root system /sys/power/wake_lock
     chown root system /sys/power/wake_unlock
 
@@ -95,9 +96,6 @@ on property:vendor.qemu.vport.gnss=*
 on property:vendor.qemu.timezone=*
     setprop persist.sys.timezone ${vendor.qemu.timezone}
 
-on property:ro.boot.debug.sf.nobootanimation=1
-    setprop debug.sf.nobootanimation 1
-
 on property:dev.bootcomplete=1
     setprop vendor.qemu.dev.bootcomplete 1
     start qemu-props-bootcomplete
@@ -105,9 +103,6 @@ on property:dev.bootcomplete=1
 
 on post-fs-data && property:ro.boot.qemu.virtiowifi=1
     start ranchu-net
-
-on property:ro.boot.qemu.cpuvulkan.version=*
-    setprop ro.cpuvulkan.version ${ro.boot.qemu.cpuvulkan.version}
 
 service ranchu-net /vendor/bin/init.ranchu-net.sh
     class late_start
