@@ -30,7 +30,6 @@ PRODUCT_SOONG_NAMESPACES += \
 PRODUCT_VENDOR_PROPERTIES += \
     ro.control_privapp_permissions=enforce \
     ro.crypto.volume.filenames_mode=aes-256-cts \
-    ro.hardware.audio.primary=goldfish \
     ro.hardware.audio.tinyalsa.period_count=4 \
     ro.hardware.audio.tinyalsa.period_size_multiplier=4 \
     ro.hardware.audio.tinyalsa.host_latency_ms=30 \
@@ -204,6 +203,9 @@ PRODUCT_COPY_FILES += \
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
+PRODUCT_VENDOR_PROPERTIES += \
+    ro.hardware.audio.primary=goldfish \
+
 PRODUCT_PACKAGES += \
     android.hardware.audio.service \
     android.hardware.audio@7.1-impl.ranchu \
