@@ -204,9 +204,6 @@ PRODUCT_COPY_FILES += \
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
-PRODUCT_VENDOR_PROPERTIES += \
-    ro.hardware.audio.primary=goldfish \
-
 PRODUCT_PACKAGES += \
     android.hardware.audio.service \
     android.hardware.audio@7.1-impl.ranchu \
