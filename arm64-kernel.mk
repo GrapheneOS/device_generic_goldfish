@@ -4,7 +4,9 @@ SYSTEM_KERNEL_MODULES_INCLUDE := \
     bluetooth.ko \
     btbcm.ko \
     can-dev.ko \
+    cfg80211.ko \
     libarc4.ko \
+    mac80211.ko \
     rfkill.ko \
 
 # Deprecated; do not use downstream. This location only includes vendor
