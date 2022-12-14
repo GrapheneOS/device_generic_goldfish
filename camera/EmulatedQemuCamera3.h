@@ -48,8 +48,7 @@ namespace android {
 class EmulatedQemuCamera3 : public EmulatedCamera3,
         private QemuSensor::QemuSensorListener {
 public:
-    EmulatedQemuCamera3(int cameraId, struct hw_module_t* module,
-                        GraphicBufferMapper* gbm);
+    EmulatedQemuCamera3(int cameraId, struct hw_module_t* module);
     virtual ~EmulatedQemuCamera3();
 
     /*

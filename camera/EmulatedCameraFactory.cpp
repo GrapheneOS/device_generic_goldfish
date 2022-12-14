@@ -44,7 +44,6 @@ namespace android {
 EmulatedCameraFactory::EmulatedCameraFactory() :
         mQemuClient(),
         mConstructedOK(false),
-        mGBM(&GraphicBufferMapper::get()),
         mCallbacks(nullptr) {
 
     /*
@@ -319,7 +318,7 @@ std::unique_ptr<EmulatedBaseCamera>
 EmulatedCameraFactory::createQemuCameraImpl(const QemuCameraInfo& camInfo,
                                             int cameraId,
                                             struct hw_module_t* module) {
-    auto camera = std::make_unique<EmulatedQemuCamera3>(cameraId, module, mGBM);
+    auto camera = std::make_unique<EmulatedQemuCamera3>(cameraId, module);
     status_t res = camera->Initialize(camInfo.name, camInfo.frameDims, camInfo.dir);
     return (res == NO_ERROR) ? std::move(camera) : nullptr;
 }
@@ -364,9 +363,9 @@ EmulatedCameraFactory::createFakeCameraImpl(bool backCamera,
     char prop[PROPERTY_VALUE_MAX];
 
     if (property_get(key, prop, nullptr) > 0) {
-        return std::make_unique<EmulatedFakeRotatingCamera3>(cameraId, backCamera, module, mGBM);
+        return std::make_unique<EmulatedFakeRotatingCamera3>(cameraId, backCamera, module);
     } else {
-        return std::make_unique<EmulatedFakeCamera3>(cameraId, backCamera, module, mGBM);
+        return std::make_unique<EmulatedFakeCamera3>(cameraId, backCamera, module);
     }
 }
 
