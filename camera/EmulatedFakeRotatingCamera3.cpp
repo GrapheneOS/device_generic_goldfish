@@ -93,9 +93,9 @@ const float   EmulatedFakeRotatingCamera3::kExposureWanderMax        = 1;
  */
 
 EmulatedFakeRotatingCamera3::EmulatedFakeRotatingCamera3(int cameraId, bool facingBack,
-        struct hw_module_t* module, GraphicBufferMapper* gbm) :
+        struct hw_module_t* module) :
         EmulatedCamera3(cameraId, module),
-        mFacingBack(facingBack), mGBM(gbm) {
+        mFacingBack(facingBack), mGBM(&GraphicBufferMapper::get()) {
     ALOGI("Constructing emulated fake camera 3: ID %d, facing %s",
             mCameraID, facingBack ? "back" : "front");
 

@@ -83,9 +83,8 @@ const float   EmulatedQemuCamera3::kExposureWanderMax        = 1;
  * Constructor/Destructor
  ****************************************************************************/
 
-EmulatedQemuCamera3::EmulatedQemuCamera3(int cameraId, struct hw_module_t* module,
-                                         GraphicBufferMapper* gbm) :
-        EmulatedCamera3(cameraId, module), mGBM(gbm) {
+EmulatedQemuCamera3::EmulatedQemuCamera3(int cameraId, struct hw_module_t* module) :
+        EmulatedCamera3(cameraId, module), mGBM(&GraphicBufferMapper::get()) {
     ALOGI("Constructing emulated qemu camera 3: ID %d", mCameraID);
     for (size_t i = 0; i < CAMERA3_TEMPLATE_COUNT; ++i) {
         mDefaultTemplates[i] = nullptr;
