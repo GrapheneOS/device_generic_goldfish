@@ -162,7 +162,7 @@ struct TinyalsaSource : public DevicePortSource {
     }
 
     void producerThread() {
-        util::setThreadPriority(PRIORITY_URGENT_AUDIO);
+        util::setThreadPriority(SP_AUDIO_SYS, PRIORITY_AUDIO);
         std::vector<uint8_t> readBuf(mReadSizeFrames * mFrameSize);
 
         while (mProduceThreadRunning) {
