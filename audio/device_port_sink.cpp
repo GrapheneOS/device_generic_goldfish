@@ -191,7 +191,7 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     void consumeThread() {
-        util::setThreadPriority(PRIORITY_URGENT_AUDIO);
+        util::setThreadPriority(SP_AUDIO_SYS, PRIORITY_AUDIO);
         std::vector<uint8_t> writeBuffer(mWriteSizeFrames * mFrameSize);
 
         while (mConsumeThreadRunning) {
