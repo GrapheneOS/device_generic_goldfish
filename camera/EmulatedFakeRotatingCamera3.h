@@ -50,7 +50,7 @@ class EmulatedFakeRotatingCamera3 : public EmulatedCamera3,
 public:
 
     EmulatedFakeRotatingCamera3(int cameraId, bool facingBack,
-            struct hw_module_t* module, GraphicBufferMapper* gbm);
+            struct hw_module_t* module);
 
     virtual ~EmulatedFakeRotatingCamera3();
 

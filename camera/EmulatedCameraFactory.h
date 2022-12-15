@@ -265,8 +265,6 @@ private:
     // Flags whether or not constructor has succeeded.
     bool mConstructedOK;
 
-    GraphicBufferMapper *mGBM;
-
     // Camera callbacks (for status changing).
     const camera_module_callbacks_t *mCallbacks;
 
