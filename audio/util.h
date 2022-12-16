@@ -19,6 +19,7 @@
 #include PATH(android/hardware/audio/common/COMMON_TYPES_FILE_VERSION/types.h)
 #include PATH(android/hardware/audio/CORE_TYPES_FILE_VERSION/types.h)
 #include <utils/Timers.h>
+#include <cutils/sched_policy.h>
 
 namespace android {
 namespace hardware {
@@ -51,7 +52,7 @@ bool checkAudioPortConfig(const AudioPortConfig& cfg);
 
 TimeSpec nsecs2TimeSpec(nsecs_t);
 
-void setThreadPriority(int prio);
+bool setThreadPriority(SchedPolicy policy, int prio);
 
 }  // namespace util
 }  // namespace implementation
