@@ -35,6 +35,7 @@
         ALOGE("%s:%d '%s' failed with '%s'", __func__, __LINE__, C, nlErrStr((NLR))); \
         return (R); \
     } while (false);
+#define BIT(x) (1 << (x))
 
 enum {
     HWSIM_CMD_UNSPEC,
@@ -88,25 +89,25 @@ constexpr char kHwSimFamilyName[] = "MAC80211_HWSIM";
 constexpr int kHwSimVersion = 1;
 constexpr uint32_t kChannels = 2;
 constexpr uint32_t kPmsrMaxPeers = 10;
-constexpr uint32_t kFtmAllPreables = NL80211_PREAMBLE_LEGACY
-        | NL80211_PREAMBLE_HT
-        | NL80211_PREAMBLE_VHT
-        | NL80211_PREAMBLE_DMG
-        | NL80211_PREAMBLE_HE;
-constexpr uint32_t kFtmAllBandwidths = NL80211_CHAN_WIDTH_20_NOHT
-        | NL80211_CHAN_WIDTH_20
-        | NL80211_CHAN_WIDTH_40
-        | NL80211_CHAN_WIDTH_80
-        | NL80211_CHAN_WIDTH_80P80
-        | NL80211_CHAN_WIDTH_160
-        | NL80211_CHAN_WIDTH_5
-        | NL80211_CHAN_WIDTH_10
-        | NL80211_CHAN_WIDTH_1
-        | NL80211_CHAN_WIDTH_2
-        | NL80211_CHAN_WIDTH_4
-        | NL80211_CHAN_WIDTH_8
-        | NL80211_CHAN_WIDTH_16
-        | NL80211_CHAN_WIDTH_320;
+constexpr uint32_t kFtmAllPreables = BIT(NL80211_PREAMBLE_LEGACY)
+        | BIT(NL80211_PREAMBLE_HT)
+        | BIT(NL80211_PREAMBLE_VHT)
+        | BIT(NL80211_PREAMBLE_DMG)
+        | BIT(NL80211_PREAMBLE_HE);
+constexpr uint32_t kFtmAllBandwidths = BIT(NL80211_CHAN_WIDTH_20_NOHT)
+        | BIT(NL80211_CHAN_WIDTH_20)
+        | BIT(NL80211_CHAN_WIDTH_40)
+        | BIT(NL80211_CHAN_WIDTH_80)
+        | BIT(NL80211_CHAN_WIDTH_80P80)
+        | BIT(NL80211_CHAN_WIDTH_160)
+        | BIT(NL80211_CHAN_WIDTH_5)
+        | BIT(NL80211_CHAN_WIDTH_10)
+        | BIT(NL80211_CHAN_WIDTH_1)
+        | BIT(NL80211_CHAN_WIDTH_2)
+        | BIT(NL80211_CHAN_WIDTH_4)
+        | BIT(NL80211_CHAN_WIDTH_8)
+        | BIT(NL80211_CHAN_WIDTH_16)
+        | BIT(NL80211_CHAN_WIDTH_320);
 constexpr uint8_t kFtmMaxBurstsExponent = 15;
 constexpr uint8_t kFtmMaxFtmsPerBurst = 31;
 
