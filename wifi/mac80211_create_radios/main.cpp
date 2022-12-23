@@ -24,6 +24,18 @@
 #include <net/ethernet.h>
 #include <linux/nl80211.h>
 
+#define RETURN(R) return (R);
+#define RETURN_ERROR(C, R) \
+    do { \
+        ALOGE("%s:%d '%s' failed", __func__, __LINE__, C); \
+        return (R); \
+    } while (false);
+#define RETURN_NL_ERROR(C, NLR, R) \
+    do { \
+        ALOGE("%s:%d '%s' failed with '%s'", __func__, __LINE__, C, nlErrStr((NLR))); \
+        return (R); \
+    } while (false);
+
 enum {
     HWSIM_CMD_UNSPEC,
     HWSIM_CMD_REGISTER,
@@ -99,18 +111,6 @@ constexpr uint8_t kFtmMaxBurstsExponent = 15;
 constexpr uint8_t kFtmMaxFtmsPerBurst = 31;
 
 const char* nlErrStr(const int e) { return (e < 0) ? nl_geterror(e) : ""; }
-
-#define RETURN(R) return (R);
-#define RETURN_ERROR(C, R) \
-    do { \
-        ALOGE("%s:%d '%s' failed", __func__, __LINE__, C); \
-        return (R); \
-    } while (false);
-#define RETURN_NL_ERROR(C, NLR, R) \
-    do { \
-        ALOGE("%s:%d '%s' failed with '%s'", __func__, __LINE__, C, nlErrStr((NLR))); \
-        return (R); \
-    } while (false);
 
 int parseInt(const char* str, int* result) { return sscanf(str, "%d", result); }
 
