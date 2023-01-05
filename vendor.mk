@@ -229,10 +229,8 @@ PRODUCT_PACKAGES += \
     hostapd \
     wpa_supplicant \
 
-# Extension implementation for Jetpack WindowManager
-PRODUCT_PACKAGES += \
-    androidx.window.extensions \
-    androidx.window.sidecar \
+# Window Extensions
+$(call inherit-product, $(SRC_TARGET_DIR)/product/window_extensions.mk)
 
 # "Hello, world!" HAL implementations, mostly for compliance
 PRODUCT_PACKAGES += \
