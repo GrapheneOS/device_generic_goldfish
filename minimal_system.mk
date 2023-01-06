@@ -37,7 +37,6 @@ PRODUCT_PACKAGES += \
     libm.bootstrap \
     libstdc++ \
     linker \
-    linkerconfig \
     logcat \
     logd \
     odsign \
