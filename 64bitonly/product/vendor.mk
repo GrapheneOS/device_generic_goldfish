@@ -65,7 +65,7 @@ PRODUCT_PACKAGES += \
     local_time.default \
     SdkSetup \
     EmulatorRadioConfig \
-    EmulatorConnectivityOverlay \
+    goldfish_overlay_connectivity_gsi \
     EmulatorTetheringConfigOverlay \
     MultiDisplayProvider \
     libGoldfishProfiler
@@ -90,12 +90,18 @@ PRODUCT_PACKAGES += \
     libGLESv2_angle
 endif
 
+#
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     bt_vhci_forwarder \
     android.hardware.bluetooth@1.1-service.btlinux \
     android.hardware.bluetooth.audio@2.1-impl
- #
+
+# Bluetooth hardware properties.
+ifeq ($(TARGET_PRODUCT_PROP),)
+TARGET_PRODUCT_PROP := $(LOCAL_PATH)/../../bluetooth.prop
+endif
+
 # Bluetooth se policies
 BOARD_SEPOLICY_DIRS += system/bt/vendor_libs/linux/sepolicy
 

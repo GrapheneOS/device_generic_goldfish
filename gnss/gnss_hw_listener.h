@@ -28,9 +28,15 @@ public:
     void consume(char);
 
 private:
-    bool parse(const char* begin, const char* end, const ahg20::ElapsedRealtime&);
-    bool parseGPRMC(const char* begin, const char* end, const ahg20::ElapsedRealtime&);
-    bool parseGPGGA(const char* begin, const char* end, const ahg20::ElapsedRealtime&);
+    bool parse(const char* begin, const char* end,
+               const ahg10::GnssUtcTime& t,
+               const ahg20::ElapsedRealtime& ert);
+    bool parseGPRMC(const char* begin, const char* end,
+                    const ahg10::GnssUtcTime& t,
+                    const ahg20::ElapsedRealtime& ert);
+    bool parseGPGGA(const char* begin, const char* end,
+                    const ahg10::GnssUtcTime& t,
+                    const ahg20::ElapsedRealtime& ert);
 
     const DataSink*     m_sink;
     std::vector<char>   m_buffer;
