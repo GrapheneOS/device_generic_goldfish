@@ -65,7 +65,7 @@ std::optional<CameraMetadata> serializeCameraMetadataMap(const CameraMetadataMap
     for (const auto& [tag, value] : m) {
         if (value.count > 0) {
             if (add_camera_metadata_entry(cm.get(), tag, value.data.data(), value.count)) {
-                return FAILURE_V(std::nullopt, "failed to add tag=%s.%s(%u), count=%u: %s (%d)",
+                return FAILURE_V(std::nullopt, "failed to add tag=%s.%s(%u), count=%u",
                                  get_camera_metadata_section_name(tag),
                                  get_camera_metadata_tag_name(tag), tag,
                                  value.count);
