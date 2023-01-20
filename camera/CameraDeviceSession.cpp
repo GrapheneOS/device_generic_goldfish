@@ -53,10 +53,11 @@ constexpr size_t kMsgQueueSize = 256 * 1024;
 struct timespec timespecAddNanos(const struct timespec t, const int64_t addNs) {
     const lldiv_t r = lldiv(t.tv_nsec + addNs, kOneSecondNs);
 
-    return {
-        .tv_sec = t.tv_sec + r.quot,
-        .tv_nsec = r.rem,
-    };
+    struct timespec tm;
+    tm.tv_sec = t.tv_sec + r.quot;
+    tm.tv_nsec = r.rem;
+
+    return tm;
 }
 
 int64_t timespec2nanos(const struct timespec t) {
