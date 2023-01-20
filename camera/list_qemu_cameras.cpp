@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <charconv>
 #include <numeric>
 #include <string_view>
@@ -97,6 +98,21 @@ bool parseResolutions(const std::string_view str, std::vector<Rect<uint16_t>>* s
     return true;
 }
 
+struct RectAreaComparator {
+    bool operator()(Rect<uint16_t> lhs, Rect<uint16_t> rhs) const {
+        const size_t lArea = size_t(lhs.width) * lhs.height;
+        const size_t rArea = size_t(rhs.width) * rhs.height;
+
+        if (lArea < rArea) {
+            return true;
+        } else if (lArea > rArea) {
+            return false;
+        } else {
+            return lhs.width < rhs.width;
+        }
+    }
+};
+
 } // namespace
 
 std::vector<HwCameraFactory> listQemuCameras() {
@@ -149,10 +165,7 @@ std::vector<HwCameraFactory> listQemuCameras() {
         } else {
             std::sort(params.supportedResolutions.begin(),
                       params.supportedResolutions.end(),
-                      [](const Rect<uint16_t>& lhs, const Rect<uint16_t>& rhs){
-                          return (uint32_t(lhs.width) * lhs.height) <
-                                 (uint32_t(rhs.width) * rhs.height);
-            });
+                      RectAreaComparator());
         }
 
         ALOGD("%s:%d found a '%.*s' QEMU camera, dir=%.*s framedims=%.*s",
