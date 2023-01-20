@@ -178,9 +178,7 @@ PRODUCT_SOONG_NAMESPACES += \
     hardware/google/camera/devices/EmulatedCamera \
 
 PRODUCT_PACKAGES += \
-    android.hardware.camera.provider@2.4-service \
-    android.hardware.camera.provider@2.4-impl \
-    camera.ranchu \
+    android.hardware.camera.provider.ranchu \
     android.hardware.camera.provider@2.7-service-google \
     libgooglecamerahwl_impl \
 
