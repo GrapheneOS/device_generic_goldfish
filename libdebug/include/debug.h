@@ -25,15 +25,22 @@
 #define FAILURE(X) \
     (ALOGE("%s:%s:%d failure: %s", FAILURE_DEBUG_PREFIX, __func__, __LINE__, #X), X)
 
+#define FAILURE_V(X, FMT, ...) \
+    (ALOGE("%s:%s:%d failure: " FMT, FAILURE_DEBUG_PREFIX, __func__, __LINE__, __VA_ARGS__), X)
+
 #else
 
 #define FAILURE(X) \
     (ALOGE("%s:%d failure: %s", __func__, __LINE__, #X), X)
+
+#define FAILURE_V(X, FMT, ...) \
+    (ALOGE("%s:%d failure: " FMT, __func__, __LINE__, __VA_ARGS__), X)
 
 #endif
 
 #else
 
 #define FAILURE(X) X
+#define FAILURE_V(X, ...) X
 
 #endif
