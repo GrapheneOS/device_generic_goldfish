@@ -117,17 +117,16 @@ StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
 
     GraphicBufferMapper& gbm = GraphicBufferMapper::get();
     android_ycbcr imageYcbcr = android_ycbcr();
-    const int32_t width = csb->si.size.width;
-    const int32_t height = csb->si.size.height;
+    const Rect<uint16_t> size = csb->si.size;
     gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
-                  {0, 0, width - 1, height - 1}, &imageYcbcr);
+                  {size.width, size.height}, &imageYcbcr);
     if (!imageYcbcr.y) {
         return makeFailedStreamBuffer(FAILURE(csb));
     }
 
     void* jpegData = nullptr;
     gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {0, 0, jpegBufferCapacity - 1, 1}, &jpegData);
+             {jpegBufferCapacity, 1}, &jpegData);
     if (!jpegData) {
         gbm.unlock(image);
         return makeFailedStreamBuffer(FAILURE(csb));
