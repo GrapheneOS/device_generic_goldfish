@@ -101,19 +101,11 @@ StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb) {
                                    false, csb->takeAcquireFence());
 }
 
-size_t getNativeHandleBufferCapacity(const native_handle_t* buffer) {
-    const cb_handle_t* const cb = cb_handle_t::from(buffer);
-    return cb ? cb->bufferSize : FAILURE(0);
-}
-
 StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
                           const native_handle_t* const image,
                           const CameraMetadata& metadata) {
-    const native_handle_t* buffer = csb->getBuffer();
-    const int32_t jpegBufferCapacity = getNativeHandleBufferCapacity(buffer);
-    if (!jpegBufferCapacity) {
-        return makeFailedStreamBuffer(FAILURE(csb));
-    }
+    const native_handle_t* const buffer = csb->getBuffer();
+    const int32_t bufferSize = csb->si.bufferSize;
 
     GraphicBufferMapper& gbm = GraphicBufferMapper::get();
     android_ycbcr imageYcbcr = android_ycbcr();
@@ -126,16 +118,16 @@ StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
 
     void* jpegData = nullptr;
     gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {jpegBufferCapacity, 1}, &jpegData);
+             {bufferSize, 1}, &jpegData);
     if (!jpegData) {
         gbm.unlock(image);
         return makeFailedStreamBuffer(FAILURE(csb));
     }
 
     const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
-                                           jpegData, jpegBufferCapacity);
+                                           jpegData, bufferSize);
 
-    gbm.unlock(csb->getBuffer());
+    gbm.unlock(buffer);
     gbm.unlock(image);
 
     return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),

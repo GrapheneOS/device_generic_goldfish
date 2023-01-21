@@ -361,6 +361,10 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
             return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
         }
 
+        if (s.bufferSize < 0) {
+            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+        }
+
         StreamInfo si;
         Dataspace dataspace;
         unsigned maxBuffers;
@@ -389,6 +393,7 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
         si.id = s.id;
         si.size.width = s.width;
         si.size.height = s.height;
+        si.bufferSize = s.bufferSize;
         streamInfoCache[s.id] = std::move(si);
     }
 
