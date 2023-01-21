@@ -24,3 +24,5 @@ image.sysdir.1=x86/
 skin.dynamic=no
 skin.name=3000x2000
 skin.path=3000x2000
+tag.display = Desktop
+tag.id = android-desktop
