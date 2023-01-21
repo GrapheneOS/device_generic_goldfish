@@ -83,7 +83,9 @@ bool parseResolutions(const std::string_view str, std::vector<Rect<uint16_t>>* s
         }
         i = r.ptr;
 
-        supportedResolutions->push_back(resolution);
+        if ((resolution.width > 0) && (resolution.height > 0)) {
+            supportedResolutions->push_back(resolution);
+        }
 
         if (i == end) {
             break;
