@@ -101,37 +101,13 @@ bool parseResolutions(const std::string_view str, std::vector<Rect<uint16_t>>* s
     return true;
 }
 
-size_t calcGCD(size_t a, size_t b) {
-    while (a != b) {
-        if (a > b) {
-            a -= b;
-        } else {
-            b -= a;
-        }
-    }
-    return a;
-}
-
-Rect<uint16_t> getAspectRatio(const Rect<uint16_t> image) {
-    const size_t gcd = calcGCD(image.width, image.height);
-    if (gcd > 0) {
-        return {uint16_t(image.width / gcd), uint16_t(image.height / gcd)};
-    } else {
-        return FAILURE(image);
-    }
-}
-
-Rect<uint16_t> calcThumbnailResolution(const Rect<uint16_t> aspectRatio,
+Rect<uint16_t> calcThumbnailResolution(const double aspectRatio,
                                        const size_t targetArea) {
-    const size_t area = aspectRatio.area();
-    if (area == 0) {
-        return FAILURE(aspectRatio);
-    }
-    const double m = sqrt(double(targetArea) / area);
     // round to a multiple of 16, a tad down
-    const size_t height16 = ((size_t(aspectRatio.height * m) + 7) >> 4) << 4;
-    const double m16 = double(height16) / aspectRatio.height;
-    return {uint16_t(aspectRatio.width * m16), uint16_t(height16)};
+    const uint16_t height =
+        ((uint16_t(sqrt(targetArea / aspectRatio)) + 7) >> 4) << 4;
+
+    return {uint16_t(height * aspectRatio), height};
 }
 
 struct RectAreaComparator {
@@ -207,7 +183,7 @@ std::vector<HwCameraFactory> listQemuCameras() {
             thumbnailResolutions.push_back({0, 0});
 
             for (const Rect<uint16_t> res : params.supportedResolutions) {
-                const Rect<uint16_t> aspectRatio = getAspectRatio(res);
+                const double aspectRatio = double(res.width) / res.height;
                 const size_t resArea4 = res.area() / 4;
                 Rect<uint16_t> thumbnailRes;
                 size_t thumbnailResArea;
