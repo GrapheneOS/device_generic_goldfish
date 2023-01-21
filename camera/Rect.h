@@ -30,6 +30,8 @@ template <class T> struct Rect {
     bool operator==(const Rect& rhs) const {
         return (width == rhs.width) && (height == rhs.height);
     }
+
+    size_t area() const { return size_t(width) * height; }
 };
 
 }  // namespace implementation

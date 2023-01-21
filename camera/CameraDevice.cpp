@@ -435,7 +435,6 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
     using namespace std::literals;
     const auto sensorSize = mHwCamera->getSensorSize();
     const std::pair<int32_t, int32_t> fpsRange = mHwCamera->getDefaultTargetFpsRange(tpl);
-    const Rect<uint16_t> thumbnailSize = mHwCamera->getDefaultThumbnailSize();
 
     CameraMetadataMap m;
 
@@ -472,9 +471,7 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
     m[ANDROID_JPEG_ORIENTATION] = int32_t(mHwCamera->getSensorOrientation());
     m[ANDROID_JPEG_QUALITY] = uint8_t(85);
     m[ANDROID_JPEG_THUMBNAIL_QUALITY] = uint8_t(85);
-    m[ANDROID_JPEG_THUMBNAIL_SIZE]
-        .add<int32_t>(thumbnailSize.width)
-        .add<int32_t>(thumbnailSize.height);
+    m[ANDROID_JPEG_THUMBNAIL_SIZE].add<int32_t>(0).add<int32_t>(0);
 
     m[ANDROID_LENS_APERTURE] = float(mHwCamera->getDefaultAperture());
     m[ANDROID_LENS_FOCAL_LENGTH] = float(mHwCamera->getDefaultFocalLength());
