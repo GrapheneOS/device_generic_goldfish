@@ -519,11 +519,8 @@ Span<const std::pair<int32_t, int32_t>> QemuCamera::getTargetFpsRanges() const {
 }
 
 Span<const Rect<uint16_t>> QemuCamera::getAvailableThumbnailSizes() const {
-    static const Rect<uint16_t> availableThumbnailSizes[] = {
-        {0, 0}, {160, 120}, {320, 240},
-    };
-
-    return availableThumbnailSizes;
+    return {mParams.availableThumbnailResolutions.begin(),
+            mParams.availableThumbnailResolutions.end()};
 }
 
 bool QemuCamera::isBackFacing() const {
@@ -595,10 +592,6 @@ std::pair<int32_t, int32_t> QemuCamera::getDefaultTargetFpsRange(const RequestTe
     default:
         return {kMinFPS, kMaxFPS};
     }
-}
-
-Rect<uint16_t> QemuCamera::getDefaultThumbnailSize() const {
-    return {160, 120};
 }
 
 float QemuCamera::getDefaultAperture() const {
