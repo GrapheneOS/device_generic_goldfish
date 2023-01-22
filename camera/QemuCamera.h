@@ -47,7 +47,7 @@ struct QemuCamera : public HwCamera {
     explicit QemuCamera(const Parameters& params);
     ~QemuCamera() override;
 
-    std::tuple<PixelFormat, BufferUsage, Dataspace, unsigned>
+    std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
         overrideStreamParams(PixelFormat, BufferUsage, Dataspace) const override;
 
     bool configure(const CameraMetadata& sessionParams) override;
