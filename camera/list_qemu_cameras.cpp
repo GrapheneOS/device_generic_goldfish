@@ -18,6 +18,7 @@
 #include <charconv>
 #include <numeric>
 #include <string_view>
+#include <math.h>
 
 #include <log/log.h>
 
@@ -98,10 +99,43 @@ bool parseResolutions(const std::string_view str, std::vector<Rect<uint16_t>>* s
     return true;
 }
 
+size_t calcGCD(size_t a, size_t b) {
+    while (a != b) {
+        if (a > b) {
+            a -= b;
+        } else {
+            b -= a;
+        }
+    }
+    return a;
+}
+
+Rect<uint16_t> getAspectRatio(const Rect<uint16_t> image) {
+    const size_t gcd = calcGCD(image.width, image.height);
+    if (gcd > 0) {
+        return {uint16_t(image.width / gcd), uint16_t(image.height / gcd)};
+    } else {
+        return FAILURE(image);
+    }
+}
+
+Rect<uint16_t> calcThumbnailResolution(const Rect<uint16_t> aspectRatio,
+                                       const size_t targetArea) {
+    const size_t area = aspectRatio.area();
+    if (area == 0) {
+        return FAILURE(aspectRatio);
+    }
+    const double m = sqrt(double(targetArea) / area);
+    // round to a multiple of 16, a tad down
+    const size_t height16 = ((size_t(aspectRatio.height * m) + 7) >> 4) << 4;
+    const double m16 = double(height16) / aspectRatio.height;
+    return {uint16_t(aspectRatio.width * m16), uint16_t(height16)};
+}
+
 struct RectAreaComparator {
     bool operator()(Rect<uint16_t> lhs, Rect<uint16_t> rhs) const {
-        const size_t lArea = size_t(lhs.width) * lhs.height;
-        const size_t rArea = size_t(rhs.width) * rhs.height;
+        const size_t lArea = lhs.area();
+        const size_t rArea = rhs.area();
 
         if (lArea < rArea) {
             return true;
@@ -166,6 +200,56 @@ std::vector<HwCameraFactory> listQemuCameras() {
             std::sort(params.supportedResolutions.begin(),
                       params.supportedResolutions.end(),
                       RectAreaComparator());
+
+            std::vector<Rect<uint16_t>> thumbnailResolutions;
+            thumbnailResolutions.push_back({0, 0});
+
+            for (const Rect<uint16_t> res : params.supportedResolutions) {
+                const Rect<uint16_t> aspectRatio = getAspectRatio(res);
+                const size_t resArea4 = res.area() / 4;
+                Rect<uint16_t> thumbnailRes;
+                size_t thumbnailResArea;
+
+                do {
+                    thumbnailRes = calcThumbnailResolution(aspectRatio, 4900);
+                    thumbnailResArea = thumbnailRes.area();
+                    if ((thumbnailResArea > 0) && (thumbnailResArea < resArea4)) {
+                        thumbnailResolutions.push_back(thumbnailRes);
+                    } else {
+                        thumbnailRes = calcThumbnailResolution(aspectRatio, 1800);
+                        thumbnailResArea = thumbnailRes.area();
+                        if ((thumbnailResArea > 0) && (thumbnailRes.area() < resArea4)) {
+                            thumbnailResolutions.push_back(thumbnailRes);
+                        } else {
+                            // `res` is too small for a thumbnail
+                        }
+                        break;
+                    }
+
+                    thumbnailRes = calcThumbnailResolution(aspectRatio, 19500);
+                    thumbnailResArea = thumbnailRes.area();
+                    if ((thumbnailResArea > 0) && (thumbnailRes.area() < resArea4)) {
+                        thumbnailResolutions.push_back(thumbnailRes);
+                    } else {
+                        break;
+                    }
+
+                    thumbnailRes = calcThumbnailResolution(aspectRatio, 77000);
+                    thumbnailResArea = thumbnailRes.area();
+                    if ((thumbnailResArea > 0) && (thumbnailRes.area() < resArea4)) {
+                        thumbnailResolutions.push_back(thumbnailRes);
+                    }
+                } while (false);
+            }
+
+            std::sort(thumbnailResolutions.begin(), thumbnailResolutions.end(),
+                      RectAreaComparator());
+
+            thumbnailResolutions.erase(std::unique(thumbnailResolutions.begin(),
+                                                   thumbnailResolutions.end()),
+                                       thumbnailResolutions.end());
+
+            params.availableThumbnailResolutions = std::move(thumbnailResolutions);
         }
 
         ALOGD("%s:%d found a '%.*s' QEMU camera, dir=%.*s framedims=%.*s",

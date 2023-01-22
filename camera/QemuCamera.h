@@ -39,6 +39,7 @@ struct QemuCamera : public HwCamera {
     struct Parameters {
         std::string name;
         std::vector<Rect<uint16_t>> supportedResolutions;
+        std::vector<Rect<uint16_t>> availableThumbnailResolutions;
         Rect<uint16_t> sensorSize;
         bool isBackFacing;
     };
@@ -72,7 +73,6 @@ struct QemuCamera : public HwCamera {
     int64_t getSensorMaxFrameDuration() const override;
 
     std::pair<int32_t, int32_t> getDefaultTargetFpsRange(RequestTemplate) const override;
-    Rect<uint16_t> getDefaultThumbnailSize() const override;
     float getDefaultAperture() const override;
     int64_t getDefaultSensorExpTime() const override;
     int64_t getDefaultSensorFrameDuration() const override;

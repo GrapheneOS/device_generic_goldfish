@@ -100,7 +100,6 @@ struct HwCamera {
 
     ////////////////////////////////////////////////////////////////////////////
     virtual std::pair<int32_t, int32_t> getDefaultTargetFpsRange(RequestTemplate) const = 0;
-    virtual Rect<uint16_t> getDefaultThumbnailSize() const = 0;
     virtual float getDefaultAperture() const;
     virtual float getDefaultFocalLength() const;
     virtual int32_t getDefaultSensorSensitivity() const;
