@@ -40,6 +40,7 @@ const uint32_t kExtraResultKeys[] = {
     ANDROID_CONTROL_AWB_STATE,
     ANDROID_FLASH_STATE,
     ANDROID_LENS_FOCUS_DISTANCE,
+    ANDROID_LENS_STATE,
     ANDROID_REQUEST_PIPELINE_DEPTH,
     ANDROID_SENSOR_TIMESTAMP, // populate with zero, CameraDeviceSession will put an actual value
     ANDROID_SENSOR_ROLLING_SHUTTER_SKEW,

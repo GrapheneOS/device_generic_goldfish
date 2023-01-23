@@ -441,6 +441,7 @@ CameraMetadata QemuCamera::applyMetadata(const CameraMetadata& metadata) {
     m[ANDROID_FLASH_STATE] = ANDROID_FLASH_STATE_UNAVAILABLE;
     m[ANDROID_LENS_APERTURE] = mAperture;
     m[ANDROID_LENS_FOCUS_DISTANCE] = af.second;
+    m[ANDROID_LENS_STATE] = ANDROID_LENS_STATE_STATIONARY;
     m[ANDROID_REQUEST_PIPELINE_DEPTH] = uint8_t(4);
     m[ANDROID_SENSOR_FRAME_DURATION] = mFrameDurationNs;
     m[ANDROID_SENSOR_EXPOSURE_TIME] = mSensorExposureDurationNs;
