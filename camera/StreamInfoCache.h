@@ -40,6 +40,7 @@ struct StreamInfo {
     Dataspace dataspace;
     PixelFormat pixelFormat;
     Rect<uint16_t> size;
+    uint32_t bufferSize;
     int32_t id;
 };
 
