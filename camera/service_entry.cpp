@@ -37,7 +37,7 @@ int serviceEntry(const int deviceIdBase,
     std::shared_ptr<CameraProvider> hal = ndk::SharedRefBase::make<CameraProvider>(
         deviceIdBase, availableCameras);
 
-    const std::string instance = std::string(CameraProvider::descriptor) + "/internal/0";
+    const std::string instance = std::string(CameraProvider::descriptor) + "/internal/1";
 
     if (AServiceManager_registerLazyService(hal->asBinder().get(),
                                             instance.c_str()) == STATUS_OK) {
