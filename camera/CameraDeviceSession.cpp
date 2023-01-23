@@ -367,12 +367,41 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
 
         StreamInfo si;
         Dataspace dataspace;
-        unsigned maxBuffers;
+        int32_t maxBuffers;
 
         std::tie(si.pixelFormat, si.usage, si.dataspace, maxBuffers) =
             hwCamera.overrideStreamParams(s.format, s.usage, s.dataSpace);
-        if (maxBuffers == 0) {
-            return {Status::ILLEGAL_ARGUMENT, {}, {}};
+        if (maxBuffers <= 0) {
+            switch (maxBuffers) {
+            case hw::HwCamera::kErrorBadFormat:
+                ALOGW("%s:%d unexpected format=0x%" PRIx32,
+                      __func__, __LINE__, static_cast<uint32_t>(s.format));
+                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+
+            case hw::HwCamera::kErrorBadUsage:
+                ALOGW("%s:%d unexpected usage=0x%" PRIx64
+                      " for format=0x%" PRIx32 " and dataSpace=0x%" PRIx32,
+                      __func__, __LINE__, static_cast<uint64_t>(s.usage),
+                      static_cast<uint32_t>(s.format),
+                      static_cast<uint32_t>(s.dataSpace));
+                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+
+            case hw::HwCamera::kErrorBadDataspace:
+                ALOGW("%s:%d unexpected dataSpace=0x%" PRIx32
+                      " for format=0x%" PRIx32 " and usage=0x%" PRIx64,
+                      __func__, __LINE__, static_cast<uint32_t>(s.dataSpace),
+                      static_cast<uint32_t>(s.format),
+                      static_cast<uint64_t>(s.usage));
+                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+
+            default:
+                ALOGE("%s:%d something is not right for format=0x%" PRIx32
+                      " usage=0x%" PRIx64 " and dataSpace=0x%" PRIx32,
+                      __func__, __LINE__, static_cast<uint32_t>(s.format),
+                      static_cast<uint64_t>(s.usage),
+                      static_cast<uint32_t>(s.dataSpace));
+                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+            }
         }
 
         {
