@@ -134,8 +134,8 @@ std::tuple<uint32_t, uint32_t, uint32_t> convertDegToDegMmSs(double v) {
     v = (v - ideg) * 60;
     const uint32_t minutes = floor(v);
     v = (v - minutes) * 60;
-    const uint32_t seconds = floor(v);
-    return {ideg, minutes, seconds};
+    const uint32_t secondsM = round(v * 1000000);
+    return {ideg, minutes, secondsM};
 }
 
 struct tm convertT64ToTm(const int64_t t) {
@@ -277,9 +277,10 @@ ExifDataPtr createExifData(const CameraMetadata& metadata,
     if (!find_camera_metadata_ro_entry(rawMetadata, ANDROID_JPEG_GPS_COORDINATES,
                                        &metadataEntry)) {
         {
-            const auto [ideg, minutes, seconds] = convertDegToDegMmSs(
+            const auto [ideg, minutes, secondsM] = convertDegToDegMmSs(
                 fabs(metadataEntry.data.d[0]));
-            ExifRational degmmss[3] = {{ideg, 1}, {minutes, 1}, {seconds, 1}};
+            ExifRational degmmss[3] = {{ideg, 1}, {minutes, 1},
+                                       {secondsM, 1000000}};
             appendEntryR32(exifData.get(), allocator.get(), EXIF_IFD_GPS,
                            static_cast<ExifTag>(EXIF_TAG_GPS_LATITUDE),
                            degmmss, 3);
@@ -290,9 +291,10 @@ ExifDataPtr createExifData(const CameraMetadata& metadata,
                          latRef, 2, EXIF_FORMAT_ASCII);
         }
         {
-            const auto [ideg, minutes, seconds] = convertDegToDegMmSs(
+            const auto [ideg, minutes, secondsM] = convertDegToDegMmSs(
                 fabs(metadataEntry.data.d[1]));
-            ExifRational degmmss[3] = {{ideg, 1}, {minutes, 1}, {seconds, 1}};
+            ExifRational degmmss[3] = {{ideg, 1}, {minutes, 1},
+                                       {secondsM, 1000000}};
             appendEntryR32(exifData.get(), allocator.get(), EXIF_IFD_GPS,
                            static_cast<ExifTag>(EXIF_TAG_GPS_LONGITUDE),
                            degmmss, 3);
