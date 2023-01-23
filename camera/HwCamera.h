@@ -60,9 +60,13 @@ struct HwCaptureRequest {
 using DelayedStreamBuffer = std::function<StreamBuffer(bool)>;
 
 struct HwCamera {
+    static constexpr int32_t kErrorBadFormat = -1;
+    static constexpr int32_t kErrorBadUsage = -2;
+    static constexpr int32_t kErrorBadDataspace = -3;
+
     virtual ~HwCamera() {}
 
-    virtual std::tuple<PixelFormat, BufferUsage, Dataspace, unsigned>
+    virtual std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
         overrideStreamParams(PixelFormat, BufferUsage, Dataspace) const = 0;
 
     virtual bool configure(const CameraMetadata& sessionParams) = 0;
