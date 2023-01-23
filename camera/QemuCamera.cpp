@@ -65,16 +65,12 @@ constexpr float   kDefaultAperture = 4.0;
 
 constexpr int32_t kDefaultJpegQuality = 85;
 
-BufferUsage usageOr(const BufferUsage a, const BufferUsage b) {
+constexpr BufferUsage usageOr(const BufferUsage a, const BufferUsage b) {
     return static_cast<BufferUsage>(static_cast<uint64_t>(a) | static_cast<uint64_t>(b));
 }
 
-BufferUsage usageAnd(const BufferUsage a, const BufferUsage b) {
-    return static_cast<BufferUsage>(static_cast<uint64_t>(a) & static_cast<uint64_t>(b));
-}
-
-bool usageTest(const BufferUsage a, const BufferUsage b) {
-    return static_cast<uint64_t>(usageAnd(a, b)) != 0;
+constexpr bool usageTest(const BufferUsage a, const BufferUsage b) {
+    return (static_cast<uint64_t>(a) & static_cast<uint64_t>(b)) != 0;
 }
 
 void addCompletedBuffer(std::pair<bool, base::unique_fd> res,
@@ -142,34 +138,35 @@ QemuCamera::QemuCamera(const Parameters& params)
 
 QemuCamera::~QemuCamera() {}
 
-std::tuple<PixelFormat, BufferUsage, Dataspace, unsigned>
-QemuCamera::overrideStreamParams(const PixelFormat fmt,
+std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
+QemuCamera::overrideStreamParams(const PixelFormat format,
                                  const BufferUsage usage,
                                  const Dataspace dataspace) const {
     // input streams are not supported
-    const BufferUsage newUsage = usageOr(usage, BufferUsage::CAMERA_OUTPUT);
-
-    switch (fmt) {
+    switch (format) {
     case PixelFormat::IMPLEMENTATION_DEFINED:
-        if (usageTest(usage, BufferUsage::GPU_TEXTURE)) {
-            return {PixelFormat::YCBCR_420_888, newUsage, dataspace, 8};
-        } else if (usageTest(usage, BufferUsage::VIDEO_ENCODER)) {
-            return {PixelFormat::YCBCR_420_888, newUsage, dataspace, 12};
-        } else if (usageTest(usage, BufferUsage::CAMERA_INPUT)) {
-            return {PixelFormat::RGB_888, newUsage, dataspace,
-                    FAILURE_V(0, "%s", "CAMERA_INPUT is not implemented yet")};
-        } else {
-            return {PixelFormat::UNSPECIFIED, static_cast<BufferUsage>(0),
-                    Dataspace::UNKNOWN,
-                    FAILURE_V(0, "unexpected `usage` for PixelFormat::IMPLEMENTATION_DEFINED: %" PRIx64,
-                              static_cast<uint64_t>(usage))};
+    case PixelFormat::YCBCR_420_888:
+        return {PixelFormat::YCBCR_420_888,
+                usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+                Dataspace::JFIF,
+                (usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4)};
+
+    case PixelFormat::RGBA_8888:
+        return {PixelFormat::RGBA_8888,
+                usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+                Dataspace::SRGB_LINEAR, 4};
+
+    case PixelFormat::BLOB:
+        switch (dataspace) {
+        case Dataspace::JFIF:
+            return {PixelFormat::BLOB, BufferUsage::CAMERA_OUTPUT,
+                    Dataspace::JFIF, 4};  // JPEG
+        default:
+            return {format, usage, dataspace, FAILURE(kErrorBadDataspace)};
         }
 
-    case PixelFormat::BLOB: // for JPEGs
-        return {PixelFormat::BLOB, BufferUsage::CAMERA_OUTPUT, dataspace, 3};
-
     default:
-        return {fmt, newUsage, dataspace, 8};
+        return {format, usage, dataspace, FAILURE(kErrorBadFormat)};
     }
 }
 
