@@ -361,6 +361,10 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
             return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
         }
 
+        if (s.bufferSize < 0) {
+            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+        }
+
         StreamInfo si;
         Dataspace dataspace;
         unsigned maxBuffers;
@@ -389,6 +393,7 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
         si.id = s.id;
         si.size.width = s.width;
         si.size.height = s.height;
+        si.bufferSize = s.bufferSize;
         streamInfoCache[s.id] = std::move(si);
     }
 
@@ -495,26 +500,19 @@ struct timespec CameraDeviceSession::captureOneFrame(struct timespec nextFrameT,
         mHwCamera.processCaptureRequest(std::move(req.metadataUpdate),
                                         {req.buffers.begin(), req.buffers.end()});
 
+    for (hw::DelayedStreamBuffer& dsb : delayedOutputBuffers) {
+        DelayedCaptureResult dcr;
+        dcr.delayedBuffer = std::move(dsb);
+        dcr.frameNumber = frameNumber;
+        if (!mDelayedCaptureResults.put(&dcr)) {
+            // `delayedBuffer(false)` only releases the buffer (fast).
+            outputBuffers.push_back(dcr.delayedBuffer(false));
+        }
+    }
+
     metadataSetShutterTimestamp(&metadata, shutterTimestampNs);
     consumeCaptureResult(utils::makeCaptureResult(frameNumber,
         std::move(metadata), std::move(outputBuffers)));
-
-    {
-        std::vector<StreamBuffer> failedStreamBuffers;
-        for (hw::DelayedStreamBuffer& dsb : delayedOutputBuffers) {
-            DelayedCaptureResult dcr;
-            dcr.delayedBuffer = std::move(dsb);
-            dcr.frameNumber = frameNumber;
-            if (!mDelayedCaptureResults.put(&dcr)) {
-                failedStreamBuffers.push_back(dcr.delayedBuffer(false));
-            }
-        }
-
-        if (!failedStreamBuffers.empty()) {
-            consumeCaptureResult(utils::makeCaptureResult(frameNumber,
-                {}, std::move(failedStreamBuffers)));
-        }
-    }
 
     if (frameDurationNs > 0) {
         nextFrameT = timespecAddNanos(nextFrameT, frameDurationNs);

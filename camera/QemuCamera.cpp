@@ -101,42 +101,33 @@ StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb) {
                                    false, csb->takeAcquireFence());
 }
 
-size_t getNativeHandleBufferCapacity(const native_handle_t* buffer) {
-    const cb_handle_t* const cb = cb_handle_t::from(buffer);
-    return cb ? cb->bufferSize : FAILURE(0);
-}
-
 StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
                           const native_handle_t* const image,
                           const CameraMetadata& metadata) {
-    const native_handle_t* buffer = csb->getBuffer();
-    const int32_t jpegBufferCapacity = getNativeHandleBufferCapacity(buffer);
-    if (!jpegBufferCapacity) {
-        return makeFailedStreamBuffer(FAILURE(csb));
-    }
+    const native_handle_t* const buffer = csb->getBuffer();
+    const int32_t bufferSize = csb->si.bufferSize;
 
     GraphicBufferMapper& gbm = GraphicBufferMapper::get();
     android_ycbcr imageYcbcr = android_ycbcr();
-    const int32_t width = csb->si.size.width;
-    const int32_t height = csb->si.size.height;
+    const Rect<uint16_t> size = csb->si.size;
     gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
-                  {0, 0, width - 1, height - 1}, &imageYcbcr);
+                  {size.width, size.height}, &imageYcbcr);
     if (!imageYcbcr.y) {
         return makeFailedStreamBuffer(FAILURE(csb));
     }
 
     void* jpegData = nullptr;
     gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {0, 0, jpegBufferCapacity - 1, 1}, &jpegData);
+             {bufferSize, 1}, &jpegData);
     if (!jpegData) {
         gbm.unlock(image);
         return makeFailedStreamBuffer(FAILURE(csb));
     }
 
     const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
-                                           jpegData, jpegBufferCapacity);
+                                           jpegData, bufferSize);
 
-    gbm.unlock(csb->getBuffer());
+    gbm.unlock(buffer);
     gbm.unlock(image);
 
     return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
