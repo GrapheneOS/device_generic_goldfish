@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <inttypes.h>
 
-#include <aidlcommonsupport/NativeHandle.h>
-#include <HandleImporter.h>
 #include <sync/sync.h>
+#include <ui/GraphicBufferMapper.h>
 
 #include "CachedStreamBuffer.h"
 #include "aidl_utils.h"
@@ -30,22 +30,36 @@ namespace camera {
 namespace provider {
 namespace implementation {
 
-using aidl::android::hardware::common::NativeHandle;
-using android::hardware::camera::common::V1_0::helper::HandleImporter;
 using base::unique_fd;
 
 namespace {
-HandleImporter g_importer;
-}  // namespace
+const native_handle_t* importAidlNativeHandle(const NativeHandle& anh) {
+    typedef decltype(native_handle_t::version) T;
+    std::vector<T> data(sizeof(native_handle_t) / sizeof(T) + anh.fds.size() +
+        anh.ints.size());
+
+    native_handle_t* h = native_handle_init(
+        reinterpret_cast<char*>(&data[0]), anh.fds.size(), anh.ints.size());
+    std::transform(anh.fds.begin(), anh.fds.end(), &h->data[0],
+                   [](const ndk::ScopedFileDescriptor& sfd){ return sfd.get(); });
+    std::copy(anh.ints.begin(), anh.ints.end(), &h->data[anh.fds.size()]);
+
+    const native_handle_t* importedH = nullptr;
+    if (GraphicBufferMapper::get().importBufferNoValidate(h, &importedH) != NO_ERROR) {
+        return FAILURE(nullptr);
+    }
+
+    return importedH;
+}
+}  //namespace
 
 CachedStreamBuffer::CachedStreamBuffer(const StreamBuffer& sb, StreamInfo s)
         : si(std::move(s))
         , mBufferId(sb.bufferId)
         , mAcquireFence(utils::importAidlNativeHandleFence(sb.acquireFence))
-        , mBuffer(dupFromAidl(sb.buffer)) {
+        , mBuffer(importAidlNativeHandle(sb.buffer)) {
     LOG_ALWAYS_FATAL_IF(!mBufferId);
     LOG_ALWAYS_FATAL_IF(!mBuffer);
-    g_importer.importBuffer(mBuffer);
 }
 
 CachedStreamBuffer::CachedStreamBuffer(CachedStreamBuffer&& rhs) noexcept
@@ -62,7 +76,7 @@ CachedStreamBuffer::~CachedStreamBuffer() {
     LOG_ALWAYS_FATAL_IF(!mProcessed);
     if (mBufferId) {
         LOG_ALWAYS_FATAL_IF(!mBuffer);
-        g_importer.freeBuffer(mBuffer);
+        LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().freeBuffer(mBuffer) != NO_ERROR);
     }
 }
 
@@ -87,30 +101,34 @@ bool CachedStreamBuffer::waitAcquireFence(const unsigned timeoutMs) {
 
 void* CachedStreamBuffer::lock(const BufferUsage lockUsage) {
     LOG_ALWAYS_FATAL_IF(!mBuffer);
-    void* mem = g_importer.lock(mBuffer, static_cast<uint64_t>(lockUsage),
-                                {0, 0, si.size.width, si.size.height});
-    return mem ? mem : FAILURE(mem);
+    void* mem = nullptr;
+    if (GraphicBufferMapper::get().lock(
+            mBuffer, static_cast<uint32_t>(lockUsage),
+            {0, 0, si.size.width, si.size.height}, &mem) == NO_ERROR) {
+        return mem;
+    } else {
+        return FAILURE(nullptr);
+    }
 }
 
 android_ycbcr CachedStreamBuffer::lockYCbCr(const BufferUsage lockUsage) {
     LOG_ALWAYS_FATAL_IF(!mBuffer);
-    auto ycbcr = g_importer.lockYCbCr(mBuffer, static_cast<uint64_t>(lockUsage),
-                                      {0, 0, si.size.width, si.size.height});
-
-    android_ycbcr aycbcr;
-    aycbcr.y = ycbcr.y;
-    aycbcr.cb = ycbcr.cb;
-    aycbcr.cr = ycbcr.cr;
-    aycbcr.ystride = ycbcr.yStride;
-    aycbcr.cstride = ycbcr.cStride;
-    aycbcr.chroma_step = ycbcr.chromaStep;
-
-    return aycbcr;
+    android_ycbcr ycbcr;
+    if (GraphicBufferMapper::get().lockYCbCr(
+            mBuffer, static_cast<uint32_t>(lockUsage),
+            {0, 0, si.size.width, si.size.height}, &ycbcr) == NO_ERROR) {
+        return ycbcr;
+    } else {
+        return FAILURE(android_ycbcr());
+    }
 }
 
 unique_fd CachedStreamBuffer::unlock() {
     LOG_ALWAYS_FATAL_IF(!mBuffer);
-    return unique_fd(g_importer.unlock(mBuffer));
+    int fenceFd = -1;
+    LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlockAsync(
+        mBuffer, &fenceFd) != NO_ERROR);
+    return unique_fd(fenceFd);
 }
 
 }  // namespace implementation
