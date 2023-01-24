@@ -17,6 +17,7 @@
 #include <fcntl.h>
 
 #include <aidlcommonsupport/NativeHandle.h>
+#include <cutils/native_handle.h>
 
 #include "debug.h"
 #include "aidl_utils.h"
