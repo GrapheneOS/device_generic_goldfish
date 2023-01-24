@@ -65,16 +65,12 @@ constexpr float   kDefaultAperture = 4.0;
 
 constexpr int32_t kDefaultJpegQuality = 85;
 
-BufferUsage usageOr(const BufferUsage a, const BufferUsage b) {
+constexpr BufferUsage usageOr(const BufferUsage a, const BufferUsage b) {
     return static_cast<BufferUsage>(static_cast<uint64_t>(a) | static_cast<uint64_t>(b));
 }
 
-BufferUsage usageAnd(const BufferUsage a, const BufferUsage b) {
-    return static_cast<BufferUsage>(static_cast<uint64_t>(a) & static_cast<uint64_t>(b));
-}
-
-bool usageTest(const BufferUsage a, const BufferUsage b) {
-    return static_cast<uint64_t>(usageAnd(a, b)) != 0;
+constexpr bool usageTest(const BufferUsage a, const BufferUsage b) {
+    return (static_cast<uint64_t>(a) & static_cast<uint64_t>(b)) != 0;
 }
 
 void addCompletedBuffer(std::pair<bool, base::unique_fd> res,
@@ -101,42 +97,33 @@ StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb) {
                                    false, csb->takeAcquireFence());
 }
 
-size_t getNativeHandleBufferCapacity(const native_handle_t* buffer) {
-    const cb_handle_t* const cb = cb_handle_t::from(buffer);
-    return cb ? cb->bufferSize : FAILURE(0);
-}
-
 StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
                           const native_handle_t* const image,
                           const CameraMetadata& metadata) {
-    const native_handle_t* buffer = csb->getBuffer();
-    const int32_t jpegBufferCapacity = getNativeHandleBufferCapacity(buffer);
-    if (!jpegBufferCapacity) {
-        return makeFailedStreamBuffer(FAILURE(csb));
-    }
+    const native_handle_t* const buffer = csb->getBuffer();
+    const int32_t bufferSize = csb->si.bufferSize;
 
     GraphicBufferMapper& gbm = GraphicBufferMapper::get();
     android_ycbcr imageYcbcr = android_ycbcr();
-    const int32_t width = csb->si.size.width;
-    const int32_t height = csb->si.size.height;
+    const Rect<uint16_t> size = csb->si.size;
     gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
-                  {0, 0, width - 1, height - 1}, &imageYcbcr);
+                  {size.width, size.height}, &imageYcbcr);
     if (!imageYcbcr.y) {
         return makeFailedStreamBuffer(FAILURE(csb));
     }
 
     void* jpegData = nullptr;
     gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {0, 0, jpegBufferCapacity - 1, 1}, &jpegData);
+             {bufferSize, 1}, &jpegData);
     if (!jpegData) {
         gbm.unlock(image);
         return makeFailedStreamBuffer(FAILURE(csb));
     }
 
     const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
-                                           jpegData, jpegBufferCapacity);
+                                           jpegData, bufferSize);
 
-    gbm.unlock(csb->getBuffer());
+    gbm.unlock(buffer);
     gbm.unlock(image);
 
     return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
@@ -151,34 +138,35 @@ QemuCamera::QemuCamera(const Parameters& params)
 
 QemuCamera::~QemuCamera() {}
 
-std::tuple<PixelFormat, BufferUsage, Dataspace, unsigned>
-QemuCamera::overrideStreamParams(const PixelFormat fmt,
+std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
+QemuCamera::overrideStreamParams(const PixelFormat format,
                                  const BufferUsage usage,
                                  const Dataspace dataspace) const {
     // input streams are not supported
-    const BufferUsage newUsage = usageOr(usage, BufferUsage::CAMERA_OUTPUT);
-
-    switch (fmt) {
+    switch (format) {
     case PixelFormat::IMPLEMENTATION_DEFINED:
-        if (usageTest(usage, BufferUsage::GPU_TEXTURE)) {
-            return {PixelFormat::YCBCR_420_888, newUsage, dataspace, 8};
-        } else if (usageTest(usage, BufferUsage::VIDEO_ENCODER)) {
-            return {PixelFormat::YCBCR_420_888, newUsage, dataspace, 12};
-        } else if (usageTest(usage, BufferUsage::CAMERA_INPUT)) {
-            return {PixelFormat::RGB_888, newUsage, dataspace,
-                    FAILURE_V(0, "%s", "CAMERA_INPUT is not implemented yet")};
-        } else {
-            return {PixelFormat::UNSPECIFIED, static_cast<BufferUsage>(0),
-                    Dataspace::UNKNOWN,
-                    FAILURE_V(0, "unexpected `usage` for PixelFormat::IMPLEMENTATION_DEFINED: %" PRIx64,
-                              static_cast<uint64_t>(usage))};
+    case PixelFormat::YCBCR_420_888:
+        return {PixelFormat::YCBCR_420_888,
+                usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+                Dataspace::JFIF,
+                (usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4)};
+
+    case PixelFormat::RGBA_8888:
+        return {PixelFormat::RGBA_8888,
+                usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+                Dataspace::SRGB_LINEAR, 4};
+
+    case PixelFormat::BLOB:
+        switch (dataspace) {
+        case Dataspace::JFIF:
+            return {PixelFormat::BLOB, BufferUsage::CAMERA_OUTPUT,
+                    Dataspace::JFIF, 4};  // JPEG
+        default:
+            return {format, usage, dataspace, FAILURE(kErrorBadDataspace)};
         }
 
-    case PixelFormat::BLOB: // for JPEGs
-        return {PixelFormat::BLOB, BufferUsage::CAMERA_OUTPUT, dataspace, 3};
-
     default:
-        return {fmt, newUsage, dataspace, 8};
+        return {format, usage, dataspace, FAILURE(kErrorBadFormat)};
     }
 }
 
@@ -441,6 +429,7 @@ CameraMetadata QemuCamera::applyMetadata(const CameraMetadata& metadata) {
     m[ANDROID_FLASH_STATE] = ANDROID_FLASH_STATE_UNAVAILABLE;
     m[ANDROID_LENS_APERTURE] = mAperture;
     m[ANDROID_LENS_FOCUS_DISTANCE] = af.second;
+    m[ANDROID_LENS_STATE] = ANDROID_LENS_STATE_STATIONARY;
     m[ANDROID_REQUEST_PIPELINE_DEPTH] = uint8_t(4);
     m[ANDROID_SENSOR_FRAME_DURATION] = mFrameDurationNs;
     m[ANDROID_SENSOR_EXPOSURE_TIME] = mSensorExposureDurationNs;
