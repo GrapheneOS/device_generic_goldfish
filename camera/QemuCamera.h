@@ -18,12 +18,9 @@
 
 #include <time.h>
 
-#include <optional>
 #include <string>
 
 #include <android-base/unique_fd.h>
-#include <ui/GraphicBufferAllocator.h>
-#include <ui/GraphicBufferMapper.h>
 
 #include "HwCamera.h"
 #include "AFStateMachine.h"

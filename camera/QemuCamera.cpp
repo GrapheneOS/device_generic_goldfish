@@ -22,6 +22,8 @@
 #include <log/log.h>
 #include <system/camera_metadata.h>
 #include <linux/videodev2.h>
+#include <ui/GraphicBufferAllocator.h>
+#include <ui/GraphicBufferMapper.h>
 
 #include <gralloc_cb_bp.h>
 
