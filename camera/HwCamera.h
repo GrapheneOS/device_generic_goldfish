@@ -19,7 +19,6 @@
 #include <functional>
 #include <memory>
 #include <tuple>
-#include <optional>
 #include <vector>
 #include <stdint.h>
 
