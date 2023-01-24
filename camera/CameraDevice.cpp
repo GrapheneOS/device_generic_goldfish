@@ -469,7 +469,7 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
 
     m[ANDROID_HOT_PIXEL_MODE] = ANDROID_HOT_PIXEL_MODE_OFF;
 
-    m[ANDROID_JPEG_ORIENTATION] = int32_t(mHwCamera->getSensorOrientation());
+    m[ANDROID_JPEG_ORIENTATION] = int32_t(0);
     m[ANDROID_JPEG_QUALITY] = uint8_t(85);
     m[ANDROID_JPEG_THUMBNAIL_QUALITY] = uint8_t(85);
     m[ANDROID_JPEG_THUMBNAIL_SIZE].add<int32_t>(0).add<int32_t>(0);
