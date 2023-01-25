@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <time.h>
-
 #include <string>
 
 #include <android-base/unique_fd.h>
@@ -42,7 +40,6 @@ struct QemuCamera : public HwCamera {
     };
 
     explicit QemuCamera(const Parameters& params);
-    ~QemuCamera() override;
 
     std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
         overrideStreamParams(PixelFormat, BufferUsage, Dataspace) const override;
