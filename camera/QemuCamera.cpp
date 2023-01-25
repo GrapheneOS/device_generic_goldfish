@@ -89,11 +89,6 @@ void addCompletedBuffer(std::pair<bool, base::unique_fd> res,
     csb->markProcesssed();
 }
 
-void addDelayedBuffer(DelayedStreamBuffer dsb,
-                      std::vector<DelayedStreamBuffer>* delayedOutputBuffers) {
-    delayedOutputBuffers->push_back(std::move(dsb));
-}
-
 StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb) {
     return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
                                    false, csb->takeAcquireFence());
@@ -137,8 +132,6 @@ StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
 QemuCamera::QemuCamera(const Parameters& params)
         : mParams(params)
         , mAFStateMachine(200, 1, 2) {}
-
-QemuCamera::~QemuCamera() {}
 
 std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
 QemuCamera::overrideStreamParams(const PixelFormat format,
@@ -247,7 +240,7 @@ void QemuCamera::captureFrame(CachedStreamBuffer* csb,
         break;
 
     case PixelFormat::BLOB:
-        addDelayedBuffer(captureFrameJpeg(csb), delayedOutputBuffers);
+        delayedOutputBuffers->push_back(captureFrameJpeg(csb));
         break;
 
     default:
