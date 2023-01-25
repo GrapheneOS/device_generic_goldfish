@@ -44,6 +44,7 @@ namespace implementation {
 using aidl::android::hardware::camera::common::Status;
 using aidl::android::hardware::camera::device::CaptureResult;
 using aidl::android::hardware::camera::device::ErrorCode;
+using aidl::android::hardware::camera::device::StreamRotation;
 using aidl::android::hardware::camera::device::StreamType;
 
 namespace {
@@ -358,6 +359,10 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
         }
 
         if (s.height <= 0) {
+            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+        }
+
+        if (s.rotation != StreamRotation::ROTATION_0) {
             return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
         }
 
