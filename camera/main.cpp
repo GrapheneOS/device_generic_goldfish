@@ -24,7 +24,14 @@ int main() {
     using ::android::hardware::camera::provider::implementation::hw::listQemuCameras;
     using ::android::hardware::camera::provider::implementation::Span;
 
-    const std::vector<HwCameraFactory> availableCameras = listQemuCameras();
+    std::vector<HwCameraFactory> availableCameras;
+    {
+        const auto cameraAppender = [&availableCameras](HwCameraFactory c){
+            availableCameras.push_back(std::move(c));
+        };
+
+        listQemuCameras(cameraAppender);
+    }
 
     return serviceEntry(
         10,
