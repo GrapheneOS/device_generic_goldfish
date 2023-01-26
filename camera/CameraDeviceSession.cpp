@@ -587,9 +587,7 @@ void CameraDeviceSession::disposeCaptureRequest(HwCaptureRequest req) {
         for (size_t i = 0; i < reqBuffersSize; ++i) {
             CachedStreamBuffer* csb = req.buffers[i];
             LOG_ALWAYS_FATAL_IF(!csb);  // otherwise mNumBuffersInFlight will be hard
-            outputBuffers[i] = utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
-                                                       false, csb->takeAcquireFence());
-            csb->markProcesssed();
+            outputBuffers[i] = csb->finish(false);
         }
 
         std::vector<CaptureResult> crs(1);

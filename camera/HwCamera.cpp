@@ -37,25 +37,6 @@ constexpr float kDefaultFocalLength = 1.0;
 constexpr int32_t kDefaultSensorSensitivity = 100;
 }  // namespace
 
-void HwCamera::addCompletedBuffer(std::pair<bool, base::unique_fd> res,
-                                  CachedStreamBuffer* csb,
-                                  std::vector<StreamBuffer>* outputBuffers) {
-    auto [success, releaseFence] = std::move(res);
-    if (!success) {
-        releaseFence = std::move(csb->takeAcquireFence());
-    }
-
-    outputBuffers->push_back(utils::makeStreamBuffer(
-        csb->si.id, csb->getBufferId(), success, std::move(releaseFence)));
-
-    csb->markProcesssed();
-}
-
-StreamBuffer HwCamera::makeFailedStreamBuffer(CachedStreamBuffer* csb) {
-    return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
-                                   false, csb->takeAcquireFence());
-}
-
 StreamBuffer HwCamera::compressJpeg(CachedStreamBuffer* const csb,
                                     const native_handle_t* const image,
                                     const CameraMetadata& metadata) {
@@ -68,7 +49,7 @@ StreamBuffer HwCamera::compressJpeg(CachedStreamBuffer* const csb,
     gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
                   {size.width, size.height}, &imageYcbcr);
     if (!imageYcbcr.y) {
-        return makeFailedStreamBuffer(FAILURE(csb));
+        return csb->finish(FAILURE(false));
     }
 
     void* jpegData = nullptr;
@@ -76,7 +57,7 @@ StreamBuffer HwCamera::compressJpeg(CachedStreamBuffer* const csb,
              {bufferSize, 1}, &jpegData);
     if (!jpegData) {
         gbm.unlock(image);
-        return makeFailedStreamBuffer(FAILURE(csb));
+        return csb->finish(FAILURE(false));
     }
 
     const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
@@ -85,8 +66,7 @@ StreamBuffer HwCamera::compressJpeg(CachedStreamBuffer* const csb,
     gbm.unlock(buffer);
     gbm.unlock(image);
 
-    return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
-                                   success, unique_fd());
+    return csb->finish(success);
 }
 
 std::tuple<int32_t, int32_t, int32_t, int32_t> HwCamera::getAeCompensationRange() const {

@@ -29,24 +29,7 @@ namespace provider {
 namespace implementation {
 namespace utils {
 
-using aidl::android::hardware::camera::device::BufferStatus;
 using base::unique_fd;
-
-namespace {
-NativeHandle moveFenceToAidlNativeHandle(unique_fd fence) {
-    if (!fence.ok()) {
-        return {};
-    }
-
-    typedef decltype(native_handle_t::version) T;
-    T on_stack[sizeof(native_handle_t) / sizeof(T) + 1];
-
-    native_handle_t* nh = native_handle_init(
-        reinterpret_cast<char*>(&on_stack[0]), 1, 0);
-    nh->data[0] = fence.release();
-    return makeToAidl(nh);
-}
-}  // namespace
 
 unique_fd importAidlNativeHandleFence(const NativeHandle& nh) {
     const size_t nfds = nh.fds.size();
@@ -76,16 +59,18 @@ unique_fd importAidlNativeHandleFence(const NativeHandle& nh) {
     }
 }
 
-StreamBuffer makeStreamBuffer(const int streamId,
-                              const int64_t bufferId,
-                              const bool success,
-                              base::unique_fd releaseFence) {
-    StreamBuffer sb;
-    sb.streamId = streamId;
-    sb.bufferId = bufferId;
-    sb.status = success ? BufferStatus::OK : BufferStatus::ERROR;
-    sb.releaseFence = moveFenceToAidlNativeHandle(std::move(releaseFence));
-    return sb;
+NativeHandle moveFenceToAidlNativeHandle(unique_fd fence) {
+    if (!fence.ok()) {
+        return {};
+    }
+
+    typedef decltype(native_handle_t::version) T;
+    T on_stack[sizeof(native_handle_t) / sizeof(T) + 1];
+
+    native_handle_t* nh = native_handle_init(
+        reinterpret_cast<char*>(&on_stack[0]), 1, 0);
+    nh->data[0] = fence.release();
+    return makeToAidl(nh);
 }
 
 CaptureResult makeCaptureResult(const int frameNumber,
