@@ -112,33 +112,48 @@ QemuCamera::overrideStreamParams(const PixelFormat format,
     }
 }
 
-bool QemuCamera::configure(const CameraMetadata& sessionParams) {
+bool QemuCamera::configure(const CameraMetadata& sessionParams,
+                           size_t nStreams,
+                           const Stream* streams,
+                           const HalStream* halStreams) {
     applyMetadata(sessionParams);
 
-    if (mQemuChannel.ok()) {
-        return true;
+    if (!mQemuChannel.ok()) {
+        auto qemuChannel = qemuOpenChannel(std::string("name=") + mParams.name);
+        if (!qemuChannel.ok()) {
+            return false;
+        }
+
+        static const char kConnectQuery[] = "connect";
+        if (qemuRunQuery(qemuChannel.get(), kConnectQuery, sizeof(kConnectQuery)) < 0) {
+            return false;
+        }
+
+        static const char kStartQuery[] = "start";
+        if (qemuRunQuery(qemuChannel.get(), kStartQuery, sizeof(kStartQuery)) < 0) {
+            return false;
+        }
+
+        mQemuChannel = std::move(qemuChannel);
     }
 
-    auto qemuChannel = qemuOpenChannel(std::string("name=") + mParams.name);
-    if (!qemuChannel.ok()) {
-        return false;
+    mStreamInfoCache.clear();
+    for (; nStreams > 0; --nStreams, ++streams, ++halStreams) {
+        const int32_t id = streams->id;
+        LOG_ALWAYS_FATAL_IF(halStreams->id != id);
+        StreamInfo& si = mStreamInfoCache[id];
+        si.size.width = streams->width;
+        si.size.height = streams->height;
+        si.pixelFormat = halStreams->overrideFormat;
+        si.blobBufferSize = streams->bufferSize;
     }
 
-    static const char kConnectQuery[] = "connect";
-    if (qemuRunQuery(qemuChannel.get(), kConnectQuery, sizeof(kConnectQuery)) < 0) {
-        return false;
-    }
-
-    static const char kStartQuery[] = "start";
-    if (qemuRunQuery(qemuChannel.get(), kStartQuery, sizeof(kStartQuery)) < 0) {
-        return false;
-    }
-
-    mQemuChannel = std::move(qemuChannel);
     return true;
 }
 
 void QemuCamera::close() {
+    mStreamInfoCache.clear();
+
     if (mQemuChannel.ok()) {
         static const char kStopQuery[] = "stop";
         if (qemuRunQuery(mQemuChannel.get(), kStopQuery, sizeof(kStopQuery)) >= 0) {
@@ -166,7 +181,24 @@ QemuCamera::processCaptureRequest(CameraMetadata metadataUpdate,
     for (size_t i = 0; i < csbsSize; ++i) {
         CachedStreamBuffer* csb = csbs[i];
         LOG_ALWAYS_FATAL_IF(!csb);  // otherwise mNumBuffersInFlight will be hard
-        captureFrame(csb, &outputBuffers, &delayedOutputBuffers);
+
+        const StreamInfo* si = csb->getStreamInfo<StreamInfo>();
+        if (!si) {
+            const auto sii = mStreamInfoCache.find(csb->getStreamId());
+            if (sii == mStreamInfoCache.end()) {
+                ALOGE("%s:%d could not find stream=%d in the cache",
+                      __func__, __LINE__, csb->getStreamId());
+            } else {
+                si = &sii->second;
+                csb->setStreamInfo(si);
+            }
+        }
+
+        if (si) {
+            captureFrame(*si, csb, &outputBuffers, &delayedOutputBuffers);
+        } else {
+            outputBuffers.push_back(csb->finish(false));
+        }
     }
 
     return make_tuple((mQemuChannel.ok() ? mFrameDurationNs : FAILURE(-1)),
@@ -174,31 +206,33 @@ QemuCamera::processCaptureRequest(CameraMetadata metadataUpdate,
                       std::move(delayedOutputBuffers));
 }
 
-void QemuCamera::captureFrame(CachedStreamBuffer* csb,
+void QemuCamera::captureFrame(const StreamInfo& si,
+                              CachedStreamBuffer* csb,
                               std::vector<StreamBuffer>* outputBuffers,
                               std::vector<DelayedStreamBuffer>* delayedOutputBuffers) const {
-    switch (csb->si.pixelFormat) {
+    switch (si.pixelFormat) {
     case PixelFormat::YCBCR_420_888:
-        outputBuffers->push_back(csb->finish(captureFrameYUV(csb)));
+        outputBuffers->push_back(csb->finish(captureFrameYUV(si, csb)));
         break;
 
     case PixelFormat::RGBA_8888:
-        outputBuffers->push_back(csb->finish(captureFrameRGBA(csb)));
+        outputBuffers->push_back(csb->finish(captureFrameRGBA(si, csb)));
         break;
 
     case PixelFormat::BLOB:
-        delayedOutputBuffers->push_back(captureFrameJpeg(csb));
+        delayedOutputBuffers->push_back(captureFrameJpeg(si, csb));
         break;
 
     default:
         ALOGE("QemuCamera:%s:%d: unexpected pixelFormat=%u", __func__, __LINE__,
-              static_cast<uint32_t>(csb->si.pixelFormat));
+              static_cast<uint32_t>(si.pixelFormat));
         outputBuffers->push_back(csb->finish(false));
         break;
     }
 }
 
-bool QemuCamera::captureFrameYUV(CachedStreamBuffer* csb) const {
+bool QemuCamera::captureFrameYUV(const StreamInfo& si,
+                                 CachedStreamBuffer* csb) const {
     const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
     if (!cb) {
         return FAILURE(false);
@@ -208,7 +242,7 @@ bool QemuCamera::captureFrameYUV(CachedStreamBuffer* csb) const {
         return FAILURE(false);
     }
 
-    const auto size = csb->si.size;
+    const auto size = si.size;
     android_ycbcr ycbcr;
     if (GraphicBufferMapper::get().lockYCbCr(
             cb, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
@@ -216,14 +250,15 @@ bool QemuCamera::captureFrameYUV(CachedStreamBuffer* csb) const {
         return FAILURE(false);
     }
 
-    bool const res = queryFrame(csb->si.size, V4L2_PIX_FMT_YUV420,
+    bool const res = queryFrame(si.size, V4L2_PIX_FMT_YUV420,
                                 mExposureComp, cb->getMmapedOffset());
 
     LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(cb) != NO_ERROR);
     return res;
 }
 
-bool QemuCamera::captureFrameRGBA(CachedStreamBuffer* csb) const {
+bool QemuCamera::captureFrameRGBA(const StreamInfo& si,
+                                  CachedStreamBuffer* csb) const {
     const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
     if (!cb) {
         return FAILURE(false);
@@ -233,7 +268,7 @@ bool QemuCamera::captureFrameRGBA(CachedStreamBuffer* csb) const {
         return FAILURE(false);
     }
 
-    const auto size = csb->si.size;
+    const auto size = si.size;
     void* mem = nullptr;
     if (GraphicBufferMapper::get().lock(
             cb, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
@@ -241,24 +276,27 @@ bool QemuCamera::captureFrameRGBA(CachedStreamBuffer* csb) const {
         return FAILURE(false);
     }
 
-    bool const res = queryFrame(csb->si.size, V4L2_PIX_FMT_RGB32,
+    bool const res = queryFrame(si.size, V4L2_PIX_FMT_RGB32,
                                 mExposureComp, cb->getMmapedOffset());
     LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(cb) != NO_ERROR);
     return res;
 }
 
-DelayedStreamBuffer QemuCamera::captureFrameJpeg(CachedStreamBuffer* csb) const {
+DelayedStreamBuffer QemuCamera::captureFrameJpeg(const StreamInfo& si,
+                                                 CachedStreamBuffer* csb) const {
     const native_handle_t* const image = captureFrameForCompressing(
-        csb->si.size, PixelFormat::YCBCR_420_888, V4L2_PIX_FMT_YUV420);
+        si.size, PixelFormat::YCBCR_420_888, V4L2_PIX_FMT_YUV420);
 
+    const Rect<uint16_t> size = si.size;
+    const uint32_t jpegBufferSize = si.blobBufferSize;
     const int64_t frameDurationNs = mFrameDurationNs;
     CameraMetadata metadata = mCaptureResultMetadata;
 
-    return [csb, image, metadata = std::move(metadata),
+    return [csb, image, size, jpegBufferSize, metadata = std::move(metadata),
             frameDurationNs](const bool ok) -> StreamBuffer {
         StreamBuffer sb =
             (ok && image && csb->waitAcquireFence(frameDurationNs / 1000000))
-                ? compressJpeg(csb, image, metadata)
+                ? compressJpeg(size, jpegBufferSize, csb, image, metadata)
                 : csb->finish(false);
 
         if (image) {
