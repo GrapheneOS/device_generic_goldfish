@@ -33,7 +33,6 @@
 #include "metadata_utils.h"
 #include "QemuCamera.h"
 #include "qemu_channel.h"
-#include "utils.h"
 
 namespace android {
 namespace hardware {
@@ -73,58 +72,6 @@ constexpr BufferUsage usageOr(const BufferUsage a, const BufferUsage b) {
 
 constexpr bool usageTest(const BufferUsage a, const BufferUsage b) {
     return (static_cast<uint64_t>(a) & static_cast<uint64_t>(b)) != 0;
-}
-
-void addCompletedBuffer(std::pair<bool, base::unique_fd> res,
-                        CachedStreamBuffer* csb,
-                        std::vector<StreamBuffer>* outputBuffers) {
-    auto [success, releaseFence] = std::move(res);
-    if (!success) {
-        releaseFence = std::move(csb->takeAcquireFence());
-    }
-
-    outputBuffers->push_back(utils::makeStreamBuffer(
-        csb->si.id, csb->getBufferId(), success, std::move(releaseFence)));
-
-    csb->markProcesssed();
-}
-
-StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb) {
-    return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
-                                   false, csb->takeAcquireFence());
-}
-
-StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
-                          const native_handle_t* const image,
-                          const CameraMetadata& metadata) {
-    const native_handle_t* const buffer = csb->getBuffer();
-    const int32_t bufferSize = csb->si.bufferSize;
-
-    GraphicBufferMapper& gbm = GraphicBufferMapper::get();
-    android_ycbcr imageYcbcr = android_ycbcr();
-    const Rect<uint16_t> size = csb->si.size;
-    gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
-                  {size.width, size.height}, &imageYcbcr);
-    if (!imageYcbcr.y) {
-        return makeFailedStreamBuffer(FAILURE(csb));
-    }
-
-    void* jpegData = nullptr;
-    gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {bufferSize, 1}, &jpegData);
-    if (!jpegData) {
-        gbm.unlock(image);
-        return makeFailedStreamBuffer(FAILURE(csb));
-    }
-
-    const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
-                                           jpegData, bufferSize);
-
-    gbm.unlock(buffer);
-    gbm.unlock(image);
-
-    return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
-                                   success, unique_fd());
 }
 
 }  // namespace
