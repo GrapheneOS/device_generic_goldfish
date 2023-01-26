@@ -94,7 +94,7 @@ struct HwCamera {
     virtual float getMaxDigitalZoom() const;
     virtual int64_t getMinFrameDurationNs() const = 0;
     virtual int64_t getStallFrameDurationNs() const;
-    virtual int32_t getSensorOrientation() const = 0;
+    virtual int32_t getSensorOrientation() const;
     virtual Rect<uint16_t> getSensorSize() const = 0;
     virtual float getSensorDPI() const;
     virtual std::pair<int32_t, int32_t> getSensorSensitivityRange() const;
