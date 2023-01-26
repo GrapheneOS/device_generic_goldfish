@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <vector>
+#include <functional>
 #include "HwCamera.h"
 
 namespace android {
@@ -26,7 +26,7 @@ namespace provider {
 namespace implementation {
 namespace hw {
 
-std::vector<HwCameraFactory> listQemuCameras();
+bool listQemuCameras(const std::function<void(HwCameraFactory)>& cameraSink);
 
 }  // namespace hw
 }  // namespace implementation
