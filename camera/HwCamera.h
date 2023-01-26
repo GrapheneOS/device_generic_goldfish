@@ -30,6 +30,8 @@
 #include <aidl/android/hardware/graphics/common/Dataspace.h>
 #include <aidl/android/hardware/graphics/common/PixelFormat.h>
 
+#include <cutils/native_handle.h>
+
 #include "Rect.h"
 #include "Span.h"
 #include "CachedStreamBuffer.h"
@@ -74,6 +76,14 @@ struct HwCamera {
     virtual std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
+
+    static void addCompletedBuffer(std::pair<bool, base::unique_fd> res,
+                                   CachedStreamBuffer* csb,
+                                   std::vector<StreamBuffer>* outputBuffers);
+    static StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb);
+    static StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
+                                     const native_handle_t* const image,
+                                     const CameraMetadata& metadata);
 
     ////////////////////////////////////////////////////////////////////////////
     virtual Span<const std::pair<int32_t, int32_t>> getTargetFpsRanges() const = 0;
