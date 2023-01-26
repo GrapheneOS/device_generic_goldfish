@@ -127,29 +127,26 @@ struct RectAreaComparator {
 
 } // namespace
 
-std::vector<HwCameraFactory> listQemuCameras() {
-    using ResultT = std::vector<HwCameraFactory>;
-
+bool listQemuCameras(const std::function<void(HwCameraFactory)>& cameraSink) {
     using namespace std::literals;
     static const char kListQuery[] = "list";
 
     const auto fd = qemuOpenChannel();
-    if (!fd.ok()) { return FAILURE(ResultT()); }
+    if (!fd.ok()) { return FAILURE(false); }
 
     std::vector<uint8_t> data;
     if (qemuRunQuery(fd.get(), kListQuery, sizeof(kListQuery), &data) < 0) {
-        return FAILURE(ResultT());
+        return FAILURE(false);
     }
 
     const char* i = reinterpret_cast<const char*>(&*data.begin());
     const char* const end = reinterpret_cast<const char*>(&*data.end());
 
-    ResultT cameras;
     while (i < end) {
         const char* const lf = std::find(i, end, '\n');
         if (lf == end) {
             if (*i) {
-                return FAILURE(ResultT());
+                return FAILURE(false);
             } else {
                 break;
             }
@@ -159,21 +156,21 @@ std::vector<HwCameraFactory> listQemuCameras() {
         const std::string_view line(i, lf - i);
 
         std::string_view name;
-        if (!findToken(line, "name"sv, &name)) { return FAILURE(ResultT()); }
+        if (!findToken(line, "name"sv, &name)) { return FAILURE(false); }
 
         std::string_view dir;
-        if (!findToken(line, "dir"sv, &dir)) { return FAILURE(ResultT()); }
+        if (!findToken(line, "dir"sv, &dir)) { return FAILURE(false); }
 
         std::string_view framedims;
-        if (!findToken(line, "framedims"sv, &framedims)) { return FAILURE(ResultT()); }
+        if (!findToken(line, "framedims"sv, &framedims)) { return FAILURE(false); }
 
         QemuCamera::Parameters params;
         if (!parseResolutions(framedims, &params.supportedResolutions)) {
-            return FAILURE(ResultT());
+            return FAILURE(false);
         }
 
         if (params.supportedResolutions.empty()) {
-            return FAILURE(ResultT());
+            return FAILURE(false);
         } else {
             std::sort(params.supportedResolutions.begin(),
                       params.supportedResolutions.end(),
@@ -249,14 +246,14 @@ std::vector<HwCameraFactory> listQemuCameras() {
 
         params.isBackFacing = (dir == "back"sv);
 
-        cameras.push_back([params = std::move(params)]() {
+        cameraSink([params = std::move(params)]() {
             return std::make_unique<QemuCamera>(params);
         });
 
         i = lf + 1;
     }
 
-    return cameras;
+    return true;
 }
 
 }  // namespace hw
