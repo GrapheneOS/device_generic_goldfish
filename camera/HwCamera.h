@@ -77,10 +77,6 @@ struct HwCamera {
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
 
-    static void addCompletedBuffer(std::pair<bool, base::unique_fd> res,
-                                   CachedStreamBuffer* csb,
-                                   std::vector<StreamBuffer>* outputBuffers);
-    static StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb);
     static StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
                                      const native_handle_t* const image,
                                      const CameraMetadata& metadata);
