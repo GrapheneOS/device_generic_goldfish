@@ -18,7 +18,6 @@
 
 #include <android-base/unique_fd.h>
 #include <cutils/native_handle.h>
-#include <system/graphics.h>
 
 #include <aidl/android/hardware/camera/device/StreamBuffer.h>
 #include <aidl/android/hardware/common/NativeHandle.h>
@@ -33,9 +32,6 @@ namespace implementation {
 
 using aidl::android::hardware::common::NativeHandle;
 using aidl::android::hardware::camera::device::StreamBuffer;
-using aidl::android::hardware::graphics::common::BufferUsage;
-using aidl::android::hardware::graphics::common::Dataspace;
-using aidl::android::hardware::graphics::common::PixelFormat;
 
 struct CachedStreamBuffer {
     CachedStreamBuffer(const StreamBuffer& sb, StreamInfo si);
@@ -47,13 +43,8 @@ struct CachedStreamBuffer {
 
     void importAcquireFence(const NativeHandle& fence);
     bool waitAcquireFence(unsigned timeoutMs);
-    base::unique_fd takeAcquireFence() { return std::move(mAcquireFence); }
 
-    void* lock(BufferUsage lockUsage);
-    android_ycbcr lockYCbCr(BufferUsage lockUsage);
-    base::unique_fd unlock();
-
-    void markProcesssed() { mProcessed = true; }
+    StreamBuffer finish(bool success);
 
     const StreamInfo si;
 
