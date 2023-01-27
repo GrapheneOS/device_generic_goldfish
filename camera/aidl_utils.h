@@ -39,8 +39,7 @@ using aidl::android::hardware::common::NativeHandle;
 
 base::unique_fd importAidlNativeHandleFence(const NativeHandle& nh);
 
-StreamBuffer makeStreamBuffer(int streamId, int64_t bufferId, bool success,
-                              base::unique_fd releaseFence);
+NativeHandle moveFenceToAidlNativeHandle(base::unique_fd fence);
 
 CaptureResult makeCaptureResult(int frameNumber, CameraMetadata metadata,
                                 std::vector<StreamBuffer> outputBuffers);
