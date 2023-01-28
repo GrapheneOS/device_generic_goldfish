@@ -33,7 +33,6 @@
 #include "metadata_utils.h"
 #include "QemuCamera.h"
 #include "qemu_channel.h"
-#include "utils.h"
 
 namespace android {
 namespace hardware {
@@ -73,58 +72,6 @@ constexpr BufferUsage usageOr(const BufferUsage a, const BufferUsage b) {
 
 constexpr bool usageTest(const BufferUsage a, const BufferUsage b) {
     return (static_cast<uint64_t>(a) & static_cast<uint64_t>(b)) != 0;
-}
-
-void addCompletedBuffer(std::pair<bool, base::unique_fd> res,
-                        CachedStreamBuffer* csb,
-                        std::vector<StreamBuffer>* outputBuffers) {
-    auto [success, releaseFence] = std::move(res);
-    if (!success) {
-        releaseFence = std::move(csb->takeAcquireFence());
-    }
-
-    outputBuffers->push_back(utils::makeStreamBuffer(
-        csb->si.id, csb->getBufferId(), success, std::move(releaseFence)));
-
-    csb->markProcesssed();
-}
-
-StreamBuffer makeFailedStreamBuffer(CachedStreamBuffer* csb) {
-    return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
-                                   false, csb->takeAcquireFence());
-}
-
-StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
-                          const native_handle_t* const image,
-                          const CameraMetadata& metadata) {
-    const native_handle_t* const buffer = csb->getBuffer();
-    const int32_t bufferSize = csb->si.bufferSize;
-
-    GraphicBufferMapper& gbm = GraphicBufferMapper::get();
-    android_ycbcr imageYcbcr = android_ycbcr();
-    const Rect<uint16_t> size = csb->si.size;
-    gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
-                  {size.width, size.height}, &imageYcbcr);
-    if (!imageYcbcr.y) {
-        return makeFailedStreamBuffer(FAILURE(csb));
-    }
-
-    void* jpegData = nullptr;
-    gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {bufferSize, 1}, &jpegData);
-    if (!jpegData) {
-        gbm.unlock(image);
-        return makeFailedStreamBuffer(FAILURE(csb));
-    }
-
-    const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
-                                           jpegData, bufferSize);
-
-    gbm.unlock(buffer);
-    gbm.unlock(image);
-
-    return utils::makeStreamBuffer(csb->si.id, csb->getBufferId(),
-                                   success, unique_fd());
 }
 
 }  // namespace
@@ -232,11 +179,11 @@ void QemuCamera::captureFrame(CachedStreamBuffer* csb,
                               std::vector<DelayedStreamBuffer>* delayedOutputBuffers) const {
     switch (csb->si.pixelFormat) {
     case PixelFormat::YCBCR_420_888:
-        addCompletedBuffer(captureFrameYUV(csb), csb, outputBuffers);
+        outputBuffers->push_back(csb->finish(captureFrameYUV(csb)));
         break;
 
     case PixelFormat::RGBA_8888:
-        addCompletedBuffer(captureFrameRGBA(csb), csb, outputBuffers);
+        outputBuffers->push_back(csb->finish(captureFrameRGBA(csb)));
         break;
 
     case PixelFormat::BLOB:
@@ -246,51 +193,58 @@ void QemuCamera::captureFrame(CachedStreamBuffer* csb,
     default:
         ALOGE("QemuCamera:%s:%d: unexpected pixelFormat=%u", __func__, __LINE__,
               static_cast<uint32_t>(csb->si.pixelFormat));
-        addCompletedBuffer({false, unique_fd()}, csb, outputBuffers);
+        outputBuffers->push_back(csb->finish(false));
         break;
     }
 }
 
-std::pair<bool, unique_fd> QemuCamera::captureFrameYUV(CachedStreamBuffer* csb) const {
+bool QemuCamera::captureFrameYUV(CachedStreamBuffer* csb) const {
     const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
     if (!cb) {
-        return {FAILURE(false), unique_fd()};
+        return FAILURE(false);
     }
 
     if (!csb->waitAcquireFence(mFrameDurationNs / 2000000)) {
-        return {FAILURE(false), unique_fd()};
+        return FAILURE(false);
     }
 
-    const android_ycbcr ycbcr = csb->lockYCbCr(BufferUsage::CPU_WRITE_OFTEN);
-    if (!ycbcr.y) {
-        return {FAILURE(false), unique_fd()};
+    const auto size = csb->si.size;
+    android_ycbcr ycbcr;
+    if (GraphicBufferMapper::get().lockYCbCr(
+            cb, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
+            {size.width, size.height}, &ycbcr) != NO_ERROR) {
+        return FAILURE(false);
     }
 
     bool const res = queryFrame(csb->si.size, V4L2_PIX_FMT_YUV420,
                                 mExposureComp, cb->getMmapedOffset());
 
-    return {res, csb->unlock()};
+    LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(cb) != NO_ERROR);
+    return res;
 }
 
-std::pair<bool, unique_fd> QemuCamera::captureFrameRGBA(CachedStreamBuffer* csb) const {
+bool QemuCamera::captureFrameRGBA(CachedStreamBuffer* csb) const {
     const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
     if (!cb) {
-        return {FAILURE(false), unique_fd()};
+        return FAILURE(false);
     }
 
     if (!csb->waitAcquireFence(mFrameDurationNs / 2000000)) {
-        return {FAILURE(false), unique_fd()};
+        return FAILURE(false);
     }
 
-    void* mem = csb->lock(BufferUsage::CPU_WRITE_OFTEN);
-    if (!mem) {
-        return {FAILURE(false), unique_fd()};
+    const auto size = csb->si.size;
+    void* mem = nullptr;
+    if (GraphicBufferMapper::get().lock(
+            cb, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
+            {size.width, size.height}, &mem) != NO_ERROR) {
+        return FAILURE(false);
     }
 
     bool const res = queryFrame(csb->si.size, V4L2_PIX_FMT_RGB32,
                                 mExposureComp, cb->getMmapedOffset());
-
-    return {res, csb->unlock()};
+    LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(cb) != NO_ERROR);
+    return res;
 }
 
 DelayedStreamBuffer QemuCamera::captureFrameJpeg(CachedStreamBuffer* csb) const {
@@ -305,13 +259,12 @@ DelayedStreamBuffer QemuCamera::captureFrameJpeg(CachedStreamBuffer* csb) const 
         StreamBuffer sb =
             (ok && image && csb->waitAcquireFence(frameDurationNs / 1000000))
                 ? compressJpeg(csb, image, metadata)
-                : makeFailedStreamBuffer(csb);
+                : csb->finish(false);
 
         if (image) {
             GraphicBufferAllocator::get().free(image);
         }
 
-        csb->markProcesssed();
         return sb;
     };
 }

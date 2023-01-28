@@ -76,8 +76,8 @@ private:
     void captureFrame(CachedStreamBuffer* csb,
                       std::vector<StreamBuffer>* outputBuffers,
                       std::vector<DelayedStreamBuffer>* delayedOutputBuffers) const;
-    std::pair<bool, base::unique_fd> captureFrameYUV(CachedStreamBuffer* dst)  const;
-    std::pair<bool, base::unique_fd> captureFrameRGBA(CachedStreamBuffer* dst)  const;
+    bool captureFrameYUV(CachedStreamBuffer* dst) const;
+    bool captureFrameRGBA(CachedStreamBuffer* dst) const;
     DelayedStreamBuffer captureFrameJpeg(CachedStreamBuffer* csb) const;
     const native_handle_t* captureFrameForCompressing(Rect<uint16_t> dim,
                                                       PixelFormat bufferFormat,

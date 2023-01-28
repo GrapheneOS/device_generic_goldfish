@@ -99,36 +99,18 @@ bool CachedStreamBuffer::waitAcquireFence(const unsigned timeoutMs) {
     }
 }
 
-void* CachedStreamBuffer::lock(const BufferUsage lockUsage) {
-    LOG_ALWAYS_FATAL_IF(!mBuffer);
-    void* mem = nullptr;
-    if (GraphicBufferMapper::get().lock(
-            mBuffer, static_cast<uint32_t>(lockUsage),
-            {0, 0, si.size.width, si.size.height}, &mem) == NO_ERROR) {
-        return mem;
-    } else {
-        return FAILURE(nullptr);
-    }
-}
+StreamBuffer CachedStreamBuffer::finish(const bool success) {
+    using aidl::android::hardware::camera::device::BufferStatus;
+    LOG_ALWAYS_FATAL_IF(mProcessed);
 
-android_ycbcr CachedStreamBuffer::lockYCbCr(const BufferUsage lockUsage) {
-    LOG_ALWAYS_FATAL_IF(!mBuffer);
-    android_ycbcr ycbcr;
-    if (GraphicBufferMapper::get().lockYCbCr(
-            mBuffer, static_cast<uint32_t>(lockUsage),
-            {0, 0, si.size.width, si.size.height}, &ycbcr) == NO_ERROR) {
-        return ycbcr;
-    } else {
-        return FAILURE(android_ycbcr());
-    }
-}
+    StreamBuffer sb;
+    sb.streamId = si.id;
+    sb.bufferId = mBufferId;
+    sb.status = success ? BufferStatus::OK : BufferStatus::ERROR;
+    sb.releaseFence = utils::moveFenceToAidlNativeHandle(std::move(mAcquireFence));
 
-unique_fd CachedStreamBuffer::unlock() {
-    LOG_ALWAYS_FATAL_IF(!mBuffer);
-    int fenceFd = -1;
-    LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlockAsync(
-        mBuffer, &fenceFd) != NO_ERROR);
-    return unique_fd(fenceFd);
+    mProcessed = true;
+    return sb;
 }
 
 }  // namespace implementation
