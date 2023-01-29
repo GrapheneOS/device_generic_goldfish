@@ -19,7 +19,6 @@
 #include <functional>
 #include <memory>
 #include <tuple>
-#include <optional>
 #include <vector>
 #include <stdint.h>
 
@@ -30,6 +29,8 @@
 #include <aidl/android/hardware/graphics/common/BufferUsage.h>
 #include <aidl/android/hardware/graphics/common/Dataspace.h>
 #include <aidl/android/hardware/graphics/common/PixelFormat.h>
+
+#include <cutils/native_handle.h>
 
 #include "Rect.h"
 #include "Span.h"
@@ -76,6 +77,10 @@ struct HwCamera {
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
 
+    static StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
+                                     const native_handle_t* const image,
+                                     const CameraMetadata& metadata);
+
     ////////////////////////////////////////////////////////////////////////////
     virtual Span<const std::pair<int32_t, int32_t>> getTargetFpsRanges() const = 0;
     virtual std::tuple<int32_t, int32_t, int32_t, int32_t> getAeCompensationRange() const;
@@ -95,7 +100,7 @@ struct HwCamera {
     virtual float getMaxDigitalZoom() const;
     virtual int64_t getMinFrameDurationNs() const = 0;
     virtual int64_t getStallFrameDurationNs() const;
-    virtual int32_t getSensorOrientation() const = 0;
+    virtual int32_t getSensorOrientation() const;
     virtual Rect<uint16_t> getSensorSize() const = 0;
     virtual float getSensorDPI() const;
     virtual std::pair<int32_t, int32_t> getSensorSensitivityRange() const;
