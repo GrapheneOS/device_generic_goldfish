@@ -26,18 +26,12 @@ namespace provider {
 namespace implementation {
 
 CachedStreamBuffer*
-StreamBufferCache::update(const StreamBuffer& sb, const StreamInfoCache& sic) {
+StreamBufferCache::update(const StreamBuffer& sb) {
     const auto bi = mCache.find(sb.bufferId);
     if (bi == mCache.end()) {
-        const auto sii = sic.find(sb.streamId);
-        if (sii == sic.end()) {
-            return FAILURE_V(nullptr, "could not find streamId=%d", sb.streamId);
-        } else {
-            const auto r = mCache.insert({sb.bufferId,
-                                          CachedStreamBuffer(sb, sii->second)});
-            LOG_ALWAYS_FATAL_IF(!r.second);
-            return &(r.first->second);
-        }
+        const auto r = mCache.insert({sb.bufferId, CachedStreamBuffer(sb)});
+        LOG_ALWAYS_FATAL_IF(!r.second);
+        return &(r.first->second);
     } else {
         CachedStreamBuffer* csb = &bi->second;
         csb->importAcquireFence(sb.acquireFence);
@@ -47,6 +41,12 @@ StreamBufferCache::update(const StreamBuffer& sb, const StreamInfoCache& sic) {
 
 void StreamBufferCache::remove(const int64_t bufferId) {
     mCache.erase(bufferId);
+}
+
+void StreamBufferCache::clearStreamInfo() {
+    for (auto& kv : mCache) {
+        kv.second.setStreamInfo(nullptr);
+    }
 }
 
 }  // namespace implementation

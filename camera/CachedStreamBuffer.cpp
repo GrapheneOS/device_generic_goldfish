@@ -53,28 +53,30 @@ const native_handle_t* importAidlNativeHandle(const NativeHandle& anh) {
 }
 }  //namespace
 
-CachedStreamBuffer::CachedStreamBuffer(const StreamBuffer& sb, StreamInfo s)
-        : si(std::move(s))
+CachedStreamBuffer::CachedStreamBuffer(const StreamBuffer& sb)
+        : mBuffer(importAidlNativeHandle(sb.buffer))
         , mBufferId(sb.bufferId)
         , mAcquireFence(utils::importAidlNativeHandleFence(sb.acquireFence))
-        , mBuffer(importAidlNativeHandle(sb.buffer)) {
-    LOG_ALWAYS_FATAL_IF(!mBufferId);
+        , mStreamId(sb.streamId) {
     LOG_ALWAYS_FATAL_IF(!mBuffer);
+    LOG_ALWAYS_FATAL_IF(!mBufferId);
+    LOG_ALWAYS_FATAL_IF(mStreamId < 0);
 }
 
 CachedStreamBuffer::CachedStreamBuffer(CachedStreamBuffer&& rhs) noexcept
-        : si(rhs.si)
+        : mBuffer(std::exchange(rhs.mBuffer, nullptr))
         , mBufferId(std::exchange(rhs.mBufferId, 0))
         , mAcquireFence(std::exchange(rhs.mAcquireFence, {}))
-        , mBuffer(std::exchange(rhs.mBuffer, nullptr))
+        , mStreamId(std::exchange(rhs.mStreamId, -1))
         , mProcessed(std::exchange(rhs.mProcessed, true)) {
-    LOG_ALWAYS_FATAL_IF(!mBufferId);
     LOG_ALWAYS_FATAL_IF(!mBuffer);
+    LOG_ALWAYS_FATAL_IF(!mBufferId);
+    LOG_ALWAYS_FATAL_IF(mStreamId < 0);
 }
 
 CachedStreamBuffer::~CachedStreamBuffer() {
     LOG_ALWAYS_FATAL_IF(!mProcessed);
-    if (mBufferId) {
+    if (mStreamId >= 0) {
         LOG_ALWAYS_FATAL_IF(!mBuffer);
         LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().freeBuffer(mBuffer) != NO_ERROR);
     }
@@ -102,9 +104,11 @@ bool CachedStreamBuffer::waitAcquireFence(const unsigned timeoutMs) {
 StreamBuffer CachedStreamBuffer::finish(const bool success) {
     using aidl::android::hardware::camera::device::BufferStatus;
     LOG_ALWAYS_FATAL_IF(mProcessed);
+    LOG_ALWAYS_FATAL_IF(!mBufferId);
+    LOG_ALWAYS_FATAL_IF(mStreamId < 0);
 
     StreamBuffer sb;
-    sb.streamId = si.id;
+    sb.streamId = mStreamId;
     sb.bufferId = mBufferId;
     sb.status = success ? BufferStatus::OK : BufferStatus::ERROR;
     sb.releaseFence = utils::moveFenceToAidlNativeHandle(std::move(mAcquireFence));
