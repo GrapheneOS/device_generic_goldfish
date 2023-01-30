@@ -22,8 +22,6 @@
 #include <aidl/android/hardware/camera/device/StreamBuffer.h>
 #include <aidl/android/hardware/common/NativeHandle.h>
 
-#include "StreamInfoCache.h"
-
 namespace android {
 namespace hardware {
 namespace camera {
@@ -34,24 +32,31 @@ using aidl::android::hardware::common::NativeHandle;
 using aidl::android::hardware::camera::device::StreamBuffer;
 
 struct CachedStreamBuffer {
-    CachedStreamBuffer(const StreamBuffer& sb, StreamInfo si);
+    CachedStreamBuffer(const StreamBuffer& sb);
     CachedStreamBuffer(CachedStreamBuffer&&) noexcept;
     ~CachedStreamBuffer();
 
+    int32_t getStreamId() const { return mStreamId; }
     int64_t getBufferId() const { return mBufferId; }
     const native_handle_t* getBuffer() const { return mBuffer; }
 
     void importAcquireFence(const NativeHandle& fence);
     bool waitAcquireFence(unsigned timeoutMs);
 
+    // this methods are used by cameras to save on lookups by `getStreamId()`
+    void setStreamInfo(const void* ptr) { mStreamInfoPtr = ptr; }
+    template <class T> const T* getStreamInfo() const {
+        return static_cast<const T*>(mStreamInfoPtr);
+    }
+
     StreamBuffer finish(bool success);
 
-    const StreamInfo si;
-
 private:
+    const native_handle_t* mBuffer;  // owned by this class
+    const void* mStreamInfoPtr = nullptr;
     int64_t mBufferId;
     base::unique_fd mAcquireFence;
-    const native_handle_t* mBuffer;  // owned by this class
+    int32_t mStreamId;
     bool mProcessed = false;
 
     CachedStreamBuffer(const CachedStreamBuffer&) = delete;
