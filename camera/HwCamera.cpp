@@ -37,15 +37,15 @@ constexpr float kDefaultFocalLength = 1.0;
 constexpr int32_t kDefaultSensorSensitivity = 100;
 }  // namespace
 
-StreamBuffer HwCamera::compressJpeg(CachedStreamBuffer* const csb,
+StreamBuffer HwCamera::compressJpeg(const Rect<uint16_t> size,
+                                    const uint32_t jpegBufferSize,
+                                    CachedStreamBuffer* const csb,
                                     const native_handle_t* const image,
                                     const CameraMetadata& metadata) {
     const native_handle_t* const buffer = csb->getBuffer();
-    const int32_t bufferSize = csb->si.bufferSize;
 
     GraphicBufferMapper& gbm = GraphicBufferMapper::get();
     android_ycbcr imageYcbcr = android_ycbcr();
-    const Rect<uint16_t> size = csb->si.size;
     gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
                   {size.width, size.height}, &imageYcbcr);
     if (!imageYcbcr.y) {
@@ -54,14 +54,14 @@ StreamBuffer HwCamera::compressJpeg(CachedStreamBuffer* const csb,
 
     void* jpegData = nullptr;
     gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {bufferSize, 1}, &jpegData);
+             {static_cast<int32_t>(jpegBufferSize), 1}, &jpegData);
     if (!jpegData) {
         gbm.unlock(image);
         return csb->finish(FAILURE(false));
     }
 
-    const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
-                                           jpegData, bufferSize);
+    const bool success = jpeg::compressYUV(imageYcbcr, size, metadata,
+                                           jpegData, jpegBufferSize);
 
     gbm.unlock(buffer);
     gbm.unlock(image);
