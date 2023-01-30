@@ -29,9 +29,9 @@ namespace jpeg {
 
 using aidl::android::hardware::camera::device::CameraMetadata;
 
-bool compressYUV(const android_ycbcr& image, Rect<uint16_t> imageSize,
-                 const CameraMetadata& metadata,
-                 void* jpegData, size_t jpegDataCapacity);
+size_t compressYUV(const android_ycbcr& image, Rect<uint16_t> imageSize,
+                   const CameraMetadata& metadata,
+                   void* jpegData, size_t jpegDataCapacity);
 
 }  // namespace jpeg
 }  // namespace implementation

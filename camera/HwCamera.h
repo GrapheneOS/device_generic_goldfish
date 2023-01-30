@@ -82,11 +82,11 @@ struct HwCamera {
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
 
-    static StreamBuffer compressJpeg(Rect<uint16_t> size,
-                                     uint32_t jpegBufferSize,
-                                     CachedStreamBuffer* const csb,
+    static StreamBuffer compressJpeg(Rect<uint16_t> imageSize,
                                      const native_handle_t* const image,
-                                     const CameraMetadata& metadata);
+                                     const CameraMetadata& metadata,
+                                     CachedStreamBuffer* const csb,
+                                     size_t jpegBufferSize);
 
     ////////////////////////////////////////////////////////////////////////////
     virtual Span<const std::pair<int32_t, int32_t>> getTargetFpsRanges() const = 0;
