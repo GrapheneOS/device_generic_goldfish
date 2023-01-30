@@ -19,14 +19,13 @@
 #include <inttypes.h>
 #include <setjmp.h>
 #include <algorithm>
-
 #include <vector>
+
 extern "C" {
 #include <jpeglib.h>
 }
 #include <libyuv.h>
-
-#include <hardware/camera3.h>
+#include <system/camera_metadata.h>
 
 #include "jpeg.h"
 #include "debug.h"
@@ -206,18 +205,18 @@ struct StaticBufferSink : public jpeg_destination_mgr {
 
 }  // namespace
 
-bool compressYUV(const android_ycbcr& image,
-                 const Rect<uint16_t> imageSize,
-                 const CameraMetadata& metadata,
-                 void* const jpegData,
-                 const size_t jpegDataCapacity) {
+size_t compressYUV(const android_ycbcr& image,
+                   const Rect<uint16_t> imageSize,
+                   const CameraMetadata& metadata,
+                   void* const jpegData,
+                   const size_t jpegDataCapacity) {
     if (image.chroma_step != 1) {
-        return FAILURE(false);
+        return FAILURE(0);
     }
 
     auto exifData = exif::createExifData(metadata, imageSize);
     if (!exifData) {
-        return FAILURE(false);
+        return FAILURE(0);
     }
 
     const camera_metadata_t* const rawMetadata =
@@ -253,20 +252,20 @@ bool compressYUV(const android_ycbcr& image,
         const android_ycbcr thumbmnail = resizeYUV(image, imageSize,
                                                    thumbnailSize, &thumbnailData);
         if (!thumbmnail.y) {
-            return FAILURE(false);
+            return FAILURE(0);
         }
 
         StaticBufferSink sink(jpegData, jpegDataCapacity);
         if (!compressYUVImpl(thumbmnail, thumbnailSize, nullptr, 0,
                              thumbnailQuality, &sink)) {
-            return FAILURE(false);
+            return FAILURE(0);
         }
 
         const size_t thumbnailJpegSize = jpegDataCapacity - sink.free_in_buffer;
         void* exifThumbnailJpegDataPtr = exif::exifDataAllocThumbnail(
             exifData.get(), thumbnailJpegSize);
         if (!exifThumbnailJpegDataPtr) {
-            return FAILURE(false);
+            return FAILURE(0);
         }
 
         memcpy(exifThumbnailJpegDataPtr, jpegData, thumbnailJpegSize);
@@ -282,24 +281,15 @@ bool compressYUV(const android_ycbcr& image,
     exif_data_save_data(const_cast<ExifData*>(exifData.get()),
                         &rawExif, &rawExifSize);
     if (!rawExif) {
-        return FAILURE(false);
+        return FAILURE(0);
     }
 
-    const size_t jpegImageDataCapacity = jpegDataCapacity - sizeof(struct camera3_jpeg_blob);
-    StaticBufferSink sink(jpegData, jpegImageDataCapacity);
-    const bool result = compressYUVImpl(image, imageSize, rawExif, rawExifSize,
-                                        quality, &sink);
-    if (result) {
-        struct camera3_jpeg_blob blob;
-        blob.jpeg_blob_id = CAMERA3_JPEG_BLOB_ID;
-        blob.jpeg_size = jpegImageDataCapacity - sink.free_in_buffer;
-        memcpy(static_cast<uint8_t*>(jpegData) + jpegImageDataCapacity,
-               &blob, sizeof(blob));
-    }
-
+    StaticBufferSink sink(jpegData, jpegDataCapacity);
+    const bool success = compressYUVImpl(image, imageSize, rawExif, rawExifSize,
+                                         quality, &sink);
     free(rawExif);
 
-    return result;
+    return success ? (jpegDataCapacity - sink.free_in_buffer) : 0;
 }
 
 }  // namespace jpeg

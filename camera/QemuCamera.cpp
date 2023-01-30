@@ -286,16 +286,16 @@ DelayedStreamBuffer QemuCamera::captureFrameJpeg(const StreamInfo& si,
     const native_handle_t* const image = captureFrameForCompressing(
         si.size, PixelFormat::YCBCR_420_888, V4L2_PIX_FMT_YUV420);
 
-    const Rect<uint16_t> size = si.size;
+    const Rect<uint16_t> imageSize = si.size;
     const uint32_t jpegBufferSize = si.blobBufferSize;
     const int64_t frameDurationNs = mFrameDurationNs;
     CameraMetadata metadata = mCaptureResultMetadata;
 
-    return [csb, image, size, jpegBufferSize, metadata = std::move(metadata),
+    return [csb, image, imageSize, metadata = std::move(metadata), jpegBufferSize,
             frameDurationNs](const bool ok) -> StreamBuffer {
         StreamBuffer sb =
             (ok && image && csb->waitAcquireFence(frameDurationNs / 1000000))
-                ? compressJpeg(size, jpegBufferSize, csb, image, metadata)
+                ? compressJpeg(imageSize, image, metadata, csb, jpegBufferSize)
                 : csb->finish(false);
 
         if (image) {
