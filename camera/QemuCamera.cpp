@@ -27,7 +27,6 @@
 
 #include <gralloc_cb_bp.h>
 
-#include "aidl_utils.h"
 #include "debug.h"
 #include "jpeg.h"
 #include "metadata_utils.h"
