@@ -28,7 +28,6 @@
 #include <aidl/android/hardware/camera/device/ErrorCode.h>
 #include <aidl/android/hardware/graphics/common/Dataspace.h>
 
-#include "aidl_utils.h"
 #include "debug.h"
 #include "CameraDeviceSession.h"
 #include "CameraDevice.h"
@@ -119,6 +118,19 @@ void notifyShutter(ICameraDeviceCallback* cb,
     }
 
     cb->notify({msg});
+}
+
+CaptureResult makeCaptureResult(const int frameNumber,
+                                CameraMetadata metadata,
+                                std::vector<StreamBuffer> outputBuffers) {
+    CaptureResult cr;
+    cr.frameNumber = frameNumber;
+    cr.result = std::move(metadata);
+    cr.outputBuffers = std::move(outputBuffers);
+    cr.inputBuffer.streamId = -1;
+    cr.inputBuffer.bufferId = 0;
+    cr.partialResult = cr.result.metadata.empty() ? 0 : 1;
+    return cr;
 }
 }  // namespace
 
@@ -534,7 +546,7 @@ struct timespec CameraDeviceSession::captureOneFrame(struct timespec nextFrameT,
     }
 
     metadataSetShutterTimestamp(&metadata, shutterTimestampNs);
-    consumeCaptureResult(utils::makeCaptureResult(frameNumber,
+    consumeCaptureResult(makeCaptureResult(frameNumber,
         std::move(metadata), std::move(outputBuffers)));
 
     if (frameDurationNs > 0) {
@@ -557,7 +569,7 @@ void CameraDeviceSession::delayedCaptureThreadLoop() {
             // the framework earlier to reuse in capture requests.
             std::vector<StreamBuffer> outputBuffers(1);
             outputBuffers.front() = dcr.delayedBuffer(!mFlushing);
-            consumeCaptureResult(utils::makeCaptureResult(dcr.frameNumber,
+            consumeCaptureResult(makeCaptureResult(dcr.frameNumber,
                 {}, std::move(outputBuffers)));
         } else {
             break;
@@ -580,8 +592,8 @@ void CameraDeviceSession::disposeCaptureRequest(HwCaptureRequest req) {
         }
 
         std::vector<CaptureResult> crs(1);
-        crs.front() = utils::makeCaptureResult(req.frameNumber, {},
-                                               std::move(outputBuffers));
+        crs.front() = makeCaptureResult(req.frameNumber, {},
+                                        std::move(outputBuffers));
 
         std::lock_guard<std::mutex> guard(mResultQueueMutex);
         mCb->processCaptureResult(std::move(crs));
