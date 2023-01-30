@@ -223,7 +223,8 @@ void QemuCamera::captureFrame(const StreamInfo& si,
         break;
 
     default:
-        ALOGE("QemuCamera:%s:%d: unexpected pixelFormat=%u", __func__, __LINE__,
+        ALOGE("%s:%s:%d: unexpected pixelFormat=0x%" PRIx32,
+              "QemuCamera", __func__, __LINE__,
               static_cast<uint32_t>(si.pixelFormat));
         outputBuffers->push_back(csb->finish(false));
         break;
@@ -293,10 +294,21 @@ DelayedStreamBuffer QemuCamera::captureFrameJpeg(const StreamInfo& si,
 
     return [csb, image, imageSize, metadata = std::move(metadata), jpegBufferSize,
             frameDurationNs](const bool ok) -> StreamBuffer {
-        StreamBuffer sb =
-            (ok && image && csb->waitAcquireFence(frameDurationNs / 1000000))
-                ? compressJpeg(imageSize, image, metadata, csb, jpegBufferSize)
-                : csb->finish(false);
+        StreamBuffer sb;
+        if (ok && image && csb->waitAcquireFence(frameDurationNs / 1000000)) {
+            android_ycbcr imageYcbcr;
+            if (GraphicBufferMapper::get().lockYCbCr(
+                    image, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
+                    {imageSize.width, imageSize.height}, &imageYcbcr) == NO_ERROR) {
+                sb = compressJpeg(imageSize, imageYcbcr, metadata, csb,
+                                  jpegBufferSize);
+                LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(image) != NO_ERROR);
+            } else {
+                sb = csb->finish(FAILURE(false));
+            }
+        } else {
+            sb = csb->finish(false);
+        }
 
         if (image) {
             GraphicBufferAllocator::get().free(image);
