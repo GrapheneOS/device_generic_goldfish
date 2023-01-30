@@ -17,7 +17,6 @@
 #include <hardware/camera3.h>
 #include <ui/GraphicBufferMapper.h>
 
-#include "aidl_utils.h"
 #include "debug.h"
 #include "HwCamera.h"
 #include "jpeg.h"
