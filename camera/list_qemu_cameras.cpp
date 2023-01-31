@@ -107,7 +107,10 @@ Rect<uint16_t> calcThumbnailResolution(const double aspectRatio,
     const uint16_t height =
         ((uint16_t(sqrt(targetArea / aspectRatio)) + 7) >> 4) << 4;
 
-    return {uint16_t(height * aspectRatio), height};
+    // round width to be even
+    const uint16_t width = (uint16_t(height * aspectRatio + 1) >> 1) << 1;
+
+    return {width, height};
 }
 
 struct RectAreaComparator {
