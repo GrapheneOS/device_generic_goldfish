@@ -41,6 +41,7 @@ cc_binary {
         "StreamBufferCache.cpp",
         "service_entry.cpp",
         "utils.cpp",
+        "yuv.cpp",
     ],
     shared_libs: [
         "android.hardware.graphics.mapper@2.0",
