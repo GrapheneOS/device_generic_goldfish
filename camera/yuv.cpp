@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <log/log.h>
 #include "yuv.h"
 
 namespace android {
@@ -23,7 +24,13 @@ namespace provider {
 namespace implementation {
 namespace yuv {
 
+size_t NV21size(const size_t width, const size_t height) {
+    LOG_ALWAYS_FATAL_IF((width & 1) || (height & 1));
+    return width * height * 3 / 2;
+}
+
 android_ycbcr NV21init(const size_t width, const size_t height, void* data) {
+    LOG_ALWAYS_FATAL_IF((width & 1) || (height & 1));
     uint8_t* data8 = static_cast<uint8_t*>(data);
     const size_t area = width * height;
 
