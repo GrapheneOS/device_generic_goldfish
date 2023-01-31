@@ -24,12 +24,13 @@
 extern "C" {
 #include <jpeglib.h>
 }
-#include <libyuv.h>
+#include <libyuv/scale.h>
 #include <system/camera_metadata.h>
 
-#include "jpeg.h"
 #include "debug.h"
 #include "exif.h"
+#include "jpeg.h"
+#include "yuv.h"
 
 namespace android {
 namespace hardware {
@@ -41,6 +42,10 @@ namespace {
 
 bool compressYUVImplPixels(const android_ycbcr& image, jpeg_compress_struct* cinfo) {
     constexpr int kJpegMCUSize = 16;  // we have to feed `jpeg_write_raw_data` in multiples of this
+
+    if (image.chroma_step != 1) {
+        return FAILURE(false);
+    }
 
     const uint8_t* y[16];
     const uint8_t* cb[8];
@@ -159,16 +164,8 @@ android_ycbcr resizeYUV(const android_ycbcr& srcYCbCr,
         return FAILURE(android_ycbcr());
     }
 
-    const size_t wxh = dstWidth * dstHeight;
-    std::vector<uint8_t> dstData(wxh * 3 / 2);
-
-    android_ycbcr dstYCbCr = android_ycbcr();
-    dstYCbCr.y = &dstData[0];
-    dstYCbCr.cb = &dstData[wxh];
-    dstYCbCr.cr = &dstData[wxh + (wxh >> 2)];
-    dstYCbCr.ystride = dstWidth;
-    dstYCbCr.cstride = dstHeight / 2;
-    dstYCbCr.chroma_step = 1;
+    std::vector<uint8_t> dstData(yuv::NV21size(dstWidth, dstHeight));
+    const android_ycbcr dstYCbCr = yuv::NV21init(dstWidth, dstHeight, dstData.data());
 
     const int result = libyuv::I420Scale(
         static_cast<const uint8_t*>(srcYCbCr.y), srcYCbCr.ystride,
