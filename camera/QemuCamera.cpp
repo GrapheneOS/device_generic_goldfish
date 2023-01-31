@@ -311,8 +311,8 @@ DelayedStreamBuffer QemuCamera::captureFrameJpeg(const StreamInfo& si,
             if (GraphicBufferMapper::get().lockYCbCr(
                     image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
                     {imageSize.width, imageSize.height}, &imageYcbcr) == NO_ERROR) {
-                sb = compressJpeg(imageSize, imageYcbcr, metadata, csb,
-                                  jpegBufferSize);
+                sb = csb->finish(compressJpeg(imageSize, imageYcbcr, metadata,
+                                              csb->getBuffer(), jpegBufferSize));
                 LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(image) != NO_ERROR);
             } else {
                 sb = csb->finish(FAILURE(false));
