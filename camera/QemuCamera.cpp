@@ -86,16 +86,27 @@ QemuCamera::overrideStreamParams(const PixelFormat format,
     // input streams are not supported
     switch (format) {
     case PixelFormat::IMPLEMENTATION_DEFINED:
+        if (usageTest(usage, BufferUsage::VIDEO_ENCODER)) {
+            return {PixelFormat::YCBCR_420_888,
+                    usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+                    Dataspace::JFIF, 8};
+        } else {
+            return {PixelFormat::RGBA_8888,
+                    usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+                    Dataspace::UNKNOWN, 4};
+        }
+
     case PixelFormat::YCBCR_420_888:
         return {PixelFormat::YCBCR_420_888,
                 usageOr(usage, BufferUsage::CAMERA_OUTPUT),
                 Dataspace::JFIF,
-                (usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4)};
+                usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4};
 
     case PixelFormat::RGBA_8888:
         return {PixelFormat::RGBA_8888,
                 usageOr(usage, BufferUsage::CAMERA_OUTPUT),
-                Dataspace::SRGB_LINEAR, 4};
+                Dataspace::UNKNOWN,
+                usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4};
 
     case PixelFormat::BLOB:
         switch (dataspace) {
