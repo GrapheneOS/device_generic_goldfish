@@ -309,7 +309,7 @@ DelayedStreamBuffer QemuCamera::captureFrameJpeg(const StreamInfo& si,
         if (ok && image && csb->waitAcquireFence(frameDurationNs / 1000000)) {
             android_ycbcr imageYcbcr;
             if (GraphicBufferMapper::get().lockYCbCr(
-                    image, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
+                    image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
                     {imageSize.width, imageSize.height}, &imageYcbcr) == NO_ERROR) {
                 sb = compressJpeg(imageSize, imageYcbcr, metadata, csb,
                                   jpegBufferSize);
