@@ -26,7 +26,7 @@ namespace provider {
 namespace implementation {
 namespace yuv {
 
-inline size_t NV21size(size_t width, size_t height) { return width * height * 3 / 2; }
+size_t NV21size(size_t width, size_t height);
 
 android_ycbcr NV21init(size_t width, size_t height, void* data);
 
