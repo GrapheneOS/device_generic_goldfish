@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <vector>
 #include <stdint.h>
 #include <system/graphics.h>
 
@@ -29,6 +30,9 @@ namespace yuv {
 size_t NV21size(size_t width, size_t height);
 
 android_ycbcr NV21init(size_t width, size_t height, void* data);
+
+android_ycbcr toNV21Shallow(size_t width, size_t height, const android_ycbcr& ycbcr,
+                            std::vector<uint8_t>* data);
 
 }  // namespace yuv
 }  // namespace implementation
