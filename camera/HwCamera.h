@@ -33,6 +33,7 @@
 #include <aidl/android/hardware/graphics/common/PixelFormat.h>
 
 #include <cutils/native_handle.h>
+#include <system/graphics.h>
 
 #include "Rect.h"
 #include "Span.h"
@@ -83,7 +84,7 @@ struct HwCamera {
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
 
     static StreamBuffer compressJpeg(Rect<uint16_t> imageSize,
-                                     const native_handle_t* const image,
+                                     const android_ycbcr& imageYcbcr,
                                      const CameraMetadata& metadata,
                                      CachedStreamBuffer* const csb,
                                      size_t jpegBufferSize);

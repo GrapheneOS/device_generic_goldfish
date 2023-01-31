@@ -37,7 +37,7 @@ constexpr int32_t kDefaultSensorSensitivity = 100;
 }  // namespace
 
 StreamBuffer HwCamera::compressJpeg(const Rect<uint16_t> imageSize,
-                                    const native_handle_t* const image,
+                                    const android_ycbcr& imageYcbcr,
                                     const CameraMetadata& metadata,
                                     CachedStreamBuffer* const csb,
                                     const size_t jpegBufferSize) {
@@ -50,21 +50,13 @@ StreamBuffer HwCamera::compressJpeg(const Rect<uint16_t> imageSize,
         return csb->finish(FAILURE(false));
     }
 
-    android_ycbcr imageYcbcr;
-    if (gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
-                      {imageSize.width, imageSize.height}, &imageYcbcr) != NO_ERROR) {
-        gbm.unlock(dstBuffer);
-        return csb->finish(FAILURE(false));
-    }
-
     const size_t jpegImageDataCapacity = jpegBufferSize - sizeof(struct camera3_jpeg_blob);
     const size_t compressedSize = jpeg::compressYUV(imageYcbcr, imageSize, metadata,
                                                     jpegData, jpegImageDataCapacity);
 
-    gbm.unlock(image);
     gbm.unlock(dstBuffer);
 
-    const bool success = compressedSize > 0;
+    const bool success = (compressedSize > 0);
     if (success) {
         struct camera3_jpeg_blob blob;
         blob.jpeg_blob_id = CAMERA3_JPEG_BLOB_ID;
