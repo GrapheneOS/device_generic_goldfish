@@ -219,9 +219,10 @@ size_t compressYUV(const android_ycbcr& image,
                    const CameraMetadata& metadata,
                    void* const jpegData,
                    const size_t jpegDataCapacity) {
-    if (image.chroma_step != 1) {
-        return FAILURE(0);
-    }
+    std::vector<uint8_t> nv21data;
+    const android_ycbcr imageNV21 =
+        yuv::toNV21Shallow(imageSize.width, imageSize.height,
+                           image, &nv21data);
 
     auto exifData = exif::createExifData(metadata, imageSize);
     if (!exifData) {
@@ -255,7 +256,7 @@ size_t compressYUV(const android_ycbcr& image,
         }
 
         std::vector<uint8_t> thumbnailData;
-        const android_ycbcr thumbmnail = resizeYUV(image, imageSize,
+        const android_ycbcr thumbmnail = resizeYUV(imageNV21, imageSize,
                                                    thumbnailSize, &thumbnailData);
         if (!thumbmnail.y) {
             return FAILURE(0);
@@ -294,7 +295,7 @@ size_t compressYUV(const android_ycbcr& image,
     }
 
     StaticBufferSink sink(jpegData, jpegDataCapacity);
-    const bool success = compressYUVImpl(image, imageSize, rawExif, rawExifSize,
+    const bool success = compressYUVImpl(imageNV21, imageSize, rawExif, rawExifSize,
                                          quality, &sink);
     free(rawExif);
 
