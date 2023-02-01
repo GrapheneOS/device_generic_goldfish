@@ -17,6 +17,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 #include <android-base/unique_fd.h>
 
@@ -44,7 +45,8 @@ struct QemuCamera : public HwCamera {
     std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
         overrideStreamParams(PixelFormat, BufferUsage, Dataspace) const override;
 
-    bool configure(const CameraMetadata& sessionParams) override;
+    bool configure(const CameraMetadata& sessionParams, size_t nStreams,
+                   const Stream* streams, const HalStream* halStreams) override;
     void close() override;
 
     std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
@@ -73,12 +75,20 @@ struct QemuCamera : public HwCamera {
     int32_t getDefaultSensorSensitivity() const override;
 
 private:
-    void captureFrame(CachedStreamBuffer* csb,
+    struct StreamInfo {
+        Rect<uint16_t> size;
+        PixelFormat pixelFormat;
+        uint32_t blobBufferSize;
+    };
+
+    void captureFrame(const StreamInfo& si,
+                      CachedStreamBuffer* csb,
                       std::vector<StreamBuffer>* outputBuffers,
                       std::vector<DelayedStreamBuffer>* delayedOutputBuffers) const;
-    bool captureFrameYUV(CachedStreamBuffer* dst) const;
-    bool captureFrameRGBA(CachedStreamBuffer* dst) const;
-    DelayedStreamBuffer captureFrameJpeg(CachedStreamBuffer* csb) const;
+    bool captureFrameYUV(const StreamInfo& si, CachedStreamBuffer* dst) const;
+    bool captureFrameRGBA(const StreamInfo& si, CachedStreamBuffer* dst) const;
+    DelayedStreamBuffer captureFrameJpeg(const StreamInfo& si,
+                                         CachedStreamBuffer* csb) const;
     const native_handle_t* captureFrameForCompressing(Rect<uint16_t> dim,
                                                       PixelFormat bufferFormat,
                                                       uint32_t qemuFormat) const;
@@ -90,9 +100,10 @@ private:
     CameraMetadata updateCaptureResultMetadata();
 
     const Parameters& mParams;
+    AFStateMachine mAFStateMachine;
+    std::unordered_map<int32_t, StreamInfo> mStreamInfoCache;
     base::unique_fd mQemuChannel;
     CameraMetadata mCaptureResultMetadata;
-    AFStateMachine mAFStateMachine;
 
     int64_t mFrameDurationNs = 0;
     int64_t mSensorExposureDurationNs = 0;

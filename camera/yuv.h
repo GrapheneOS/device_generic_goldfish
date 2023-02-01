@@ -16,24 +16,21 @@
 
 #pragma once
 
-#include <aidl/android/hardware/camera/device/CameraMetadata.h>
+#include <stdint.h>
 #include <system/graphics.h>
-#include "Rect.h"
 
 namespace android {
 namespace hardware {
 namespace camera {
 namespace provider {
 namespace implementation {
-namespace jpeg {
+namespace yuv {
 
-using aidl::android::hardware::camera::device::CameraMetadata;
+inline size_t NV21size(size_t width, size_t height) { return width * height * 3 / 2; }
 
-size_t compressYUV(const android_ycbcr& image, Rect<uint16_t> imageSize,
-                   const CameraMetadata& metadata,
-                   void* jpegData, size_t jpegDataCapacity);
+android_ycbcr NV21init(size_t width, size_t height, void* data);
 
-}  // namespace jpeg
+}  // namespace yuv
 }  // namespace implementation
 }  // namespace provider
 }  // namespace camera

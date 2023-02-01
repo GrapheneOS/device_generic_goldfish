@@ -14,38 +14,30 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include <stdint.h>
-#include <unordered_map>
-
-#include <aidl/android/hardware/graphics/common/BufferUsage.h>
-#include <aidl/android/hardware/graphics/common/Dataspace.h>
-#include <aidl/android/hardware/graphics/common/PixelFormat.h>
-
-#include "Rect.h"
+#include "yuv.h"
 
 namespace android {
 namespace hardware {
 namespace camera {
 namespace provider {
 namespace implementation {
+namespace yuv {
 
-using aidl::android::hardware::graphics::common::BufferUsage;
-using aidl::android::hardware::graphics::common::Dataspace;
-using aidl::android::hardware::graphics::common::PixelFormat;
+android_ycbcr NV21init(const size_t width, const size_t height, void* data) {
+    uint8_t* data8 = static_cast<uint8_t*>(data);
+    const size_t area = width * height;
 
-struct StreamInfo {
-    BufferUsage usage;
-    Dataspace dataspace;
-    PixelFormat pixelFormat;
-    Rect<uint16_t> size;
-    uint32_t bufferSize;
-    int32_t id;
-};
+    android_ycbcr nv21;
+    nv21.y = data8;
+    nv21.cb = data8 + area;
+    nv21.cr = data8 + area + (area >> 2);
+    nv21.ystride = width;
+    nv21.cstride = width / 2;
+    nv21.chroma_step = 1;
 
-using StreamInfoCache = std::unordered_map<int32_t, StreamInfo>;
-
+    return nv21;
+}
+}  // namespace yuv
 }  // namespace implementation
 }  // namespace provider
 }  // namespace camera

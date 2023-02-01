@@ -22,7 +22,6 @@
 #include <aidl/android/hardware/camera/device/StreamBuffer.h>
 
 #include "CachedStreamBuffer.h"
-#include "StreamInfoCache.h"
 
 namespace android {
 namespace hardware {
@@ -34,8 +33,9 @@ using aidl::android::hardware::camera::device::StreamBuffer;
 
 struct StreamBufferCache {
     StreamBufferCache() = default;
-    CachedStreamBuffer* update(const StreamBuffer& sb, const StreamInfoCache& sic);
+    CachedStreamBuffer* update(const StreamBuffer& sb);
     void remove(int64_t bufferId);
+    void clearStreamInfo();
 
 private:
     // std::map is to keep iterators valid after `insert`

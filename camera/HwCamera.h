@@ -24,13 +24,16 @@
 
 #include <aidl/android/hardware/camera/device/CameraMetadata.h>
 #include <aidl/android/hardware/camera/device/CaptureResult.h>
+#include <aidl/android/hardware/camera/device/HalStream.h>
 #include <aidl/android/hardware/camera/device/RequestTemplate.h>
+#include <aidl/android/hardware/camera/device/Stream.h>
 #include <aidl/android/hardware/camera/device/StreamBuffer.h>
 #include <aidl/android/hardware/graphics/common/BufferUsage.h>
 #include <aidl/android/hardware/graphics/common/Dataspace.h>
 #include <aidl/android/hardware/graphics/common/PixelFormat.h>
 
 #include <cutils/native_handle.h>
+#include <system/graphics.h>
 
 #include "Rect.h"
 #include "Span.h"
@@ -44,7 +47,9 @@ namespace implementation {
 namespace hw {
 
 using aidl::android::hardware::camera::device::CameraMetadata;
+using aidl::android::hardware::camera::device::HalStream;
 using aidl::android::hardware::camera::device::RequestTemplate;
+using aidl::android::hardware::camera::device::Stream;
 using aidl::android::hardware::camera::device::StreamBuffer;
 using aidl::android::hardware::graphics::common::BufferUsage;
 using aidl::android::hardware::graphics::common::Dataspace;
@@ -70,16 +75,19 @@ struct HwCamera {
     virtual std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
         overrideStreamParams(PixelFormat, BufferUsage, Dataspace) const = 0;
 
-    virtual bool configure(const CameraMetadata& sessionParams) = 0;
+    virtual bool configure(const CameraMetadata& sessionParams, size_t nStreams,
+                           const Stream* streams, const HalStream* halStreams) = 0;
     virtual void close() = 0;
 
     virtual std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
 
-    static StreamBuffer compressJpeg(CachedStreamBuffer* const csb,
-                                     const native_handle_t* const image,
-                                     const CameraMetadata& metadata);
+    static StreamBuffer compressJpeg(Rect<uint16_t> imageSize,
+                                     const android_ycbcr& imageYcbcr,
+                                     const CameraMetadata& metadata,
+                                     CachedStreamBuffer* const csb,
+                                     size_t jpegBufferSize);
 
     ////////////////////////////////////////////////////////////////////////////
     virtual Span<const std::pair<int32_t, int32_t>> getTargetFpsRanges() const = 0;

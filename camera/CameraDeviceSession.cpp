@@ -26,8 +26,8 @@
 #include <utils/ThreadDefs.h>
 
 #include <aidl/android/hardware/camera/device/ErrorCode.h>
+#include <aidl/android/hardware/graphics/common/Dataspace.h>
 
-#include "aidl_utils.h"
 #include "debug.h"
 #include "CameraDeviceSession.h"
 #include "CameraDevice.h"
@@ -46,6 +46,8 @@ using aidl::android::hardware::camera::device::CaptureResult;
 using aidl::android::hardware::camera::device::ErrorCode;
 using aidl::android::hardware::camera::device::StreamRotation;
 using aidl::android::hardware::camera::device::StreamType;
+
+using aidl::android::hardware::graphics::common::Dataspace;
 
 namespace {
 constexpr int64_t kOneSecondNs = 1000000000;
@@ -116,6 +118,19 @@ void notifyShutter(ICameraDeviceCallback* cb,
     }
 
     cb->notify({msg});
+}
+
+CaptureResult makeCaptureResult(const int frameNumber,
+                                CameraMetadata metadata,
+                                std::vector<StreamBuffer> outputBuffers) {
+    CaptureResult cr;
+    cr.frameNumber = frameNumber;
+    cr.result = std::move(metadata);
+    cr.outputBuffers = std::move(outputBuffers);
+    cr.inputBuffer.streamId = -1;
+    cr.inputBuffer.bufferId = 0;
+    cr.partialResult = cr.result.metadata.empty() ? 0 : 1;
+    return cr;
 }
 }  // namespace
 
@@ -188,13 +203,17 @@ ScopedAStatus CameraDeviceSession::configureStreams(
         );
     }
 
-    auto [status, halStreams, streamInfoCache] = configureStreamsStatic(cfg, mHwCamera);
+    auto [status, halStreams] = configureStreamsStatic(cfg, mHwCamera);
     if (status != Status::OK) {
         return toScopedAStatus(status);
     }
 
-    if (mHwCamera.configure(cfg.sessionParams)) {
-        mStreamInfoCache = std::move(streamInfoCache);
+    const size_t nStreams = cfg.streams.size();
+    LOG_ALWAYS_FATAL_IF(halStreams.size() != nStreams);
+
+    if (mHwCamera.configure(cfg.sessionParams, nStreams,
+                            cfg.streams.data(), halStreams.data())) {
+        mStreamBufferCache.clearStreamInfo();
         *halStreamsOut = std::move(halStreams);
         return ScopedAStatus::ok();
     } else {
@@ -285,14 +304,13 @@ ScopedAStatus CameraDeviceSession::repeatingRequestEnd(
 
 bool CameraDeviceSession::isStreamCombinationSupported(const StreamConfiguration& cfg,
                                                        hw::HwCamera& hwCamera) {
-    const auto [status, unused1, unused2] = configureStreamsStatic(cfg, hwCamera);
+    const auto [status, unused] = configureStreamsStatic(cfg, hwCamera);
     return status == Status::OK;
 }
 
 void CameraDeviceSession::closeImpl() {
     flushImpl(std::chrono::steady_clock::now());
     mHwCamera.close();
-    mStreamInfoCache.clear();
 }
 
 void CameraDeviceSession::flushImpl(const std::chrono::steady_clock::time_point start) {
@@ -333,55 +351,53 @@ int CameraDeviceSession::waitFlushingDone(const std::chrono::steady_clock::time_
     }
 }
 
-std::tuple<Status, std::vector<HalStream>, StreamInfoCache>
+std::pair<Status, std::vector<HalStream>>
 CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
                                             hw::HwCamera& hwCamera) {
     if (cfg.multiResolutionInputImage) {
-        return {FAILURE(Status::OPERATION_NOT_SUPPORTED), {}, {}};
+        return {FAILURE(Status::OPERATION_NOT_SUPPORTED), {}};
     }
 
     const size_t streamsSize = cfg.streams.size();
     if (!streamsSize) {
-        return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+        return {FAILURE(Status::ILLEGAL_ARGUMENT), {}};
     }
 
     std::vector<HalStream> halStreams;
     halStreams.reserve(streamsSize);
-    StreamInfoCache streamInfoCache(streamsSize);
 
     for (const auto& s : cfg.streams) {
         if (s.streamType == StreamType::INPUT) {
-            return {FAILURE(Status::OPERATION_NOT_SUPPORTED), {}, {}};
+            return {FAILURE(Status::OPERATION_NOT_SUPPORTED), {}};
         }
 
         if (s.width <= 0) {
-            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}};
         }
 
         if (s.height <= 0) {
-            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}};
         }
 
         if (s.rotation != StreamRotation::ROTATION_0) {
-            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}};
         }
 
         if (s.bufferSize < 0) {
-            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}, {}};
+            return {FAILURE(Status::ILLEGAL_ARGUMENT), {}};
         }
 
-        StreamInfo si;
-        Dataspace dataspace;
-        int32_t maxBuffers;
-
-        std::tie(si.pixelFormat, si.usage, si.dataspace, maxBuffers) =
+        HalStream hs;
+        std::tie(hs.overrideFormat, hs.producerUsage,
+                 hs.overrideDataSpace, hs.maxBuffers) =
             hwCamera.overrideStreamParams(s.format, s.usage, s.dataSpace);
-        if (maxBuffers <= 0) {
-            switch (maxBuffers) {
+
+        if (hs.maxBuffers <= 0) {
+            switch (hs.maxBuffers) {
             case hw::HwCamera::kErrorBadFormat:
                 ALOGW("%s:%d unexpected format=0x%" PRIx32,
                       __func__, __LINE__, static_cast<uint32_t>(s.format));
-                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+                return {Status::ILLEGAL_ARGUMENT, {}};
 
             case hw::HwCamera::kErrorBadUsage:
                 ALOGW("%s:%d unexpected usage=0x%" PRIx64
@@ -389,7 +405,7 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
                       __func__, __LINE__, static_cast<uint64_t>(s.usage),
                       static_cast<uint32_t>(s.format),
                       static_cast<uint32_t>(s.dataSpace));
-                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+                return {Status::ILLEGAL_ARGUMENT, {}};
 
             case hw::HwCamera::kErrorBadDataspace:
                 ALOGW("%s:%d unexpected dataSpace=0x%" PRIx32
@@ -397,7 +413,7 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
                       __func__, __LINE__, static_cast<uint32_t>(s.dataSpace),
                       static_cast<uint32_t>(s.format),
                       static_cast<uint64_t>(s.usage));
-                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+                return {Status::ILLEGAL_ARGUMENT, {}};
 
             default:
                 ALOGE("%s:%d something is not right for format=0x%" PRIx32
@@ -405,33 +421,19 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
                       __func__, __LINE__, static_cast<uint32_t>(s.format),
                       static_cast<uint64_t>(s.usage),
                       static_cast<uint32_t>(s.dataSpace));
-                return {Status::ILLEGAL_ARGUMENT, {}, {}};
+                return {Status::ILLEGAL_ARGUMENT, {}};
             }
         }
 
-        {
-            HalStream hs;
+        hs.id = s.id;
+        hs.consumerUsage = static_cast<BufferUsage>(0);
+        hs.physicalCameraId = s.physicalCameraId;
+        hs.supportOffline = false;
 
-            hs.id = s.id;
-            hs.overrideFormat = si.pixelFormat;
-            hs.producerUsage = si.usage;
-            hs.consumerUsage = static_cast<BufferUsage>(0);
-            hs.maxBuffers = maxBuffers;
-            hs.overrideDataSpace = si.dataspace;
-            hs.physicalCameraId = s.physicalCameraId;
-            hs.supportOffline = false;
-
-            halStreams.push_back(std::move(hs));
-        }
-
-        si.id = s.id;
-        si.size.width = s.width;
-        si.size.height = s.height;
-        si.bufferSize = s.bufferSize;
-        streamInfoCache[s.id] = std::move(si);
+        halStreams.push_back(std::move(hs));
     }
 
-    return {Status::OK, halStreams, std::move(streamInfoCache)};
+    return {Status::OK, std::move(halStreams)};
 }
 
 Status CameraDeviceSession::processOneCaptureRequest(const CaptureRequest& request) {
@@ -475,8 +477,7 @@ Status CameraDeviceSession::processOneCaptureRequest(const CaptureRequest& reque
 
     hwReq.buffers.resize(outputBuffersSize);
     for (size_t i = 0; i < outputBuffersSize; ++i) {
-        hwReq.buffers[i] = mStreamBufferCache.update(request.outputBuffers[i],
-                                                     mStreamInfoCache);
+        hwReq.buffers[i] = mStreamBufferCache.update(request.outputBuffers[i]);
     }
 
     {
@@ -545,7 +546,7 @@ struct timespec CameraDeviceSession::captureOneFrame(struct timespec nextFrameT,
     }
 
     metadataSetShutterTimestamp(&metadata, shutterTimestampNs);
-    consumeCaptureResult(utils::makeCaptureResult(frameNumber,
+    consumeCaptureResult(makeCaptureResult(frameNumber,
         std::move(metadata), std::move(outputBuffers)));
 
     if (frameDurationNs > 0) {
@@ -568,7 +569,7 @@ void CameraDeviceSession::delayedCaptureThreadLoop() {
             // the framework earlier to reuse in capture requests.
             std::vector<StreamBuffer> outputBuffers(1);
             outputBuffers.front() = dcr.delayedBuffer(!mFlushing);
-            consumeCaptureResult(utils::makeCaptureResult(dcr.frameNumber,
+            consumeCaptureResult(makeCaptureResult(dcr.frameNumber,
                 {}, std::move(outputBuffers)));
         } else {
             break;
@@ -591,8 +592,8 @@ void CameraDeviceSession::disposeCaptureRequest(HwCaptureRequest req) {
         }
 
         std::vector<CaptureResult> crs(1);
-        crs.front() = utils::makeCaptureResult(req.frameNumber, {},
-                                               std::move(outputBuffers));
+        crs.front() = makeCaptureResult(req.frameNumber, {},
+                                        std::move(outputBuffers));
 
         std::lock_guard<std::mutex> guard(mResultQueueMutex);
         mCb->processCaptureResult(std::move(crs));
