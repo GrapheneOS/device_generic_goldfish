@@ -25,6 +25,7 @@ cc_binary {
     init_rc: ["android.hardware.camera.provider.ranchu.rc"],
     vintf_fragments: ["android.hardware.camera.provider.ranchu.xml"],
     srcs: [
+        "acircles_pattern_1280_720.cpp",
         "AFStateMachine.cpp",
         "CachedStreamBuffer.cpp",
         "CameraDevice.cpp",
