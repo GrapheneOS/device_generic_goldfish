@@ -83,35 +83,31 @@ std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
 QemuCamera::overrideStreamParams(const PixelFormat format,
                                  const BufferUsage usage,
                                  const Dataspace dataspace) const {
-    // input streams are not supported
+    constexpr BufferUsage kExtraUsage = usageOr(BufferUsage::CAMERA_OUTPUT,
+                                                BufferUsage::CPU_WRITE_OFTEN);
+
     switch (format) {
     case PixelFormat::IMPLEMENTATION_DEFINED:
         if (usageTest(usage, BufferUsage::VIDEO_ENCODER)) {
-            return {PixelFormat::YCBCR_420_888,
-                    usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+            return {PixelFormat::YCBCR_420_888, usageOr(usage, kExtraUsage),
                     Dataspace::JFIF, 8};
         } else {
-            return {PixelFormat::RGBA_8888,
-                    usageOr(usage, BufferUsage::CAMERA_OUTPUT),
+            return {PixelFormat::RGBA_8888, usageOr(usage, kExtraUsage),
                     Dataspace::UNKNOWN, 4};
         }
 
     case PixelFormat::YCBCR_420_888:
-        return {PixelFormat::YCBCR_420_888,
-                usageOr(usage, BufferUsage::CAMERA_OUTPUT),
-                Dataspace::JFIF,
-                usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4};
+        return {PixelFormat::YCBCR_420_888, usageOr(usage, kExtraUsage),
+                Dataspace::JFIF, usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4};
 
     case PixelFormat::RGBA_8888:
-        return {PixelFormat::RGBA_8888,
-                usageOr(usage, BufferUsage::CAMERA_OUTPUT),
-                Dataspace::UNKNOWN,
-                usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4};
+        return {PixelFormat::RGBA_8888, usageOr(usage, kExtraUsage),
+                Dataspace::UNKNOWN, usageTest(usage, BufferUsage::VIDEO_ENCODER) ? 8 : 4};
 
     case PixelFormat::BLOB:
         switch (dataspace) {
         case Dataspace::JFIF:
-            return {PixelFormat::BLOB, BufferUsage::CAMERA_OUTPUT,
+            return {PixelFormat::BLOB, usageOr(usage, kExtraUsage),
                     Dataspace::JFIF, 4};  // JPEG
         default:
             return {format, usage, dataspace, FAILURE(kErrorBadDataspace)};
