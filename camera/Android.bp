@@ -26,7 +26,6 @@ cc_binary {
     vintf_fragments: ["android.hardware.camera.provider.ranchu.xml"],
     srcs: [
         "AFStateMachine.cpp",
-        "aidl_utils.cpp",
         "CachedStreamBuffer.cpp",
         "CameraDevice.cpp",
         "CameraDeviceSession.cpp",
@@ -42,6 +41,7 @@ cc_binary {
         "StreamBufferCache.cpp",
         "service_entry.cpp",
         "utils.cpp",
+        "yuv.cpp",
     ],
     shared_libs: [
         "android.hardware.graphics.mapper@2.0",

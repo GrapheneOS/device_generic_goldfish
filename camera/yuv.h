@@ -16,36 +16,25 @@
 
 #pragma once
 
+#include <vector>
 #include <stdint.h>
-#include <unordered_map>
-
-#include <aidl/android/hardware/graphics/common/BufferUsage.h>
-#include <aidl/android/hardware/graphics/common/Dataspace.h>
-#include <aidl/android/hardware/graphics/common/PixelFormat.h>
-
-#include "Rect.h"
+#include <system/graphics.h>
 
 namespace android {
 namespace hardware {
 namespace camera {
 namespace provider {
 namespace implementation {
+namespace yuv {
 
-using aidl::android::hardware::graphics::common::BufferUsage;
-using aidl::android::hardware::graphics::common::Dataspace;
-using aidl::android::hardware::graphics::common::PixelFormat;
+size_t NV21size(size_t width, size_t height);
 
-struct StreamInfo {
-    BufferUsage usage;
-    Dataspace dataspace;
-    PixelFormat pixelFormat;
-    Rect<uint16_t> size;
-    uint32_t bufferSize;
-    int32_t id;
-};
+android_ycbcr NV21init(size_t width, size_t height, void* data);
 
-using StreamInfoCache = std::unordered_map<int32_t, StreamInfo>;
+android_ycbcr toNV21Shallow(size_t width, size_t height, const android_ycbcr& ycbcr,
+                            std::vector<uint8_t>* data);
 
+}  // namespace yuv
 }  // namespace implementation
 }  // namespace provider
 }  // namespace camera

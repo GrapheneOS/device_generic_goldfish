@@ -17,7 +17,6 @@
 #include <hardware/camera3.h>
 #include <ui/GraphicBufferMapper.h>
 
-#include "aidl_utils.h"
 #include "debug.h"
 #include "HwCamera.h"
 #include "jpeg.h"
@@ -37,36 +36,35 @@ constexpr float kDefaultFocalLength = 1.0;
 constexpr int32_t kDefaultSensorSensitivity = 100;
 }  // namespace
 
-StreamBuffer HwCamera::compressJpeg(CachedStreamBuffer* const csb,
-                                    const native_handle_t* const image,
-                                    const CameraMetadata& metadata) {
-    const native_handle_t* const buffer = csb->getBuffer();
-    const int32_t bufferSize = csb->si.bufferSize;
-
+bool HwCamera::compressJpeg(const Rect<uint16_t> imageSize,
+                            const android_ycbcr& imageYcbcr,
+                            const CameraMetadata& metadata,
+                            const native_handle_t* jpegBuffer,
+                            const size_t jpegBufferSize) {
     GraphicBufferMapper& gbm = GraphicBufferMapper::get();
-    android_ycbcr imageYcbcr = android_ycbcr();
-    const Rect<uint16_t> size = csb->si.size;
-    gbm.lockYCbCr(image, static_cast<uint32_t>(BufferUsage::CPU_READ_OFTEN),
-                  {size.width, size.height}, &imageYcbcr);
-    if (!imageYcbcr.y) {
-        return csb->finish(FAILURE(false));
-    }
 
     void* jpegData = nullptr;
-    gbm.lock(buffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
-             {bufferSize, 1}, &jpegData);
-    if (!jpegData) {
-        gbm.unlock(image);
-        return csb->finish(FAILURE(false));
+    if (gbm.lock(jpegBuffer, static_cast<uint32_t>(BufferUsage::CPU_WRITE_OFTEN),
+                 {static_cast<int32_t>(jpegBufferSize), 1}, &jpegData) != NO_ERROR) {
+        return FAILURE(false);
     }
 
-    const bool success = jpeg::compressYUV(imageYcbcr, csb->si.size, metadata,
-                                           jpegData, bufferSize);
+    const size_t jpegImageDataCapacity = jpegBufferSize - sizeof(struct camera3_jpeg_blob);
+    const size_t compressedSize = jpeg::compressYUV(imageYcbcr, imageSize, metadata,
+                                                    jpegData, jpegImageDataCapacity);
 
-    gbm.unlock(buffer);
-    gbm.unlock(image);
+    LOG_ALWAYS_FATAL_IF(gbm.unlock(jpegBuffer) != NO_ERROR);
 
-    return csb->finish(success);
+    const bool success = (compressedSize > 0);
+    if (success) {
+        struct camera3_jpeg_blob blob;
+        blob.jpeg_blob_id = CAMERA3_JPEG_BLOB_ID;
+        blob.jpeg_size = compressedSize;
+        memcpy(static_cast<uint8_t*>(jpegData) + jpegImageDataCapacity,
+               &blob, sizeof(blob));
+    }
+
+    return success;
 }
 
 std::tuple<int32_t, int32_t, int32_t, int32_t> HwCamera::getAeCompensationRange() const {

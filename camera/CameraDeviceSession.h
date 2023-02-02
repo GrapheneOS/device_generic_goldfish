@@ -31,7 +31,6 @@
 #include "BlockingQueue.h"
 #include "HwCamera.h"
 #include "StreamBufferCache.h"
-#include "StreamInfoCache.h"
 
 namespace android {
 namespace hardware {
@@ -109,9 +108,7 @@ private:
     void closeImpl();
     void flushImpl(std::chrono::steady_clock::time_point start);
     int waitFlushingDone(std::chrono::steady_clock::time_point start);
-    static std::tuple<Status,
-                      std::vector<HalStream>,
-                      StreamInfoCache>
+    static std::pair<Status, std::vector<HalStream>>
         configureStreamsStatic(const StreamConfiguration& cfg,
                                hw::HwCamera& hwCamera);
     Status processOneCaptureRequest(const CaptureRequest& request);
@@ -130,7 +127,6 @@ private:
     MetadataQueue mResultQueue;
     std::mutex mResultQueueMutex;
 
-    StreamInfoCache mStreamInfoCache;
     StreamBufferCache mStreamBufferCache;
 
     BlockingQueue<HwCaptureRequest> mCaptureRequests;
