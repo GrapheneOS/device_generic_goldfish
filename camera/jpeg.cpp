@@ -200,6 +200,18 @@ struct StaticBufferSink : public jpeg_destination_mgr {
     static void termDestinationS(j_compress_ptr) {}
 };
 
+constexpr int kDefaultQuality = 85;
+
+int sanitizeJpegQuality(const int quality) {
+    if (quality <= 0) {
+        return kDefaultQuality;
+    } else if (quality > 100) {
+        return 100;
+    } else {
+        return quality;
+    }
+}
+
 }  // namespace
 
 size_t compressYUV(const android_ycbcr& image,
@@ -207,9 +219,10 @@ size_t compressYUV(const android_ycbcr& image,
                    const CameraMetadata& metadata,
                    void* const jpegData,
                    const size_t jpegDataCapacity) {
-    if (image.chroma_step != 1) {
-        return FAILURE(0);
-    }
+    std::vector<uint8_t> nv21data;
+    const android_ycbcr imageNV21 =
+        yuv::toNV21Shallow(imageSize.width, imageSize.height,
+                           image, &nv21data);
 
     auto exifData = exif::createExifData(metadata, imageSize);
     if (!exifData) {
@@ -237,16 +250,13 @@ size_t compressYUV(const android_ycbcr& image,
 
         if (find_camera_metadata_ro_entry(rawMetadata, ANDROID_JPEG_THUMBNAIL_QUALITY,
                                           &metadataEntry)) {
-            break;
+            thumbnailQuality = kDefaultQuality;
         } else {
-            thumbnailQuality = metadataEntry.data.i32[0];
-            if (thumbnailQuality <= 0) {
-                break;
-            }
+            thumbnailQuality = sanitizeJpegQuality(metadataEntry.data.i32[0]);
         }
 
         std::vector<uint8_t> thumbnailData;
-        const android_ycbcr thumbmnail = resizeYUV(image, imageSize,
+        const android_ycbcr thumbmnail = resizeYUV(imageNV21, imageSize,
                                                    thumbnailSize, &thumbnailData);
         if (!thumbmnail.y) {
             return FAILURE(0);
@@ -268,10 +278,13 @@ size_t compressYUV(const android_ycbcr& image,
         memcpy(exifThumbnailJpegDataPtr, jpegData, thumbnailJpegSize);
     } while (false);
 
-    const int quality = (find_camera_metadata_ro_entry(rawMetadata,
-                                                       ANDROID_JPEG_QUALITY,
-                                                       &metadataEntry))
-        ? 85 : metadataEntry.data.i32[0];
+    int quality;
+    if (find_camera_metadata_ro_entry(rawMetadata, ANDROID_JPEG_QUALITY,
+                                      &metadataEntry)) {
+        quality = kDefaultQuality;
+    } else {
+        quality = sanitizeJpegQuality(metadataEntry.data.i32[0]);
+    }
 
     unsigned char* rawExif = nullptr;
     unsigned rawExifSize = 0;
@@ -282,7 +295,7 @@ size_t compressYUV(const android_ycbcr& image,
     }
 
     StaticBufferSink sink(jpegData, jpegDataCapacity);
-    const bool success = compressYUVImpl(image, imageSize, rawExif, rawExifSize,
+    const bool success = compressYUVImpl(imageNV21, imageSize, rawExif, rawExifSize,
                                          quality, &sink);
     free(rawExif);
 
