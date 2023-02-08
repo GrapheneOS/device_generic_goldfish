@@ -78,11 +78,11 @@ AutoImageKHR::AutoImageKHR(const EGLDisplay display, const EGLClientBuffer clien
     }
 }
 
-AutoImageKHR::AutoImageKHR(AutoImageKHR&& rhs)
+AutoImageKHR::AutoImageKHR(AutoImageKHR&& rhs) noexcept
         : mEglDisplay(rhs.mEglDisplay)
         , mEglImage(std::exchange(rhs.mEglImage, EGL_NO_IMAGE_KHR)) {}
 
-AutoImageKHR& AutoImageKHR::operator=(AutoImageKHR&& rhs) {
+AutoImageKHR& AutoImageKHR::operator=(AutoImageKHR&& rhs) noexcept {
     if (this != &rhs) {
         mEglDisplay = rhs.mEglDisplay;
         mEglImage = std::exchange(rhs.mEglImage, EGL_NO_IMAGE_KHR);
@@ -99,10 +99,10 @@ AutoImageKHR::~AutoImageKHR() {
 EglCurrentContext::EglCurrentContext(const EGLDisplay display)
         : mEglDisplay(display) {}
 
-EglCurrentContext::EglCurrentContext(EglCurrentContext&& rhs)
+EglCurrentContext::EglCurrentContext(EglCurrentContext&& rhs) noexcept
         : mEglDisplay(std::exchange(rhs.mEglDisplay, EGL_NO_DISPLAY)) {}
 
-EglCurrentContext& EglCurrentContext::operator=(EglCurrentContext&& rhs) {
+EglCurrentContext& EglCurrentContext::operator=(EglCurrentContext&& rhs) noexcept {
     if (this != &rhs) {
         mEglDisplay = std::exchange(rhs.mEglDisplay, EGL_NO_DISPLAY);
     }
@@ -116,12 +116,12 @@ EglCurrentContext::~EglCurrentContext() {
     }
 }
 
-EglContext::EglContext(EglContext&& rhs)
+EglContext::EglContext(EglContext&& rhs) noexcept
         : mEglDisplay(std::exchange(rhs.mEglDisplay, EGL_NO_DISPLAY))
         , mEglContext(std::exchange(rhs.mEglContext, EGL_NO_CONTEXT))
         , mEglSurface(std::exchange(rhs.mEglSurface, EGL_NO_SURFACE)) {}
 
-EglContext& EglContext::operator=(EglContext&& rhs) {
+EglContext& EglContext::operator=(EglContext&& rhs) noexcept {
     if (this != &rhs) {
         mEglDisplay = std::exchange(rhs.mEglDisplay, EGL_NO_DISPLAY);
         mEglContext = std::exchange(rhs.mEglContext, EGL_NO_CONTEXT);
@@ -262,10 +262,10 @@ AutoTexture::AutoTexture(const GLenum target,
     }
 }
 
-AutoTexture::AutoTexture(AutoTexture&& rhs)
+AutoTexture::AutoTexture(AutoTexture&& rhs) noexcept
         : mTex(std::exchange(rhs.mTex, 0)) {}
 
-AutoTexture& AutoTexture::operator=(AutoTexture&& rhs) {
+AutoTexture& AutoTexture::operator=(AutoTexture&& rhs) noexcept {
     if (this != &rhs) {
         mTex = std::exchange(rhs.mTex, 0);
     }
@@ -298,10 +298,10 @@ AutoFrameBuffer::~AutoFrameBuffer() {
     }
 }
 
-AutoShader::AutoShader(AutoShader&& rhs)
+AutoShader::AutoShader(AutoShader&& rhs) noexcept
         : mShader(std::exchange(rhs.mShader, 0)) {}
 
-AutoShader& AutoShader::operator=(AutoShader&& rhs) {
+AutoShader& AutoShader::operator=(AutoShader&& rhs) noexcept {
     if (this != &rhs) {
         mShader = std::exchange(rhs.mShader, 0);
     }
@@ -346,10 +346,10 @@ GLuint AutoShader::compile(const GLenum type, const char* text) {
     return shader;
 }
 
-AutoProgram::AutoProgram(AutoProgram&& rhs)
+AutoProgram::AutoProgram(AutoProgram&& rhs) noexcept
         : mProgram(std::exchange(rhs.mProgram, 0)) {}
 
-AutoProgram& AutoProgram::operator=(AutoProgram&& rhs) {
+AutoProgram& AutoProgram::operator=(AutoProgram&& rhs) noexcept {
     if (this != &rhs) {
         mProgram = std::exchange(rhs.mProgram, 0);
     }
