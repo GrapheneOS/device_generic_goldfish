@@ -45,7 +45,7 @@ constexpr int32_t kCx_Add = 128 << kCx_Shift;
 constexpr int32_t kCx_Clamp = 255 << kCx_Shift;
 
 #define CLAMP_SHIFT(X, MIN, MAX, S) \
-    (((X) - (((X) > (MAX)) * ((X) - (MAX))) - (((X) < (MIN)) * ((MIN) - (X)))) >> S)
+    (((X) - (((X) > (MAX)) * ((X) - (MAX))) - (((X) < (MIN)) * ((MIN) - (X)))) >> (S))
 
 #define RGB2Y(R, G, B) (kY_R * (R) + kY_G * (G) + kY_B * (B) + kY_Add)
 #define RGB2CB(R, G, B) (kCB_R * (R) + kCB_G * (G) + kCB_B * (B) + kCx_Add)
