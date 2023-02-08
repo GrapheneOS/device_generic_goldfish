@@ -16,11 +16,13 @@
 
 #include <log/log.h>
 #include "HwCamera.h"
+#include "list_fake_rotating_cameras.h"
 #include "list_qemu_cameras.h"
 #include "service_entry.h"
 
 int main() {
     using ::android::hardware::camera::provider::implementation::hw::HwCameraFactory;
+    using ::android::hardware::camera::provider::implementation::hw::listFakeRotatingCameras;
     using ::android::hardware::camera::provider::implementation::hw::listQemuCameras;
     using ::android::hardware::camera::provider::implementation::Span;
 
@@ -31,6 +33,7 @@ int main() {
         };
 
         listQemuCameras(cameraAppender);
+        listFakeRotatingCameras(cameraAppender);
     }
 
     return serviceEntry(
