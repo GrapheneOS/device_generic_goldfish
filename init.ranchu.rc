@@ -98,6 +98,8 @@ on property:vendor.qemu.timezone=*
 
 on property:dev.bootcomplete=1
     setprop vendor.qemu.dev.bootcomplete 1
+
+on property:vendor.qemu.dev.bootcomplete=1
     start qemu-props-bootcomplete
     start ranchu-setup
 
