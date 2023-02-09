@@ -118,9 +118,9 @@ endif
 
 # Enable bluetooth
 PRODUCT_PACKAGES += \
-    bt_vhci_forwarder \
-    android.hardware.bluetooth@1.1-service.btlinux \
+    android.hardware.bluetooth-service.default \
     android.hardware.bluetooth.audio-impl \
+    bt_vhci_forwarder \
 
 # Bluetooth hardware properties.
 ifeq ($(TARGET_PRODUCT_PROP),)
