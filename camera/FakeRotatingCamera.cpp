@@ -85,13 +85,13 @@ constexpr double degrees2rad(const double degrees) {
     return degrees * M_PI / 180.0;
 }
 
-std::tuple<float, float, float> getFrustrumParams() {
+std::tuple<float, float, float> getFrustumParams() {
     constexpr float defaultAngle = degrees2rad(100);
     constexpr float defaultNear = 1;
     constexpr float defaultFar = 10;
 
     std::string valueStr =
-        base::GetProperty("vendor.qemu.FakeRotatingCamera.frustrum", "");
+        base::GetProperty("vendor.qemu.FakeRotatingCamera.frustum", "");
     float angle, near, far;
     if (valueStr.empty()) {
         goto returnDefault;
@@ -563,13 +563,13 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
         float viewMatrix44[16];
 
         {
-            const auto [angle, near, far] = getFrustrumParams();
+            const auto [angle, near, far] = getFrustumParams();
             const double right = near * sin(.5 * angle);
             const double top = right / imageSize.width * imageSize.height;
             static const float scale3normal[] = {1, 1, 1};
             // Y is flipped if we render into AHardwareBuffer
             static const float scale3ahwb[] = {1, -1, 1};
-            abc3d::frustrum(projectionMatrix44, -right, right, -top, top, near, far,
+            abc3d::frustum(projectionMatrix44, -right, right, -top, top, near, far,
                             (isHardwareBuffer ? scale3ahwb : scale3normal));
         }
         {
