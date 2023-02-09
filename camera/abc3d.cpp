@@ -422,11 +422,11 @@ GLint AutoProgram::getUniformLocation(const char* name) const {
 }
 
 // https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/glFrustum.xml
-void frustrum(float m44[],
-              const double left, const double right,
-              const double bottom, const double top,
-              const double near, const double far,
-              const float scale3[]) {
+void frustum(float m44[],
+             const double left, const double right,
+             const double bottom, const double top,
+             const double near, const double far,
+             const float scale3[]) {
     const double invWidth = scale3[0] / (right - left);
     const double invHeight = scale3[1] / (top - bottom);
     const double invDepth = scale3[2] / (far - near);
