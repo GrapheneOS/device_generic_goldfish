@@ -39,8 +39,8 @@ int serviceEntry(const int deviceIdBase,
 
     const std::string instance = std::string(CameraProvider::descriptor) + "/internal/1";
 
-    if (AServiceManager_registerLazyService(hal->asBinder().get(),
-                                            instance.c_str()) == STATUS_OK) {
+    if (AServiceManager_addService(hal->asBinder().get(),
+                                   instance.c_str()) == STATUS_OK) {
         ABinderProcess_joinThreadPool();
         return EXIT_FAILURE;
     } else {
