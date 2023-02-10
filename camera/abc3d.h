@@ -42,8 +42,8 @@ struct CantCopyAssignMove : CantCopyAssign {
 
 struct AutoImageKHR : CantCopyAssign {
     AutoImageKHR(EGLDisplay, EGLImageKHR);
-    AutoImageKHR(AutoImageKHR&&);
-    AutoImageKHR& operator=(AutoImageKHR&&);
+    AutoImageKHR(AutoImageKHR&&) noexcept;
+    AutoImageKHR& operator=(AutoImageKHR&&) noexcept;
     ~AutoImageKHR();
 
     bool ok() const { return mEglImage != EGL_NO_IMAGE_KHR; }
@@ -57,8 +57,8 @@ private:
 struct EglCurrentContext : CantCopyAssign {
     EglCurrentContext() = default;
     EglCurrentContext(EGLDisplay);
-    EglCurrentContext(EglCurrentContext&&);
-    EglCurrentContext& operator=(EglCurrentContext&&);
+    EglCurrentContext(EglCurrentContext&&) noexcept;
+    EglCurrentContext& operator=(EglCurrentContext&&) noexcept;
     ~EglCurrentContext();
 
     bool ok() const { return mEglDisplay != EGL_NO_DISPLAY; }
@@ -69,8 +69,8 @@ private:
 
 struct EglContext : CantCopyAssign {
     EglContext() = default;
-    EglContext(EglContext&&);
-    EglContext& operator=(EglContext&&);
+    EglContext(EglContext&&) noexcept;
+    EglContext& operator=(EglContext&&) noexcept;
     ~EglContext();
 
     EglCurrentContext init();
@@ -94,8 +94,8 @@ struct AutoTexture : CantCopyAssign {
                 GLenum format,
                 GLenum type,
                 const void * data);
-    AutoTexture(AutoTexture&&);
-    AutoTexture& operator=(AutoTexture&&);
+    AutoTexture(AutoTexture&&) noexcept;
+    AutoTexture& operator=(AutoTexture&&) noexcept;
     ~AutoTexture();
 
     GLuint ok() const { return mTex != 0; }
@@ -119,8 +119,8 @@ private:
 
 struct AutoShader : CantCopyAssign {
     AutoShader() = default;
-    AutoShader(AutoShader&&);
-    AutoShader& operator=(AutoShader&&);
+    AutoShader(AutoShader&&) noexcept;
+    AutoShader& operator=(AutoShader&&) noexcept;
     ~AutoShader();
 
     GLuint compile(GLenum type, const char* text);
@@ -132,8 +132,8 @@ private:
 
 struct AutoProgram : CantCopyAssign {
     AutoProgram() = default;
-    AutoProgram(AutoProgram&&);
-    AutoProgram& operator=(AutoProgram&&);
+    AutoProgram(AutoProgram&&) noexcept;
+    AutoProgram& operator=(AutoProgram&&) noexcept;
     ~AutoProgram();
 
     bool link(GLuint vertexShader, GLuint fragmentShader);
