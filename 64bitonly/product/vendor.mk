@@ -62,7 +62,7 @@ PRODUCT_PACKAGES += \
     qemu-export-property \
     qemu-props \
     stagefright \
-    android.hardware.graphics.allocator@3.0-service \
+    android.hardware.graphics.allocator@3.0-service.ranchu \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
     android.hardware.graphics.composer3-service.ranchu \
     toybox_vendor \
