@@ -85,13 +85,13 @@ constexpr double degrees2rad(const double degrees) {
     return degrees * M_PI / 180.0;
 }
 
-std::tuple<float, float, float> getFrustrumParams() {
+std::tuple<float, float, float> getFrustumParams() {
     constexpr float defaultAngle = degrees2rad(100);
     constexpr float defaultNear = 1;
     constexpr float defaultFar = 10;
 
     std::string valueStr =
-        base::GetProperty("vendor.qemu.FakeRotatingCamera.frustrum", "");
+        base::GetProperty("vendor.qemu.FakeRotatingCamera.frustum", "");
     float angle, near, far;
     if (valueStr.empty()) {
         goto returnDefault;
@@ -383,19 +383,28 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
     std::vector<DelayedStreamBuffer> delayedOutputBuffers;
     outputBuffers.reserve(csbsSize);
 
-    SensorValues sensorValues;
     const abc3d::EglCurrentContext currentContext = mEglContext.getCurrentContext();
-    const bool failed = !readSensors(&sensorValues) || !currentContext.ok();
-    if (failed) {
-        for (size_t i = 0; i < csbsSize; ++i) {
-            CachedStreamBuffer* csb = csbs[i];
-            LOG_ALWAYS_FATAL_IF(!csb);  // otherwise mNumBuffersInFlight will be hard
-            outputBuffers.push_back(csb->finish(false));
-        }
+    if (!currentContext.ok()) {
+        goto fail;
+    }
 
-        return make_tuple(FAILURE(-1),
-                          std::move(resultMetadata), std::move(outputBuffers),
-                          std::move(delayedOutputBuffers));
+    RenderParams renderParams;
+    {
+        auto& fr = renderParams.cameraParams.frustum;
+        std::tie(fr.angle, fr.near, fr.far) = getFrustumParams();
+        float* pos3 = renderParams.cameraParams.pos3;
+        std::tie(pos3[0], pos3[1], pos3[2]) = getEyeCoordinates();
+
+        SensorValues sensorValues;
+        if (readSensors(&sensorValues)) {
+            static_assert(sizeof(renderParams.cameraParams.rotXYZ3) ==
+                          sizeof(sensorValues.rotation));
+
+            memcpy(renderParams.cameraParams.rotXYZ3, sensorValues.rotation,
+                   sizeof(sensorValues.rotation));
+        } else {
+            goto fail;
+        }
     }
 
     for (size_t i = 0; i < csbsSize; ++i) {
@@ -415,7 +424,7 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
         }
 
         if (si) {
-            captureFrame(*si, sensorValues, csb, &outputBuffers, &delayedOutputBuffers);
+            captureFrame(*si, renderParams, csb, &outputBuffers, &delayedOutputBuffers);
         } else {
             outputBuffers.push_back(csb->finish(false));
         }
@@ -424,24 +433,35 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
     return make_tuple(mFrameDurationNs,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
+
+fail:
+    for (size_t i = 0; i < csbsSize; ++i) {
+        CachedStreamBuffer* csb = csbs[i];
+        LOG_ALWAYS_FATAL_IF(!csb);  // otherwise mNumBuffersInFlight will be hard
+        outputBuffers.push_back(csb->finish(false));
+    }
+
+    return make_tuple(FAILURE(-1),
+                      std::move(resultMetadata), std::move(outputBuffers),
+                      std::move(delayedOutputBuffers));
 }
 
 void FakeRotatingCamera::captureFrame(const StreamInfo& si,
-                                      const SensorValues& sensorValues,
+                                      const RenderParams& renderParams,
                                       CachedStreamBuffer* csb,
                                       std::vector<StreamBuffer>* outputBuffers,
                                       std::vector<DelayedStreamBuffer>* delayedOutputBuffers) const {
     switch (si.pixelFormat) {
     case PixelFormat::RGBA_8888:
-        outputBuffers->push_back(csb->finish(captureFrameRGBA(si, sensorValues, csb)));
+        outputBuffers->push_back(csb->finish(captureFrameRGBA(si, renderParams, csb)));
         break;
 
     case PixelFormat::YCBCR_420_888:
-        outputBuffers->push_back(csb->finish(captureFrameYUV(si, sensorValues, csb)));
+        outputBuffers->push_back(csb->finish(captureFrameYUV(si, renderParams, csb)));
         break;
 
     case PixelFormat::BLOB:
-        delayedOutputBuffers->push_back(captureFrameJpeg(si, sensorValues, csb));
+        delayedOutputBuffers->push_back(captureFrameJpeg(si, renderParams, csb));
         break;
 
     default:
@@ -453,20 +473,20 @@ void FakeRotatingCamera::captureFrame(const StreamInfo& si,
 }
 
 bool FakeRotatingCamera::captureFrameRGBA(const StreamInfo& si,
-                                            const SensorValues& sensorValues,
+                                            const RenderParams& renderParams,
                                             CachedStreamBuffer* csb) const {
     if (!csb->waitAcquireFence(mFrameDurationNs / 2000000)) {
         return FAILURE(false);
     }
 
-    return renderIntoRGBA(si, sensorValues, csb->getBuffer());
+    return renderIntoRGBA(si, renderParams, csb->getBuffer());
 }
 
 bool FakeRotatingCamera::captureFrameYUV(const StreamInfo& si,
-                                         const SensorValues& sensorValues,
+                                         const RenderParams& renderParams,
                                          CachedStreamBuffer* csb) const {
     LOG_ALWAYS_FATAL_IF(!si.rgbaBuffer);
-    if (!renderIntoRGBA(si, sensorValues, si.rgbaBuffer.get())) {
+    if (!renderIntoRGBA(si, renderParams, si.rgbaBuffer.get())) {
         return false;
     }
 
@@ -500,9 +520,9 @@ bool FakeRotatingCamera::captureFrameYUV(const StreamInfo& si,
 }
 
 DelayedStreamBuffer FakeRotatingCamera::captureFrameJpeg(const StreamInfo& si,
-                                                         const SensorValues& sensorValues,
+                                                         const RenderParams& renderParams,
                                                          CachedStreamBuffer* csb) const {
-    std::vector<uint8_t> nv21data = captureFrameForCompressing(si, sensorValues);
+    std::vector<uint8_t> nv21data = captureFrameForCompressing(si, renderParams);
 
     const Rect<uint16_t> imageSize = si.size;
     const uint32_t jpegBufferSize = si.blobBufferSize;
@@ -525,8 +545,8 @@ DelayedStreamBuffer FakeRotatingCamera::captureFrameJpeg(const StreamInfo& si,
 
 std::vector<uint8_t>
 FakeRotatingCamera::captureFrameForCompressing(const StreamInfo& si,
-                                               const SensorValues& sensorValues) const {
-    if (!renderIntoRGBA(si, sensorValues, si.rgbaBuffer.get())) {
+                                               const RenderParams& renderParams) const {
+    if (!renderIntoRGBA(si, renderParams, si.rgbaBuffer.get())) {
         return {};
     }
 
@@ -555,7 +575,7 @@ FakeRotatingCamera::captureFrameForCompressing(const StreamInfo& si,
 }
 
 bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
-                                   const SensorValues& sensorValues,
+                                   const RenderParams& renderParams,
                                    const bool isHardwareBuffer) const {
     float pvMatrix44[16];
     {
@@ -563,19 +583,19 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
         float viewMatrix44[16];
 
         {
-            const auto [angle, near, far] = getFrustrumParams();
-            const double right = near * sin(.5 * angle);
+            const auto& frustum = renderParams.cameraParams.frustum;
+            const double right = frustum.near * sin(.5 * frustum.angle);
             const double top = right / imageSize.width * imageSize.height;
             static const float scale3normal[] = {1, 1, 1};
             // Y is flipped if we render into AHardwareBuffer
             static const float scale3ahwb[] = {1, -1, 1};
-            abc3d::frustrum(projectionMatrix44, -right, right, -top, top, near, far,
+            abc3d::frustum(projectionMatrix44, -right, right, -top, top,
+                            frustum.near, frustum.far,
                             (isHardwareBuffer ? scale3ahwb : scale3normal));
         }
         {
-            float eye3[3];
-            std::tie(eye3[0], eye3[1], eye3[2]) = getEyeCoordinates();
-            abc3d::lookAtXyzRot(viewMatrix44, eye3, sensorValues.rotation);
+            const auto& cam = renderParams.cameraParams;
+            abc3d::lookAtXyzRot(viewMatrix44, cam.pos3, cam.rotXYZ3);
         }
 
         abc3d::mulM44(pvMatrix44, projectionMatrix44, viewMatrix44);
@@ -627,7 +647,7 @@ bool FakeRotatingCamera::drawSceneImpl(const float pvMatrix44[]) const {
 }
 
 bool FakeRotatingCamera::renderIntoRGBA(const StreamInfo& si,
-                                        const SensorValues& sensorValues,
+                                        const RenderParams& renderParams,
                                         const native_handle_t* rgbaBuffer) const {
     const cb_handle_t* const cb = cb_handle_t::from(rgbaBuffer);
     if (!cb) {
@@ -658,7 +678,7 @@ bool FakeRotatingCamera::renderIntoRGBA(const StreamInfo& si,
                            GL_TEXTURE_2D, fboTex.get(), 0);
 
     // drawing into EGLClientBuffer is Y-flipped on Android
-    return drawScene(si.size, sensorValues, true);
+    return drawScene(si.size, renderParams, true);
 }
 
 bool FakeRotatingCamera::readSensors(SensorValues* vals) {
