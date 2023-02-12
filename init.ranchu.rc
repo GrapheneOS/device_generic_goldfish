@@ -21,6 +21,7 @@ on early-init
     setprop debug.hwui.renderer ${ro.boot.debug.hwui.renderer:-opengl}
     setprop debug.stagefright.ccodec ${ro.boot.debug.stagefright.ccodec}
     setprop debug.sf.nobootanimation ${ro.boot.debug.sf.nobootanimation}
+    setprop vendor.qemu.dev.bootcomplete 0
 
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
@@ -96,7 +97,7 @@ on property:vendor.qemu.vport.gnss=*
 on property:vendor.qemu.timezone=*
     setprop persist.sys.timezone ${vendor.qemu.timezone}
 
-on property:dev.bootcomplete=1
+on property:dev.bootcomplete=1 && property:vendor.qemu.dev.bootcomplete=0
     setprop vendor.qemu.dev.bootcomplete 1
     start qemu-props-bootcomplete
     start ranchu-setup

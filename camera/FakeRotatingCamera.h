@@ -79,30 +79,44 @@ private:
         float rotation[3];
     };
 
+    struct RenderParams {
+        struct CameraParams {
+            struct Frustum {
+                float angle;
+                float near;
+                float far;
+            };
+            Frustum frustum;
+            float pos3[3];
+            float rotXYZ3[3];
+        };
+        CameraParams cameraParams;
+    };
+
     abc3d::EglCurrentContext initOpenGL();
     void closeImpl(bool everything);
 
     void captureFrame(const StreamInfo& si,
-                      const SensorValues& sensorValues,
+                      const RenderParams& renderParams,
                       CachedStreamBuffer* csb,
                       std::vector<StreamBuffer>* outputBuffers,
                       std::vector<DelayedStreamBuffer>* delayedOutputBuffers) const;
     bool captureFrameRGBA(const StreamInfo& si,
-                          const SensorValues& sensorValues,
+                          const RenderParams& renderParams,
                           CachedStreamBuffer* dst) const;
     bool captureFrameYUV(const StreamInfo& si,
-                         const SensorValues& sensorValues,
+                         const RenderParams& renderParams,
                          CachedStreamBuffer* dst) const;
     DelayedStreamBuffer captureFrameJpeg(const StreamInfo& si,
-                                         const SensorValues& sensorValues,
+                                         const RenderParams& renderParams,
                                          CachedStreamBuffer* csb) const;
     std::vector<uint8_t> captureFrameForCompressing(const StreamInfo& si,
-                                                    const SensorValues& sensorValues) const;
+                                                    const RenderParams& renderParams) const;
     bool renderIntoRGBA(const StreamInfo& si,
-                        const SensorValues& sensorValues,
+                        const RenderParams& renderParams,
                         const native_handle_t* rgbaBuffer) const;
     bool drawScene(Rect<uint16_t> imageSize,
-                   const SensorValues& sensorValues,
+                   const RenderParams& renderParams,
                    bool isHardwareBuffer) const;
     bool drawSceneImpl(const float pvMatrix44[]) const;
     CameraMetadata applyMetadata(const CameraMetadata& metadata);
