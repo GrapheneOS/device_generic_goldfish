@@ -62,10 +62,9 @@ PRODUCT_PACKAGES += \
     qemu-export-property \
     qemu-props \
     stagefright \
-    android.hardware.graphics.composer@2.4-service \
     android.hardware.graphics.allocator@3.0-service \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
-    hwcomposer.ranchu \
+    android.hardware.graphics.composer3-service.ranchu \
     toybox_vendor \
     android.hardware.wifi@1.0-service \
     android.hardware.media.c2@1.0-service-goldfish \
