@@ -329,14 +329,16 @@ const native_handle_t* QemuCamera::captureFrameForCompressing(
         const Rect<uint16_t> dim,
         const PixelFormat bufferFormat,
         const uint32_t qemuFormat) const {
+    constexpr BufferUsage kUsage = usageOr(BufferUsage::CAMERA_OUTPUT,
+                                           BufferUsage::CPU_READ_OFTEN);
+
     GraphicBufferAllocator& gba = GraphicBufferAllocator::get();
     const native_handle_t* image = nullptr;
     uint32_t stride;
 
-    gba.allocate(dim.width, dim.height, static_cast<int>(bufferFormat), 1,
-                 static_cast<uint64_t>(BufferUsage::CAMERA_OUTPUT),
-                 &image, &stride, "QemuCamera");
-    if (!image) {
+    if (gba.allocate(dim.width, dim.height, static_cast<int>(bufferFormat), 1,
+                     static_cast<uint64_t>(kUsage), &image, &stride,
+                     "QemuCamera") != NO_ERROR) {
         return FAILURE(nullptr);
     }
 
