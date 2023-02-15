@@ -39,7 +39,7 @@ bool findToken(const std::string_view str, const std::string_view key, std::stri
     while (true) {
         pos = str.find(key, pos);
         if (pos == std::string_view::npos) {
-            return FAILURE(false);
+            return false;
         } else if ((!pos || str[pos - 1] == ' ') &&
                 (str.size() >= (pos + key.size() + 1)) &&
                 (str[pos + key.size()] == '=')) {
@@ -135,7 +135,7 @@ bool listQemuCameras(const std::function<void(HwCameraFactory)>& cameraSink) {
     static const char kListQuery[] = "list";
 
     const auto fd = qemuOpenChannel();
-    if (!fd.ok()) { return FAILURE(false); }
+    if (!fd.ok()) { return false; }
 
     std::vector<uint8_t> data;
     if (qemuRunQuery(fd.get(), kListQuery, sizeof(kListQuery), &data) < 0) {
@@ -159,7 +159,7 @@ bool listQemuCameras(const std::function<void(HwCameraFactory)>& cameraSink) {
         const std::string_view line(i, lf - i);
 
         std::string_view name;
-        if (!findToken(line, "name"sv, &name)) { return FAILURE(false); }
+        if (!findToken(line, "name"sv, &name)) { return false; }
 
         std::string_view dir;
         if (!findToken(line, "dir"sv, &dir)) { return FAILURE(false); }
