@@ -64,8 +64,8 @@ constexpr int64_t kMaxFrameDurationNs = kOneSecondNs / kMinFPS;
 constexpr int64_t kDefaultFrameDurationNs = kMinFrameDurationNs;
 
 constexpr int64_t kDefaultSensorExposureTimeNs = kOneSecondNs / 100;
-constexpr int64_t kMinSensorExposureTimeNs = kDefaultSensorExposureTimeNs;
-constexpr int64_t kMaxSensorExposureTimeNs = kDefaultSensorExposureTimeNs;
+constexpr int64_t kMinSensorExposureTimeNs = kDefaultSensorExposureTimeNs / 100;
+constexpr int64_t kMaxSensorExposureTimeNs = kDefaultSensorExposureTimeNs * 10;
 
 constexpr int32_t kDefaultJpegQuality = 85;
 
