@@ -54,6 +54,7 @@ namespace hw {
 using base::unique_fd;
 
 namespace {
+constexpr char kClass[] = "FakeRotatingCamera";
 
 constexpr int kMaxFPS = 30;
 constexpr int kMinFPS = 2;
@@ -225,7 +226,8 @@ bool FakeRotatingCamera::configure(const CameraMetadata& sessionParams,
         static const char kPipeName[] = "FakeRotatingCameraSensor";
         mQemuChannel.reset(qemu_pipe_open_ns(NULL, kPipeName, O_RDWR));
         if (!mQemuChannel.ok()) {
-            ALOGE("%s:%d qemu_pipe_open_ns failed for '%s'", __func__, __LINE__, kPipeName);
+            ALOGE("%s:%s:%d qemu_pipe_open_ns failed for '%s'",
+                  kClass, __func__, __LINE__, kPipeName);
             return FAILURE(false);
         }
     }
@@ -256,16 +258,13 @@ bool FakeRotatingCamera::configure(const CameraMetadata& sessionParams,
                     static_cast<uint64_t>(usageOr(BufferUsage::GPU_RENDER_TARGET,
                                                   usageOr(BufferUsage::CPU_READ_OFTEN,
                                                           BufferUsage::CAMERA_OUTPUT))),
-                    &buffer, &stride, "FakeRotatingCamera") == NO_ERROR) {
+                    &buffer, &stride, kClass) == NO_ERROR) {
                 si.rgbaBuffer.reset(buffer);
             } else {
                 mStreamInfoCache.clear();
                 return FAILURE(false);
             }
         }
-
-        ALOGE("%s:%d id=%d usage=%" PRIx64 " buffer=%p", __func__, __LINE__,
-              id, si.usage, si.rgbaBuffer.get());
     }
 
     return true;
@@ -415,8 +414,8 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
         if (!si) {
             const auto sii = mStreamInfoCache.find(csb->getStreamId());
             if (sii == mStreamInfoCache.end()) {
-                ALOGE("%s:%d could not find stream=%d in the cache",
-                      __func__, __LINE__, csb->getStreamId());
+                ALOGE("%s:%s:%d could not find stream=%d in the cache",
+                      kClass, __func__, __LINE__, csb->getStreamId());
             } else {
                 si = &sii->second;
                 csb->setStreamInfo(si);
@@ -465,8 +464,8 @@ void FakeRotatingCamera::captureFrame(const StreamInfo& si,
         break;
 
     default:
-        ALOGE("%s:%s:%d: unexpected pixelFormat=%" PRIx32, "FakeRotatingCamera",
-              __func__, __LINE__, static_cast<uint32_t>(si.pixelFormat));
+        ALOGE("%s:%s:%d: unexpected pixelFormat=%" PRIx32,
+              kClass, __func__, __LINE__, static_cast<uint32_t>(si.pixelFormat));
         outputBuffers->push_back(csb->finish(false));
         break;
     }
@@ -766,8 +765,8 @@ CameraMetadata FakeRotatingCamera::applyMetadata(const CameraMetadata& metadata)
             CameraMetadata result = mCaptureResultMetadata;
 
             if (update_camera_metadata_entry(raw, entry.index, &newTriggerValue, 1, nullptr)) {
-                ALOGW("%s:%d: update_camera_metadata_entry(ANDROID_CONTROL_AF_TRIGGER) "
-                      "failed", __func__, __LINE__);
+                ALOGW("%s:%s:%d: update_camera_metadata_entry(ANDROID_CONTROL_AF_TRIGGER) "
+                      "failed", kClass, __func__, __LINE__);
             }
 
             return result;
@@ -784,19 +783,19 @@ CameraMetadata FakeRotatingCamera::updateCaptureResultMetadata() {
     camera_metadata_ro_entry_t entry;
 
     if (find_camera_metadata_ro_entry(raw, ANDROID_CONTROL_AF_STATE, &entry)) {
-        ALOGW("%s:%d: find_camera_metadata_ro_entry(ANDROID_CONTROL_AF_STATE) failed",
-              __func__, __LINE__);
+        ALOGW("%s:%s:%d: find_camera_metadata_ro_entry(ANDROID_CONTROL_AF_STATE) failed",
+              kClass, __func__, __LINE__);
     } else if (update_camera_metadata_entry(raw, entry.index, &af.first, 1, nullptr)) {
-        ALOGW("%s:%d: update_camera_metadata_entry(ANDROID_CONTROL_AF_STATE) failed",
-              __func__, __LINE__);
+        ALOGW("%s:%s:%d: update_camera_metadata_entry(ANDROID_CONTROL_AF_STATE) failed",
+              kClass, __func__, __LINE__);
     }
 
     if (find_camera_metadata_ro_entry(raw, ANDROID_LENS_FOCUS_DISTANCE, &entry)) {
-        ALOGW("%s:%d: find_camera_metadata_ro_entry(ANDROID_LENS_FOCUS_DISTANCE) failed",
-              __func__, __LINE__);
+        ALOGW("%s:%s:%d: find_camera_metadata_ro_entry(ANDROID_LENS_FOCUS_DISTANCE) failed",
+              kClass, __func__, __LINE__);
     } else if (update_camera_metadata_entry(raw, entry.index, &af.second, 1, nullptr)) {
-        ALOGW("%s:%d: update_camera_metadata_entry(ANDROID_LENS_FOCUS_DISTANCE) failed",
-              __func__, __LINE__);
+        ALOGW("%s:%s:%d: update_camera_metadata_entry(ANDROID_LENS_FOCUS_DISTANCE) failed",
+              kClass, __func__, __LINE__);
     }
 
     return metadataCompact(mCaptureResultMetadata);
