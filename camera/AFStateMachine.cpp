@@ -25,6 +25,8 @@ namespace provider {
 namespace implementation {
 namespace hw {
 
+constexpr char kClass[] = "AFStateMachine";
+
 using namespace std::chrono_literals;
 
 AFStateMachine::AFStateMachine(int afDurationMs, float focused, float unfocused)
@@ -38,7 +40,7 @@ AFStateMachine::operator()(const camera_metadata_enum_android_control_af_mode_t 
                            const camera_metadata_enum_android_control_af_trigger_t trigger) {
     switch (mode) {
     default:
-        ALOGW("AFStateMachine:%s:%d unexpected mode=%d", __func__, __LINE__, mode);
+        ALOGW("%s:%s:%d unexpected mode=%d", kClass, __func__, __LINE__, mode);
         [[fallthrough]];
 
     case ANDROID_CONTROL_AF_MODE_OFF:
@@ -48,7 +50,7 @@ AFStateMachine::operator()(const camera_metadata_enum_android_control_af_mode_t 
     case ANDROID_CONTROL_AF_MODE_AUTO:
         switch (trigger) {
         default:
-            ALOGW("AFStateMachine:%s:%d unexpected trigger=%d", __func__, __LINE__, trigger);
+            ALOGW("%s:%s:%d unexpected trigger=%d", kClass, __func__, __LINE__, trigger);
             [[fallthrough]];
 
         case ANDROID_CONTROL_AF_TRIGGER_IDLE:
@@ -75,7 +77,7 @@ std::pair<camera_metadata_enum_android_control_af_state_t, float>
 AFStateMachine::doAF() {
     switch (state) {
     default:
-        ALOGW("AFStateMachine:%s:%d unexpected state=%d", __func__, __LINE__, state);
+        ALOGW("%s:%s:%d unexpected state=%d", kClass, __func__, __LINE__, state);
         [[fallthrough]];
 
     case ANDROID_CONTROL_AF_STATE_INACTIVE:
