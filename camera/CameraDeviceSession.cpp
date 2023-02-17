@@ -50,6 +50,8 @@ using aidl::android::hardware::camera::device::StreamType;
 using aidl::android::hardware::graphics::common::Dataspace;
 
 namespace {
+constexpr char kClass[] = "CameraDeviceSession";
+
 constexpr int64_t kOneSecondNs = 1000000000;
 constexpr size_t kMsgQueueSize = 256 * 1024;
 
@@ -166,10 +168,10 @@ ScopedAStatus CameraDeviceSession::close() {
 ScopedAStatus CameraDeviceSession::configureStreams(
         const StreamConfiguration& cfg,
         std::vector<HalStream>* halStreamsOut) {
-    ALOGD("CameraDeviceSession:%s:%d this=%p cfg={ "
+    ALOGD("%s:%s:%d cfg={ "
           ".streams.size=%zu, .operationMode=%u, .cfg.sessionParams.size()=%zu, "
           " .streamConfigCounter=%d, .multiResolutionInputImage=%s }",
-          __func__, __LINE__, this,
+          kClass, __func__, __LINE__,
           cfg.streams.size(), static_cast<uint32_t>(cfg.operationMode),
           cfg.sessionParams.metadata.size(), cfg.streamConfigCounter,
           (cfg.multiResolutionInputImage ? "true" : "false"));
@@ -189,10 +191,10 @@ ScopedAStatus CameraDeviceSession::configureStreams(
 
         char pixelFormatStrBuf[16];
 
-        ALOGD("CameraDeviceSession:%s:%d this=%p stream={ .id=%d, "
+        ALOGD("%s:%s:%d stream={ .id=%d, "
               ".streamType=%u, .width=%d, .height=%d, .format=%s, .usage=0x%" PRIx64 ", "
               ".dataSpace={ .low=0x%x, .s=%u, .t=%u, .r=%u }, .rotation=%u, .physicalCameraId='%s', .bufferSize=%d, "
-              ".groupId=%d, .dynamicRangeProfile=0x%x }", __func__, __LINE__, this,
+              ".groupId=%d, .dynamicRangeProfile=0x%x }", kClass, __func__, __LINE__,
               s.id, static_cast<unsigned>(s.streamType), s.width, s.height,
               pixelFormatToStr(s.format, pixelFormatStrBuf, sizeof(pixelFormatStrBuf)),
               static_cast<uint64_t>(s.usage),
@@ -336,17 +338,17 @@ int CameraDeviceSession::waitFlushingDone(const std::chrono::steady_clock::time_
         const int waitedForMs = (std::chrono::steady_clock::now() - start) / 1ms;
 
         if (waitedForMs > kRecommendedDeadlineMs) {
-            ALOGW("CameraDeviceSession:%s:%d: flushing took %dms, Android "
+            ALOGW("%s:%s:%d: flushing took %dms, Android "
                   "recommends %dms latency and requires no more than %dms",
-                  __func__, __LINE__, waitedForMs, kRecommendedDeadlineMs,
+                  kClass, __func__, __LINE__, waitedForMs, kRecommendedDeadlineMs,
                   kFatalDeadlineMs);
         }
 
         return waitedForMs;
     } else {
-        LOG_ALWAYS_FATAL("CameraDeviceSession:%s:%d: %zu buffers are still in "
+        LOG_ALWAYS_FATAL("%s:%s:%d: %zu buffers are still in "
                          "flight after %dms of waiting, some buffers might have "
-                         "leaked", __func__, __LINE__, mNumBuffersInFlight,
+                         "leaked", kClass, __func__, __LINE__, mNumBuffersInFlight,
                          kFatalDeadlineMs);
     }
 }
@@ -395,30 +397,30 @@ CameraDeviceSession::configureStreamsStatic(const StreamConfiguration& cfg,
         if (hs.maxBuffers <= 0) {
             switch (hs.maxBuffers) {
             case hw::HwCamera::kErrorBadFormat:
-                ALOGW("%s:%d unexpected format=0x%" PRIx32,
-                      __func__, __LINE__, static_cast<uint32_t>(s.format));
+                ALOGE("%s:%s:%d unexpected format=0x%" PRIx32,
+                      kClass, __func__, __LINE__, static_cast<uint32_t>(s.format));
                 return {Status::ILLEGAL_ARGUMENT, {}};
 
             case hw::HwCamera::kErrorBadUsage:
-                ALOGW("%s:%d unexpected usage=0x%" PRIx64
+                ALOGE("%s:%s:%d unexpected usage=0x%" PRIx64
                       " for format=0x%" PRIx32 " and dataSpace=0x%" PRIx32,
-                      __func__, __LINE__, static_cast<uint64_t>(s.usage),
+                      kClass, __func__, __LINE__, static_cast<uint64_t>(s.usage),
                       static_cast<uint32_t>(s.format),
                       static_cast<uint32_t>(s.dataSpace));
                 return {Status::ILLEGAL_ARGUMENT, {}};
 
             case hw::HwCamera::kErrorBadDataspace:
-                ALOGW("%s:%d unexpected dataSpace=0x%" PRIx32
+                ALOGE("%s:%s:%d unexpected dataSpace=0x%" PRIx32
                       " for format=0x%" PRIx32 " and usage=0x%" PRIx64,
-                      __func__, __LINE__, static_cast<uint32_t>(s.dataSpace),
+                      kClass, __func__, __LINE__, static_cast<uint32_t>(s.dataSpace),
                       static_cast<uint32_t>(s.format),
                       static_cast<uint64_t>(s.usage));
                 return {Status::ILLEGAL_ARGUMENT, {}};
 
             default:
-                ALOGE("%s:%d something is not right for format=0x%" PRIx32
+                ALOGE("%s:%s:%d something is not right for format=0x%" PRIx32
                       " usage=0x%" PRIx64 " and dataSpace=0x%" PRIx32,
-                      __func__, __LINE__, static_cast<uint32_t>(s.format),
+                      kClass, __func__, __LINE__, static_cast<uint32_t>(s.format),
                       static_cast<uint64_t>(s.usage),
                       static_cast<uint32_t>(s.dataSpace));
                 return {Status::ILLEGAL_ARGUMENT, {}};
