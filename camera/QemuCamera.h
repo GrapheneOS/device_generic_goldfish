@@ -62,7 +62,6 @@ struct QemuCamera : public HwCamera {
     Span<const PixelFormat> getSupportedPixelFormats() const override;
     Span<const Rect<uint16_t>> getSupportedResolutions() const override;
     int64_t getMinFrameDurationNs() const override;
-    int32_t getSensorOrientation() const override;
     Rect<uint16_t> getSensorSize() const override;
     std::pair<int32_t, int32_t> getSensorSensitivityRange() const override;
     std::pair<int64_t, int64_t> getSensorExposureTimeRange() const override;

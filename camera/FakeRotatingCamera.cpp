@@ -581,17 +581,28 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
         float projectionMatrix44[16];
         float viewMatrix44[16];
 
+        // This matrix takes into account specific behaviors below:
+        // * The Y axis if rendering int0 AHardwareBuffer goes down while it
+        //   goes up everywhere else (e.g. when rendering to `EGLSurface`).
+        // * We set `sensorOrientation=90` because a lot of places in Android and
+        //   3Ps assume this and don't work properly with `sensorOrientation=0`.
+        const float workaroundMatrix44[16] = {
+            0, (isHardwareBuffer ? -1.0f : 1.0f), 0, 0,
+           -1,                                 0, 0, 0,
+            0,                                 0, 1, 0,
+            0,                                 0, 0, 1,
+        };
+
         {
             const auto& frustum = renderParams.cameraParams.frustum;
             const double right = frustum.near * sin(.5 * frustum.angle);
             const double top = right / imageSize.width * imageSize.height;
-            static const float scale3normal[] = {1, 1, 1};
-            // Y is flipped if we render into AHardwareBuffer
-            static const float scale3ahwb[] = {1, -1, 1};
-            abc3d::frustum(projectionMatrix44, -right, right, -top, top,
-                            frustum.near, frustum.far,
-                            (isHardwareBuffer ? scale3ahwb : scale3normal));
+            abc3d::frustum(pvMatrix44, -right, right, -top, top,
+                           frustum.near, frustum.far);
         }
+
+        abc3d::mulM44(projectionMatrix44, pvMatrix44, workaroundMatrix44);
+
         {
             const auto& cam = renderParams.cameraParams;
             abc3d::lookAtXyzRot(viewMatrix44, cam.pos3, cam.rotXYZ3);
@@ -610,7 +621,7 @@ bool FakeRotatingCamera::drawSceneImpl(const float pvMatrix44[]) const {
     constexpr float kX = 0;
     constexpr float kY = 0;
     constexpr float kZ = -5;
-    constexpr float kS = 1.5;
+    constexpr float kS = 1;
 
     const GLfloat vVertices[] = {
        -kS + kX,  kS + kY, kZ,  // Position 0
@@ -850,7 +861,7 @@ int64_t FakeRotatingCamera::getMinFrameDurationNs() const {
 }
 
 Rect<uint16_t> FakeRotatingCamera::getSensorSize() const {
-    return {3 * 16 * 26, 4 * 16 * 26};
+    return {1920, 1080};
 }
 
 std::pair<int64_t, int64_t> FakeRotatingCamera::getSensorExposureTimeRange() const {
@@ -863,9 +874,13 @@ int64_t FakeRotatingCamera::getSensorMaxFrameDuration() const {
 
 Span<const Rect<uint16_t>> FakeRotatingCamera::getSupportedResolutions() const {
     static const Rect<uint16_t> supportedResolutions[] = {
-        {3 * 16 * 26, 4 * 16 * 26},  // 3:4, 2.07MP
-        {3 * 16 * 19, 4 * 16 * 19},  // 3:4, 1.11MP
-        {3 * 16 * 13, 4 * 16 * 13},  // 3:4, 0.52MP
+        {176, 144},
+        {320, 240},
+        {640, 480},
+        {1024, 576},
+        {1280, 720},
+        {1600, 900},
+        {1920, 1080},
     };
 
     return supportedResolutions;
