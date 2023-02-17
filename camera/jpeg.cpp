@@ -39,17 +39,16 @@ namespace provider {
 namespace implementation {
 namespace jpeg {
 namespace {
+constexpr int kJpegMCUSize = 16;  // we have to feed `jpeg_write_raw_data` in multiples of this
 
-bool compressYUVImplPixels(const android_ycbcr& image, jpeg_compress_struct* cinfo) {
-    constexpr int kJpegMCUSize = 16;  // we have to feed `jpeg_write_raw_data` in multiples of this
-
-    if (image.chroma_step != 1) {
-        return FAILURE(false);
-    }
-
-    const uint8_t* y[16];
-    const uint8_t* cb[8];
-    const uint8_t* cr[8];
+// compressYUVImplPixelsFast handles the case where the image width is a multiple
+// of kJpegMCUSize. In this case no additional memcpy is required. See
+// compressYUVImplPixelsSlow below for the cases where the image width is not
+// a multiple of kJpegMCUSize.
+bool compressYUVImplPixelsFast(const android_ycbcr& image, jpeg_compress_struct* cinfo) {
+    const uint8_t* y[kJpegMCUSize];
+    const uint8_t* cb[kJpegMCUSize / 2];
+    const uint8_t* cr[kJpegMCUSize / 2];
     const uint8_t** planes[] = { y, cb, cr };
     const int height = cinfo->image_height;
     const int height1 = height - 1;
@@ -69,6 +68,67 @@ bool compressYUVImplPixels(const android_ycbcr& image, jpeg_compress_struct* cin
                 const int offset = (nscli / 2) * cstride;
                 cb[i / 2] = static_cast<const uint8_t*>(image.cb) + offset;
                 cr[i / 2] = static_cast<const uint8_t*>(image.cr) + offset;
+            }
+        }
+
+        if (!jpeg_write_raw_data(cinfo, const_cast<JSAMPIMAGE>(planes), kJpegMCUSize)) {
+            return FAILURE(false);
+        }
+    }
+
+    return true;
+}
+
+// Since JPEG processes everything in blocks of kJpegMCUSize, we have to make
+// both width and height a multiple of kJpegMCUSize. The height is handled by
+// repeating the last line. compressYUVImplPixelsSlow handles the case when the
+// image width is not a multiple of kJpegMCUSize by allocating a memory block
+// large enough to hold kJpegMCUSize rows of the image with width aligned up to
+// the next multiple of kJpegMCUSize. The original image has to be copied
+// chunk-by-chunk into this memory block.
+bool compressYUVImplPixelsSlow(const android_ycbcr& image, jpeg_compress_struct* cinfo,
+                               const size_t alignedWidth, uint8_t* const alignedMemory) {
+    uint8_t* y[kJpegMCUSize];
+    uint8_t* cb[kJpegMCUSize / 2];
+    uint8_t* cr[kJpegMCUSize / 2];
+    uint8_t** planes[] = { y, cb, cr };
+
+    {
+        uint8_t* y0 = alignedMemory;
+        for (int i = 0; i < kJpegMCUSize; ++i, y0 += alignedWidth) {
+            y[i] = y0;
+        }
+
+        const size_t alignedWidth2 = alignedWidth / 2;
+        uint8_t* cb0 = y0;
+        uint8_t* cr0 = &cb0[kJpegMCUSize / 2 * alignedWidth2];
+
+        for (int i = 0; i < kJpegMCUSize / 2; ++i, cb0 += alignedWidth2, cr0 += alignedWidth2) {
+            cb[i] = cb0;
+            cr[i] = cr0;
+        }
+    }
+
+    const int width = cinfo->image_width;
+    const int width2 = width / 2;
+    const int height = cinfo->image_height;
+    const int height1 = height - 1;
+    const int ystride = image.ystride;
+    const int cstride = image.cstride;
+
+    while (true) {
+        const int nscl = cinfo->next_scanline;
+        if (nscl >= height) {
+            break;
+        }
+
+        for (int i = 0; i < kJpegMCUSize; ++i) {
+            const int nscli = std::min(nscl + i, height1);
+            memcpy(y[i], static_cast<const uint8_t*>(image.y) + nscli * ystride, width);
+            if ((i & 1) == 0) {
+                const int offset = (nscli / 2) * cstride;
+                memcpy(cb[i / 2], static_cast<const uint8_t*>(image.cb) + offset, width2);
+                memcpy(cr[i / 2], static_cast<const uint8_t*>(image.cr) + offset, width2);
             }
         }
 
@@ -108,6 +168,11 @@ bool compressYUVImpl(const android_ycbcr& image, const Rect<uint16_t> imageSize,
                      unsigned char* const rawExif, const unsigned rawExifSize,
                      const int quality,
                      jpeg_destination_mgr* sink) {
+    if (image.chroma_step != 1) {
+        return FAILURE(false);
+    }
+
+    std::vector<uint8_t> alignedMemory;
     jpeg_compress_struct cinfo;
     JpegErrorMgr err;
     bool result;
@@ -142,7 +207,14 @@ bool compressYUVImpl(const android_ycbcr& image, const Rect<uint16_t> imageSize,
         jpeg_write_marker(&cinfo, JPEG_APP0 + 1, rawExif, rawExifSize);
     }
 
-    result = compressYUVImplPixels(image, &cinfo);
+    if (imageSize.width % kJpegMCUSize) {
+        const size_t alignedWidth =
+            ((imageSize.width + kJpegMCUSize) / kJpegMCUSize) * kJpegMCUSize;
+        alignedMemory.resize(alignedWidth * kJpegMCUSize * 3 / 2);
+        result = compressYUVImplPixelsSlow(image, &cinfo, alignedWidth, alignedMemory.data());
+    } else {
+        result = compressYUVImplPixelsFast(image, &cinfo);
+    }
 
     jpeg_finish_compress(&cinfo);
     jpeg_destroy_compress(&cinfo);
