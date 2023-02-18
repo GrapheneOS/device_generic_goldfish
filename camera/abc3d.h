@@ -148,8 +148,7 @@ private:
 };
 
 void frustum(float m44[], double left, double right,
-             double bottom, double top, double nearVal, double farVal,
-             const float scale3[]);
+             double bottom, double top, double nearVal, double farVal);
 void lookAtXyzRot(float m44[], const float eye3[], const float rot3[]);
 void mulM44(float m44[], const float lhs44[], const float rhs44[]);
 

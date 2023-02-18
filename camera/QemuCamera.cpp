@@ -554,10 +554,6 @@ int64_t QemuCamera::getMinFrameDurationNs() const {
     return kMinFrameDurationNs;
 }
 
-int32_t QemuCamera::getSensorOrientation() const {
-    return 90;
-}
-
 Rect<uint16_t> QemuCamera::getSensorSize() const {
     return mParams.sensorSize;
 }
