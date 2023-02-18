@@ -82,6 +82,10 @@ constexpr uint16_t toR5G6B5(float r, float g, float b) {
     return uint16_t(b * 31) | (uint16_t(g * 63) << 5) | (uint16_t(r * 31) << 11);
 }
 
+constexpr uint32_t toR8G8B8A8(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return uint32_t(r) | (uint32_t(g) << 8) | (uint32_t(b) << 16) | (uint32_t(a) << 24);
+}
+
 constexpr double degrees2rad(const double degrees) {
     return degrees * M_PI / 180.0;
 }
@@ -124,7 +128,68 @@ std::tuple<float, float, float> getEyeCoordinates() {
     }
 }
 
-abc3d::AutoTexture loadTestPatternTexture() {
+// This texture is useful to debug camera orientation and image aspect ratio
+abc3d::AutoTexture loadTestPatternTextureA() {
+    constexpr uint16_t B = toR5G6B5(.4, .4, .4);
+    constexpr uint16_t R = toR5G6B5( 1, .1, .1);
+
+    static const uint16_t texels[] = {
+        B, R, R, R, R, R, B, B,
+        R, B, B, B, B, B, R, B,
+        B, B, B, B, B, B, R, B,
+        B, R, R, R, R, R, B, B,
+        R, B, B, B, B, B, R, B,
+        R, B, B, B, B, B, R, B,
+        R, B, B, B, B, B, R, B,
+        B, R, R, R, R, R, B, R,
+    };
+
+    abc3d::AutoTexture tex(GL_TEXTURE_2D, GL_RGB, 8, 8,
+                           GL_RGB, GL_UNSIGNED_SHORT_5_6_5, texels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    return tex;
+}
+
+// This texture is useful to debug camera dataspace
+abc3d::AutoTexture loadTestPatternTextureColors() {
+    static const uint32_t texels[] = {
+        toR8G8B8A8(32, 0, 0, 255), toR8G8B8A8(64, 0, 0, 255), toR8G8B8A8(96, 0, 0, 255), toR8G8B8A8(128, 0, 0, 255),
+        toR8G8B8A8(160, 0, 0, 255), toR8G8B8A8(192, 0, 0, 255), toR8G8B8A8(224, 0, 0, 255), toR8G8B8A8(255, 0, 0, 255),
+
+        toR8G8B8A8(32, 32, 0, 255), toR8G8B8A8(64, 64, 0, 255), toR8G8B8A8(96, 96, 0, 255), toR8G8B8A8(128, 128, 0, 255),
+        toR8G8B8A8(160, 160, 0, 255), toR8G8B8A8(192, 192, 0, 255), toR8G8B8A8(224, 224, 0, 255), toR8G8B8A8(255, 255, 0, 255),
+
+        toR8G8B8A8(0, 32, 0, 255), toR8G8B8A8(0, 64, 0, 255), toR8G8B8A8(0, 96, 0, 255), toR8G8B8A8(0, 128, 0, 255),
+        toR8G8B8A8(0, 160, 0, 255), toR8G8B8A8(0, 192, 0, 255), toR8G8B8A8(0, 224, 0, 255), toR8G8B8A8(0, 255, 0, 255),
+
+        toR8G8B8A8(0, 32, 32, 255), toR8G8B8A8(0, 64, 64, 255), toR8G8B8A8(0, 96, 96, 255), toR8G8B8A8(0, 128, 128, 255),
+        toR8G8B8A8(0, 160, 160, 255), toR8G8B8A8(0, 192, 192, 255), toR8G8B8A8(0, 224, 224, 255), toR8G8B8A8(0, 255, 255, 255),
+
+        toR8G8B8A8(0, 0, 32, 255), toR8G8B8A8(0, 0, 64, 255), toR8G8B8A8(0, 0, 96, 255), toR8G8B8A8(0, 0, 128, 255),
+        toR8G8B8A8(0, 0, 160, 255), toR8G8B8A8(0, 0, 192, 255), toR8G8B8A8(0, 0, 224, 255), toR8G8B8A8(0, 0, 255, 255),
+
+        toR8G8B8A8(32, 0, 32, 255), toR8G8B8A8(64, 0, 64, 255), toR8G8B8A8(96, 0, 96, 255), toR8G8B8A8(128, 0, 128, 255),
+        toR8G8B8A8(160, 0, 160, 255), toR8G8B8A8(192, 0, 192, 255), toR8G8B8A8(224, 0, 224, 255), toR8G8B8A8(255, 0, 255, 255),
+
+        toR8G8B8A8(32, 128, 0, 255), toR8G8B8A8(64, 128, 0, 255), toR8G8B8A8(96, 128, 0, 255), toR8G8B8A8(255, 255, 255, 255),
+        toR8G8B8A8(160, 128, 0, 255), toR8G8B8A8(192, 128, 0, 255), toR8G8B8A8(224, 128, 0, 255), toR8G8B8A8(255, 128, 0, 255),
+
+        toR8G8B8A8(0, 0, 0, 255), toR8G8B8A8(32, 32, 32, 255), toR8G8B8A8(64, 64, 64, 255), toR8G8B8A8(96, 96, 96, 255),
+        toR8G8B8A8(128, 128, 128, 255), toR8G8B8A8(160, 160, 160, 255), toR8G8B8A8(192, 192, 192, 255), toR8G8B8A8(224, 224, 224, 255),
+    };
+
+    abc3d::AutoTexture tex(GL_TEXTURE_2D, GL_RGBA, 8, 8,
+                           GL_RGBA, GL_UNSIGNED_BYTE, texels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    return tex;
+}
+
+// This texture is used to pass CtsVerifier
+abc3d::AutoTexture loadTestPatternTextureAcircles() {
     constexpr uint16_t kBackground = toR5G6B5(.4, .4, .4);
 
     std::vector<uint16_t> texels(kAcirclesPatternWidth * kAcirclesPatternWidth,
@@ -147,6 +212,23 @@ abc3d::AutoTexture loadTestPatternTexture() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     return tex;
+}
+
+abc3d::AutoTexture loadTestPatternTexture() {
+    std::string valueStr =
+        base::GetProperty("vendor.qemu.FakeRotatingCamera.scene", "");
+    if (valueStr.empty()) {
+        valueStr =
+            base::GetProperty("ro.boot.qemu.FakeRotatingCamera.scene", "");
+    }
+
+    if (strcmp(valueStr.c_str(), "a") == 0) {
+        return loadTestPatternTextureA();
+    } else if (strcmp(valueStr.c_str(), "colors") == 0) {
+        return loadTestPatternTextureColors();
+    } else {
+        return loadTestPatternTextureAcircles();
+    }
 }
 
 bool compressNV21IntoJpeg(const Rect<uint16_t> imageSize,
@@ -581,17 +663,28 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
         float projectionMatrix44[16];
         float viewMatrix44[16];
 
+        // This matrix takes into account specific behaviors below:
+        // * The Y axis if rendering int0 AHardwareBuffer goes down while it
+        //   goes up everywhere else (e.g. when rendering to `EGLSurface`).
+        // * We set `sensorOrientation=90` because a lot of places in Android and
+        //   3Ps assume this and don't work properly with `sensorOrientation=0`.
+        const float workaroundMatrix44[16] = {
+            0, (isHardwareBuffer ? -1.0f : 1.0f), 0, 0,
+           -1,                                 0, 0, 0,
+            0,                                 0, 1, 0,
+            0,                                 0, 0, 1,
+        };
+
         {
             const auto& frustum = renderParams.cameraParams.frustum;
             const double right = frustum.near * sin(.5 * frustum.angle);
             const double top = right / imageSize.width * imageSize.height;
-            static const float scale3normal[] = {1, 1, 1};
-            // Y is flipped if we render into AHardwareBuffer
-            static const float scale3ahwb[] = {1, -1, 1};
-            abc3d::frustum(projectionMatrix44, -right, right, -top, top,
-                            frustum.near, frustum.far,
-                            (isHardwareBuffer ? scale3ahwb : scale3normal));
+            abc3d::frustum(pvMatrix44, -right, right, -top, top,
+                           frustum.near, frustum.far);
         }
+
+        abc3d::mulM44(projectionMatrix44, pvMatrix44, workaroundMatrix44);
+
         {
             const auto& cam = renderParams.cameraParams;
             abc3d::lookAtXyzRot(viewMatrix44, cam.pos3, cam.rotXYZ3);
@@ -610,7 +703,7 @@ bool FakeRotatingCamera::drawSceneImpl(const float pvMatrix44[]) const {
     constexpr float kX = 0;
     constexpr float kY = 0;
     constexpr float kZ = -5;
-    constexpr float kS = 1.5;
+    constexpr float kS = 1;
 
     const GLfloat vVertices[] = {
        -kS + kX,  kS + kY, kZ,  // Position 0
@@ -814,9 +907,10 @@ Span<const std::pair<int32_t, int32_t>> FakeRotatingCamera::getTargetFpsRanges()
 
 Span<const Rect<uint16_t>> FakeRotatingCamera::getAvailableThumbnailSizes() const {
     static const Rect<uint16_t> availableThumbnailSizes[] = {
-        {3 * 16 * 2, 4 * 16 * 2},
-        {3 * 16 * 1, 4 * 16 * 1},
         {0, 0},
+        {11 * 4, 9 * 4},
+        {16 * 4, 9 * 4},
+        {4 * 16, 3 * 16},
     };
 
     return availableThumbnailSizes;
@@ -850,7 +944,7 @@ int64_t FakeRotatingCamera::getMinFrameDurationNs() const {
 }
 
 Rect<uint16_t> FakeRotatingCamera::getSensorSize() const {
-    return {3 * 16 * 26, 4 * 16 * 26};
+    return {1920, 1080};
 }
 
 std::pair<int64_t, int64_t> FakeRotatingCamera::getSensorExposureTimeRange() const {
@@ -863,9 +957,13 @@ int64_t FakeRotatingCamera::getSensorMaxFrameDuration() const {
 
 Span<const Rect<uint16_t>> FakeRotatingCamera::getSupportedResolutions() const {
     static const Rect<uint16_t> supportedResolutions[] = {
-        {3 * 16 * 26, 4 * 16 * 26},  // 3:4, 2.07MP
-        {3 * 16 * 19, 4 * 16 * 19},  // 3:4, 1.11MP
-        {3 * 16 * 13, 4 * 16 * 13},  // 3:4, 0.52MP
+        {176, 144},
+        {320, 240},
+        {640, 480},
+        {1024, 576},
+        {1280, 720},
+        {1600, 900},
+        {1920, 1080},
     };
 
     return supportedResolutions;
