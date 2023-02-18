@@ -121,7 +121,7 @@ int64_t HwCamera::getStallFrameDurationNs() const {
 }
 
 int32_t HwCamera::getSensorOrientation() const {
-    return 0;
+    return 90;
 }
 
 float HwCamera::getSensorDPI() const {
