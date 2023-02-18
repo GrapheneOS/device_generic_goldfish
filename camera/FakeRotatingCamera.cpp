@@ -825,9 +825,10 @@ Span<const std::pair<int32_t, int32_t>> FakeRotatingCamera::getTargetFpsRanges()
 
 Span<const Rect<uint16_t>> FakeRotatingCamera::getAvailableThumbnailSizes() const {
     static const Rect<uint16_t> availableThumbnailSizes[] = {
-        {3 * 16 * 2, 4 * 16 * 2},
-        {3 * 16 * 1, 4 * 16 * 1},
         {0, 0},
+        {11 * 4, 9 * 4},
+        {16 * 4, 9 * 4},
+        {4 * 16, 3 * 16},
     };
 
     return availableThumbnailSizes;
