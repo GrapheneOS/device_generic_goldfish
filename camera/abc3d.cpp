@@ -425,11 +425,10 @@ GLint AutoProgram::getUniformLocation(const char* name) const {
 void frustum(float m44[],
              const double left, const double right,
              const double bottom, const double top,
-             const double near, const double far,
-             const float scale3[]) {
-    const double invWidth = scale3[0] / (right - left);
-    const double invHeight = scale3[1] / (top - bottom);
-    const double invDepth = scale3[2] / (far - near);
+             const double near, const double far) {
+    const double invWidth = 1.0 / (right - left);
+    const double invHeight = 1.0 / (top - bottom);
+    const double invDepth = 1.0 / (far - near);
     const double near2 = 2 * near;
 
     m44[0] = near2 * invWidth;
