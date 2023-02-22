@@ -51,6 +51,7 @@ constexpr int kMaxFPS = 30;
 constexpr int64_t kOneSecondNs = 1000000000;
 
 constexpr int64_t kMinFrameDurationNs = kOneSecondNs / kMaxFPS;
+constexpr int64_t kMaxFrameDurationNs = kOneSecondNs / kMinFPS;
 constexpr int64_t kDefaultFrameDurationNs = kOneSecondNs / kMedFPS;
 
 constexpr int64_t kMinSensorExposureTimeNs = kOneSecondNs / 20000;
@@ -390,11 +391,8 @@ CameraMetadata QemuCamera::applyMetadata(const CameraMetadata& metadata) {
         reinterpret_cast<const camera_metadata_t*>(metadata.metadata.data());
     camera_metadata_ro_entry_t entry;
 
-    if (find_camera_metadata_ro_entry(raw, ANDROID_SENSOR_FRAME_DURATION, &entry)) {
-        mFrameDurationNs = kDefaultFrameDurationNs;
-    } else {
-        mFrameDurationNs = entry.data.i64[0];
-    }
+    mFrameDurationNs = getFrameDuration(raw, kDefaultFrameDurationNs,
+                                        kMinFrameDurationNs, kMaxFrameDurationNs);
 
     if (find_camera_metadata_ro_entry(raw, ANDROID_SENSOR_EXPOSURE_TIME, &entry)) {
         mSensorExposureDurationNs = std::min(mFrameDurationNs, kDefaultSensorExposureTimeNs);

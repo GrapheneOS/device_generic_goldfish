@@ -31,10 +31,45 @@ namespace hw {
 using base::unique_fd;
 
 namespace {
+constexpr int64_t kOneSecondNs = 1000000000;
+
 constexpr float kDefaultAperture = 4.0;
 constexpr float kDefaultFocalLength = 1.0;
 constexpr int32_t kDefaultSensorSensitivity = 100;
 }  // namespace
+
+int64_t HwCamera::getFrameDuration(const camera_metadata_t* const metadata,
+                                   const int64_t def,
+                                   const int64_t min,
+                                   const int64_t max) {
+    camera_metadata_ro_entry_t entry;
+    camera_metadata_enum_android_control_ae_mode ae_mode;
+
+    if (find_camera_metadata_ro_entry(metadata, ANDROID_CONTROL_AE_MODE, &entry)) {
+        ae_mode = ANDROID_CONTROL_AE_MODE_OFF;
+    } else {
+        ae_mode = camera_metadata_enum_android_control_ae_mode(entry.data.i32[0]);
+    }
+
+    if (ae_mode == ANDROID_CONTROL_AE_MODE_OFF) {
+        if (find_camera_metadata_ro_entry(metadata, ANDROID_SENSOR_FRAME_DURATION, &entry)) {
+            return def;
+        } else {
+            return std::max(std::min(entry.data.i64[0], max), min);
+        }
+    } else {
+        if (find_camera_metadata_ro_entry(metadata, ANDROID_CONTROL_AE_TARGET_FPS_RANGE, &entry)) {
+            return def;
+        } else {
+            const int fps = (entry.data.i32[0] + entry.data.i32[1]) / 2;
+            if (fps > 0) {
+                return std::max(std::min(kOneSecondNs / fps, max), min);
+            }  else {
+                return def;
+            }
+        }
+    }
+}
 
 bool HwCamera::compressJpeg(const Rect<uint16_t> imageSize,
                             const android_ycbcr& imageYcbcr,
