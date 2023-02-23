@@ -33,6 +33,7 @@
 #include <aidl/android/hardware/graphics/common/PixelFormat.h>
 
 #include <cutils/native_handle.h>
+#include <system/camera_metadata.h>
 #include <system/graphics.h>
 
 #include "Rect.h"
@@ -82,6 +83,9 @@ struct HwCamera {
     virtual std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
+
+    static int64_t getFrameDuration(const camera_metadata_t*, int64_t def,
+                                    int64_t min, int64_t max);
 
     static bool compressJpeg(Rect<uint16_t> imageSize,
                              const android_ycbcr& imageYcbcr,
