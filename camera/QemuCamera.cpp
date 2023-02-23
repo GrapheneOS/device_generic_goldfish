@@ -45,12 +45,13 @@ using base::unique_fd;
 namespace {
 constexpr char kClass[] = "QemuCamera";
 
-constexpr int kMaxFPS = 30;
 constexpr int kMinFPS = 2;
+constexpr int kMedFPS = 15;
+constexpr int kMaxFPS = 30;
 constexpr int64_t kOneSecondNs = 1000000000;
 
 constexpr int64_t kMinFrameDurationNs = kOneSecondNs / kMaxFPS;
-constexpr int64_t kDefaultFrameDurationNs = kMinFrameDurationNs;
+constexpr int64_t kDefaultFrameDurationNs = kOneSecondNs / kMedFPS;
 
 constexpr int64_t kMinSensorExposureTimeNs = kOneSecondNs / 20000;
 constexpr int64_t kMaxSensorExposureTimeNs = kOneSecondNs / 2;
@@ -506,7 +507,10 @@ CameraMetadata QemuCamera::updateCaptureResultMetadata() {
 ////////////////////////////////////////////////////////////////////////////////
 
 Span<const std::pair<int32_t, int32_t>> QemuCamera::getTargetFpsRanges() const {
+    // ordered to satisfy testPreviewFpsRangeByCamera
     static const std::pair<int32_t, int32_t> targetFpsRanges[] = {
+        {kMinFPS, kMedFPS},
+        {kMedFPS, kMedFPS},
         {kMinFPS, kMaxFPS},
         {kMaxFPS, kMaxFPS},
     };
