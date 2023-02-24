@@ -800,14 +800,11 @@ bool FakeRotatingCamera::readSensors(SensorValues* vals) {
 CameraMetadata FakeRotatingCamera::applyMetadata(const CameraMetadata& metadata) {
     const camera_metadata_t* const raw =
         reinterpret_cast<const camera_metadata_t*>(metadata.metadata.data());
+
+    mFrameDurationNs = getFrameDuration(raw, kDefaultFrameDurationNs,
+                                        kMinFrameDurationNs, kMaxFrameDurationNs);
+
     camera_metadata_ro_entry_t entry;
-
-    if (find_camera_metadata_ro_entry(raw, ANDROID_SENSOR_FRAME_DURATION, &entry)) {
-        mFrameDurationNs = kDefaultFrameDurationNs;
-    } else {
-        mFrameDurationNs = entry.data.i64[0];
-    }
-
     const camera_metadata_enum_android_control_af_mode_t afMode =
         find_camera_metadata_ro_entry(raw, ANDROID_CONTROL_AF_MODE, &entry) ?
             ANDROID_CONTROL_AF_MODE_OFF :
