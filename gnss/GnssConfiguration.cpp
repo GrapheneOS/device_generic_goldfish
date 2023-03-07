@@ -14,54 +14,82 @@
  * limitations under the License.
  */
 
+#include <aidl/android/hardware/gnss/IGnss.h>
+#include <debug.h>
 #include "GnssConfiguration.h"
 
-namespace goldfish {
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
-Return<bool> GnssConfiguration20::setEsExtensionSec(uint32_t emergencyExtensionSeconds) {
-    (void)emergencyExtensionSeconds;
-    return false;
+ndk::ScopedAStatus GnssConfiguration::setSuplVersion(int /*version*/) {
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> GnssConfiguration20::setBlacklist(const hidl_vec<ahg11::IGnssConfiguration::BlacklistedSource>& blacklist) {
-    (void)blacklist;
-    return false;
+ndk::ScopedAStatus GnssConfiguration::setSuplMode(int /*mode*/) {
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> GnssConfiguration20::setSuplVersion(uint32_t version) {
-    (void)version;
-    return true;
+ndk::ScopedAStatus GnssConfiguration::setLppProfile(int /*lppProfile*/) {
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> GnssConfiguration20::setSuplMode(hidl_bitfield<SuplMode> mode) {
-    (void)mode;
-    return true;
+ndk::ScopedAStatus GnssConfiguration::setGlonassPositioningProtocol(int /*protocol*/) {
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> GnssConfiguration20::setGpsLock(hidl_bitfield<GpsLock> lock) {
-    (void)lock;
-    return false;
+ndk::ScopedAStatus GnssConfiguration::setEmergencySuplPdn(bool /*enable*/) {
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> GnssConfiguration20::setLppProfile(hidl_bitfield<LppProfile> lppProfile) {
-    (void)lppProfile;
-    return true;
+ndk::ScopedAStatus GnssConfiguration::setEsExtensionSec(int /*emergencyExtensionSeconds*/) {
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> GnssConfiguration20::setGlonassPositioningProtocol(hidl_bitfield<GlonassPosProtocol> protocol) {
-    (void)protocol;
-    return true;
+ndk::ScopedAStatus GnssConfiguration::setBlocklist(const std::vector<BlocklistedSource>& blocklist) {
+    BlocklistedSources blockset;
+
+    for (const BlocklistedSource& src : blocklist) {
+        if (!blockset.insert(src).second) {
+            return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_INVALID_ARGUMENT));
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(mMtx);
+    mBlocklistedSources = std::move(blockset);
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> GnssConfiguration20::setEmergencySuplPdn(bool enable) {
-    (void)enable;
-    return true;
+bool GnssConfiguration::isBlocklisted(const GnssConstellationType constellation,
+                                      const int svid) const {
+    std::lock_guard<std::mutex> lock(mMtx);
+
+    BlocklistedSource src;
+    src.constellation = constellation;
+    src.svid = svid;
+
+    if (mBlocklistedSources.count(src) != 0) {
+        return true;
+    }
+
+    src.svid = 0;
+    return mBlocklistedSources.count(src) != 0;
 }
 
-/// old and deprecated /////////////////////////////////////////////////////////
-Return<bool> GnssConfiguration20::setSuplEs(bool enable) {
-    (void)enable;
-    return false;
+size_t GnssConfiguration::BlocklistedSourceHasher::operator()(
+        const BlocklistedSource& x) const noexcept {
+    return size_t(x.constellation) * 999983 + size_t(x.svid) * 999979;
 }
 
-}  // namespace goldfish
+bool GnssConfiguration::BlocklistedSourceEqual::operator()(
+        const BlocklistedSource& lhs, const BlocklistedSource& rhs) const noexcept {
+    return (lhs.constellation == rhs.constellation) && (lhs.svid == rhs.svid);
+}
+
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

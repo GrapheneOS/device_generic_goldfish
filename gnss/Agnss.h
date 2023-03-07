@@ -15,27 +15,28 @@
  */
 
 #pragma once
-#include <android/hardware/gnss/1.0/IAGnss.h>
-#include <android/hardware/gnss/2.0/IAGnss.h>
+#include <aidl/android/hardware/gnss/BnAGnss.h>
 
-namespace goldfish {
-namespace ahg = ::android::hardware::gnss;
-namespace ahg10 = ahg::V1_0;
-namespace ahg20 = ahg::V2_0;
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
-using ::android::sp;
-using ::android::hardware::hidl_string;
-using ::android::hardware::Return;
+using AGnssType = IAGnssCallback::AGnssType;
 
-struct AGnss20 : public ahg20::IAGnss {
-    Return<void> setCallback(const sp<ahg20::IAGnssCallback>& callback) override;
-    Return<bool> dataConnClosed() override;
-    Return<bool> dataConnFailed() override;
-    Return<bool> setServer(ahg20::IAGnssCallback::AGnssType type,
-                           const hidl_string& hostname,
-                           int32_t port) override;
-    Return<bool> dataConnOpen(uint64_t networkHandle, const hidl_string& apn,
-                              ahg20::IAGnss::ApnIpType apnIpType) override;
+struct AGnss : public BnAGnss {
+    ndk::ScopedAStatus setCallback(const std::shared_ptr<IAGnssCallback>& callback) override;
+    ndk::ScopedAStatus dataConnClosed() override;
+    ndk::ScopedAStatus dataConnFailed() override;
+    ndk::ScopedAStatus setServer(AGnssType type, const std::string& hostname,
+                                 int port) override;
+    ndk::ScopedAStatus dataConnOpen(int64_t networkHandle, const std::string& apn,
+                                    ApnIpType apnIpType) override;
 };
 
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

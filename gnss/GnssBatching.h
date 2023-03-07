@@ -15,15 +15,11 @@
  */
 
 #pragma once
-#include <future>
+#include <condition_variable>
+#include <deque>
 #include <mutex>
 #include <thread>
-
-#include <android-base/unique_fd.h>
-
-#include <aidl/android/hardware/gnss/IGnssCallback.h>
-
-#include "IDataSink.h"
+#include <aidl/android/hardware/gnss/BnGnssBatching.h>
 
 namespace aidl {
 namespace android {
@@ -31,21 +27,30 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-using ::android::base::unique_fd;
+struct GnssBatching : public BnGnssBatching {
+    ~GnssBatching();
 
-class GnssHwConn {
-public:
-    GnssHwConn(IDataSink&);
-    ~GnssHwConn();
+    ndk::ScopedAStatus init(const std::shared_ptr<IGnssBatchingCallback>& callback) override;
+    ndk::ScopedAStatus getBatchSize(int* size) override;
+    ndk::ScopedAStatus start(const Options& options) override;
+    ndk::ScopedAStatus flush() override;
+    ndk::ScopedAStatus stop() override;
+    ndk::ScopedAStatus cleanup() override;
 
-    bool ok() const;
+    void onGnssLocationCb(GnssLocation location);
 
 private:
-    bool sendWorkerThreadCommand(char cmd) const;
+    void stopImpl();
+    void batchLocationLocked(GnssLocation location, bool wakeUpOnFifoFull);
+    bool flushLocked();
 
-    unique_fd mDevFd;      // Goldfish GPS QEMU device
-    unique_fd mCallersFd;  // a channel to talk to the thread
+    std::shared_ptr<IGnssBatchingCallback> mCallback;
+    std::deque<GnssLocation> mBatchedLocations;
+    std::optional<GnssLocation> mLocation;
+    std::condition_variable mThreadNotification;
+    bool mRunning = false;
     std::thread mThread;
+    mutable std::mutex mMtx;
 };
 
 }  // namespace implementation
