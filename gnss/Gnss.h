@@ -83,7 +83,7 @@ struct Gnss20 : public ahg20::IGnss {
 private:
     bool open(const sp<ahg20::IGnssCallback>& callback);
 
-    std::unique_ptr<GnssHwConn> m_gnssHwConn;
+    std::unique_ptr<GnssHwConn> mGnssHwConn;
 };
 
 }  // namespace goldfish

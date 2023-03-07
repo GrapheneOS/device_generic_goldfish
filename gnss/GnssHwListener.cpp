@@ -65,28 +65,28 @@ double sign(char m, char positive) { return (m == positive) ? 1.0 : -1; }
 
 }  // namespace
 
-GnssHwListener::GnssHwListener(IGnssCallback& callback): m_callback(callback) {
-    m_buffer.reserve(256);
-    m_callback.gnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_ON);
+GnssHwListener::GnssHwListener(IGnssCallback& callback): mCallback(callback) {
+    mBuffer.reserve(256);
+    mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_ON);
 }
 
 GnssHwListener::~GnssHwListener() {
-    m_callback.gnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_OFF);
+    mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_OFF);
 }
 
 void GnssHwListener::start() {
     if (!mWarmedUp.has_value()) {
         using namespace std::chrono_literals;
         mWarmedUp = std::chrono::steady_clock::now() + 3500ms;  /* CTS expects some warming up time */
-        m_callback.gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
+        mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
     }
 }
 
 void GnssHwListener::stop() {
     if (mWarmedUp.has_value()) {
-        m_callback.gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_END);
+        mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_END);
         mWarmedUp.reset();
-        m_buffer.clear();
+        mBuffer.clear();
     }
 }
 
@@ -97,8 +97,8 @@ void GnssHwListener::consume(const char* buf, size_t size) {
 }
 
 void GnssHwListener::consume1(const char c) {
-    if (c == '$' || !m_buffer.empty()) {
-        m_buffer.push_back(c);
+    if (c == '$' || !mBuffer.empty()) {
+        mBuffer.push_back(c);
     }
     if (c == '\n') {
         using namespace std::chrono;
@@ -108,19 +108,19 @@ void GnssHwListener::consume1(const char c) {
         const ahg20::ElapsedRealtime ert = util::makeElapsedRealtime(
                 android::elapsedRealtimeNano());
 
-        if (parse(m_buffer.data() + 1, m_buffer.data() + m_buffer.size() - 2, t, ert)) {
+        if (parse(mBuffer.data() + 1, mBuffer.data() + mBuffer.size() - 2, t, ert)) {
             if (isWarmedUp()) {
-                m_callback.gnssNmeaCb(t, hidl_string(m_buffer.data(), m_buffer.size()));
+                mCallback.gnssNmeaCb(t, hidl_string(mBuffer.data(), mBuffer.size()));
             }
         } else {
-            m_buffer.back() = 0;
+            mBuffer.back() = 0;
             ALOGW("%s:%d: failed to parse an NMEA message, '%s'",
-                  __func__, __LINE__, m_buffer.data());
+                  __func__, __LINE__, mBuffer.data());
         }
-        m_buffer.clear();
-    } else if (m_buffer.size() >= 1024) {
+        mBuffer.clear();
+    } else if (mBuffer.size() >= 1024) {
         ALOGW("%s:%d buffer was too long, dropped", __func__, __LINE__);
-        m_buffer.clear();
+        mBuffer.clear();
     }
 }
 
@@ -213,15 +213,15 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
             GnssLocationFlags::HAS_SPEED_ACCURACY |
             GnssLocationFlags::HAS_BEARING_ACCURACY;
 
-        if (m_altitude.has_value()) {
-            loc10.altitudeMeters = m_altitude.value();
+        if (mAltitude.has_value()) {
+            loc10.altitudeMeters = mAltitude.value();
             loc10.verticalAccuracyMeters = .5;
             loc10.gnssLocationFlags |= GnssLocationFlags::HAS_ALTITUDE |
                                        GnssLocationFlags::HAS_VERTICAL_ACCURACY;
 
         }
 
-        m_callback.gnssLocationCb_2_0(loc20);
+        mCallback.gnssLocationCb_2_0(loc20);
     }
 
     return true;
@@ -283,7 +283,7 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
         return FAILURE(false);
     }
 
-    m_altitude = altitude;
+    mAltitude = altitude;
 
     if (isWarmedUp()) {
         hidl_vec<ahg20::IGnssCallback::GnssSvInfo> svInfo(nSatellites);
@@ -301,7 +301,7 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
             info10->svFlag = ahg10::IGnssCallback::GnssSvFlags::HAS_CARRIER_FREQUENCY | 0;
         }
 
-        m_callback.gnssSvStatusCb_2_0(svInfo);
+        mCallback.gnssSvStatusCb_2_0(svInfo);
     }
 
     return true;
