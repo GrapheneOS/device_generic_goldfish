@@ -84,9 +84,6 @@ struct Gnss20 : public ahg20::IGnss {
 private:
     bool open();
     void cleanupImpl();
-    bool injectBestLocationImpl(const ahg10::GnssLocation&,
-                                const ahg20::ElapsedRealtime);
-
 
     DataSink m_dataSink;    // all updates go here
 
