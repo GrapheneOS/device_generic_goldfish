@@ -86,11 +86,11 @@ void GnssHwListener::consume(char c) {
         } else {
             m_buffer.back() = 0;
             ALOGW("%s:%d: failed to parse an NMEA message, '%s'",
-                  __PRETTY_FUNCTION__, __LINE__, m_buffer.data());
+                  __func__, __LINE__, m_buffer.data());
         }
         m_buffer.clear();
     } else if (m_buffer.size() >= 1024) {
-        ALOGW("%s:%d buffer was too long, dropped", __PRETTY_FUNCTION__, __LINE__);
+        ALOGW("%s:%d buffer was too long, dropped", __func__, __LINE__);
         m_buffer.clear();
     }
 }
