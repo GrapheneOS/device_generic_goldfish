@@ -17,6 +17,7 @@
 #include <chrono>
 #include <log/log.h>
 #include <utils/SystemClock.h>
+#include <debug.h>
 #include "gnss_hw_listener.h"
 #include "util.h"
 
@@ -103,7 +104,7 @@ bool GnssHwListener::parse(const char* begin, const char* end,
     } else if (const char* fields = testNmeaField(begin, end, "GPGGA", ',')) {
         return parseGPGGA(fields, end, t, ert);
     } else {
-        return false;
+        return FAILURE(false);
     }
 }
 
@@ -150,10 +151,10 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
                &speedKnots, &course,
                &ddmoyy,
                &variation, &var_ew) != 13) {
-        return false;
+        return FAILURE(false);
     }
     if (validity != 'A') {
-        return false;
+        return FAILURE(false);
     }
 
     const double lat = convertDMMF(latdmm, latf, latfConsumed - latdmmConsumed) * sign(ns, 'N');
@@ -237,18 +238,18 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
                &fixQuality,
                &nSatellites,
                &consumed) != 9) {
-        return false;
+        return FAILURE(false);
     }
 
     begin = skipAfter(begin + consumed, end, ',');  // skip HDOP
     if (!begin) {
-        return false;
+        return FAILURE(false);
     }
     if (sscanf(begin, "%lf,%c,", &altitude, &altitudeUnit) != 2) {
-        return false;
+        return FAILURE(false);
     }
     if (altitudeUnit != 'M') {
-        return false;
+        return FAILURE(false);
     }
 
     m_altitude = altitude;
