@@ -20,6 +20,7 @@
 #include <qemu_pipe_bp.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <debug.h>
 #include "gnss_hw_conn.h"
 #include "gnss_hw_listener.h"
 
@@ -34,11 +35,11 @@ int epollCtlAdd(int epollFd, int fd) {
     /* make the fd non-blocking */
     ret = TEMP_FAILURE_RETRY(fcntl(fd, F_GETFL));
     if (ret < 0) {
-        return ret;
+        return FAILURE(ret);
     }
     ret = TEMP_FAILURE_RETRY(fcntl(fd, F_SETFL, ret | O_NONBLOCK));
     if (ret < 0) {
-        return ret;
+        return FAILURE(ret);
     }
 
     struct epoll_event ev;
@@ -84,11 +85,11 @@ bool GnssHwConn::ok() const {
 }
 
 bool GnssHwConn::start() {
-    return ok() && sendWorkerThreadCommand(kCMD_START);
+    return (ok() && sendWorkerThreadCommand(kCMD_START)) ? true : FAILURE(false);
 }
 
 bool GnssHwConn::stop() {
-    return ok() && sendWorkerThreadCommand(kCMD_STOP);
+    return (ok() && sendWorkerThreadCommand(kCMD_STOP)) ? true : FAILURE(false);
 }
 
 void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
@@ -187,12 +188,13 @@ int GnssHwConn::workerThreadRcvCommand(const int fd) {
     if (TEMP_FAILURE_RETRY(read(fd, &buf, 1)) == 1) {
         return buf;
     } else {
-        return -1;
+        return FAILURE(-1);
     }
 }
 
 bool GnssHwConn::sendWorkerThreadCommand(char cmd) const {
-    return TEMP_FAILURE_RETRY(write(m_callersFd.get(), &cmd, 1)) == 1;
+    return (TEMP_FAILURE_RETRY(write(m_callersFd.get(), &cmd, 1)) == 1) ?
+        true : FAILURE(false);
 }
 
 }  // namespace goldfish
