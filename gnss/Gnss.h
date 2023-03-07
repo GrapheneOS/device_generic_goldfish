@@ -18,7 +18,7 @@
 #include <android/hardware/gnss/2.0/IGnss.h>
 #include <mutex>
 #include <memory>
-#include "gnss_hw_conn.h"
+#include "GnssHwConn.h"
 
 namespace goldfish {
 namespace ahg = ::android::hardware::gnss;

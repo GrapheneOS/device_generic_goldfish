@@ -17,10 +17,10 @@
 #include <log/log.h>
 #include <debug.h>
 
-#include "gnss.h"
-#include "gnss_configuration.h"
-#include "gnss_measurement.h"
-#include "agnss.h"
+#include "Gnss.h"
+#include "GnssConfiguration.h"
+#include "GnssMeasurement.h"
+#include "Agnss.h"
 
 namespace {
 constexpr char kGnssDeviceName[] = "Android Studio Emulator GPS";

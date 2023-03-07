@@ -15,7 +15,7 @@
  */
 
 #include <chrono>
-#include "gnss_measurement.h"
+#include "GnssMeasurement.h"
 
 namespace goldfish {
 using ::android::hardware::hidl_vec;

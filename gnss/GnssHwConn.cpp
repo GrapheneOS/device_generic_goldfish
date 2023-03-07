@@ -21,8 +21,8 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <debug.h>
-#include "gnss_hw_conn.h"
-#include "gnss_hw_listener.h"
+#include "GnssHwConn.h"
+#include "GnssHwListener.h"
 
 namespace goldfish {
 namespace {

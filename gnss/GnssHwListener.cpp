@@ -18,7 +18,7 @@
 #include <log/log.h>
 #include <utils/SystemClock.h>
 #include <debug.h>
-#include "gnss_hw_listener.h"
+#include "GnssHwListener.h"
 #include "util.h"
 
 namespace goldfish {
