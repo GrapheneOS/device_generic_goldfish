@@ -55,6 +55,9 @@ cc_binary {
     static_libs: [
         "libqemud.ranchu",
     ],
+    header_libs: [
+        "libdebug.ranchu",
+    ],
     cflags: [
         "-DLOG_TAG=\"android.hardware.gnss@2.0-service.ranchu\"",
         "-DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION",

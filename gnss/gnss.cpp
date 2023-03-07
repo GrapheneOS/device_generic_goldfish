@@ -15,6 +15,7 @@
  */
 
 #include <log/log.h>
+#include <debug.h>
 
 #include "gnss.h"
 #include "gnss_configuration.h"
@@ -49,7 +50,7 @@ Return<sp<ahg20::IGnssMeasurement>> Gnss20::getExtensionGnssMeasurement_2_0() {
 
 Return<bool> Gnss20::setCallback_2_0(const sp<ahg20::IGnssCallback>& callback) {
     if (callback == nullptr) {
-        return false;
+        return FAILURE(false);
     } else if (open()) {
         using Caps = ahg20::IGnssCallback::Capabilities;
         callback->gnssSetCapabilitiesCb_2_0(Caps::MEASUREMENTS | 0);
@@ -99,7 +100,7 @@ Return<bool> Gnss20::start() {
         m_dataSink.start();
         return m_gnssHwConn->start();
     } else {
-        return false;
+        return FAILURE(false);
     }
 }
 
@@ -108,7 +109,7 @@ Return<bool> Gnss20::stop() {
     if (m_gnssHwConn) {
         return m_gnssHwConn->stop();
     } else {
-        return false;
+        return FAILURE(false);
     }
 }
 
@@ -167,7 +168,7 @@ bool Gnss20::open() {
             m_gnssHwConn = std::move(conn);
             return true;
         } else {
-            return false;
+            return FAILURE(false);
         }
     }
 }
