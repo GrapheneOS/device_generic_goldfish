@@ -33,14 +33,10 @@ public:
     bool stop();
 
 private:
-    static void workerThread(int devFd, int threadsFd, const DataSink* sink);
-    static int workerThreadRcvCommand(int fd);
     bool sendWorkerThreadCommand(char cmd) const;
 
     unique_fd m_devFd;      // Goldfish GPS QEMU device
-    // a pair of connected sockets to talk to the worker thread
-    unique_fd m_callersFd;  // a caller writes here
-    unique_fd m_threadsFd;  // the worker thread listens from here
+    unique_fd m_callersFd;  // a channel to talk to the thread
     std::thread m_thread;
 };
 
