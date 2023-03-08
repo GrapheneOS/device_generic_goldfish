@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <optional>
 #include <vector>
 #include "data_sink.h"
 
@@ -40,10 +41,7 @@ private:
 
     const DataSink*     m_sink;
     std::vector<char>   m_buffer;
-
-    double              m_altitude = 0;
-
-    hidl_bitfield<ahg10::GnssLocationFlags> m_flags;
+    std::optional<double> m_altitude;
 };
 
 }  // namespace goldfish
