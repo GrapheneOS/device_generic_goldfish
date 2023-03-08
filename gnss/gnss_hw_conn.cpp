@@ -20,6 +20,7 @@
 #include <qemu_pipe_bp.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <debug.h>
 #include "gnss_hw_conn.h"
 #include "gnss_hw_listener.h"
 
@@ -34,11 +35,11 @@ int epollCtlAdd(int epollFd, int fd) {
     /* make the fd non-blocking */
     ret = TEMP_FAILURE_RETRY(fcntl(fd, F_GETFL));
     if (ret < 0) {
-        return ret;
+        return FAILURE(ret);
     }
     ret = TEMP_FAILURE_RETRY(fcntl(fd, F_SETFL, ret | O_NONBLOCK));
     if (ret < 0) {
-        return ret;
+        return FAILURE(ret);
     }
 
     struct epoll_event ev;
@@ -54,13 +55,13 @@ namespace goldfish {
 GnssHwConn::GnssHwConn(const DataSink* sink) {
     m_devFd.reset(qemu_pipe_open_ns("qemud", "gps", O_RDWR));
     if (!m_devFd.ok()) {
-        ALOGE("%s:%d: qemu_pipe_open_ns failed", __PRETTY_FUNCTION__, __LINE__);
+        ALOGE("%s:%d: qemu_pipe_open_ns failed", __func__, __LINE__);
         return;
     }
 
     if (!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
                                      &m_callersFd, &m_threadsFd)) {
-        ALOGE("%s:%d: Socketpair failed", __PRETTY_FUNCTION__, __LINE__);
+        ALOGE("%s:%d: Socketpair failed", __func__, __LINE__);
         m_devFd.reset();
         return;
     }
@@ -84,17 +85,17 @@ bool GnssHwConn::ok() const {
 }
 
 bool GnssHwConn::start() {
-    return ok() && sendWorkerThreadCommand(kCMD_START);
+    return (ok() && sendWorkerThreadCommand(kCMD_START)) ? true : FAILURE(false);
 }
 
 bool GnssHwConn::stop() {
-    return ok() && sendWorkerThreadCommand(kCMD_STOP);
+    return (ok() && sendWorkerThreadCommand(kCMD_STOP)) ? true : FAILURE(false);
 }
 
 void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
     const unique_fd epollFd(epoll_create1(0));
     if (!epollFd.ok()) {
-        ALOGE("%s:%d: epoll_create1 failed", __PRETTY_FUNCTION__, __LINE__);
+        ALOGE("%s:%d: epoll_create1 failed", __func__, __LINE__);
         ::abort();
     }
 
@@ -112,7 +113,7 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
                                                     kTimeoutMs));
         if (n < 0) {
             ALOGE("%s:%d: epoll_wait failed with '%s'",
-                  __PRETTY_FUNCTION__, __LINE__, strerror(errno));
+                  __func__, __LINE__, strerror(errno));
             continue;
         }
 
@@ -124,7 +125,7 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
             if (fd == devFd) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
                     ALOGE("%s:%d: epoll_wait: devFd has an error, ev_events=%x",
-                          __PRETTY_FUNCTION__, __LINE__, ev_events);
+                          __func__, __LINE__, ev_events);
                     ::abort();
                 } else if (ev_events & EPOLLIN) {
                     char buf[64];
@@ -144,7 +145,7 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
             } else if (fd == threadsFd) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
                     ALOGE("%s:%d: epoll_wait: threadsFd has an error, ev_events=%x",
-                          __PRETTY_FUNCTION__, __LINE__, ev_events);
+                          __func__, __LINE__, ev_events);
                     ::abort();
                 } else if (ev_events & EPOLLIN) {
                     const int cmd = workerThreadRcvCommand(fd);
@@ -169,14 +170,14 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
 
                         default:
                             ALOGE("%s:%d: workerThreadRcvCommand returned unexpected command, cmd=%d",
-                                  __PRETTY_FUNCTION__, __LINE__, cmd);
+                                  __func__, __LINE__, cmd);
                             ::abort();
                             break;
                     }
                 }
             } else {
                 ALOGE("%s:%d: epoll_wait() returned unexpected fd",
-                      __PRETTY_FUNCTION__, __LINE__);
+                      __func__, __LINE__);
             }
         }
     }
@@ -187,12 +188,13 @@ int GnssHwConn::workerThreadRcvCommand(const int fd) {
     if (TEMP_FAILURE_RETRY(read(fd, &buf, 1)) == 1) {
         return buf;
     } else {
-        return -1;
+        return FAILURE(-1);
     }
 }
 
 bool GnssHwConn::sendWorkerThreadCommand(char cmd) const {
-    return TEMP_FAILURE_RETRY(write(m_callersFd.get(), &cmd, 1)) == 1;
+    return (TEMP_FAILURE_RETRY(write(m_callersFd.get(), &cmd, 1)) == 1) ?
+        true : FAILURE(false);
 }
 
 }  // namespace goldfish
