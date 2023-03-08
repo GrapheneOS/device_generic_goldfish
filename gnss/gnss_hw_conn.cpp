@@ -24,6 +24,7 @@
 #include "gnss_hw_conn.h"
 #include "gnss_hw_listener.h"
 
+namespace goldfish {
 namespace {
 constexpr char kCMD_QUIT = 'q';
 constexpr char kCMD_START = 'a';
@@ -48,51 +49,17 @@ int epollCtlAdd(int epollFd, int fd) {
 
     return TEMP_FAILURE_RETRY(epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev));
 }
-}  // namespace
 
-namespace goldfish {
-
-GnssHwConn::GnssHwConn(const DataSink* sink) {
-    m_devFd.reset(qemu_pipe_open_ns("qemud", "gps", O_RDWR));
-    if (!m_devFd.ok()) {
-        ALOGE("%s:%d: qemu_pipe_open_ns failed", __func__, __LINE__);
-        return;
-    }
-
-    if (!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
-                                     &m_callersFd, &m_threadsFd)) {
-        ALOGE("%s:%d: Socketpair failed", __func__, __LINE__);
-        m_devFd.reset();
-        return;
-    }
-
-    m_thread = std::thread([this, sink]() {
-        sink->gnssStatus(ahg10::IGnssCallback::GnssStatusValue::ENGINE_ON);
-        workerThread(m_devFd.get(), m_threadsFd.get(), sink);
-        sink->gnssStatus(ahg10::IGnssCallback::GnssStatusValue::ENGINE_OFF);
-    });
-}
-
-GnssHwConn::~GnssHwConn() {
-    if (m_thread.joinable()) {
-        sendWorkerThreadCommand(kCMD_QUIT);
-        m_thread.join();
+int workerThreadRcvCommand(const int fd) {
+    char buf;
+    if (TEMP_FAILURE_RETRY(read(fd, &buf, 1)) == 1) {
+        return buf;
+    } else {
+        return FAILURE(-1);
     }
 }
 
-bool GnssHwConn::ok() const {
-    return m_thread.joinable();
-}
-
-bool GnssHwConn::start() {
-    return (ok() && sendWorkerThreadCommand(kCMD_START)) ? true : FAILURE(false);
-}
-
-bool GnssHwConn::stop() {
-    return (ok() && sendWorkerThreadCommand(kCMD_STOP)) ? true : FAILURE(false);
-}
-
-void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
+void workerThread(int devFd, int threadsFd, const DataSink* sink) {
     const unique_fd epollFd(epoll_create1(0));
     if (!epollFd.ok()) {
         ALOGE("%s:%d: epoll_create1 failed", __func__, __LINE__);
@@ -183,13 +150,48 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
     }
 }
 
-int GnssHwConn::workerThreadRcvCommand(const int fd) {
-    char buf;
-    if (TEMP_FAILURE_RETRY(read(fd, &buf, 1)) == 1) {
-        return buf;
-    } else {
-        return FAILURE(-1);
+}  // namespace
+
+GnssHwConn::GnssHwConn(const DataSink* sink) {
+    m_devFd.reset(qemu_pipe_open_ns("qemud", "gps", O_RDWR));
+    if (!m_devFd.ok()) {
+        ALOGE("%s:%d: qemu_pipe_open_ns failed", __func__, __LINE__);
+        return;
     }
+
+    unique_fd threadsFd;
+    if (!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
+                                     &m_callersFd, &threadsFd)) {
+        ALOGE("%s:%d: Socketpair failed", __func__, __LINE__);
+        m_devFd.reset();
+        return;
+    }
+
+    const int devFd = m_devFd.get();
+    m_thread = std::thread([devFd, threadsFd = std::move(threadsFd), sink]() {
+        sink->gnssStatus(ahg10::IGnssCallback::GnssStatusValue::ENGINE_ON);
+        workerThread(devFd, threadsFd.get(), sink);
+        sink->gnssStatus(ahg10::IGnssCallback::GnssStatusValue::ENGINE_OFF);
+    });
+}
+
+GnssHwConn::~GnssHwConn() {
+    if (m_thread.joinable()) {
+        sendWorkerThreadCommand(kCMD_QUIT);
+        m_thread.join();
+    }
+}
+
+bool GnssHwConn::ok() const {
+    return m_thread.joinable();
+}
+
+bool GnssHwConn::start() {
+    return (ok() && sendWorkerThreadCommand(kCMD_START)) ? true : FAILURE(false);
+}
+
+bool GnssHwConn::stop() {
+    return (ok() && sendWorkerThreadCommand(kCMD_STOP)) ? true : FAILURE(false);
 }
 
 bool GnssHwConn::sendWorkerThreadCommand(char cmd) const {
