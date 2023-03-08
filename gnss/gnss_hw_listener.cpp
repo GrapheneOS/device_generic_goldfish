@@ -184,8 +184,8 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
         GnssLocationFlags::HAS_SPEED_ACCURACY |
         GnssLocationFlags::HAS_BEARING_ACCURACY;
 
-    if (m_flags & GnssLocationFlags::HAS_ALTITUDE) {
-        loc10.altitudeMeters = m_altitude;
+    if (m_altitude.has_value()) {
+        loc10.altitudeMeters = m_altitude.value();
         loc10.verticalAccuracyMeters = .5;
         loc10.gnssLocationFlags |= GnssLocationFlags::HAS_ALTITUDE |
                                    GnssLocationFlags::HAS_VERTICAL_ACCURACY;
@@ -253,7 +253,6 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
     }
 
     m_altitude = altitude;
-    m_flags |= ahg10::GnssLocationFlags::HAS_ALTITUDE;
 
     hidl_vec<ahg20::IGnssCallback::GnssSvInfo> svInfo(nSatellites);
     for (int i = 0; i < nSatellites; ++i) {
