@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "gnss_configuration.h"
+#include "GnssConfiguration.h"
 
 namespace goldfish {
 
