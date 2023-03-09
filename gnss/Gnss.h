@@ -18,7 +18,7 @@
 #include <android/hardware/gnss/2.0/IGnss.h>
 #include <mutex>
 #include <memory>
-#include "gnss_hw_conn.h"
+#include "GnssHwConn.h"
 
 namespace goldfish {
 namespace ahg = ::android::hardware::gnss;
@@ -83,7 +83,7 @@ struct Gnss20 : public ahg20::IGnss {
 private:
     bool open(const sp<ahg20::IGnssCallback>& callback);
 
-    std::unique_ptr<GnssHwConn> m_gnssHwConn;
+    std::unique_ptr<GnssHwConn> mGnssHwConn;
 };
 
 }  // namespace goldfish
