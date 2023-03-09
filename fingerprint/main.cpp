@@ -17,19 +17,27 @@
 #include <memory>
 #include <android/binder_manager.h>
 #include <android/binder_process.h>
+#include <log/log.h>
+#include <utils/Errors.h>
 #include "hal.h"
 
 int main() {
     using aidl::android::hardware::biometrics::fingerprint::Hal;
 
-    ABinderProcess_setThreadPoolMaxThreadCount(0);
+    ABinderProcess_setThreadPoolMaxThreadCount(2);
+    ABinderProcess_startThreadPool();
 
     std::shared_ptr<Hal> hal = ndk::SharedRefBase::make<Hal>();
-    const std::string instance = std::string(Hal::descriptor) + "/default";
 
-    if (AServiceManager_addService(hal->asBinder().get(), instance.c_str()) == STATUS_OK) {
-        ABinderProcess_joinThreadPool();
+    {
+        const std::string instance = std::string(Hal::descriptor) + "/default";
+        if (AServiceManager_registerLazyService(hal->asBinder().get(),
+                                                instance.c_str()) != STATUS_OK) {
+            ALOGE("%s:%d: Could not register '%s'", __func__, __LINE__, instance.c_str());
+            return android::NO_INIT;
+        }
     }
 
-    return EXIT_FAILURE;
+    ABinderProcess_joinThreadPool();
+    return 0;  // lazy HALs do exit.
 }
