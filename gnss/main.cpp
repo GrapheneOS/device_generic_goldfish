@@ -18,7 +18,7 @@
 #include <hidl/HidlLazyUtils.h>
 #include <hidl/HidlTransportSupport.h>
 
-#include "gnss.h"
+#include "Gnss.h"
 
 int main(int /* argc */, char* /* argv */ []) {
     ::android::sp<goldfish::Gnss20> gnss(new goldfish::Gnss20);
