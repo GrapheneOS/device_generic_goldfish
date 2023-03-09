@@ -18,7 +18,6 @@
 #include <android/hardware/gnss/2.0/IGnss.h>
 #include <mutex>
 #include <memory>
-#include "data_sink.h"
 #include "gnss_hw_conn.h"
 
 namespace goldfish {
@@ -82,13 +81,9 @@ struct Gnss20 : public ahg20::IGnss {
     Return<sp<ahg10::IGnssBatching>> getExtensionGnssBatching() override;
 
 private:
-    bool open();
-    void cleanupImpl();
-
-    DataSink m_dataSink;    // all updates go here
+    bool open(const sp<ahg20::IGnssCallback>& callback);
 
     std::unique_ptr<GnssHwConn> m_gnssHwConn;
-    mutable std::mutex          m_gnssHwConnMtx;
 };
 
 }  // namespace goldfish

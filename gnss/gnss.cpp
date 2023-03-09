@@ -51,13 +51,12 @@ Return<sp<ahg20::IGnssMeasurement>> Gnss20::getExtensionGnssMeasurement_2_0() {
 Return<bool> Gnss20::setCallback_2_0(const sp<ahg20::IGnssCallback>& callback) {
     if (callback == nullptr) {
         return FAILURE(false);
-    } else if (open()) {
+    } else if (open(callback)) {
         using Caps = ahg20::IGnssCallback::Capabilities;
         callback->gnssSetCapabilitiesCb_2_0(Caps::MEASUREMENTS | 0);
         callback->gnssNameCb(kGnssDeviceName);
         callback->gnssSetSystemInfoCb({.yearOfHw = 2020});
 
-        m_dataSink.setCallback20(callback);
         return true;
     } else {
         return false;
@@ -95,9 +94,7 @@ Return<bool> Gnss20::setPositionMode_1_1(ahg10::IGnss::GnssPositionMode mode,
 }
 
 Return<bool> Gnss20::start() {
-    std::unique_lock<std::mutex> lock(m_gnssHwConnMtx);
     if (m_gnssHwConn) {
-        m_dataSink.start();
         return m_gnssHwConn->start();
     } else {
         return FAILURE(false);
@@ -105,7 +102,6 @@ Return<bool> Gnss20::start() {
 }
 
 Return<bool> Gnss20::stop() {
-    std::unique_lock<std::mutex> lock(m_gnssHwConnMtx);
     if (m_gnssHwConn) {
         return m_gnssHwConn->stop();
     } else {
@@ -114,13 +110,7 @@ Return<bool> Gnss20::stop() {
 }
 
 Return<void> Gnss20::cleanup() {
-    {
-        std::unique_lock<std::mutex> lock(m_gnssHwConnMtx);
-        m_gnssHwConn.reset();
-    }
-
-    m_dataSink.cleanup();
-
+    m_gnssHwConn.reset();
     return {};
 }
 
@@ -158,18 +148,13 @@ Return<sp<ahg10::IGnssXtra>> Gnss20::getExtensionXtra() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool Gnss20::open() {
-    std::unique_lock<std::mutex> lock(m_gnssHwConnMtx);
-    if (m_gnssHwConn) {
+bool Gnss20::open(const sp<ahg20::IGnssCallback>& callback) {
+    auto conn = std::make_unique<GnssHwConn>(callback);
+    if (conn->ok()) {
+        m_gnssHwConn = std::move(conn);
         return true;
     } else {
-        auto conn = std::make_unique<GnssHwConn>(&m_dataSink);
-        if (conn->ok()) {
-            m_gnssHwConn = std::move(conn);
-            return true;
-        } else {
-            return FAILURE(false);
-        }
+        return FAILURE(false);
     }
 }
 
