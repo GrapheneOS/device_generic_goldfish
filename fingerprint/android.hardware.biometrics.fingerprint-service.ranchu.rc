@@ -1,6 +1,8 @@
 service vendor.android.hardware.biometrics.fingerprint-service.ranchu /vendor/bin/hw/android.hardware.biometrics.fingerprint-service.ranchu
-    class late_start
+    interface aidl android.hardware.biometrics.fingerprint.IFingerprint/default
+    class hal
     user system
     group system input uhid
     task_profiles ServiceCapacityLow
-
+    oneshot
+    disabled
