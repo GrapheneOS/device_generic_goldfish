@@ -50,13 +50,13 @@ private:
     void stopLocked();
     void update();
 
-    sp<ahg20::IGnssMeasurementCallback> m_callback;
-    std::thread                         m_thread;
-    std::atomic<bool>                   m_isRunning;
-    int                                 m_gnssDataIndex = 0;
-    mutable std::mutex                  m_mtx;
+    sp<ahg20::IGnssMeasurementCallback> mCallback;
+    std::thread                         mThread;
+    std::atomic<bool>                   mIsRunning;
+    int                                 mGnssDataIndex = 0;
+    mutable std::mutex                  mMtx;
 
-    std::vector<GnssData20>             m_gnssData;
+    std::vector<GnssData20>             mGnssData;
 };
 
 }  // namespace goldfish

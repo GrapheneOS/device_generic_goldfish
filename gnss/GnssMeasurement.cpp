@@ -15,7 +15,7 @@
  */
 
 #include <chrono>
-#include "gnss_measurement.h"
+#include "GnssMeasurement.h"
 
 namespace goldfish {
 using ::android::hardware::hidl_vec;
@@ -81,20 +81,20 @@ GnssMeasurementT20 makeGnssMeasurementT20(int svid,
 }  // namespace
 
 GnssMeasurement20::GnssMeasurement20() {
-    m_gnssData.resize(1);
+    mGnssData.resize(1);
 
-    initGnssData(m_gnssData[0], 139287, 116834000000, -1189181444165780000, 5.26068202130163, 7);
-    m_gnssData[0].measurements[0] = makeGnssMeasurementT20(22,  47, 3927349114,      29, 29.9917297363281,  245.509362821673,  0.148940800975766, 1,  6620.74237064615,  0.00271145859733223, 0, 1);
-    m_gnssData[0].measurements[1] = makeGnssMeasurementT20(23,  47, 3920005435,      14, 36.063377380371,  -731.947951627658, 0.0769754027959242, 1,  -23229.096048105,  0.00142954161856323, 0, 1);
-    m_gnssData[0].measurements[2] = makeGnssMeasurementT20(25,  47, 3923720994,      56, 24.5171585083007, -329.789995021822,  0.277918601850871, 1, -15511.1976492851,  0.00509250536561012, 0, 1);
-    m_gnssData[0].measurements[3] = makeGnssMeasurementT20(31,  47, 3925772934,      11, 37.9193840026855,  -380.23772244582, 0.0602980729893803, 1, -11325.9094456612,  0.00115450704470276, 0, 1);
-    m_gnssData[0].measurements[4] = makeGnssMeasurementT20(32,  47, 3919018415,      21, 32.8980560302734,  581.800347848025,  0.109060249597082, 1,  15707.8963147985,  0.00205808319151401, 0, 1);
-    m_gnssData[0].measurements[5] = makeGnssMeasurementT20(10, 227, 69142929947304, 127, 23.432445526123,    259.17838762857,   0.31591691295607, 4,  8152.78081298147, 3.40282346638528E+38, 0, 3);
-    m_gnssData[0].measurements[6] = makeGnssMeasurementT20(2,  227, 69142935176327,  41, 33.180908203125,  -53.8773853795901,  0.104984458760586, 1, -1708.08166640048,  0.00196184404194355, 0, 3);
+    initGnssData(mGnssData[0], 139287, 116834000000, -1189181444165780000, 5.26068202130163, 7);
+    mGnssData[0].measurements[0] = makeGnssMeasurementT20(22,  47, 3927349114,      29, 29.9917297363281,  245.509362821673,  0.148940800975766, 1,  6620.74237064615,  0.00271145859733223, 0, 1);
+    mGnssData[0].measurements[1] = makeGnssMeasurementT20(23,  47, 3920005435,      14, 36.063377380371,  -731.947951627658, 0.0769754027959242, 1,  -23229.096048105,  0.00142954161856323, 0, 1);
+    mGnssData[0].measurements[2] = makeGnssMeasurementT20(25,  47, 3923720994,      56, 24.5171585083007, -329.789995021822,  0.277918601850871, 1, -15511.1976492851,  0.00509250536561012, 0, 1);
+    mGnssData[0].measurements[3] = makeGnssMeasurementT20(31,  47, 3925772934,      11, 37.9193840026855,  -380.23772244582, 0.0602980729893803, 1, -11325.9094456612,  0.00115450704470276, 0, 1);
+    mGnssData[0].measurements[4] = makeGnssMeasurementT20(32,  47, 3919018415,      21, 32.8980560302734,  581.800347848025,  0.109060249597082, 1,  15707.8963147985,  0.00205808319151401, 0, 1);
+    mGnssData[0].measurements[5] = makeGnssMeasurementT20(10, 227, 69142929947304, 127, 23.432445526123,    259.17838762857,   0.31591691295607, 4,  8152.78081298147, 3.40282346638528E+38, 0, 3);
+    mGnssData[0].measurements[6] = makeGnssMeasurementT20(2,  227, 69142935176327,  41, 33.180908203125,  -53.8773853795901,  0.104984458760586, 1, -1708.08166640048,  0.00196184404194355, 0, 3);
 }
 
 GnssMeasurement20::~GnssMeasurement20() {
-    if (m_isRunning) {
+    if (mIsRunning) {
         stopLocked();
     }
 }
@@ -107,47 +107,47 @@ GnssMeasurement20::setCallback_2_0(const sp<ahg20::IGnssMeasurementCallback>& ca
         return GnssMeasurementStatus10::ERROR_GENERIC;
     }
 
-    std::unique_lock<std::mutex> lock(m_mtx);
-    if (m_isRunning) {
+    std::unique_lock<std::mutex> lock(mMtx);
+    if (mIsRunning) {
         stopLocked();
     }
 
-    m_callback = callback;
+    mCallback = callback;
     startLocked();
 
     return GnssMeasurementStatus10::SUCCESS;
 }
 
 Return<void> GnssMeasurement20::close() {
-    std::unique_lock<std::mutex> lock(m_mtx);
-    if (m_isRunning) {
+    std::unique_lock<std::mutex> lock(mMtx);
+    if (mIsRunning) {
         stopLocked();
     }
 
-    m_callback = nullptr;
+    mCallback = nullptr;
     return {};
 }
 
 void GnssMeasurement20::startLocked() {
-    m_thread = std::thread([this](){
-        while (m_isRunning) {
+    mThread = std::thread([this](){
+        while (mIsRunning) {
             update();
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     });
-    m_isRunning = true;
+    mIsRunning = true;
 }
 
 void GnssMeasurement20::stopLocked() {
-    m_isRunning = false;
-    m_thread.join();
+    mIsRunning = false;
+    mThread.join();
 }
 
 void GnssMeasurement20::update() {
-    std::unique_lock<std::mutex> lock(m_mtx);
+    std::unique_lock<std::mutex> lock(mMtx);
 
-    m_callback->gnssMeasurementCb_2_0(m_gnssData[m_gnssDataIndex]);
-    m_gnssDataIndex = (m_gnssDataIndex + 1) % m_gnssData.size();
+    mCallback->gnssMeasurementCb_2_0(mGnssData[mGnssDataIndex]);
+    mGnssDataIndex = (mGnssDataIndex + 1) % mGnssData.size();
 }
 
 /// old and deprecated /////////////////////////////////////////////////////////
