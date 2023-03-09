@@ -36,7 +36,6 @@ cc_binary {
         "gnss_measurement.cpp",
         "gnss_hw_conn.cpp",
         "gnss_hw_listener.cpp",
-        "data_sink.cpp",
         "gnss.cpp",
         "main.cpp",
         "util.cpp",
