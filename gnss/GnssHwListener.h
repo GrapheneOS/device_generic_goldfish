@@ -56,10 +56,10 @@ private:
                     const ahg20::ElapsedRealtime& ert);
     bool isWarmedUp() const;
 
-    IGnssCallback&        m_callback;
+    IGnssCallback&        mCallback;
     std::optional<std::chrono::steady_clock::time_point> mWarmedUp;
-    std::vector<char>     m_buffer;
-    std::optional<double> m_altitude;
+    std::vector<char>     mBuffer;
+    std::optional<double> mAltitude;
 };
 
 }  // namespace goldfish
