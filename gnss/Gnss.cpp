@@ -17,10 +17,10 @@
 #include <log/log.h>
 #include <debug.h>
 
-#include "gnss.h"
-#include "gnss_configuration.h"
-#include "gnss_measurement.h"
-#include "agnss.h"
+#include "Gnss.h"
+#include "GnssConfiguration.h"
+#include "GnssMeasurement.h"
+#include "Agnss.h"
 
 namespace {
 constexpr char kGnssDeviceName[] = "Android Studio Emulator GPS";
@@ -94,23 +94,23 @@ Return<bool> Gnss20::setPositionMode_1_1(ahg10::IGnss::GnssPositionMode mode,
 }
 
 Return<bool> Gnss20::start() {
-    if (m_gnssHwConn) {
-        return m_gnssHwConn->start();
+    if (mGnssHwConn) {
+        return mGnssHwConn->start();
     } else {
         return FAILURE(false);
     }
 }
 
 Return<bool> Gnss20::stop() {
-    if (m_gnssHwConn) {
-        return m_gnssHwConn->stop();
+    if (mGnssHwConn) {
+        return mGnssHwConn->stop();
     } else {
         return FAILURE(false);
     }
 }
 
 Return<void> Gnss20::cleanup() {
-    m_gnssHwConn.reset();
+    mGnssHwConn.reset();
     return {};
 }
 
@@ -151,7 +151,7 @@ Return<sp<ahg10::IGnssXtra>> Gnss20::getExtensionXtra() {
 bool Gnss20::open(const sp<ahg20::IGnssCallback>& callback) {
     auto conn = std::make_unique<GnssHwConn>(callback);
     if (conn->ok()) {
-        m_gnssHwConn = std::move(conn);
+        mGnssHwConn = std::move(conn);
         return true;
     } else {
         return FAILURE(false);
