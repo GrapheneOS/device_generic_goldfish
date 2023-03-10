@@ -15,20 +15,36 @@
  */
 
 #pragma once
+#include <chrono>
 #include <optional>
 #include <vector>
-#include "data_sink.h"
+#include <android/hardware/gnss/1.0/types.h>
+#include <android/hardware/gnss/2.0/IGnssCallback.h>
+#include <android/hardware/gnss/2.0/types.h>
 
 namespace goldfish {
-using ::android::hardware::hidl_bitfield;
+namespace ahg = ::android::hardware::gnss;
+namespace ahg20 = ahg::V2_0;
+namespace ahg10 = ahg::V1_0;
+
+using ahg20::IGnssCallback;
 
 class GnssHwListener {
 public:
-    explicit GnssHwListener(const DataSink* sink);
-    void reset();
-    void consume(char);
+    explicit GnssHwListener(IGnssCallback& callback);
+    ~GnssHwListener();
+
+    void start();
+    void stop();
+    void consume(const char* buf, size_t size);
+
+    GnssHwListener(const GnssHwListener&) = delete;
+    GnssHwListener(GnssHwListener&&) = delete;
+    GnssHwListener& operator=(const GnssHwListener&) = delete;
+    GnssHwListener& operator=(GnssHwListener&&) = delete;
 
 private:
+    void consume1(char);
     bool parse(const char* begin, const char* end,
                const ahg10::GnssUtcTime& t,
                const ahg20::ElapsedRealtime& ert);
@@ -38,10 +54,12 @@ private:
     bool parseGPGGA(const char* begin, const char* end,
                     const ahg10::GnssUtcTime& t,
                     const ahg20::ElapsedRealtime& ert);
+    bool isWarmedUp() const;
 
-    const DataSink*     m_sink;
-    std::vector<char>   m_buffer;
-    std::optional<double> m_altitude;
+    IGnssCallback&        mCallback;
+    std::optional<std::chrono::steady_clock::time_point> mWarmedUp;
+    std::vector<char>     mBuffer;
+    std::optional<double> mAltitude;
 };
 
 }  // namespace goldfish
