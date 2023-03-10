@@ -16,16 +16,19 @@
 
 #pragma once
 #include <android-base/unique_fd.h>
+#include <future>
 #include <mutex>
 #include <thread>
-#include "data_sink.h"
+#include <android/hardware/gnss/2.0/IGnssCallback.h>
 
 namespace goldfish {
 using ::android::base::unique_fd;
+using ::android::hardware::gnss::V2_0::IGnssCallback;
+using ::android::sp;
 
 class GnssHwConn {
 public:
-    explicit GnssHwConn(const DataSink* sink);
+    explicit GnssHwConn(sp<IGnssCallback> callback);
     ~GnssHwConn();
 
     bool ok() const;
@@ -35,9 +38,9 @@ public:
 private:
     bool sendWorkerThreadCommand(char cmd) const;
 
-    unique_fd m_devFd;      // Goldfish GPS QEMU device
-    unique_fd m_callersFd;  // a channel to talk to the thread
-    std::thread m_thread;
+    unique_fd mDevFd;      // Goldfish GPS QEMU device
+    unique_fd mCallersFd;  // a channel to talk to the thread
+    std::thread mThread;
 };
 
 }  // namespace goldfish
