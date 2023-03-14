@@ -115,7 +115,6 @@ PRODUCT_PACKAGES += \
     libGLESv2_angle
 endif
 
-#
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth-service.default \
