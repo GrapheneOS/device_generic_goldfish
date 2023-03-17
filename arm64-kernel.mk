@@ -19,6 +19,8 @@ SYSTEM_KERNEL_MODULES := \
         kernel/prebuilts/$(TARGET_KERNEL_USE)/arm64/$(_ko))
 VENDOR_KERNEL_MODULES := $(wildcard $(KERNEL_MODULES_PATH)/*.ko)
 
+# Do not strip modules again to preserve GKI modules signature
+BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES := true
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
     $(SYSTEM_KERNEL_MODULES) \
     $(VENDOR_KERNEL_MODULES)
