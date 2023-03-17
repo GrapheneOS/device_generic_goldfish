@@ -22,9 +22,3 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/advancedFeatures.ini.arm:advancedFeatures.ini \
 
 EMULATOR_VENDOR_NO_GNSS := true
-
-ifeq ($(QEMU_DISABLE_AVB),true)
-    PRODUCT_COPY_FILES += \
-      device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
-
-endif

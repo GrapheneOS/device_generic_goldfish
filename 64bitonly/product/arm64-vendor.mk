@@ -23,9 +23,3 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/camera/media/codecs_performance_c2_arm64.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
 
 EMULATOR_VENDOR_NO_GNSS := true
-
-ifeq ($(QEMU_DISABLE_AVB),true)
-    PRODUCT_COPY_FILES += \
-      device/generic/goldfish/data/etc/dummy.vbmeta.img:$(PRODUCT_OUT)/vbmeta.img \
-
-endif
