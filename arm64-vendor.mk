@@ -14,8 +14,7 @@ TARGET_USES_MKE2FS := true
 # take priority  and override the rules it inherit from other mk files
 # see copy file rules in core/Makefile
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/fstab.ranchu.initrd.arm.ex:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
-    device/generic/goldfish/fstab.ranchu.initrd.arm.ex:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/fstab.ranchu \
+    device/generic/goldfish/fstab.ranchu.arm.ex:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
     device/generic/goldfish/fstab.ranchu.arm.ex:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     device/generic/goldfish/task_profiles.json:$(TARGET_COPY_OUT_VENDOR)/etc/task_profiles.json \
