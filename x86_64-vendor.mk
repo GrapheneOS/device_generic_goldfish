@@ -39,6 +39,4 @@ PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
 TARGET_USES_MKE2FS := true
 
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/fstab.ranchu.initrd.ex:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
-    device/generic/goldfish/fstab.ranchu.initrd.ex:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/fstab.ranchu \
     device/generic/goldfish/fstab.ranchu.ex:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
