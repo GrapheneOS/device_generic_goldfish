@@ -8,6 +8,8 @@ SYSTEM_KERNEL_MODULES_INCLUDE := \
     libarc4.ko \
     mac80211.ko \
     rfkill.ko \
+    zram.ko \
+    zsmalloc.ko \
 
 # Deprecated; do not use downstream. This location only includes vendor
 # modules, but system modules may be needed as dependencies
