@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#include "GnssGeofence.h"
 
 namespace aidl {
 namespace android {
@@ -22,25 +22,31 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
+ndk::ScopedAStatus GnssGeofence::setCallback(
+        const std::shared_ptr<IGnssGeofenceCallback>& /*callback*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
+ndk::ScopedAStatus GnssGeofence::addGeofence(int /*geofenceId*/,
+                                             double /*latitudeDegrees*/,
+                                             double /*longitudeDegrees*/,
+                                             double /*radiusMeters*/,
+                                             int /*lastTransition*/,
+                                             int /*monitorTransitions*/,
+                                             int /*notificationResponsivenessMs*/,
+                                             int /*unknownTimerMs*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnFailed() {
+ndk::ScopedAStatus GnssGeofence::pauseGeofence(int /*geofenceId*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
+ndk::ScopedAStatus GnssGeofence::resumeGeofence(int /*geofenceId*/, int /*monitorTransitions*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
+ndk::ScopedAStatus GnssGeofence::removeGeofence(int /*geofenceId*/) {
     return ndk::ScopedAStatus::ok();
 }
 

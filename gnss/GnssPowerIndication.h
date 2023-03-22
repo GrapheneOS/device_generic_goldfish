@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#pragma once
+#include <functional>
+#include <aidl/android/hardware/gnss/BnGnssPowerIndication.h>
 
 namespace aidl {
 namespace android {
@@ -22,27 +24,19 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
-    return ndk::ScopedAStatus::ok();
-}
+struct GnssPowerIndication : public BnGnssPowerIndication {
+    GnssPowerIndication(std::function<double()> getRunningTime);
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
+    ndk::ScopedAStatus setCallback(
+            const std::shared_ptr<IGnssPowerIndicationCallback>& callback) override;
+    ndk::ScopedAStatus requestGnssPowerStats() override;
 
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
+private:
+    ndk::ScopedAStatus doRequestGnssPowerStats(IGnssPowerIndicationCallback&);
 
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
-    return ndk::ScopedAStatus::ok();
-}
+    const std::function<double()> mGetRunningTime;
+    std::shared_ptr<IGnssPowerIndicationCallback> mCb;
+};
 
 }  // namespace implementation
 }  // namespace gnss
