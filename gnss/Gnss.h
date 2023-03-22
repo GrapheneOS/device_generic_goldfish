@@ -15,75 +15,107 @@
  */
 
 #pragma once
-#include <android/hardware/gnss/2.0/IGnss.h>
-#include <mutex>
+#include <chrono>
 #include <memory>
+#include <mutex>
+#include <aidl/android/hardware/gnss/BnGnss.h>
+#include "GnssBatching.h"
+#include "GnssConfiguration.h"
 #include "GnssHwConn.h"
+#include "IDataSink.h"
 
-namespace goldfish {
-namespace ahg = ::android::hardware::gnss;
-namespace ahg20 = ahg::V2_0;
-namespace ahg11 = ahg::V1_1;
-namespace ahg10 = ahg::V1_0;
-namespace ahgmc10 = ahg::measurement_corrections::V1_0;
-namespace ahgvc10 = ahg::visibility_control::V1_0;
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
-using ::android::sp;
-using ::android::hardware::Return;
+using ::aidl::android::hardware::gnss::measurement_corrections::IMeasurementCorrectionsInterface;
+using ::aidl::android::hardware::gnss::visibility_control::IGnssVisibilityControl;
 
-struct Gnss20 : public ahg20::IGnss {
-    // Methods from V2_0::IGnss follow.
-    Return<sp<ahg20::IGnssConfiguration>> getExtensionGnssConfiguration_2_0() override;
-    Return<sp<ahg20::IGnssDebug>> getExtensionGnssDebug_2_0() override;
-    Return<sp<ahg20::IAGnss>> getExtensionAGnss_2_0() override;
-    Return<sp<ahg20::IAGnssRil>> getExtensionAGnssRil_2_0() override;
-    Return<sp<ahg20::IGnssMeasurement>> getExtensionGnssMeasurement_2_0() override;
-    Return<bool> setCallback_2_0(const sp<ahg20::IGnssCallback>& callback) override;
-    Return<sp<ahgmc10::IMeasurementCorrections>>
-    getExtensionMeasurementCorrections() override;
-    Return<sp<ahgvc10::IGnssVisibilityControl>> getExtensionVisibilityControl() override;
-    Return<sp<ahg20::IGnssBatching>> getExtensionGnssBatching_2_0() override;
-    Return<bool> injectBestLocation_2_0(const ahg20::GnssLocation& location) override;
+struct Gnss : public BnGnss, public IDataSink {
+    Gnss();
+    ~Gnss();
 
-    // Methods from V1_1::IGnss follow.
-    Return<bool> setCallback_1_1(const sp<ahg11::IGnssCallback>& callback) override;
-    Return<bool> setPositionMode_1_1(ahg10::IGnss::GnssPositionMode mode,
-                                     ahg10::IGnss::GnssPositionRecurrence recurrence,
-                                     uint32_t minIntervalMs, uint32_t preferredAccuracyMeters,
-                                     uint32_t preferredTimeMs, bool lowPowerMode) override;
-    Return<sp<ahg11::IGnssConfiguration>> getExtensionGnssConfiguration_1_1() override;
-    Return<sp<ahg11::IGnssMeasurement>> getExtensionGnssMeasurement_1_1() override;
-    Return<bool> injectBestLocation(const ahg10::GnssLocation& location) override;
+    ndk::ScopedAStatus setCallback(const std::shared_ptr<IGnssCallback>& callback) override;
+    ndk::ScopedAStatus close() override;
 
-    // Methods from V1_0::IGnss follow.
-    Return<bool> setCallback(const sp<ahg10::IGnssCallback>& callback) override;
-    Return<bool> start() override;
-    Return<bool> stop() override;
-    Return<void> cleanup() override;
-    Return<bool> injectTime(int64_t timeMs, int64_t timeReferenceMs,
-                            int32_t uncertaintyMs) override;
-    Return<bool> injectLocation(double latitudeDegrees, double longitudeDegrees,
-                                float accuracyMeters) override;
-    Return<void> deleteAidingData(ahg10::IGnss::GnssAidingData aidingDataFlags) override;
-    Return<bool> setPositionMode(ahg10::IGnss::GnssPositionMode mode,
-                                 ahg10::IGnss::GnssPositionRecurrence recurrence,
-                                 uint32_t minIntervalMs, uint32_t preferredAccuracyMeters,
-                                 uint32_t preferredTimeMs) override;
-    Return<sp<ahg10::IAGnssRil>> getExtensionAGnssRil() override;
-    Return<sp<ahg10::IGnssGeofencing>> getExtensionGnssGeofencing() override;
-    Return<sp<ahg10::IAGnss>> getExtensionAGnss() override;
-    Return<sp<ahg10::IGnssNi>> getExtensionGnssNi() override;
-    Return<sp<ahg10::IGnssMeasurement>> getExtensionGnssMeasurement() override;
-    Return<sp<ahg10::IGnssNavigationMessage>> getExtensionGnssNavigationMessage() override;
-    Return<sp<ahg10::IGnssXtra>> getExtensionXtra() override;
-    Return<sp<ahg10::IGnssConfiguration>> getExtensionGnssConfiguration() override;
-    Return<sp<ahg10::IGnssDebug>> getExtensionGnssDebug() override;
-    Return<sp<ahg10::IGnssBatching>> getExtensionGnssBatching() override;
+    ndk::ScopedAStatus getExtensionPsds(std::shared_ptr<IGnssPsds>* iGnssPsds) override;
+    ndk::ScopedAStatus getExtensionGnssConfiguration(
+            std::shared_ptr<IGnssConfiguration>* iGnssConfiguration) override;
+    ndk::ScopedAStatus getExtensionGnssMeasurement(
+            std::shared_ptr<IGnssMeasurementInterface>* iGnssMeasurement) override;
+    ndk::ScopedAStatus getExtensionGnssPowerIndication(
+            std::shared_ptr<IGnssPowerIndication>* iGnssPowerIndication) override;
+    ndk::ScopedAStatus getExtensionGnssBatching(
+            std::shared_ptr<IGnssBatching>* iGnssBatching) override;
+    ndk::ScopedAStatus getExtensionGnssGeofence(
+            std::shared_ptr<IGnssGeofence>* iGnssGeofence) override;
+    ndk::ScopedAStatus getExtensionGnssNavigationMessage(
+            std::shared_ptr<IGnssNavigationMessageInterface>* iGnssNavigationMessage) override;
+    ndk::ScopedAStatus getExtensionAGnss(std::shared_ptr<IAGnss>* iAGnss) override;
+    ndk::ScopedAStatus getExtensionAGnssRil(std::shared_ptr<IAGnssRil>* iAGnssRil) override;
+    ndk::ScopedAStatus getExtensionGnssDebug(std::shared_ptr<IGnssDebug>* iGnssDebug) override;
+    ndk::ScopedAStatus getExtensionGnssVisibilityControl(
+            std::shared_ptr<IGnssVisibilityControl>* iGnssVisibilityControl) override;
+
+    ndk::ScopedAStatus start() override;
+    ndk::ScopedAStatus stop() override;
+
+    ndk::ScopedAStatus injectTime(int64_t timeMs, int64_t timeReferenceMs,
+                                  int uncertaintyMs) override;
+    ndk::ScopedAStatus injectLocation(const GnssLocation& location) override;
+    ndk::ScopedAStatus injectBestLocation(const GnssLocation& location) override;
+    ndk::ScopedAStatus deleteAidingData(GnssAidingData aidingDataFlags) override;
+    ndk::ScopedAStatus setPositionMode(const PositionModeOptions& options) override;
+
+    ndk::ScopedAStatus getExtensionGnssAntennaInfo(
+            std::shared_ptr<IGnssAntennaInfo>* iGnssAntennaInfo) override;
+    ndk::ScopedAStatus getExtensionMeasurementCorrections(
+            std::shared_ptr<IMeasurementCorrectionsInterface>* iMeasurementCorrections)
+            override;
+
+    ndk::ScopedAStatus startSvStatus() override;
+    ndk::ScopedAStatus stopSvStatus() override;
+    ndk::ScopedAStatus startNmea() override;
+    ndk::ScopedAStatus stopNmea() override;
+
+    void onGnssStatusCb(IGnssCallback::GnssStatusValue) override;
+    void onGnssSvStatusCb(std::vector<IGnssCallback::GnssSvInfo>) override;
+    void onGnssNmeaCb(int64_t timestampMs, std::string nmea) override;
+    void onGnssLocationCb(GnssLocation location) override;
 
 private:
-    bool open(const sp<ahg20::IGnssCallback>& callback);
+    enum class SessionState {
+        OFF, STARTING, STARTED, STOPPED
+    };
+
+    using Clock = std::chrono::steady_clock;
+
+    double getRunningTime() const;
+    double getRunningTimeLocked(Clock::time_point now) const;
+    bool isWarmedUpLocked(Clock::time_point now) const;
+
+    const std::shared_ptr<GnssBatching> mGnssBatching;
+    const std::shared_ptr<GnssConfiguration> mGnssConfiguration;
+
+    std::shared_ptr<IGnssCallback> mCallback;        // protected by mMtx
+    std::optional<Clock::time_point> mStartT;        // protected by mMtx
+    int mRecurrence = -1;                            // protected by mMtx
+    Clock::duration mMinInterval;                    // protected by mMtx
+    Clock::time_point mFirstFix;                     // protected by mMtx
+    Clock::time_point mLastFix;                      // protected by mMtx
+    SessionState mSessionState = SessionState::OFF;  // protected by mMtx
+    bool mLowPowerMode = false;                      // protected by mMtx
+    bool mSendSvStatus = false;                      // protected by mMtx
+    bool mSendNmea = false;                          // protected by mMtx
+    mutable std::mutex mMtx;
 
     std::unique_ptr<GnssHwConn> mGnssHwConn;
 };
 
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

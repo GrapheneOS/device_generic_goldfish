@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#include <vector>
+#include "GnssVisibilityControl.h"
 
 namespace aidl {
 namespace android {
@@ -22,25 +23,13 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
+ndk::ScopedAStatus GnssVisibilityControl::enableNfwLocationAccess(
+        const std::vector<std::string>& /*hostname*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
+ndk::ScopedAStatus GnssVisibilityControl::setCallback(
+        const std::shared_ptr<IGnssVisibilityControlCallback>& /*callback*/) {
     return ndk::ScopedAStatus::ok();
 }
 

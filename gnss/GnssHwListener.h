@@ -18,48 +18,44 @@
 #include <chrono>
 #include <optional>
 #include <vector>
-#include <android/hardware/gnss/1.0/types.h>
-#include <android/hardware/gnss/2.0/IGnssCallback.h>
-#include <android/hardware/gnss/2.0/types.h>
 
-namespace goldfish {
-namespace ahg = ::android::hardware::gnss;
-namespace ahg20 = ahg::V2_0;
-namespace ahg10 = ahg::V1_0;
+#include <aidl/android/hardware/gnss/ElapsedRealtime.h>
 
-using ahg20::IGnssCallback;
+#include "IDataSink.h"
+
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
 class GnssHwListener {
 public:
-    explicit GnssHwListener(IGnssCallback& callback);
+    explicit GnssHwListener(IDataSink& sink);
     ~GnssHwListener();
 
-    void start();
-    void stop();
-    void consume(const char* buf, size_t size);
-
-    GnssHwListener(const GnssHwListener&) = delete;
-    GnssHwListener(GnssHwListener&&) = delete;
-    GnssHwListener& operator=(const GnssHwListener&) = delete;
-    GnssHwListener& operator=(GnssHwListener&&) = delete;
+    void consume(const char* buf, size_t sz);
 
 private:
     void consume1(char);
-    bool parse(const char* begin, const char* end,
-               const ahg10::GnssUtcTime& t,
-               const ahg20::ElapsedRealtime& ert);
-    bool parseGPRMC(const char* begin, const char* end,
-                    const ahg10::GnssUtcTime& t,
-                    const ahg20::ElapsedRealtime& ert);
-    bool parseGPGGA(const char* begin, const char* end,
-                    const ahg10::GnssUtcTime& t,
-                    const ahg20::ElapsedRealtime& ert);
-    bool isWarmedUp() const;
 
-    IGnssCallback&        mCallback;
-    std::optional<std::chrono::steady_clock::time_point> mWarmedUp;
-    std::vector<char>     mBuffer;
-    std::optional<double> mAltitude;
+    bool parse(const char* begin, const char* end,
+               const int64_t timestampMs,
+               const ElapsedRealtime& ert);
+    bool parseGPRMC(const char* begin, const char* end,
+                    const int64_t timestampMs,
+                    const ElapsedRealtime& ert);
+    bool parseGPGGA(const char* begin, const char* end,
+                    const int64_t timestampMs,
+                    const ElapsedRealtime& ert);
+
+    IDataSink&              mSink;
+    std::vector<char>       mBuffer;
+    std::optional<double>   mAltitude;
 };
 
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

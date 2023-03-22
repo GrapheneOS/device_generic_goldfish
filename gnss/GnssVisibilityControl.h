@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#pragma once
+#include <aidl/android/hardware/gnss/visibility_control/BnGnssVisibilityControl.h>
 
 namespace aidl {
 namespace android {
@@ -22,27 +23,14 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
-    return ndk::ScopedAStatus::ok();
-}
+using visibility_control::BnGnssVisibilityControl;
+using visibility_control::IGnssVisibilityControlCallback;
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
-    return ndk::ScopedAStatus::ok();
-}
+struct GnssVisibilityControl : public BnGnssVisibilityControl {
+    ndk::ScopedAStatus enableNfwLocationAccess(const std::vector<std::string>& hostname) override;
+    ndk::ScopedAStatus setCallback(
+            const std::shared_ptr<IGnssVisibilityControlCallback>& callback) override;
+};
 
 }  // namespace implementation
 }  // namespace gnss

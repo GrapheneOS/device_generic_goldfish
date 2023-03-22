@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#pragma once
+#include <vector>
+#include <aidl/android/hardware/gnss/BnGnssGeofence.h>
 
 namespace aidl {
 namespace android {
@@ -22,27 +24,15 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
-    return ndk::ScopedAStatus::ok();
-}
+struct GnssGeofence : public BnGnssGeofence {
+    ndk::ScopedAStatus setCallback(const std::shared_ptr<IGnssGeofenceCallback>& callback) override;
+    ndk::ScopedAStatus addGeofence(int geofenceId, double latitudeDegrees, double longitudeDegrees,
+                                   double radiusMeters, int lastTransition, int monitorTransitions,
+                                   int notificationResponsivenessMs, int unknownTimerMs) override;
+    ndk::ScopedAStatus pauseGeofence(int geofenceId) override;
+    ndk::ScopedAStatus resumeGeofence(int geofenceId, int monitorTransitions) override;
+    ndk::ScopedAStatus removeGeofence(int geofenceId) override;
+};
 
 }  // namespace implementation
 }  // namespace gnss

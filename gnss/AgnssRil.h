@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,7 @@
  */
 
 #pragma once
-#include <future>
-#include <mutex>
-#include <thread>
-
-#include <android-base/unique_fd.h>
-
-#include <aidl/android/hardware/gnss/IGnssCallback.h>
-
-#include "IDataSink.h"
+#include <aidl/android/hardware/gnss/BnAGnssRil.h>
 
 namespace aidl {
 namespace android {
@@ -31,25 +23,17 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-using ::android::base::unique_fd;
+using AGnssRefLocation = BnAGnssRil::AGnssRefLocation;
 
-class GnssHwConn {
-public:
-    GnssHwConn(IDataSink&);
-    ~GnssHwConn();
-
-    bool ok() const;
-
-private:
-    bool sendWorkerThreadCommand(char cmd) const;
-
-    unique_fd mDevFd;      // Goldfish GPS QEMU device
-    unique_fd mCallersFd;  // a channel to talk to the thread
-    std::thread mThread;
+struct AGnssRil : public BnAGnssRil {
+    ndk::ScopedAStatus setCallback(const std::shared_ptr<IAGnssRilCallback>& callback) override;
+    ndk::ScopedAStatus setRefLocation(const AGnssRefLocation& agnssReflocation) override;
+    ndk::ScopedAStatus setSetId(SetIdType type, const std::string& setid) override;
+    ndk::ScopedAStatus updateNetworkState(const NetworkAttributes& attributes) override;
 };
 
 }  // namespace implementation
 }  // namespace gnss
 }  // namespace hardware
 }  // namespace android
-}  // namespace aidl
+}  // namespace
