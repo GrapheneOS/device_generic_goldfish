@@ -1,3 +1,4 @@
+servicemanager hal_gnss_default binder b/274041413
 init vendor_toolbox_exec file b/183668221
 toolbox dropbox_data_file dir b/183668221
 toolbox heapdump_data_file dir b/183668221
