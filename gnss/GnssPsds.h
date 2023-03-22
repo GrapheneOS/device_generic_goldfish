@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#pragma once
+#include <vector>
+#include <aidl/android/hardware/gnss/BnGnssPsds.h>
 
 namespace aidl {
 namespace android {
@@ -22,27 +24,11 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
-    return ndk::ScopedAStatus::ok();
-}
+struct GnssPsds : public BnGnssPsds {
+    ndk::ScopedAStatus setCallback(const std::shared_ptr<IGnssPsdsCallback>& callback) override;
+    ndk::ScopedAStatus injectPsdsData(PsdsType psdsType,
+                                      const std::vector<uint8_t>& psdsData) override;
+};
 
 }  // namespace implementation
 }  // namespace gnss
