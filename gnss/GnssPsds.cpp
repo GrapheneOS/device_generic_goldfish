@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#include <aidl/android/hardware/gnss/IGnss.h>
+
+#include "GnssPsds.h"
 
 namespace aidl {
 namespace android {
@@ -22,26 +24,18 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
+ndk::ScopedAStatus GnssPsds::setCallback(
+        const std::shared_ptr<IGnssPsdsCallback>& /*callback*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
-    return ndk::ScopedAStatus::ok();
+ndk::ScopedAStatus GnssPsds::injectPsdsData(PsdsType /*psdsType*/,
+                                            const std::vector<uint8_t>& psdsData) {
+    if (psdsData.empty()) {
+        return ndk::ScopedAStatus::fromServiceSpecificError(IGnss::ERROR_INVALID_ARGUMENT);
+    } else {
+        return ndk::ScopedAStatus::ok();
+    }
 }
 
 }  // namespace implementation

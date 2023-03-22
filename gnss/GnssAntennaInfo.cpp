@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#include <aidl/android/hardware/gnss/IGnss.h>
+#include <debug.h>
+#include "GnssAntennaInfo.h"
 
 namespace aidl {
 namespace android {
@@ -22,25 +24,16 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
+ndk::ScopedAStatus GnssAntennaInfo::setCallback(
+        const std::shared_ptr<IGnssAntennaInfoCallback>& callback) {
+    if (!callback) {
+        return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_INVALID_ARGUMENT));
+    }
+
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
+ndk::ScopedAStatus GnssAntennaInfo::close() {
     return ndk::ScopedAStatus::ok();
 }
 
