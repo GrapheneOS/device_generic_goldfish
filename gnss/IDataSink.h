@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#pragma once
+
+#include <string>
+#include <vector>
+
+#include <aidl/android/hardware/gnss/IGnssCallback.h>
+#include <aidl/android/hardware/gnss/GnssLocation.h>
 
 namespace aidl {
 namespace android {
@@ -22,27 +28,14 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
-    return ndk::ScopedAStatus::ok();
-}
+struct IDataSink {
+    virtual ~IDataSink() {}
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
-    return ndk::ScopedAStatus::ok();
-}
+    virtual void onGnssStatusCb(IGnssCallback::GnssStatusValue) = 0;
+    virtual void onGnssSvStatusCb(std::vector<IGnssCallback::GnssSvInfo>) = 0;
+    virtual void onGnssNmeaCb(int64_t timestampMs, std::string nmea) = 0;
+    virtual void onGnssLocationCb(GnssLocation location) = 0;
+};
 
 }  // namespace implementation
 }  // namespace gnss

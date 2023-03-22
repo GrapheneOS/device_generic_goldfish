@@ -15,36 +15,46 @@
  */
 
 #pragma once
-#include <android/hardware/gnss/2.0/IGnssConfiguration.h>
+#include <mutex>
+#include <unordered_set>
+#include <aidl/android/hardware/gnss/BnGnssConfiguration.h>
 
-namespace goldfish {
-namespace ahg = ::android::hardware::gnss;
-namespace ahg20 = ahg::V2_0;
-namespace ahg11 = ahg::V1_1;
-namespace ahg10 = ahg::V1_0;
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
-using ::android::sp;
-using ::android::hardware::hidl_bitfield;
-using ::android::hardware::hidl_vec;
-using ::android::hardware::Return;
+struct GnssConfiguration : public BnGnssConfiguration {
+    ndk::ScopedAStatus setSuplVersion(int version) override;
+    ndk::ScopedAStatus setSuplMode(int mode) override;
+    ndk::ScopedAStatus setLppProfile(int lppProfile) override;
+    ndk::ScopedAStatus setGlonassPositioningProtocol(int protocol) override;
+    ndk::ScopedAStatus setEmergencySuplPdn(bool enable) override;
+    ndk::ScopedAStatus setEsExtensionSec(int emergencyExtensionSeconds) override;
+    ndk::ScopedAStatus setBlocklist(const std::vector<BlocklistedSource>& blocklist) override;
 
-struct Gnss20;
+    bool isBlocklisted(GnssConstellationType constellation, int svid) const;
 
-struct GnssConfiguration20 : public ahg20::IGnssConfiguration {
-    // Methods from ::android::hardware::gnss::V2_0::IGnssConfiguration follow.
-    Return<bool> setEsExtensionSec(uint32_t emergencyExtensionSeconds) override;
+private:
+    struct BlocklistedSourceHasher {
+        size_t operator()(const BlocklistedSource& x) const noexcept;
+    };
 
-    // Methods from ::android::hardware::gnss::V1_1::IGnssConfiguration follow.
-    Return<bool> setBlacklist(const hidl_vec<ahg11::IGnssConfiguration::BlacklistedSource>& blacklist) override;
+    struct BlocklistedSourceEqual {
+        bool operator()(const BlocklistedSource& lhs,
+                        const BlocklistedSource& rhs) const noexcept;
+    };
 
-    // Methods from ::android::hardware::gnss::V1_0::IGnssConfiguration follow.
-    Return<bool> setSuplEs(bool enabled) override;
-    Return<bool> setSuplVersion(uint32_t version) override;
-    Return<bool> setSuplMode(hidl_bitfield<SuplMode> mode) override;
-    Return<bool> setGpsLock(hidl_bitfield<GpsLock> lock) override;
-    Return<bool> setLppProfile(hidl_bitfield<LppProfile> lppProfile) override;
-    Return<bool> setGlonassPositioningProtocol(hidl_bitfield<GlonassPosProtocol> protocol) override;
-    Return<bool> setEmergencySuplPdn(bool enable) override;
+    using BlocklistedSources = std::unordered_set<BlocklistedSource,
+                                                  BlocklistedSourceHasher,
+                                                  BlocklistedSourceEqual>;
+    BlocklistedSources mBlocklistedSources;
+    mutable std::mutex mMtx;
 };
 
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

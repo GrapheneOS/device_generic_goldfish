@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#include "GnssNavigationMessageInterface.h"
 
 namespace aidl {
 namespace android {
@@ -22,25 +22,12 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
+ndk::ScopedAStatus GnssNavigationMessageInterface::setCallback(
+        const std::shared_ptr<IGnssNavigationMessageCallback>& /*callback*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
+ndk::ScopedAStatus GnssNavigationMessageInterface::close() {
     return ndk::ScopedAStatus::ok();
 }
 
