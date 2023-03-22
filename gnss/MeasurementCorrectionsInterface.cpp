@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#include "MeasurementCorrectionsInterface.h"
 
 namespace aidl {
 namespace android {
@@ -22,25 +22,13 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
+ndk::ScopedAStatus MeasurementCorrectionsInterface::setCorrections(
+        const MeasurementCorrections& /*corrections*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnFailed() {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
+ndk::ScopedAStatus MeasurementCorrectionsInterface::setCallback(
+        const std::shared_ptr<IMeasurementCorrectionsCallback>& /*callback*/) {
     return ndk::ScopedAStatus::ok();
 }
 

@@ -15,15 +15,20 @@
  */
 
 #pragma once
+#include <aidl/android/hardware/gnss/BnGnssDebug.h>
 
-#include <android/hardware/gnss/2.0/types.h>
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
-namespace goldfish {
-namespace ahg20 = ::android::hardware::gnss::V2_0;
+struct GnssDebug : public BnGnssDebug {
+    ndk::ScopedAStatus getDebugData(DebugData* debugData) override;
+};
 
-namespace util {
-
-ahg20::ElapsedRealtime makeElapsedRealtime(long long timestampNs);
-
-}  // namespace util
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

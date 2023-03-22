@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-#include "util.h"
+#pragma once
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+#include <aidl/android/hardware/gnss/BnGnssAntennaInfo.h>
 
-namespace goldfish {
-namespace util {
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
-ahg20::ElapsedRealtime makeElapsedRealtime(long long timestampNs) {
-    ahg20::ElapsedRealtime ts = {
-        .flags = ahg20::ElapsedRealtimeFlags::HAS_TIMESTAMP_NS |
-                 ahg20::ElapsedRealtimeFlags::HAS_TIME_UNCERTAINTY_NS,
-        .timestampNs = static_cast<uint64_t>(timestampNs),
-        .timeUncertaintyNs = 1000000
-    };
+struct GnssAntennaInfo : public BnGnssAntennaInfo {
+    ndk::ScopedAStatus setCallback(
+            const std::shared_ptr<IGnssAntennaInfoCallback>& callback) override;
+    ndk::ScopedAStatus close() override;
+};
 
-    return ts;
-}
-
-}  // namespace util
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl
