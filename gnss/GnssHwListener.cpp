@@ -17,13 +17,13 @@
 #include <chrono>
 #include <log/log.h>
 #include <utils/SystemClock.h>
-#include <debug.h>
 #include "GnssHwListener.h"
-#include "util.h"
 
-namespace goldfish {
-using ::android::hardware::hidl_string;
-using ::android::hardware::hidl_vec;
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 
 namespace {
 const char* testNmeaField(const char* i, const char* end,
@@ -63,35 +63,30 @@ double convertDMMF(const int dmm, const int f, int p10) {
 
 double sign(char m, char positive) { return (m == positive) ? 1.0 : -1; }
 
+ElapsedRealtime makeElapsedRealtime(const int64_t timestampNs) {
+    return {
+        .flags = ElapsedRealtime::HAS_TIMESTAMP_NS |
+                 ElapsedRealtime::HAS_TIME_UNCERTAINTY_NS,
+        .timestampNs = timestampNs,
+        .timeUncertaintyNs = 1000000.0
+    };
+}
+
 }  // namespace
 
-GnssHwListener::GnssHwListener(IGnssCallback& callback): mCallback(callback) {
+GnssHwListener::GnssHwListener(IDataSink& sink): mSink(sink) {
     mBuffer.reserve(256);
-    mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_ON);
+    mSink.onGnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_ON);
 }
 
 GnssHwListener::~GnssHwListener() {
-    mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_OFF);
+    mSink.onGnssStatusCb(IGnssCallback::GnssStatusValue::ENGINE_OFF);
 }
 
-void GnssHwListener::start() {
-    if (!mWarmedUp.has_value()) {
-        using namespace std::chrono_literals;
-        mWarmedUp = std::chrono::steady_clock::now() + 3500ms;  /* CTS expects some warming up time */
-        mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
-    }
-}
+void GnssHwListener::consume(const char* buf, size_t sz) {
+    ALOGD("%s:%s:%d sz=%zu", "GnssHwListener", __func__, __LINE__, sz);
 
-void GnssHwListener::stop() {
-    if (mWarmedUp.has_value()) {
-        mCallback.gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_END);
-        mWarmedUp.reset();
-        mBuffer.clear();
-    }
-}
-
-void GnssHwListener::consume(const char* buf, size_t size) {
-    for (; size > 0; --size, ++buf) {
+    for (; sz > 0; ++buf, --sz) {
         consume1(*buf);
     }
 }
@@ -103,15 +98,14 @@ void GnssHwListener::consume1(const char c) {
     if (c == '\n') {
         using namespace std::chrono;
 
-        const ahg10::GnssUtcTime t = time_point_cast<milliseconds>(
+        const int64_t timestampMs = time_point_cast<milliseconds>(
                 system_clock::now()).time_since_epoch().count();
-        const ahg20::ElapsedRealtime ert = util::makeElapsedRealtime(
-                android::elapsedRealtimeNano());
+        const ElapsedRealtime ert = makeElapsedRealtime(
+                ::android::elapsedRealtimeNano());
 
-        if (parse(mBuffer.data() + 1, mBuffer.data() + mBuffer.size() - 2, t, ert)) {
-            if (isWarmedUp()) {
-                mCallback.gnssNmeaCb(t, hidl_string(mBuffer.data(), mBuffer.size()));
-            }
+        if (parse(mBuffer.data() + 1, mBuffer.data() + mBuffer.size() - 2,
+                  timestampMs, ert)) {
+            mSink.onGnssNmeaCb(timestampMs, std::string(mBuffer.data(), mBuffer.size()));
         } else {
             mBuffer.back() = 0;
             ALOGW("%s:%d: failed to parse an NMEA message, '%s'",
@@ -125,14 +119,14 @@ void GnssHwListener::consume1(const char c) {
 }
 
 bool GnssHwListener::parse(const char* begin, const char* end,
-                           const ahg10::GnssUtcTime& t,
-                           const ahg20::ElapsedRealtime& ert) {
+                           const int64_t timestampMs,
+                           const ElapsedRealtime& ert) {
     if (const char* fields = testNmeaField(begin, end, "GPRMC", ',')) {
-        return parseGPRMC(fields, end, t, ert);
+        return parseGPRMC(fields, end, timestampMs, ert);
     } else if (const char* fields = testNmeaField(begin, end, "GPGGA", ',')) {
-        return parseGPGGA(fields, end, t, ert);
+        return parseGPGGA(fields, end, timestampMs, ert);
     } else {
-        return FAILURE(false);
+        return false;
     }
 }
 
@@ -152,8 +146,8 @@ bool GnssHwListener::parse(const char* begin, const char* end,
 //     11  W          East/West
 //     12  *70        checksum
 bool GnssHwListener::parseGPRMC(const char* begin, const char*,
-                                const ahg10::GnssUtcTime& t,
-                                const ahg20::ElapsedRealtime& ert) {
+                                const int64_t timestampMs,
+                                const ElapsedRealtime& ert) {
     double speedKnots = 0;
     double course = 0;
     double variation = 0;
@@ -179,50 +173,44 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
                &speedKnots, &course,
                &ddmoyy,
                &variation, &var_ew) != 13) {
-        return FAILURE(false);
+        return false;
     }
     if (validity != 'A') {
-        return FAILURE(false);
+        return false;
     }
 
-    if (isWarmedUp()) {
-        const double lat = convertDMMF(latdmm, latf, latfConsumed - latdmmConsumed) * sign(ns, 'N');
-        const double lon = convertDMMF(londmm, lonf, lonfConsumed - londmmConsumed) * sign(ew, 'E');
-        const double speed = speedKnots * 0.514444;
+    const double lat = convertDMMF(latdmm, latf, latfConsumed - latdmmConsumed) * sign(ns, 'N');
+    const double lon = convertDMMF(londmm, lonf, lonfConsumed - londmmConsumed) * sign(ew, 'E');
+    const double speed = speedKnots * 0.514444;
 
-        ahg20::GnssLocation loc20;
-        loc20.elapsedRealtime = ert;
+    GnssLocation loc;
+    loc.elapsedRealtime = ert;
 
-        auto& loc10 = loc20.v1_0;
+    loc.latitudeDegrees = lat;
+    loc.longitudeDegrees = lon;
+    loc.speedMetersPerSec = speed;
+    loc.bearingDegrees = course;
+    loc.horizontalAccuracyMeters = 5;
+    loc.speedAccuracyMetersPerSecond = .5;
+    loc.bearingAccuracyDegrees = 30;
+    loc.timestampMillis = timestampMs;
 
-        loc10.latitudeDegrees = lat;
-        loc10.longitudeDegrees = lon;
-        loc10.speedMetersPerSec = speed;
-        loc10.bearingDegrees = course;
-        loc10.horizontalAccuracyMeters = 5;
-        loc10.speedAccuracyMetersPerSecond = .5;
-        loc10.bearingAccuracyDegrees = 30;
-        loc10.timestamp = t;
+    loc.gnssLocationFlags =
+        GnssLocation::HAS_LAT_LONG |
+        GnssLocation::HAS_SPEED |
+        GnssLocation::HAS_BEARING |
+        GnssLocation::HAS_HORIZONTAL_ACCURACY |
+        GnssLocation::HAS_SPEED_ACCURACY |
+        GnssLocation::HAS_BEARING_ACCURACY;
 
-        using ahg10::GnssLocationFlags;
-        loc10.gnssLocationFlags =
-            GnssLocationFlags::HAS_LAT_LONG |
-            GnssLocationFlags::HAS_SPEED |
-            GnssLocationFlags::HAS_BEARING |
-            GnssLocationFlags::HAS_HORIZONTAL_ACCURACY |
-            GnssLocationFlags::HAS_SPEED_ACCURACY |
-            GnssLocationFlags::HAS_BEARING_ACCURACY;
-
-        if (mAltitude.has_value()) {
-            loc10.altitudeMeters = mAltitude.value();
-            loc10.verticalAccuracyMeters = .5;
-            loc10.gnssLocationFlags |= GnssLocationFlags::HAS_ALTITUDE |
-                                       GnssLocationFlags::HAS_VERTICAL_ACCURACY;
-
-        }
-
-        mCallback.gnssLocationCb_2_0(loc20);
+    if (mAltitude.has_value()) {
+        loc.altitudeMeters = mAltitude.value();
+        loc.verticalAccuracyMeters = .5;
+        loc.gnssLocationFlags |= GnssLocation::HAS_ALTITUDE |
+                                 GnssLocation::HAS_VERTICAL_ACCURACY;
     }
+
+    mSink.onGnssLocationCb(loc);
 
     return true;
 }
@@ -243,8 +231,8 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
 //    dgps age         <dontcare> time in seconds since last DGPS fix
 //    dgps sid         <dontcare> DGPS station id
 bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
-                                const ahg10::GnssUtcTime&,
-                                const ahg20::ElapsedRealtime&) {
+                                const int64_t /*timestampMs*/,
+                                const ElapsedRealtime& /*ert*/) {
     double altitude = 0;
     int latdmm = 0;
     int londmm = 0;
@@ -269,46 +257,43 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
                &fixQuality,
                &nSatellites,
                &consumed) != 9) {
-        return FAILURE(false);
+        return false;
     }
 
     begin = skipAfter(begin + consumed, end, ',');  // skip HDOP
     if (!begin) {
-        return FAILURE(false);
+        return false;
     }
     if (sscanf(begin, "%lf,%c,", &altitude, &altitudeUnit) != 2) {
-        return FAILURE(false);
+        return false;
     }
     if (altitudeUnit != 'M') {
-        return FAILURE(false);
+        return false;
     }
 
     mAltitude = altitude;
 
-    if (isWarmedUp()) {
-        hidl_vec<ahg20::IGnssCallback::GnssSvInfo> svInfo(nSatellites);
-        for (int i = 0; i < nSatellites; ++i) {
-            auto* info20 = &svInfo[i];
-            auto* info10 = &info20->v1_0;
+    std::vector<IGnssCallback::GnssSvInfo> svInfo(nSatellites);
+    for (int i = 0; i < nSatellites; ++i) {
+        auto* info = &svInfo[i];
 
-            info20->constellation = ahg20::GnssConstellationType::GPS;
-            info10->svid = i + 3;
-            info10->constellation = ahg10::GnssConstellationType::GPS;
-            info10->cN0Dbhz = 30;
-            info10->elevationDegrees = 0;
-            info10->azimuthDegrees = 0;
-            info10->carrierFrequencyHz = 1.59975e+09;
-            info10->svFlag = ahg10::IGnssCallback::GnssSvFlags::HAS_CARRIER_FREQUENCY | 0;
-        }
-
-        mCallback.gnssSvStatusCb_2_0(svInfo);
+        info->svid = i + 3;
+        info->constellation = GnssConstellationType::GPS;
+        info->cN0Dbhz = 30;
+        info->basebandCN0DbHz = 42;
+        info->elevationDegrees = 0;
+        info->azimuthDegrees = 0;
+        info->carrierFrequencyHz = 1.59975e+09;
+        info->svFlag = static_cast<int>(IGnssCallback::GnssSvFlags::HAS_CARRIER_FREQUENCY);
     }
+
+    mSink.onGnssSvStatusCb(std::move(svInfo));
 
     return true;
 }
 
-bool GnssHwListener::isWarmedUp() const {
-    return mWarmedUp.has_value() && (std::chrono::steady_clock::now() >= mWarmedUp.value());
-}
-
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

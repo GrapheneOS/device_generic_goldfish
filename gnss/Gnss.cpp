@@ -17,200 +17,357 @@
 #include <log/log.h>
 #include <debug.h>
 
-#include "Gnss.h"
-#include "GnssConfiguration.h"
-#include "GnssMeasurement.h"
 #include "Agnss.h"
+#include "AgnssRil.h"
+#include "GnssAntennaInfo.h"
+#include "GnssBatching.h"
+#include "GnssDebug.h"
+#include "GnssGeofence.h"
+#include "GnssMeasurementInterface.h"
+#include "GnssNavigationMessageInterface.h"
+#include "GnssPowerIndication.h"
+#include "GnssPsds.h"
+#include "GnssVisibilityControl.h"
+#include "Gnss.h"
+#include "MeasurementCorrectionsInterface.h"
 
+namespace aidl {
+namespace android {
+namespace hardware {
+namespace gnss {
+namespace implementation {
 namespace {
 constexpr char kGnssDeviceName[] = "Android Studio Emulator GPS";
-};
+}  // namespace
 
-namespace goldfish {
-
-Return<sp<ahg20::IGnssConfiguration>> Gnss20::getExtensionGnssConfiguration_2_0() {
-    return new GnssConfiguration20();
+Gnss::Gnss()
+        : mGnssBatching(ndk::SharedRefBase::make<GnssBatching>())
+        , mGnssConfiguration(ndk::SharedRefBase::make<GnssConfiguration>()) {
 }
 
-Return<sp<ahg20::IGnssDebug>> Gnss20::getExtensionGnssDebug_2_0() {
-    return nullptr;
+Gnss::~Gnss() {
 }
 
-Return<sp<ahg20::IAGnss>> Gnss20::getExtensionAGnss_2_0() {
-    return new AGnss20();
-}
-
-Return<sp<ahg20::IAGnssRil>> Gnss20::getExtensionAGnssRil_2_0() {
-    return nullptr;
-}
-
-Return<sp<ahg20::IGnssMeasurement>> Gnss20::getExtensionGnssMeasurement_2_0() {
-    return new GnssMeasurement20();
-}
-
-Return<bool> Gnss20::setCallback_2_0(const sp<ahg20::IGnssCallback>& callback) {
+ndk::ScopedAStatus Gnss::setCallback(const std::shared_ptr<IGnssCallback>& callback) {
     if (callback == nullptr) {
-        return FAILURE(false);
-    } else if (open(callback)) {
-        using Caps = ahg20::IGnssCallback::Capabilities;
-        callback->gnssSetCapabilitiesCb_2_0(Caps::MEASUREMENTS | 0);
-        callback->gnssNameCb(kGnssDeviceName);
-        callback->gnssSetSystemInfoCb({.yearOfHw = 2020});
-
-        return true;
-    } else {
-        return false;
+        return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_INVALID_ARGUMENT));
     }
+
+    callback->gnssSetCapabilitiesCb(IGnssCallback::CAPABILITY_MEASUREMENTS |
+                                    IGnssCallback::CAPABILITY_SCHEDULING);
+
+    callback->gnssSetSystemInfoCb({.yearOfHw = 2023, .name = kGnssDeviceName});
+
+    std::lock_guard<std::mutex> lock(mMtx);
+    mCallback = callback;
+
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<sp<ahgmc10::IMeasurementCorrections>> Gnss20::getExtensionMeasurementCorrections() {
-    return nullptr;
-}
-
-Return<sp<ahgvc10::IGnssVisibilityControl>> Gnss20::getExtensionVisibilityControl() {
-    return nullptr;
-}
-
-Return<sp<ahg20::IGnssBatching>> Gnss20::getExtensionGnssBatching_2_0() {
-    return nullptr;
-}
-
-Return<bool> Gnss20::injectBestLocation_2_0(const ahg20::GnssLocation& location) {
-    (void)location;
-    return true;
-}
-
-Return<bool> Gnss20::setPositionMode_1_1(ahg10::IGnss::GnssPositionMode mode,
-                                         ahg10::IGnss::GnssPositionRecurrence recurrence,
-                                         uint32_t minIntervalMs, uint32_t preferredAccuracyMeters,
-                                         uint32_t preferredTimeMs, bool lowPowerMode) {
-    (void)mode;
-    (void)recurrence;
-    (void)minIntervalMs;
-    (void)preferredAccuracyMeters;
-    (void)preferredTimeMs;
-    (void)lowPowerMode;
-    return true;
-}
-
-Return<bool> Gnss20::start() {
-    if (mGnssHwConn) {
-        return mGnssHwConn->start();
-    } else {
-        return FAILURE(false);
-    }
-}
-
-Return<bool> Gnss20::stop() {
-    if (mGnssHwConn) {
-        return mGnssHwConn->stop();
-    } else {
-        return FAILURE(false);
-    }
-}
-
-Return<void> Gnss20::cleanup() {
+ndk::ScopedAStatus Gnss::close() {
     mGnssHwConn.reset();
-    return {};
+
+    std::lock_guard<std::mutex> lock(mMtx);
+    mCallback.reset();
+
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> Gnss20::injectTime(int64_t timeMs, int64_t timeReferenceMs,
-                                int32_t uncertaintyMs) {
-    (void)timeMs;
-    (void)timeReferenceMs;
-    (void)uncertaintyMs;
-    return true;
+ndk::ScopedAStatus Gnss::getExtensionPsds(std::shared_ptr<IGnssPsds>* iGnssPsds) {
+    *iGnssPsds = ndk::SharedRefBase::make<GnssPsds>();
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<bool> Gnss20::injectLocation(double latitudeDegrees, double longitudeDegrees,
-                                    float accuracyMeters) {
-    (void)latitudeDegrees;
-    (void)longitudeDegrees;
-    (void)accuracyMeters;
-    return false;
+ndk::ScopedAStatus Gnss::getExtensionGnssConfiguration(
+        std::shared_ptr<IGnssConfiguration>* iGnssConfiguration) {
+    *iGnssConfiguration = mGnssConfiguration;
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<void> Gnss20::deleteAidingData(ahg10::IGnss::GnssAidingData aidingDataFlags) {
-    (void)aidingDataFlags;
-    return {};
+ndk::ScopedAStatus Gnss::getExtensionGnssMeasurement(
+        std::shared_ptr<IGnssMeasurementInterface>* iGnssMeasurement) {
+    *iGnssMeasurement = ndk::SharedRefBase::make<GnssMeasurementInterface>();
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<sp<ahg10::IGnssGeofencing>> Gnss20::getExtensionGnssGeofencing() {
-    return nullptr;
+ndk::ScopedAStatus Gnss::getExtensionGnssPowerIndication(
+        std::shared_ptr<IGnssPowerIndication>* iGnssPowerIndication) {
+    *iGnssPowerIndication = ndk::SharedRefBase::make<GnssPowerIndication>(
+        std::bind(&Gnss::getRunningTime, this));
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<sp<ahg10::IGnssNavigationMessage>> Gnss20::getExtensionGnssNavigationMessage() {
-    return nullptr;
+ndk::ScopedAStatus Gnss::getExtensionGnssBatching(
+        std::shared_ptr<IGnssBatching>* iGnssBatching) {
+    *iGnssBatching = mGnssBatching;
+    return ndk::ScopedAStatus::ok();
 }
 
-Return<sp<ahg10::IGnssXtra>> Gnss20::getExtensionXtra() {
-    return nullptr;
+ndk::ScopedAStatus Gnss::getExtensionGnssGeofence(
+        std::shared_ptr<IGnssGeofence>* iGnssGeofence) {
+    *iGnssGeofence = ndk::SharedRefBase::make<GnssGeofence>();
+    return ndk::ScopedAStatus::ok();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-bool Gnss20::open(const sp<ahg20::IGnssCallback>& callback) {
-    auto conn = std::make_unique<GnssHwConn>(callback);
-    if (conn->ok()) {
+ndk::ScopedAStatus Gnss::getExtensionGnssNavigationMessage(
+        std::shared_ptr<IGnssNavigationMessageInterface>* iGnssNavigationMessage) {
+    *iGnssNavigationMessage = ndk::SharedRefBase::make<GnssNavigationMessageInterface>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::getExtensionAGnss(std::shared_ptr<IAGnss>* iAGnss) {
+    *iAGnss = ndk::SharedRefBase::make<AGnss>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::getExtensionAGnssRil(std::shared_ptr<IAGnssRil>* iAGnssRil) {
+    *iAGnssRil = ndk::SharedRefBase::make<AGnssRil>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::getExtensionGnssDebug(std::shared_ptr<IGnssDebug>* iGnssDebug) {
+    *iGnssDebug = ndk::SharedRefBase::make<GnssDebug>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::getExtensionGnssVisibilityControl(
+        std::shared_ptr<IGnssVisibilityControl>* iGnssVisibilityControl) {
+    *iGnssVisibilityControl = ndk::SharedRefBase::make<GnssVisibilityControl>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::start() {
+    {
+        std::lock_guard<std::mutex> lock(mMtx);
+        if (!mCallback) {
+            return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_INVALID_ARGUMENT));
+        }
+    }
+
+    if (!mGnssHwConn) {
+        auto conn = std::make_unique<GnssHwConn>(*this);
+        if (!conn->ok()) {
+            return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_GENERIC));
+        }
+
+        std::lock_guard<std::mutex> lock(mMtx);
+        mSessionState = SessionState::STARTING;
+        mStartT = std::chrono::steady_clock::now();
         mGnssHwConn = std::move(conn);
-        return true;
-    } else {
-        return FAILURE(false);
+    }
+
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::stop() {
+    if (!mGnssHwConn) {
+        return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_INVALID_ARGUMENT));
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(mMtx);
+        if (mCallback) {
+            if (mSessionState == SessionState::STARTED) {
+                mCallback->gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_END);
+                mSessionState = SessionState::STOPPED;
+            }
+        } else {
+            return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_INVALID_ARGUMENT));
+        }
+    }
+
+    mGnssHwConn.reset();
+
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::injectTime(int64_t /*timeMs*/,
+                                    int64_t /*timeReferenceMs*/,
+                                    int /*uncertaintyMs*/) {
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::injectLocation(const GnssLocation& /*location*/) {
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::injectBestLocation(const GnssLocation& /*location*/) {
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::deleteAidingData(const GnssAidingData /*aidingDataFlags*/) {
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::setPositionMode(const PositionModeOptions& options) {
+    if (options.minIntervalMs < 0) {
+        return ndk::ScopedAStatus::fromExceptionCode(FAILURE(IGnss::ERROR_INVALID_ARGUMENT));
+    }
+
+    std::lock_guard<std::mutex> lock(mMtx);
+
+    mRecurrence = options.recurrence ==
+        (IGnss::GnssPositionRecurrence::RECURRENCE_PERIODIC) ? -1 : 1;
+    mMinInterval = std::chrono::milliseconds(options.minIntervalMs);
+    mFirstFix = Clock::now();
+    mLastFix = mFirstFix - mMinInterval;
+    mLowPowerMode = options.lowPowerMode;
+
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::getExtensionGnssAntennaInfo(
+        std::shared_ptr<IGnssAntennaInfo>* iGnssAntennaInfo) {
+    *iGnssAntennaInfo = ndk::SharedRefBase::make<GnssAntennaInfo>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::getExtensionMeasurementCorrections(
+        std::shared_ptr<IMeasurementCorrectionsInterface>* iMeasurementCorrections) {
+    *iMeasurementCorrections = ndk::SharedRefBase::make<MeasurementCorrectionsInterface>();
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::startSvStatus() {
+    std::lock_guard<std::mutex> lock(mMtx);
+    mSendSvStatus = true;
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::stopSvStatus() {
+    std::lock_guard<std::mutex> lock(mMtx);
+    mSendSvStatus = false;
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::startNmea() {
+    std::lock_guard<std::mutex> lock(mMtx);
+    mSendNmea = true;
+    return ndk::ScopedAStatus::ok();
+}
+
+ndk::ScopedAStatus Gnss::stopNmea() {
+    std::lock_guard<std::mutex> lock(mMtx);
+    mSendNmea = false;
+    return ndk::ScopedAStatus::ok();
+}
+
+void Gnss::onGnssStatusCb(const IGnssCallback::GnssStatusValue status) {
+    std::lock_guard<std::mutex> lock(mMtx);
+    if (mCallback) {
+        mCallback->gnssStatusCb(status);
     }
 }
 
-//// deprecated and old versions ///////////////////////////////////////////////
-Return<bool> Gnss20::setCallback_1_1(const sp<ahg11::IGnssCallback>&) {
-    return false;
+void Gnss::onGnssSvStatusCb(std::vector<IGnssCallback::GnssSvInfo> svInfo) {
+    std::lock_guard<std::mutex> lock(mMtx);
+    if (!mCallback || !mSendSvStatus) {
+        return;
+    }
+
+    switch (mSessionState) {
+    case SessionState::STARTING:
+        mCallback->gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
+        mSessionState = SessionState::STARTED;
+        break;
+
+    case SessionState::STARTED:
+        break;  // do nothing
+
+    default:
+        return;
+    }
+
+    mCallback->gnssSvStatusCb(std::move(svInfo));
 }
 
-Return<sp<ahg11::IGnssMeasurement>> Gnss20::getExtensionGnssMeasurement_1_1() {
-    return nullptr;
+void Gnss::onGnssNmeaCb(const int64_t timestampMs, std::string nmea) {
+    std::lock_guard<std::mutex> lock(mMtx);
+    if (!mCallback || !mSendNmea) {
+        return;
+    }
+
+    if (!isWarmedUpLocked(Clock::now())) {
+        return;
+    }
+
+    switch (mSessionState) {
+    case SessionState::STARTING:
+        mCallback->gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
+        mSessionState = SessionState::STARTED;
+        break;
+
+    case SessionState::STARTED:
+        break;  // do nothing
+
+    default:
+        return;
+    }
+
+    mCallback->gnssNmeaCb(timestampMs, std::move(nmea));
 }
 
-Return<sp<ahg11::IGnssConfiguration>> Gnss20::getExtensionGnssConfiguration_1_1() {
-    return nullptr;
+void Gnss::onGnssLocationCb(GnssLocation location) {
+    ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
+
+    std::lock_guard<std::mutex> lock(mMtx);
+    if (!mCallback) {
+        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
+        return;
+    }
+
+    const auto now = Clock::now();
+    if (!isWarmedUpLocked(now) || (now < mFirstFix) || (now < (mLastFix + mMinInterval))) {
+        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
+        return;
+    }
+
+    switch (mSessionState) {
+    case SessionState::STARTING:
+        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
+        mCallback->gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
+        mSessionState = SessionState::STARTED;
+        break;
+
+    case SessionState::STARTED:
+        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
+        break;  // do nothing
+
+    default:
+        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
+        return;
+    }
+
+    if (mRecurrence == 0) {
+        return;
+    } else if (mRecurrence > 0) {
+        --mRecurrence;
+    }
+
+    mLastFix = now;
+    mCallback->gnssLocationCb(location);
+    mGnssBatching->onGnssLocationCb(std::move(location));
 }
 
-Return<bool> Gnss20::setCallback(const sp<ahg10::IGnssCallback>&) {
-    return false;
+double Gnss::getRunningTime() const {
+    std::lock_guard<std::mutex> lock(mMtx);
+    return getRunningTimeLocked(Clock::now());
 }
 
-Return<sp<ahg10::IGnssMeasurement>> Gnss20::getExtensionGnssMeasurement() {
-    return nullptr;
+double Gnss::getRunningTimeLocked(const Clock::time_point now) const {
+    if (mStartT.has_value()) {
+        return std::chrono::duration<double>(now - mStartT.value()).count();
+    } else {
+        return 0.0;
+    }
 }
 
-Return<sp<ahg10::IAGnss>> Gnss20::getExtensionAGnss() {
-    return nullptr;
+bool Gnss::isWarmedUpLocked(const Clock::time_point now) const {
+    return getRunningTimeLocked(now) >= 3.5;   // CTS requires warming up time
 }
 
-Return<sp<ahg10::IGnssNi>> Gnss20::getExtensionGnssNi() {
-    return nullptr;
-}
-
-Return<sp<ahg10::IGnssDebug>> Gnss20::getExtensionGnssDebug() {
-    return nullptr;
-}
-
-Return<sp<ahg10::IGnssBatching>> Gnss20::getExtensionGnssBatching() {
-    return nullptr;
-}
-
-Return<bool> Gnss20::injectBestLocation(const ahg10::GnssLocation&) {
-    return false;
-}
-
-Return<bool> Gnss20::setPositionMode(ahg10::IGnss::GnssPositionMode,
-                                     ahg10::IGnss::GnssPositionRecurrence,
-                                     uint32_t, uint32_t, uint32_t) {
-    return false;
-}
-
-Return<sp<ahg10::IGnssConfiguration>> Gnss20::getExtensionGnssConfiguration() {
-    return nullptr;
-}
-
-Return<sp<ahg10::IAGnssRil>> Gnss20::getExtensionAGnssRil() {
-    return nullptr;
-}
-
-}  // namespace goldfish
+}  // namespace implementation
+}  // namespace gnss
+}  // namespace hardware
+}  // namespace android
+}  // namespace aidl

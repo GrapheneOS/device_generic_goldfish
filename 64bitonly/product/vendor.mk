@@ -52,7 +52,7 @@ PRODUCT_VENDOR_PROPERTIES += \
 
 # Device modules
 PRODUCT_PACKAGES += \
-    android.hardware.drm-service.clearkey \
+    android.hardware.drm-service-lazy.clearkey \
     android.hardware.gatekeeper@1.0-service.software \
     android.hardware.usb-service.example \
     vulkan.ranchu \
@@ -156,7 +156,7 @@ PRODUCT_PACKAGES += \
     NavigationBarMode2ButtonOverlay \
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
-PRODUCT_PACKAGES += android.hardware.gnss@2.0-service.ranchu
+PRODUCT_PACKAGES += android.hardware.gnss-service.ranchu
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SENSORS),true)
