@@ -1,3 +1,4 @@
+vendor.dlkm.modules.ready      u:object_r:vendor_dlkm_prop:s0 exact bool
 vendor.qemu.adb.copykey    u:object_r:vendor_qemu_adb_prop:s0 exact bool
 vendor.qemu.keyboard_layout    u:object_r:vendor_qemu_prop:s0 exact string
 vendor.qemu.logcat_filter u:object_r:vendor_qemu_prop:s0 exact string

@@ -68,7 +68,8 @@ PRODUCT_PACKAGES += \
     goldfish_overlay_connectivity_gsi \
     EmulatorTetheringConfigOverlay \
     MultiDisplayProvider \
-    libGoldfishProfiler
+    libGoldfishProfiler \
+    dlkm_loader
 
 ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
     PRODUCT_PACKAGES += \
