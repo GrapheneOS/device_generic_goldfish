@@ -34,6 +34,7 @@
 /system_ext/bin/init\.qemu-adb-keys\.sh u:object_r:goldfish_system_setup_exec:s0
 /vendor/bin/init\.ranchu-core\.sh u:object_r:goldfish_setup_exec:s0
 /vendor/bin/init\.ranchu-net\.sh u:object_r:goldfish_setup_exec:s0
+/vendor/bin/dlkm_loader  u:object_r:dlkm_loader_exec:s0
 /vendor/bin/qemu-export-property    u:object_r:qemu_export_property_exec:s0
 /vendor/bin/qemu-props       u:object_r:qemu_props_exec:s0
 /vendor/bin/mac80211_create_radios u:object_r:mac80211_create_radios_exec:s0
