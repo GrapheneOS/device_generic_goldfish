@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "Agnss.h"
+#include "AgnssRil.h"
 
 namespace aidl {
 namespace android {
@@ -22,25 +22,19 @@ namespace hardware {
 namespace gnss {
 namespace implementation {
 
-ndk::ScopedAStatus AGnss::setCallback(const std::shared_ptr<IAGnssCallback>& /*callback*/) {
+ndk::ScopedAStatus AGnssRil::setCallback(const std::shared_ptr<IAGnssRilCallback>& /*callback*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnClosed() {
+ndk::ScopedAStatus AGnssRil::setRefLocation(const AGnssRefLocation& /*agnssReflocation*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::dataConnFailed() {
+ndk::ScopedAStatus AGnssRil::setSetId(SetIdType /*type*/, const std::string& /*setid*/) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus AGnss::setServer(AGnssType /*type*/, const std::string& /*hostname*/,
-                                    int /*port*/) {
-    return ndk::ScopedAStatus::ok();
-}
-
-ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::string& /*apn*/,
-                                       ApnIpType /*apnIpType*/) {
+ndk::ScopedAStatus AGnssRil::updateNetworkState(const NetworkAttributes& /*attributes*/) {
     return ndk::ScopedAStatus::ok();
 }
 
@@ -48,4 +42,4 @@ ndk::ScopedAStatus AGnss::dataConnOpen(int64_t /*networkHandle*/, const std::str
 }  // namespace gnss
 }  // namespace hardware
 }  // namespace android
-}  // namespace aidl
+}  // namespace
