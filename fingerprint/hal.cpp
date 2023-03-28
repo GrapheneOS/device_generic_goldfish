@@ -28,7 +28,7 @@ constexpr char SW_COMPONENT_ID[] = "matchingAlgorithm";
 } // namespace
 
 ndk::ScopedAStatus Hal::getSensorProps(std::vector<SensorProps>* out) {
-    const std::vector<common::ComponentInfo> componentInfo = {
+    std::vector<common::ComponentInfo> componentInfo = {
         {
             HW_COMPONENT_ID,
             XW_VERSION,
@@ -45,30 +45,30 @@ ndk::ScopedAStatus Hal::getSensorProps(std::vector<SensorProps>* out) {
         }
     };
 
-    const SensorLocation sensorLocation = {
-        0 /* displayId */,
-        0 /* sensorLocationX */,
-        0 /* sensorLocationY */,
-        0 /* sensorRadius */
-    };
+    SensorLocation sensorLocation;
+    sensorLocation.sensorLocationX = 0;
+    sensorLocation.sensorLocationY = 0;
+    sensorLocation.sensorRadius = 0;
+    sensorLocation.display = "";
 
-    *out = {
-        {
-            {
-                0,                          // sensorId
-                common::SensorStrength::STRONG,
-                Storage::getMaxEnrollmentsPerUser(),
-                componentInfo
-            },
-            FingerprintSensorType::REAR,    // sensorType
-            {
-                sensorLocation
-            },
-            false,                          // supportsNavigationGestures
-            true,                           // supportsDetectInteraction
-        }
-    };
+    TouchDetectionParameters touchDetectionParameters;
+    touchDetectionParameters.targetSize = 1.0;
+    touchDetectionParameters.minOverlap = 0.2;
 
+    SensorProps props;
+    props.commonProps.sensorId = 0;
+    props.commonProps.sensorStrength = common::SensorStrength::STRONG;
+    props.commonProps.maxEnrollmentsPerUser = Storage::getMaxEnrollmentsPerUser();
+    props.commonProps.componentInfo = std::move(componentInfo);
+    props.sensorType = FingerprintSensorType::REAR;
+    props.sensorLocations.push_back(std::move(sensorLocation));
+    props.supportsNavigationGestures = false;
+    props.supportsDetectInteraction = true;
+    props.halHandlesDisplayTouches = false;
+    props.halControlsIllumination = false;
+    props.touchDetectionParameters = touchDetectionParameters;
+
+    out->push_back(std::move(props));
     return ndk::ScopedAStatus::ok();
 }
 
