@@ -23,6 +23,8 @@ on early-init
     setprop debug.sf.nobootanimation ${ro.boot.debug.sf.nobootanimation}
     setprop vendor.qemu.dev.bootcomplete 0
 
+    start vendor.dlkm_loader
+
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
     setrlimit memlock 8388608 8388608
@@ -77,6 +79,13 @@ on boot
 
     # Create an unused USB gadget to allow sysfs testing
     mkdir /config/usb_gadget/g1 0770 root root
+
+service vendor.dlkm_loader /vendor/bin/dlkm_loader
+    class main
+    user root
+    group root system
+    disabled
+    oneshot
 
 service ranchu-setup /vendor/bin/init.ranchu-core.sh
     user root
