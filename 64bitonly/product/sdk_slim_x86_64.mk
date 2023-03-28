@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-QEMU_USE_SYSTEM_EXT_PARTITIONS := true
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 # This is a build configuration for the 'slim' image targeted
 # for headless automated testing. Compared to the full AOSP 'sdk_phone'
