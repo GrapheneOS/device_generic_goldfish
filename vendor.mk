@@ -78,6 +78,7 @@ PRODUCT_PACKAGES += \
     goldfish_overlay_connectivity_gsi \
     MultiDisplayProvider \
     libGoldfishProfiler \
+    dlkm_loader
 
 ifneq ($(EMULATOR_DISABLE_RADIO),true)
 PRODUCT_PACKAGES += \
