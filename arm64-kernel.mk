@@ -1,32 +1,33 @@
-TARGET_KERNEL_USE ?= 5.15
+TARGET_KERNEL_USE ?= 6.1
 
-SYSTEM_KERNEL_MODULES_INCLUDE := \
-    bluetooth.ko \
-    btbcm.ko \
-    can-dev.ko \
-    cfg80211.ko \
-    libarc4.ko \
-    mac80211.ko \
-    rfkill.ko \
+KERNEL_ARTIFACTS_PATH := kernel/prebuilts/$(TARGET_KERNEL_USE)/arm64
 
-# Deprecated; do not use downstream. This location only includes vendor
-# modules, but system modules may be needed as dependencies
-KERNEL_MODULES_PATH := \
+VIRTUAL_DEVICE_KERNEL_MODULES_PATH := \
     kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/arm64
 
-SYSTEM_KERNEL_MODULES := \
-    $(foreach _ko,$(SYSTEM_KERNEL_MODULES_INCLUDE),\
-        kernel/prebuilts/$(TARGET_KERNEL_USE)/arm64/$(_ko))
-VENDOR_KERNEL_MODULES := $(wildcard $(KERNEL_MODULES_PATH)/*.ko)
+# The list of modules to reach the second stage. For performance reasons we
+# don't want to put all modules into the ramdisk.
+RAMDISK_KERNEL_MODULES := \
+    virtio_blk.ko \
+    virtio_console.ko \
+    virtio_dma_buf.ko \
+    virtio_mmio.ko \
+    virtio_pci.ko \
+    virtio_pci_legacy_dev.ko \
+    virtio_pci_modern_dev.ko \
+    virtio-rng.ko \
+    vmw_vsock_virtio_transport.ko \
 
-# b/274586753: it seems that striping is needed, for now, until
-# we figured out what exactly caused the problem when modules are
-# not stripped
-# originally, "Do not strip modules again to preserve GKI modules signature"
-# but it broke snapshot boot, so strip again
-# BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES := true
-BOARD_VENDOR_RAMDISK_KERNEL_MODULES += \
-    $(SYSTEM_KERNEL_MODULES) \
-    $(VENDOR_KERNEL_MODULES)
+BOARD_SYSTEM_KERNEL_MODULES := $(wildcard $(KERNEL_ARTIFACTS_PATH)/*.ko)
 
-EMULATOR_KERNEL_FILE := kernel/prebuilts/$(TARGET_KERNEL_USE)/arm64/kernel-$(TARGET_KERNEL_USE)-gz
+BOARD_VENDOR_RAMDISK_KERNEL_MODULES := \
+    $(patsubst %,$(VIRTUAL_DEVICE_KERNEL_MODULES_PATH)/%,$(RAMDISK_KERNEL_MODULES))
+
+BOARD_VENDOR_KERNEL_MODULES := \
+    $(filter-out $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES),\
+                 $(wildcard $(VIRTUAL_DEVICE_KERNEL_MODULES_PATH)/*.ko))
+
+BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE := \
+    device/generic/goldfish/kernel_modules.blocklist
+
+EMULATOR_KERNEL_FILE := $(KERNEL_ARTIFACTS_PATH)/kernel-$(TARGET_KERNEL_USE)-gz
