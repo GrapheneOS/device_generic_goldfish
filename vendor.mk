@@ -66,7 +66,7 @@ PRODUCT_PACKAGES += \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
     android.hardware.graphics.composer3-service.ranchu \
     toybox_vendor \
-    android.hardware.wifi@1.0-service \
+    android.hardware.wifi-service \
     android.hardware.media.c2@1.0-service-goldfish \
     libcodec2_goldfish_vp8dec \
     libcodec2_goldfish_vp9dec \
