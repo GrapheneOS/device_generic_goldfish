@@ -18,10 +18,4 @@
 #  define D(...) ((void)0)
 #endif
 
-typedef struct android_wifi_priv_cmd {
-  char* buf;
-  int used_len;
-  int total_len;
-} android_wifi_priv_cmd;
-
 #endif  // __DEVICE_GOOGLE_GCE_WPA_SUPPLICANT_8_H__
