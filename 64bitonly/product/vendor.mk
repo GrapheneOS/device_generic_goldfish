@@ -23,6 +23,10 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.xml
 
+PRODUCT_SOONG_NAMESPACES += \
+    device/generic/goldfish \
+    device/generic/goldfish-opengl
+
 PRODUCT_VENDOR_PROPERTIES += \
     ro.control_privapp_permissions=enforce \
     ro.crypto.volume.filenames_mode=aes-256-cts \
