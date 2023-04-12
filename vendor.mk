@@ -67,6 +67,7 @@ PRODUCT_PACKAGES += \
     libstagefright_goldfish_avcdec \
     MultiDisplayProvider \
     libGoldfishProfiler \
+    dlkm_loader
 
 ifneq ($(EMULATOR_VENDOR_NO_FINGERPRINT), true)
     PRODUCT_PACKAGES += \
