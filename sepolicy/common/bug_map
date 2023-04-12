@@ -1,2 +1,1 @@
-servicemanager hal_gnss_default binder b/274041413
 init vendor_toolbox_exec file b/183668221
