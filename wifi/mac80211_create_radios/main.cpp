@@ -87,7 +87,7 @@ struct nl_msg_deleter {
 
 constexpr char kHwSimFamilyName[] = "MAC80211_HWSIM";
 constexpr int kHwSimVersion = 1;
-constexpr uint32_t kChannels = 1;
+constexpr uint32_t kChannels = 2;
 constexpr uint32_t kPmsrMaxPeers = 10;
 constexpr uint32_t kFtmAllPreables = BIT(NL80211_PREAMBLE_LEGACY)
         | BIT(NL80211_PREAMBLE_HT)
