@@ -22,6 +22,11 @@ KERNEL_ARTIFACTS_PATH := prebuilts/qemu-kernel/x86_64/$(TARGET_KERNEL_USE)
 KERNEL_MODULES_ARTIFACTS_PATH := $(KERNEL_ARTIFACTS_PATH)/gki_modules
 VIRTUAL_DEVICE_KERNEL_MODULES_PATH := $(KERNEL_ARTIFACTS_PATH)/goldfish_modules
 
+BOARD_DO_NOT_STRIP_RECOVERY_MODULES := true
+BOARD_DO_NOT_STRIP_VENDOR_MODULES := true
+BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES := true
+BOARD_DO_NOT_STRIP_VENDOR_KERNEL_RAMDISK_MODULES := true
+
 # The list of modules to reach the second stage. For performance reasons we
 # don't want to put all modules into the ramdisk.
 RAMDISK_KERNEL_MODULES := \
