@@ -21,4 +21,3 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/advancedFeatures.ini.arm:advancedFeatures.ini \
     device/generic/goldfish/camera/media/codecs_performance_c2_arm64.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
 
-EMULATOR_VENDOR_NO_GNSS := true
