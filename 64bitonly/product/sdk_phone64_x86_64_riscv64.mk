@@ -18,7 +18,7 @@
 
 $(call inherit-product, device/generic/goldfish/64bitonly/product/sdk_phone64_x86_64.mk)
 
-# TODO(b/273954450): add RISCV64 translation support
+$(call inherit-product, frameworks/libs/binary_translation/enable_riscv64_to_x86_64.mk)
 
 # Overrides
 PRODUCT_BRAND := Android
