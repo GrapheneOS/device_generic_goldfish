@@ -19,8 +19,6 @@ TARGET_ARCH := x86_64
 TARGET_ARCH_VARIANT := x86_64
 TARGET_2ND_ARCH_VARIANT := x86_64
 
-BOARD_DO_NOT_STRIP_VENDOR_MODULES := true
-
 TARGET_PRELINK_MODULE := false
 include build/make/target/board/BoardConfigGsiCommon.mk
 include build/make/target/board/BoardConfigEmuCommon.mk
