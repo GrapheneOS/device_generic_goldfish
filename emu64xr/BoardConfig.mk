@@ -1,4 +1,4 @@
-# Copyright (C) 2020 The Android Open Source Project
+# Copyright (C) 2022 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ TARGET_ARCH := x86_64
 TARGET_ARCH_VARIANT := x86_64
 TARGET_2ND_ARCH_VARIANT := x86_64
 
-TARGET_NATIVE_BRIDGE_ARCH := arm64
-TARGET_NATIVE_BRIDGE_ARCH_VARIANT := armv8-a
+TARGET_NATIVE_BRIDGE_ARCH := riscv64
+TARGET_NATIVE_BRIDGE_ARCH_VARIANT := 
 TARGET_NATIVE_BRIDGE_CPU_VARIANT := generic
-TARGET_NATIVE_BRIDGE_ABI := arm64-v8a
+TARGET_NATIVE_BRIDGE_ABI := riscv64
 
 BUILD_BROKEN_DUP_RULES := true
 
