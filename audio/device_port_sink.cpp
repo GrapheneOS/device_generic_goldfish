@@ -48,13 +48,13 @@ constexpr int kMaxJitterUs = 3000;  // Enforced by CTS, should be <= 6ms
 struct TinyalsaSink : public DevicePortSink {
     TinyalsaSink(unsigned pcmCard, unsigned pcmDevice,
                  const AudioConfig &cfg,
-                 uint64_t &frames)
+                 uint64_t initialFrames)
             : mStartNs(systemTime(SYSTEM_TIME_MONOTONIC))
             , mSampleRateHz(cfg.base.sampleRateHz)
             , mFrameSize(util::countChannels(cfg.base.channelMask) * sizeof(int16_t))
             , mWriteSizeFrames(cfg.frameCount)
-            , mInitialFrames(frames)
-            , mFrames(frames)
+            , mInitialFrames(initialFrames)
+            , mFrames(initialFrames)
             , mRingBuffer(mFrameSize * cfg.frameCount * 3)
             , mMixer(pcmCard)
             , mPcm(talsa::pcmOpen(pcmCard, pcmDevice,
@@ -126,7 +126,7 @@ struct TinyalsaSink : public DevicePortSink {
             ? (requestedFrames - availableFrames) : 0;
     }
 
-    size_t write(float volume, size_t bytesToWrite, IReader &reader) {
+    size_t write(float volume, size_t bytesToWrite, IReader &reader) override {
         const AutoMutex lock(mFrameCountersMutex);
 
         size_t framesLost = 0;
@@ -218,10 +218,10 @@ struct TinyalsaSink : public DevicePortSink {
                                                 unsigned pcmDevice,
                                                 const AudioConfig &cfg,
                                                 size_t readerBufferSizeHint,
-                                                uint64_t &frames) {
+                                                uint64_t initialFrames) {
         (void)readerBufferSizeHint;
         auto sink = std::make_unique<TinyalsaSink>(pcmCard, pcmDevice,
-                                                   cfg, frames);
+                                                   cfg, initialFrames);
         if (sink->mMixer && sink->mPcm) {
             return sink;
         } else {
@@ -235,7 +235,7 @@ private:
     const unsigned mFrameSize;
     const unsigned mWriteSizeFrames;
     const uint64_t mInitialFrames;
-    uint64_t &mFrames GUARDED_BY(mFrameCountersMutex);
+    uint64_t mFrames GUARDED_BY(mFrameCountersMutex);
     uint64_t mMissedFrames GUARDED_BY(mFrameCountersMutex) = 0;
     uint64_t mReceivedFrames GUARDED_BY(mFrameCountersMutex) = 0;
     RingBuffer mRingBuffer;
@@ -247,12 +247,12 @@ private:
 };
 
 struct NullSink : public DevicePortSink {
-    NullSink(const AudioConfig &cfg, uint64_t &frames)
+    NullSink(const AudioConfig &cfg, uint64_t initialFrames)
             : mStartNs(systemTime(SYSTEM_TIME_MONOTONIC))
             , mSampleRateHz(cfg.base.sampleRateHz)
             , mFrameSize(util::countChannels(cfg.base.channelMask) * sizeof(int16_t))
-            , mInitialFrames(frames)
-            , mFrames(frames) {}
+            , mInitialFrames(initialFrames)
+            , mFrames(initialFrames) {}
 
     static int getLatencyMs(const AudioConfig &) {
         return 1;
@@ -326,9 +326,9 @@ struct NullSink : public DevicePortSink {
 
     static std::unique_ptr<NullSink> create(const AudioConfig &cfg,
                                             size_t readerBufferSizeHint,
-                                            uint64_t &frames) {
+                                            uint64_t initialFrames) {
         (void)readerBufferSizeHint;
-        return std::make_unique<NullSink>(cfg, frames);
+        return std::make_unique<NullSink>(cfg, initialFrames);
     }
 
 private:
@@ -336,7 +336,7 @@ private:
     const unsigned mSampleRateHz;
     const unsigned mFrameSize;
     const uint64_t mInitialFrames;
-    uint64_t &mFrames GUARDED_BY(mFrameCountersMutex);
+    uint64_t mFrames GUARDED_BY(mFrameCountersMutex);
     uint64_t mMissedFrames GUARDED_BY(mFrameCountersMutex) = 0;
     uint64_t mReceivedFrames GUARDED_BY(mFrameCountersMutex) = 0;
     char mWriteBuffer[1024];
@@ -350,7 +350,7 @@ DevicePortSink::create(size_t readerBufferSizeHint,
                        const DeviceAddress &address,
                        const AudioConfig &cfg,
                        const hidl_vec<AudioInOutFlag> &flags,
-                       uint64_t &frames) {
+                       uint64_t initialFrames) {
     (void)flags;
 
     if (xsd::stringToAudioFormat(cfg.base.format) != xsd::AudioFormat::AUDIO_FORMAT_PCM_16_BIT) {
@@ -367,7 +367,7 @@ DevicePortSink::create(size_t readerBufferSizeHint,
     case xsd::AudioDevice::AUDIO_DEVICE_OUT_SPEAKER:
         {
             auto sinkptr = TinyalsaSink::create(talsa::kPcmCard, talsa::kPcmDevice,
-                                                cfg, readerBufferSizeHint, frames);
+                                                cfg, readerBufferSizeHint, initialFrames);
             if (sinkptr != nullptr) {
                 return sinkptr;
             } else {
@@ -388,7 +388,7 @@ DevicePortSink::create(size_t readerBufferSizeHint,
     }
 
 nullsink:
-    return NullSink::create(cfg, readerBufferSizeHint, frames);
+    return NullSink::create(cfg, readerBufferSizeHint, initialFrames);
 }
 
 int DevicePortSink::getLatencyMs(const DeviceAddress &address, const AudioConfig &cfg) {
