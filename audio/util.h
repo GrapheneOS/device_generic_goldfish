@@ -52,6 +52,10 @@ bool checkAudioPortConfig(const AudioPortConfig& cfg);
 
 TimeSpec nsecs2TimeSpec(nsecs_t);
 
+inline constexpr nsecs_t timespec2Nsecs(const TimeSpec &ts) {
+    return s2ns(ts.tvSec) + ts.tvNSec;
+}
+
 bool setThreadPriority(SchedPolicy policy, int prio);
 
 }  // namespace util
