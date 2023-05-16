@@ -115,6 +115,10 @@ PRODUCT_COPY_FILES += \
 
 PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay \
+    EmulationPixel7ProOverlay \
+    SystemUIEmulationPixel7ProOverlay \
+    EmulationPixel7Overlay \
+    SystemUIEmulationPixel7Overlay \
     EmulationPixel6ProOverlay \
     SystemUIEmulationPixel6ProOverlay \
     EmulationPixel6Overlay \
