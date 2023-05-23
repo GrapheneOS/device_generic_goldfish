@@ -44,7 +44,7 @@ EMU_EXTRA_FILES += device/generic/goldfish/data/etc/config.ini
 EMU_EXTRA_FILES += device/generic/goldfish/data/etc/encryptionkey.img
 EMU_EXTRA_FILES += device/generic/goldfish/data/etc/userdata.img
 
-name := emu-extra-linux-system-images-$(FILE_NAME_TAG)
+name := emu-extra-linux-system-images
 
 EMU_EXTRA_TARGET := $(PRODUCT_OUT)/$(name).zip
 
@@ -78,7 +78,7 @@ $(EMU_EXTRA_TARGET): $(EMU_EXTRA_FILES) $(EMULATOR_KERNEL_FILE) $(SOONG_ZIP)
 .PHONY: emu_extra_imgs
 emu_extra_imgs: $(EMU_EXTRA_TARGET)
 
-$(call dist-for-goals, emu_extra_imgs, $(EMU_EXTRA_TARGET))
+$(call dist-for-goals-with-filenametag, emu_extra_imgs, $(EMU_EXTRA_TARGET))
 
 include $(call all-makefiles-under,$(LOCAL_PATH))
 endif
