@@ -24,6 +24,7 @@ on early-init
     setprop vendor.qemu.dev.bootcomplete 0
 
     start vendor.dlkm_loader
+    exec u:r:modprobe:s0 -- /system/bin/modprobe -a -d /system/lib/modules zram.ko
 
 on init
     # set RLIMIT_MEMLOCK to 8MB for BPF network statistics
