@@ -1,0 +1,60 @@
+avd.ini.encoding=UTF-8
+disk.dataPartition.size=6G
+fastboot.forceColdBoot = yes
+hw.accelerometer=yes
+hw.arc=false
+hw.audioInput=yes
+hw.battery=yes
+hw.camera.back=virtualscene
+hw.camera.front=emulated
+hw.cpu.ncore=4
+hw.dPad=no
+hw.gps=yes
+hw.gpu.enabled=yes
+hw.gpu.mode=auto
+hw.initialOrientation=Portrait
+hw.keyboard=yes
+hw.keyboard.lid=yes
+hw.mainKeys=no
+hw.ramSize=4096
+hw.sdCard=yes
+hw.sensors.orientation=yes
+hw.sensors.proximity=yes
+hw.trackBall=no
+PlayStore.enabled=true
+runtime.network.latency=none
+runtime.network.speed=full
+showDeviceFrame=no
+skin.dynamic=no
+image.sysdir.1=x86/
+
+#main display
+hw.lcd.density=420
+hw.lcd.height=1840
+hw.lcd.width=2208
+
+#secondary display when folded
+hw.displayRegion.0.1.height = 1840
+hw.displayRegion.0.1.width = 1080
+hw.displayRegion.0.1.xOffset = 0
+hw.displayRegion.0.1.yOffset = 0
+
+#foldable parameters
+hw.keyboard.lid=yes
+hw.sensor.hinge = yes
+hw.sensor.hinge.fold_to_displayRegion.0.1_at_posture = 1
+
+## x-y-width-height format
+hw.sensor.hinge.areas = 1080-0-0-1840
+hw.sensor.hinge.count = 1
+## default degree
+hw.sensor.hinge.defaults = 180
+hw.sensor.hinge.ranges = 0-180
+## fold=0 or hinge=1
+hw.sensor.hinge.sub_type = 1
+## horizontal==0 or vertical==1
+hw.sensor.hinge.type = 1
+## each angle range corresponds to the posture in the posture_list
+hw.sensor.hinge_angles_posture_definitions = 0-30, 30-150, 150-180
+## list of supported postures by index. 0: unknown, 1: closed, 2: half-open, 3: open, 4: flipped, 5: tent
+hw.sensor.posture_list = 1,2,3
