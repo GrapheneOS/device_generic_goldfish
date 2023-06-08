@@ -678,7 +678,7 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
 
         {
             const auto& frustum = renderParams.cameraParams.frustum;
-            const double right = frustum.near * sin(.5 * frustum.angle);
+            const double right = frustum.near * tan(.5 * frustum.angle);
             const double top = right / imageSize.width * imageSize.height;
             abc3d::frustum(pvMatrix44, -right, right, -top, top,
                            frustum.near, frustum.far);
