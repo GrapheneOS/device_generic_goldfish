@@ -678,7 +678,7 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
 
         {
             const auto& frustum = renderParams.cameraParams.frustum;
-            const double right = frustum.near * sin(.5 * frustum.angle);
+            const double right = frustum.near * tan(.5 * frustum.angle);
             const double top = right / imageSize.width * imageSize.height;
             abc3d::frustum(pvMatrix44, -right, right, -top, top,
                            frustum.near, frustum.far);
@@ -702,20 +702,21 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
 
 bool FakeRotatingCamera::drawSceneImpl(const float pvMatrix44[]) const {
     constexpr float kX = 0;
-    constexpr float kY = 0;
-    constexpr float kZ = -5;
+    constexpr float kY = -5;
+    constexpr float kZ = 0;
     constexpr float kS = 1;
 
     const GLfloat vVertices[] = {
-       -kS + kX,  kS + kY, kZ,  // Position 0
+       -kS + kX, kY, kZ - kS,   // Position 0
         0,  0,                  // TexCoord 0
-       -kS + kX, -kS + kY, kZ,  // Position 1
+       -kS + kX, kY, kZ + kS,   // Position 1
         0,  1,                  // TexCoord 1
-        kS + kX, -kS + kY, kZ,  // Position 2
+        kS + kX, kY, kZ + kS,   // Position 2
         1,  1,                  // TexCoord 2
-        kS + kX,  kS + kY, kZ,  // Position 3
+        kS + kX, kY, kZ - kS,   // Position 3
         1,  0                   // TexCoord 3
     };
+
     static const GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
 
     glClearColor(0.2, 0.3, 0.2, 1.0);
