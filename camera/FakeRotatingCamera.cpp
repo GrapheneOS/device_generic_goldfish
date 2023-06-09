@@ -92,7 +92,7 @@ constexpr double degrees2rad(const double degrees) {
 }
 
 std::tuple<float, float, float> getFrustumParams() {
-    constexpr float defaultAngle = degrees2rad(100);
+    constexpr float defaultAngle = degrees2rad(48);
     constexpr float defaultNear = 1;
     constexpr float defaultFar = 10;
 
@@ -116,17 +116,6 @@ std::tuple<float, float, float> getFrustumParams() {
 
 returnDefault:
     return {defaultAngle, defaultNear, defaultFar};
-}
-
-std::tuple<float, float, float> getEyeCoordinates() {
-    const std::string valueStr =
-        base::GetProperty("vendor.qemu.FakeRotatingCamera.eyeCoordinates", "");
-    float x, y, z;
-    if (valueStr.empty() || (sscanf(valueStr.c_str(), "%g,%g,%g", &x, &y, &z) != 3)) {
-        return {0, 0, 0};
-    } else {
-        return {x, y, z};
-    }
 }
 
 // This texture is useful to debug camera orientation and image aspect ratio
@@ -197,12 +186,13 @@ abc3d::AutoTexture loadTestPatternTextureAcircles() {
                                  kBackground);
 
     const uint8_t* y = kAcirclesPattern;  // ignore cbcr for now
-    uint16_t* rgb16 = &texels[kAcirclesPatternWidth *
-                              ((kAcirclesPatternWidth - kAcirclesPatternHeight) / 2)];
     for (size_t row = kAcirclesPatternHeight; row > 0; --row) {
-        for (size_t col = kAcirclesPatternWidth; col > 0; --col, ++y, ++rgb16) {
+        for (size_t col = kAcirclesPatternWidth; col > 0; --col, ++y) {
             const float v = *y / 255.0;
-            *rgb16 = toR5G6B5(v, v, v);
+            const uint16_t rgb16 = toR5G6B5(v, v, v);
+            texels[(kAcirclesPatternWidth - 1 - col) * kAcirclesPatternWidth +
+                   row + (kAcirclesPatternWidth - kAcirclesPatternHeight) / 2] =
+                       rgb16;
         }
     }
 
@@ -474,8 +464,6 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
     {
         auto& fr = renderParams.cameraParams.frustum;
         std::tie(fr.angle, fr.near, fr.far) = getFrustumParams();
-        float* pos3 = renderParams.cameraParams.pos3;
-        std::tie(pos3[0], pos3[1], pos3[2]) = getEyeCoordinates();
 
         SensorValues sensorValues;
         if (readSensors(&sensorValues)) {
@@ -487,6 +475,13 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
         } else {
             goto fail;
         }
+
+        constexpr double kR = 5.0;
+
+        float* pos3 = renderParams.cameraParams.pos3;
+        pos3[0] = -kR * sin(sensorValues.rotation[0]) * sin(sensorValues.rotation[1]);
+        pos3[1] = -kR * sin(sensorValues.rotation[0]) * cos(sensorValues.rotation[1]);
+        pos3[2] = kR * cos(sensorValues.rotation[0]);
     }
 
     for (size_t i = 0; i < csbsSize; ++i) {
@@ -702,7 +697,7 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
 
 bool FakeRotatingCamera::drawSceneImpl(const float pvMatrix44[]) const {
     constexpr float kX = 0;
-    constexpr float kY = -5;
+    constexpr float kY = 0;
     constexpr float kZ = 0;
     constexpr float kS = 1;
 
