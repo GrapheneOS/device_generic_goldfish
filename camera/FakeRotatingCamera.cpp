@@ -35,7 +35,7 @@
 #undef EGL_EGLEXT_PROTOTYPES
 #undef GL_GLEXT_PROTOTYPES
 
-#include "acircles_pattern_1280_720.h"
+#include "acircles_pattern_512_512.h"
 #include "converters.h"
 #include "debug.h"
 #include "FakeRotatingCamera.h"
@@ -180,19 +180,22 @@ abc3d::AutoTexture loadTestPatternTextureColors() {
 
 // This texture is used to pass CtsVerifier
 abc3d::AutoTexture loadTestPatternTextureAcircles() {
-    constexpr uint16_t kBackground = toR5G6B5(.4, .4, .4);
+    constexpr uint16_t kPalette[] = {
+        toR5G6B5(0, 0, 0),
+        toR5G6B5(.25, .25, .25),
+        toR5G6B5(.5, .5, .5),
+        toR5G6B5(1, 1, 0),
+        toR5G6B5(1, 1, 1),
+    };
 
-    std::vector<uint16_t> texels(kAcirclesPatternWidth * kAcirclesPatternWidth,
-                                 kBackground);
+    std::vector<uint16_t> texels;
+    texels.reserve(kAcirclesPatternWidth * kAcirclesPatternWidth);
 
-    const uint8_t* y = kAcirclesPattern;  // ignore cbcr for now
-    for (size_t row = kAcirclesPatternHeight; row > 0; --row) {
-        for (size_t col = kAcirclesPatternWidth; col > 0; --col, ++y) {
-            const float v = *y / 255.0;
-            const uint16_t rgb16 = toR5G6B5(v, v, v);
-            texels[(kAcirclesPatternWidth - 1 - col) * kAcirclesPatternWidth +
-                   row + (kAcirclesPatternWidth - kAcirclesPatternHeight) / 2] =
-                       rgb16;
+    for (const auto rle : kAcirclesPatternRLE) {
+        if (rle & 1) {
+            texels.insert(texels.end(), (rle >> 3) + 1, kPalette[(rle >> 1) & 3]);
+        } else {
+            texels.insert(texels.end(), (rle >> 1) + 1, kPalette[4]);
         }
     }
 
