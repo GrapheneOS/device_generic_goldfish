@@ -32,6 +32,7 @@
 
         <service android:name=".MultiDisplayService"
                  android:label="@string/app_name"
+                 android:singleUser="true"
                  android:exported="true">
         </service>
 
