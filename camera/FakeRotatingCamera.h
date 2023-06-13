@@ -62,6 +62,7 @@ struct FakeRotatingCamera : public HwCamera {
     std::pair<int32_t, int32_t> getDefaultTargetFpsRange(RequestTemplate) const override;
     int64_t getDefaultSensorExpTime() const override;
     int64_t getDefaultSensorFrameDuration() const override;
+    float getDefaultFocalLength() const override;
 
 private:
     struct StreamInfo {
@@ -81,12 +82,6 @@ private:
 
     struct RenderParams {
         struct CameraParams {
-            struct Frustum {
-                float angle;
-                float near;
-                float far;
-            };
-            Frustum frustum;
             float pos3[3];
             float rotXYZ3[3];
         };
