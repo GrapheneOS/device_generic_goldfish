@@ -91,33 +91,6 @@ constexpr double degrees2rad(const double degrees) {
     return degrees * M_PI / 180.0;
 }
 
-std::tuple<float, float, float> getFrustumParams() {
-    constexpr float defaultAngle = degrees2rad(48);
-    constexpr float defaultNear = 1;
-    constexpr float defaultFar = 10;
-
-    std::string valueStr =
-        base::GetProperty("vendor.qemu.FakeRotatingCamera.frustum", "");
-    float angle, near, far;
-    if (valueStr.empty()) {
-        goto returnDefault;
-    } else if (sscanf(valueStr.c_str(), "%g,%g,%g", &angle, &near, &far) == 3) {
-        near = std::max(near, defaultNear);
-        far = std::min(std::max(far, 3 * near), 100 * near);
-    } else if (sscanf(valueStr.c_str(), "%g", &angle) == 1) {
-        near = defaultNear;
-        far = defaultFar;
-    } else {
-        goto returnDefault;
-    }
-
-    angle = degrees2rad(std::min(std::max(angle, 1.0f), 160.0f));
-    return {angle, near, far};
-
-returnDefault:
-    return {defaultAngle, defaultNear, defaultFar};
-}
-
 // This texture is useful to debug camera orientation and image aspect ratio
 abc3d::AutoTexture loadTestPatternTextureA() {
     constexpr uint16_t B = toR5G6B5(.4, .4, .4);
@@ -465,9 +438,6 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
 
     RenderParams renderParams;
     {
-        auto& fr = renderParams.cameraParams.frustum;
-        std::tie(fr.angle, fr.near, fr.far) = getFrustumParams();
-
         SensorValues sensorValues;
         if (readSensors(&sensorValues)) {
             static_assert(sizeof(renderParams.cameraParams.rotXYZ3) ==
@@ -675,11 +645,15 @@ bool FakeRotatingCamera::drawScene(const Rect<uint16_t> imageSize,
         };
 
         {
-            const auto& frustum = renderParams.cameraParams.frustum;
-            const double right = frustum.near * tan(.5 * frustum.angle);
+            constexpr double kNear = 1.0;
+            constexpr double kFar = 10.0;
+
+            // We use `height` to calculate `right` because the image is 90degrees
+            // rotated (sensorOrientation=90).
+            const double right = kNear * (.5 * getSensorSize().height / getSensorDPI() / getDefaultFocalLength());
             const double top = right / imageSize.width * imageSize.height;
             abc3d::frustum(pvMatrix44, -right, right, -top, top,
-                           frustum.near, frustum.far);
+                           kNear, kFar);
         }
 
         abc3d::mulM44(projectionMatrix44, pvMatrix44, workaroundMatrix44);
@@ -987,6 +961,10 @@ int64_t FakeRotatingCamera::getDefaultSensorExpTime() const {
 
 int64_t FakeRotatingCamera::getDefaultSensorFrameDuration() const {
     return kMinFrameDurationNs;
+}
+
+float FakeRotatingCamera::getDefaultFocalLength() const {
+    return 2.8;
 }
 
 }  // namespace hw
