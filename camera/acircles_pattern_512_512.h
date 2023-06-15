@@ -19,7 +19,8 @@ constexpr unsigned kAcirclesPatternWidth = 512;
 constexpr unsigned kAcirclesPatternHeight = 512;
 
 /* acircles_pattern: 512x512 5 color RLE:
- * nnnnnnn0 - color4
- * nnnnnCC1 - colorCC
+ *          nnnnnn00 - color4
+ * nnnnnnnn nnnnnn10 - color4
+ *          nnnnnCC1 - colorCC
  */
-extern const unsigned char kAcirclesPatternRLE[9621];
+extern const unsigned char kAcirclesPatternRLE[8686];

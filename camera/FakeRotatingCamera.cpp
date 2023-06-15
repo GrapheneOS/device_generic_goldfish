@@ -164,12 +164,26 @@ abc3d::AutoTexture loadTestPatternTextureAcircles() {
     std::vector<uint16_t> texels;
     texels.reserve(kAcirclesPatternWidth * kAcirclesPatternWidth);
 
-    for (const auto rle : kAcirclesPatternRLE) {
-        if (rle & 1) {
-            texels.insert(texels.end(), (rle >> 3) + 1, kPalette[(rle >> 1) & 3]);
+    auto i = std::begin(kAcirclesPatternRLE);
+    const auto end = std::end(kAcirclesPatternRLE);
+    while (i < end) {
+        const unsigned x = *i;
+        ++i;
+        unsigned n;
+        uint16_t color;
+        if (x & 1) {
+            n = (x >> 3) + 1;
+            color = kPalette[(x >> 1) & 3];
         } else {
-            texels.insert(texels.end(), (rle >> 1) + 1, kPalette[4]);
+            if (x & 2) {
+                n = ((unsigned(*i) << 6) | (x >> 2)) + 1;
+                ++i;
+            } else {
+                n = (x >> 2) + 1;
+            }
+            color = kPalette[4];
         }
+        texels.insert(texels.end(), n, color);
     }
 
     abc3d::AutoTexture tex(GL_TEXTURE_2D, GL_RGB,
