@@ -30,6 +30,11 @@ struct Storage {
         LOCKED_OUT_PERMANENT,
     };
 
+    struct AuthToken {
+        int64_t userId = 0;
+        int64_t authenticatorId = 0;
+    };
+
     Storage(int32_t sensorId, int32_t userId);
 
     static constexpr int getMaxEnrollmentsPerUser() { return kMaxEnrollmentsPerUser; }
@@ -38,7 +43,7 @@ struct Storage {
     std::vector<int32_t> enumerateEnrollments() const;
     bool enroll(int enrollmentId, int64_t secureUserId, int64_t newAuthId);
     void removeEnrollments(const std::vector<int32_t>& enrollmentIds);
-    std::tuple<AuthResult, int32_t, int64_t> authenticate(int32_t enrollmentId);
+    std::tuple<AuthResult, int32_t, AuthToken> authenticate(int32_t enrollmentId);
     void resetLockout();
     bool checkIfLockoutCleared();
 
