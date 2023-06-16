@@ -24,6 +24,7 @@
 #include <android-base/unique_fd.h>
 #include <log/log.h>
 #include <qemud.h>
+#include <utils/Timers.h>
 
 #include "session.h"
 #include "storage.h"
@@ -380,7 +381,7 @@ void Session::onSenserEventOn(const int32_t enrollmentId) {
 
     case State::AUTHENTICATING:
         {
-            const auto [res, lockoutDurationMillis, secureUserId] =
+            const auto [res, lockoutDurationMillis, tok] =
                 mStorage.authenticate(enrollmentId);
             if (res != Storage::AuthResult::LOCKED_OUT_PERMANENT) {
                 ALOGD("%p:%s: onAcquired(GOOD, %d)", this, __func__, 0);
@@ -389,12 +390,18 @@ void Session::onSenserEventOn(const int32_t enrollmentId) {
 
             switch (res) {
             case Storage::AuthResult::OK: {
+                    ALOGD("%p:%s: onAuthenticationSucceeded(enrollmentId=%d, "
+                          "hat={ .challenge=%" PRId64 ", .userId=%" PRId64 ", "
+                          ".authenticatorId=%" PRId64 " })",
+                          this, __func__, enrollmentId, mAuthChallenge,
+                          tok.userId, tok.authenticatorId);
+
                     keymaster::HardwareAuthToken hat;
                     hat.challenge = mAuthChallenge;
-                    hat.userId = secureUserId;
-                    ALOGD("%p:%s: onAuthenticationSucceeded(enrollmentId=%d, "
-                          "hat={ .challenge=%" PRId64 ", .userId=%" PRId64 " })",
-                          this, __func__, enrollmentId, hat.challenge, hat.userId);
+                    hat.userId = tok.userId;
+                    hat.authenticatorId = tok.authenticatorId;
+                    hat.authenticatorType = keymaster::HardwareAuthenticatorType::FINGERPRINT;
+                    hat.timestamp.milliSeconds = ns2ms(systemTime(SYSTEM_TIME_BOOTTIME));
                     mSessionCb->onAuthenticationSucceeded(enrollmentId, hat);
                     mState = State::IDLE;
                 }
