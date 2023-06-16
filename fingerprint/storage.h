@@ -38,7 +38,7 @@ struct Storage {
     std::vector<int32_t> enumerateEnrollments() const;
     bool enroll(int enrollmentId, int64_t secureUserId, int64_t newAuthId);
     void removeEnrollments(const std::vector<int32_t>& enrollmentIds);
-    std::pair<AuthResult, int64_t> authenticate(int32_t enrollmentId);
+    std::tuple<AuthResult, int32_t, int64_t> authenticate(int32_t enrollmentId);
     void resetLockout();
     bool checkIfLockoutCleared();
 
