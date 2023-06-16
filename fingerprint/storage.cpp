@@ -207,7 +207,7 @@ void Storage::removeEnrollments(const std::vector<int32_t>& enrollmentIds) {
     save();
 }
 
-std::tuple<Storage::AuthResult, int32_t, int64_t>
+std::tuple<Storage::AuthResult, int32_t, Storage::AuthToken>
 Storage::authenticate(const int32_t enrollmentId) {
     const auto now = std::chrono::steady_clock::now();
 
@@ -233,7 +233,10 @@ Storage::authenticate(const int32_t enrollmentId) {
 
     if (mEnrollments.count(enrollmentId) > 0) {
         mLockOut.state = LockOut::State::NO;
-        return {AuthResult::OK, 0, mSecureUserId};
+        AuthToken tok;
+        tok.userId = mSecureUserId;
+        tok.authenticatorId = mAuthId;
+        return {AuthResult::OK, 0, tok};
     } else {
         const int failedAttempts =
             (mLockOut.state == LockOut::State::NO)
