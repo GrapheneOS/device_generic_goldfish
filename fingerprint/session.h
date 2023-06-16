@@ -113,9 +113,10 @@ struct Session : public BnSession {
     }
 
     const std::shared_ptr<ISessionCallback> mSessionCb;
-    Storage mStorage;           // mMutex
-    std::mt19937_64 mRandom;    // mMutex
-    int64_t mArg = 0;           // mMutex
+    Storage mStorage;                   // mMutex
+    std::mt19937_64 mRandom;            // mMutex
+    int64_t mEnrollingSecUserId = 0;    // mMutex
+    int64_t mAuthChallenge = 0;         // mMutex
     ::android::base::unique_fd mCallerFd;
     ::android::base::unique_fd mSensorThreadFd;
     std::thread mSensorListener;
