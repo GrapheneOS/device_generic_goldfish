@@ -166,7 +166,7 @@ ndk::ScopedAStatus Session::enroll(const keymaster::HardwareAuthToken& hat,
             std::lock_guard<std::mutex> lock(mMutex);
             previousState = mState;
             if (previousState == State::IDLE) {
-                mArg = hat.userId;
+                mEnrollingSecUserId = hat.userId;
                 mState = State::ENROLLING_START;
                 ok = true;
             } else {
@@ -202,7 +202,7 @@ ndk::ScopedAStatus Session::authenticate(const int64_t operationId,
         std::lock_guard<std::mutex> lock(mMutex);
         previousState = mState;
         if (previousState == State::IDLE) {
-            mArg = operationId;
+            mAuthChallenge = operationId;
             mState = State::AUTHENTICATING;
             ok = true;
         } else {
@@ -361,7 +361,7 @@ void Session::onSenserEventOn(const int32_t enrollmentId) {
                       this, __func__, enrollmentId, left);
                 mSessionCb->onEnrollmentProgress(enrollmentId, left);
                 mState = State(int(mState) + 1);
-            } else if (mStorage.enroll(enrollmentId, mArg, generateInt64())) {
+            } else if (mStorage.enroll(enrollmentId, mEnrollingSecUserId, generateInt64())) {
                 ALOGD("%p:%s: onEnrollmentProgress(enrollmentId=%d, left=%d)",
                       this, __func__, enrollmentId, left);
                 mSessionCb->onEnrollmentProgress(enrollmentId, left);
@@ -370,7 +370,7 @@ void Session::onSenserEventOn(const int32_t enrollmentId) {
                 ALOGE("%p:%s: onError(UNABLE_TO_PROCESS, %d): enrollmentId=%d, "
                       "secureIserId=%" PRId64 ,
                       this, __func__, int(ErrorCode::E_ENROLL_FAILED),
-                      enrollmentId, mArg);
+                      enrollmentId, mEnrollingSecUserId);
                 mSessionCb->onError(Error::UNABLE_TO_PROCESS,
                                     int(ErrorCode::E_ENROLL_FAILED));
                 mState = State::IDLE;
@@ -380,17 +380,18 @@ void Session::onSenserEventOn(const int32_t enrollmentId) {
 
     case State::AUTHENTICATING:
         {
-            const auto r = mStorage.authenticate(enrollmentId);
-            if (r.first != Storage::AuthResult::LOCKED_OUT_PERMANENT) {
+            const auto [res, lockoutDurationMillis, secureUserId] =
+                mStorage.authenticate(enrollmentId);
+            if (res != Storage::AuthResult::LOCKED_OUT_PERMANENT) {
                 ALOGD("%p:%s: onAcquired(GOOD, %d)", this, __func__, 0);
                 mSessionCb->onAcquired(AcquiredInfo::GOOD, 0);
             }
 
-            switch (r.first) {
+            switch (res) {
             case Storage::AuthResult::OK: {
                     keymaster::HardwareAuthToken hat;
-                    hat.challenge = mArg;
-                    hat.userId = r.second;
+                    hat.challenge = mAuthChallenge;
+                    hat.userId = secureUserId;
                     ALOGD("%p:%s: onAuthenticationSucceeded(enrollmentId=%d, "
                           "hat={ .challenge=%" PRId64 ", .userId=%" PRId64 " })",
                           this, __func__, enrollmentId, hat.challenge, hat.userId);
@@ -406,9 +407,9 @@ void Session::onSenserEventOn(const int32_t enrollmentId) {
                 break;
 
             case Storage::AuthResult::LOCKED_OUT_TIMED:
-                ALOGE("%p:%s: onLockoutTimed(durationMillis=%" PRId64 "): enrollmentId=%d",
-                      this, __func__, r.second, enrollmentId);
-                mSessionCb->onLockoutTimed(r.second);
+                ALOGE("%p:%s: onLockoutTimed(durationMillis=%d): enrollmentId=%d",
+                      this, __func__, lockoutDurationMillis, enrollmentId);
+                mSessionCb->onLockoutTimed(lockoutDurationMillis);
                 mState = State::IDLE;
                 break;
 
