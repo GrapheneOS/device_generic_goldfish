@@ -207,7 +207,8 @@ void Storage::removeEnrollments(const std::vector<int32_t>& enrollmentIds) {
     save();
 }
 
-std::pair<Storage::AuthResult, int64_t> Storage::authenticate(const int32_t enrollmentId) {
+std::tuple<Storage::AuthResult, int32_t, Storage::AuthToken>
+Storage::authenticate(const int32_t enrollmentId) {
     const auto now = std::chrono::steady_clock::now();
 
     switch (mLockOut.state) {
@@ -222,17 +223,20 @@ std::pair<Storage::AuthResult, int64_t> Storage::authenticate(const int32_t enro
             const int64_t inMs =
                 std::chrono::duration_cast<
                     std::chrono::milliseconds>(mLockOut.nextAttempt - now).count();
-            return {AuthResult::LOCKED_OUT_TIMED, inMs};
+            return {AuthResult::LOCKED_OUT_TIMED, inMs, {}};
         }
         break;
 
     case LockOut::State::PERMANENT:
-        return {AuthResult::LOCKED_OUT_PERMANENT, 0};
+        return {AuthResult::LOCKED_OUT_PERMANENT, 0, {}};
     }
 
     if (mEnrollments.count(enrollmentId) > 0) {
         mLockOut.state = LockOut::State::NO;
-        return {AuthResult::OK, mSecureUserId};
+        AuthToken tok;
+        tok.userId = mSecureUserId;
+        tok.authenticatorId = mAuthId;
+        return {AuthResult::OK, 0, tok};
     } else {
         const int failedAttempts =
             (mLockOut.state == LockOut::State::NO)
@@ -240,7 +244,7 @@ std::pair<Storage::AuthResult, int64_t> Storage::authenticate(const int32_t enro
 
         if (failedAttempts >= 10) {
             mLockOut.state = LockOut::State::PERMANENT;
-            return {AuthResult::LOCKED_OUT_PERMANENT, 0};
+            return {AuthResult::LOCKED_OUT_PERMANENT, 0, {}};
         }
 
         mLockOut.state = LockOut::State::TIMED;
@@ -255,7 +259,7 @@ std::pair<Storage::AuthResult, int64_t> Storage::authenticate(const int32_t enro
             mLockOut.expiration = now + std::chrono::seconds(10);
         }
 
-        return {AuthResult::FAILED, 0};
+        return {AuthResult::FAILED, 0, {}};
     }
 }
 
