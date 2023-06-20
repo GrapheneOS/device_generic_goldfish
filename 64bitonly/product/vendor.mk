@@ -239,7 +239,6 @@ PRODUCT_PACKAGES += \
     android.hardware.dumpstate-service.example \
     android.hardware.health-service.example \
     android.hardware.health.storage-service.default \
-    android.hardware.identity-service.example \
     android.hardware.lights-service.example \
     android.hardware.neuralnetworks-shim-service-sample \
     android.hardware.neuralnetworks-service-sample-all \
@@ -249,6 +248,12 @@ PRODUCT_PACKAGES += \
     android.hardware.rebootescrow-service.default \
     android.hardware.thermal@2.0-service.mock \
     android.hardware.vibrator-service.example
+
+# TVs don't use a hardware identity service.
+ifneq ($(PRODUCT_IS_ATV_SDK),true)
+    PRODUCT_PACKAGES += \
+        android.hardware.identity-service.example
+endif
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/dtb.img:dtb.img \
