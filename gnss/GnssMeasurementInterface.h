@@ -27,7 +27,7 @@ namespace gnss {
 namespace implementation {
 
 struct GnssMeasurementInterface : public BnGnssMeasurementInterface {
-    GnssMeasurementInterface();
+    GnssMeasurementInterface() = default;
     ~GnssMeasurementInterface();
 
     ndk::ScopedAStatus setCallback(const std::shared_ptr<IGnssMeasurementCallback>& callback,
