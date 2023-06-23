@@ -30,13 +30,6 @@ license {
     ],
 }
 
-cc_library_shared {
-    name: "android.hardware.audio.legacy@7.0-impl.ranchu",
-    defaults: ["android.hardware.audio@7.0-impl_default"],
-    relative_install_path: "hw",
-    vendor: true,
-}
-
 cc_defaults {
     name: "android.hardware.audio@7.x-impl.ranchu_default",
     vendor: true,
@@ -83,33 +76,6 @@ cc_defaults {
 }
 
 cc_library_shared {
-    name: "android.hardware.audio@7.0-impl.ranchu",
-    defaults: ["android.hardware.audio@7.x-impl.ranchu_default"],
-    vintf_fragments: ["android.hardware.audio@7.0-impl.ranchu.xml"],
-    shared_libs: [
-        "android.hardware.audio.common@7.0-enums",
-    ],
-    cflags: [
-        "-DLOG_TAG=\"android.hardware.audio@7.0-impl.ranchu\"",
-        "-DMAJOR_VERSION=7",
-        "-DMINOR_VERSION=0",
-        "-include common/all-versions/VersionMacro.h",
-    ],
-    // a.h.audio@X.0-impl.ranchu (see above) loads a.h.audio.legacy@X.0-impl
-    // which loads:
-    //  - audio.r_submix.default which provides the r_submix device (b/161485545)
-    //  - audio.bluetooth.default which provides the bluetooth device (b/228804498)
-    // This should be retired once we don't need to load the
-    // deprecated libhardware modules listed above.
-    //
-    required: [
-        "android.hardware.audio.legacy@7.0-impl.ranchu",
-        "audio.r_submix.default",
-        "audio.bluetooth.default",
-    ],
-}
-
-cc_library_shared {
     name: "android.hardware.audio.legacy@7.1-impl.ranchu",
     defaults: ["android.hardware.audio@7.1-impl_default"],
     relative_install_path: "hw",
@@ -131,7 +97,7 @@ cc_library_shared {
         "-DCOMMON_TYPES_MINOR_VERSION=0",
         "-DCORE_TYPES_MINOR_VERSION=0",
     ],
-    // a.h.audio@X.0-impl.ranchu (see above) loads a.h.audio.legacy@X.0-impl
+    // a.h.audio@X.Y-impl.ranchu (see above) loads a.h.audio.legacy@X.Y-impl
     // which loads:
     //  - audio.r_submix.default which provides the r_submix device (b/161485545)
     //  - audio.bluetooth.default which provides the bluetooth device (b/228804498)
