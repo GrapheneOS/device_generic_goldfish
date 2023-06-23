@@ -425,12 +425,12 @@ Return<void> StreamIn::getActiveMicrophones(getActiveMicrophones_cb _hidl_cb) {
 
 Return<Result> StreamIn::setMicrophoneDirection(MicrophoneDirection direction) {
     (void)direction;
-    return FAILURE(Result::NOT_SUPPORTED);
+    return Result::NOT_SUPPORTED;
 }
 
 Return<Result> StreamIn::setMicrophoneFieldDimension(float zoom) {
     (void)zoom;
-    return FAILURE(Result::NOT_SUPPORTED);
+    return Result::NOT_SUPPORTED;
 }
 
 void StreamIn::setMicMute(bool mute) {
