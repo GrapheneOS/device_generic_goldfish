@@ -208,7 +208,7 @@ Return<void> Device::getParameters(const hidl_vec<ParameterValue>& context,
     if (keys.size() == 0) {
         _hidl_cb(Result::OK, {});
     } else {
-        _hidl_cb(FAILURE(Result::NOT_SUPPORTED), {});
+        _hidl_cb(Result::NOT_SUPPORTED, {});
     }
     return Void();
 }

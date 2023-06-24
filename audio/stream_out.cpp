@@ -558,7 +558,7 @@ Return<Result> StreamOut::setPlaybackRateParameters(const PlaybackRate &playback
 
 #if MAJOR_VERSION == 7 && MINOR_VERSION == 1
 Return<Result> StreamOut::setLatencyMode(LatencyMode mode __unused) {
-    return FAILURE(Result::NOT_SUPPORTED);
+    return Result::NOT_SUPPORTED;
 };
 
 Return<void> StreamOut::getRecommendedLatencyModes(getRecommendedLatencyModes_cb _hidl_cb) {
@@ -569,7 +569,7 @@ Return<void> StreamOut::getRecommendedLatencyModes(getRecommendedLatencyModes_cb
 
 Return<Result> StreamOut::setLatencyModeCallback(
         const sp<IStreamOutLatencyModeCallback>& callback __unused) {
-    return FAILURE(Result::NOT_SUPPORTED);
+    return Result::NOT_SUPPORTED;
 };
 #endif
 
