@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright (C) 2021 The Android Open Source Project
+  ~ Copyright (C) 2023 The Android Open Source Project
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -14,13 +14,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License
   -->
+
 <resources>
-    <!-- Disabling content capture service by setting an empty string here -->
-    <string name="config_defaultContentCaptureService" translatable="false"></string>
-    <!-- Disable Dream (VR) -->
-    <bool name="config_dreamsSupported">false</bool>
-    <!-- Disable split screen b/183906779 -->
-    <bool name="config_supportsSplitScreenMultiWindow">false</bool>
-    <!-- Disable quick settings b/240884945 -->
-    <bool name="config_quickSettingsSupported">false</bool>
+    <!-- Disable one-handed keyguard -->
+    <bool name="can_use_one_handed_bouncer">false</bool>
 </resources>
