@@ -23,6 +23,7 @@
 
 namespace goldfish {
 using ahs21::SensorType;
+using ahs10::EventPayload;
 using ahs10::SensorFlagBits;
 using ahs10::SensorStatus;
 using ahs10::MetaDataEventType;
@@ -146,7 +147,10 @@ Return<Result> MultihalSensors::activate(const int32_t sensorHandle,
     if (enabled) {
         const SensorInfo* sensor = getSensorInfoByHandle(sensorHandle);
         LOG_ALWAYS_FATAL_IF(!sensor);
-        if (!(sensor->flags & static_cast<uint32_t>(SensorFlagBits::ON_CHANGE_MODE))) {
+        if (sensor->flags & static_cast<uint32_t>(SensorFlagBits::ON_CHANGE_MODE)) {
+            doPostSensorEventLocked(*sensor,
+                                    activationOnChangeSensorEvent(sensorHandle, *sensor));
+        } else {
             if (batchInfo.samplingPeriodNs <= 0) {
                 return Result::BAD_VALUE;
             }
@@ -159,16 +163,6 @@ Return<Result> MultihalSensors::activate(const int32_t sensorHandle,
 
             m_batchQueue.push(batchEventRef);
             m_batchUpdated.notify_one();
-        } else if (sensor->type == SensorType::HEART_RATE){
-            // Heart rate sensor's first data after activation should be
-            // SENSOR_STATUS_UNRELIABLE.
-            Event event;
-            event.u.heartRate.status = SensorStatus::UNRELIABLE;
-            event.u.heartRate.bpm = 0;
-            event.timestamp = ::android::elapsedRealtimeNano();
-            event.sensorHandle = sensorHandle;
-            event.sensorType = SensorType::HEART_RATE;
-            doPostSensorEventLocked(*sensor, event);
         }
         sendAdditionalInfoReport(sensorHandle);
         m_activeSensorsMask = m_activeSensorsMask | (1u << sensorHandle);
@@ -176,6 +170,69 @@ Return<Result> MultihalSensors::activate(const int32_t sensorHandle,
         m_activeSensorsMask = m_activeSensorsMask & ~(1u << sensorHandle);
     }
     return Result::OK;
+}
+
+Event MultihalSensors::activationOnChangeSensorEvent(const int32_t sensorHandle,
+                                                     const SensorInfo& sensor) const {
+    Event event;
+    EventPayload* payload = &event.u;
+
+    switch (sensor.type) {
+    case SensorType::LIGHT:
+        payload->scalar = m_protocolState.lastLightValue;
+        break;
+
+    case SensorType::PROXIMITY:
+        payload->scalar = m_protocolState.lastProximityValue;
+        break;
+
+    case SensorType::RELATIVE_HUMIDITY:
+        payload->scalar = m_protocolState.lastRelativeHumidityValue;
+        break;
+
+    case SensorType::AMBIENT_TEMPERATURE:
+        payload->scalar = m_protocolState.kSensorNoValue;
+        break;
+
+    case SensorType::HEART_RATE:
+        // Heart rate sensor's first data after activation should be
+        // SENSOR_STATUS_UNRELIABLE.
+        payload->heartRate.status = SensorStatus::UNRELIABLE;
+        payload->heartRate.bpm = 0;
+        break;
+
+    case SensorType::HINGE_ANGLE:
+        switch (sensorHandle) {
+        case kSensorHandleHingeAngle0:
+            payload->scalar = m_protocolState.lastHingeAngle0Value;
+            break;
+
+        case kSensorHandleHingeAngle1:
+            payload->scalar = m_protocolState.lastHingeAngle1Value;
+            break;
+
+        case kSensorHandleHingeAngle2:
+            payload->scalar = m_protocolState.lastHingeAngle2Value;
+            break;
+
+        default:
+            LOG_ALWAYS_FATAL("%s:%d: unexpected hinge sensor: %d",
+                             __func__, __LINE__, sensorHandle);
+            break;
+        }
+        break;
+
+    default:
+        LOG_ALWAYS_FATAL("%s:%d: unexpected sensor type: %u",
+                         __func__, __LINE__, static_cast<unsigned>(sensor.type));
+        break;
+    }
+
+    event.sensorHandle = sensorHandle;
+    event.sensorType = sensor.type;
+    event.timestamp = ::android::elapsedRealtimeNano();
+
+    return event;
 }
 
 Return<Result> MultihalSensors::batch(const int32_t sensorHandle,
@@ -279,11 +336,10 @@ Return<Result> MultihalSensors::initialize(const sp<IHalProxyCallback>& halProxy
     return Result::OK;
 }
 
-void MultihalSensors::postSensorEvent(const Event& event) {
+void MultihalSensors::postSensorEventLocked(const Event& event) {
     const SensorInfo* sensor = getSensorInfoByHandle(event.sensorHandle);
     LOG_ALWAYS_FATAL_IF(!sensor);
 
-    std::unique_lock<std::mutex> lock(m_mtx);
     if (sensor->flags & static_cast<uint32_t>(SensorFlagBits::ON_CHANGE_MODE)) {
         if (isSensorActive(event.sensorHandle)) {
             doPostSensorEventLocked(*sensor, event);
