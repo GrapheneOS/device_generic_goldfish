@@ -48,8 +48,6 @@ void MultihalSensors::qemuSensorListenerThread() {
     epollCtlAdd(epollFd.get(), m_qemuSensorsFd.get());
     epollCtlAdd(epollFd.get(), m_sensorThreadFd.get());
 
-    QemuSensorsProtocolState protocolState;
-
     while (true) {
         struct epoll_event events[2];
         const int kTimeoutMs = 60000;
@@ -73,7 +71,8 @@ void MultihalSensors::qemuSensorListenerThread() {
                           __func__, __LINE__, ev_events);
                     ::abort();
                 } else if (ev_events & EPOLLIN) {
-                    parseQemuSensorEvent(m_qemuSensorsFd.get(), &protocolState);
+                    std::unique_lock<std::mutex> lock(m_mtx);
+                    parseQemuSensorEventLocked(m_qemuSensorsFd.get(), &m_protocolState);
                 }
             } else if (fd == m_sensorThreadFd.get()) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
