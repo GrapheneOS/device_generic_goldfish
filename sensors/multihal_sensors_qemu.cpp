@@ -88,8 +88,8 @@ double MultihalSensors::randomError(float lo, float hi) {
     return distribution(gen);
 }
 
-void MultihalSensors::parseQemuSensorEvent(const int pipe,
-                                           QemuSensorsProtocolState* state) {
+void MultihalSensors::parseQemuSensorEventLocked(const int pipe,
+                                                 QemuSensorsProtocolState* state) {
     char buf[256];
     const int len = qemud_channel_recv(pipe, buf, sizeof(buf) - 1);
     if (len < 0) {
@@ -110,7 +110,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandleAccelerometer;
             event.sensorType = SensorType::ACCELEROMETER;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "acceleration-uncalibrated", ':')) {
@@ -123,7 +123,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandleAccelerometerUncalibrated;
             event.sensorType = SensorType::ACCELEROMETER_UNCALIBRATED;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "gyroscope", ':')) {
@@ -133,7 +133,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandleGyroscope;
             event.sensorType = SensorType::GYROSCOPE;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "gyroscope-uncalibrated", ':')) {
@@ -150,7 +150,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandleGyroscopeFieldUncalibrated;
             event.sensorType = SensorType::GYROSCOPE_UNCALIBRATED;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "orientation", ':')) {
@@ -160,7 +160,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandleOrientation;
             event.sensorType = SensorType::ORIENTATION;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "magnetic", ':')) {
@@ -170,7 +170,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandleMagneticField;
             event.sensorType = SensorType::MAGNETIC_FIELD;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "magnetic-uncalibrated", ':')) {
@@ -183,7 +183,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandleMagneticFieldUncalibrated;
             event.sensorType = SensorType::MAGNETIC_FIELD_UNCALIBRATED;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "temperature", ':')) {
@@ -193,7 +193,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleAmbientTemperature;
                 event.sensorType = SensorType::AMBIENT_TEMPERATURE;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastAmbientTemperatureValue = payload->scalar;
             }
             parsed = true;
@@ -205,7 +205,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleProximity;
                 event.sensorType = SensorType::PROXIMITY;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastProximityValue = payload->scalar;
             }
             parsed = true;
@@ -217,7 +217,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleLight;
                 event.sensorType = SensorType::LIGHT;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastLightValue = payload->scalar;
             }
             parsed = true;
@@ -227,7 +227,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
             event.timestamp = nowNs + state->timeBiasNs;
             event.sensorHandle = kSensorHandlePressure;
             event.sensorType = SensorType::PRESSURE;
-            postSensorEvent(event);
+            postSensorEventLocked(event);
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "humidity", ':')) {
@@ -237,7 +237,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleRelativeHumidity;
                 event.sensorType = SensorType::RELATIVE_HUMIDITY;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastRelativeHumidityValue = payload->scalar;
             }
             parsed = true;
@@ -252,7 +252,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleHingeAngle0;
                 event.sensorType = SensorType::HINGE_ANGLE;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastHingeAngle0Value = payload->scalar;
             }
             parsed = true;
@@ -265,7 +265,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleHingeAngle1;
                 event.sensorType = SensorType::HINGE_ANGLE;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastHingeAngle1Value = payload->scalar;
             }
             parsed = true;
@@ -278,7 +278,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleHingeAngle2;
                 event.sensorType = SensorType::HINGE_ANGLE;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastHingeAngle2Value = payload->scalar;
             }
             parsed = true;
@@ -291,7 +291,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleHeartRate;
                 event.sensorType = SensorType::HEART_RATE;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastHeartRateValue = payload->heartRate.bpm;
             }
             parsed = true;
@@ -304,7 +304,7 @@ void MultihalSensors::parseQemuSensorEvent(const int pipe,
                 event.timestamp = nowNs + state->timeBiasNs;
                 event.sensorHandle = kSensorHandleWristTilt;
                 event.sensorType = SensorType::WRIST_TILT_GESTURE;
-                postSensorEvent(event);
+                postSensorEventLocked(event);
                 state->lastWristTiltMeasurement = measurementId;
             }
         }
