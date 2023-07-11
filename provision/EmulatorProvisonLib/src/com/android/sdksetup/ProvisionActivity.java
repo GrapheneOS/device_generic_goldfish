@@ -149,6 +149,11 @@ public abstract class ProvisionActivity extends Activity {
         } else if (!displaySettingsName.isEmpty()) {
             Log.e(TAG(), "Unexpected value `" + displaySettingsName + "` in " + displaySettingsProp);
         }
+        final String autoRotateProp = "ro.boot.qemu.autorotate";
+        final String autoRotateSetting = SystemProperties.get(autoRotateProp);
+        if (!autoRotateSetting.isEmpty()) {
+            Settings.System.putString(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, autoRotateSetting);
+        }
     }
 
     protected void provisionTelephony() {
