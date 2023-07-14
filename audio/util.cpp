@@ -92,9 +92,9 @@ size_t align(size_t v, size_t a) {
     return (v + a - 1) / a * a;
 }
 
-size_t getBufferSizeFrames(size_t duration_ms, uint32_t sample_rate) {
+size_t getBufferSizeFrames(size_t duration_ms, size_t sample_rate, size_t extraAlignment) {
     // AudioFlinger requires the buffer to be aligned by 16 frames
-    return align(sample_rate * duration_ms / 1000, 16);
+    return align(sample_rate * duration_ms / 1000, 16 * extraAlignment);
 }
 
 }  // namespace
@@ -152,6 +152,7 @@ bool checkAudioConfig(const AudioConfig &cfg) {
 
 bool checkAudioConfig(const bool isOut,
                       size_t duration_ms,
+                      size_t extraAlignment,
                       const AudioConfig &src,
                       AudioConfig &suggested) {
     bool result = true;
@@ -170,7 +171,8 @@ bool checkAudioConfig(const bool isOut,
     }
 
     if (src.frameCount == 0) {
-        suggested.frameCount = getBufferSizeFrames(duration_ms, src.base.sampleRateHz);
+        suggested.frameCount = getBufferSizeFrames(duration_ms, src.base.sampleRateHz,
+                                                   extraAlignment);
     }
 
     return result;
