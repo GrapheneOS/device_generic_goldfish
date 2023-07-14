@@ -20,6 +20,7 @@
 #include "primary_device.h"
 #include "stream_in.h"
 #include "stream_out.h"
+#include "talsa.h"
 #include "util.h"
 #include "debug.h"
 
@@ -83,7 +84,9 @@ Return<void> Device::getMasterMute(getMasterMute_cb _hidl_cb) {
 
 Return<void> Device::getInputBufferSize(const AudioConfig& config, getInputBufferSize_cb _hidl_cb) {
     AudioConfig suggestedConfig;
-    if (util::checkAudioConfig(false, kInBufferDurationMs, config, suggestedConfig)) {
+    if (util::checkAudioConfig(false, kInBufferDurationMs,
+                               talsa::pcmGetPcmPeriodSettings().periodCount,
+                               config, suggestedConfig)) {
         const size_t sz =
             suggestedConfig.frameCount
             * util::countChannels(suggestedConfig.base.channelMask)
@@ -286,7 +289,9 @@ std::tuple<Result, sp<IStreamOut>, AudioConfig> Device::openOutputStreamImpl(
     }
 
     AudioConfig suggestedConfig;
-    if (util::checkAudioConfig(true, kOutBufferDurationMs, config, suggestedConfig)) {
+    if (util::checkAudioConfig(true, kOutBufferDurationMs,
+                               talsa::pcmGetPcmPeriodSettings().periodCount,
+                               config, suggestedConfig)) {
         auto stream = std::make_unique<StreamOut>(
             this, ioHandle, device, suggestedConfig, flags, sourceMetadata);
 
@@ -314,7 +319,9 @@ std::tuple<Result, sp<IStreamIn>, AudioConfig> Device::openInputStreamImpl(
     }
 
     AudioConfig suggestedConfig;
-    if (util::checkAudioConfig(false, kInBufferDurationMs, config, suggestedConfig)) {
+    if (util::checkAudioConfig(false, kInBufferDurationMs,
+                               talsa::pcmGetPcmPeriodSettings().periodCount,
+                               config, suggestedConfig)) {
         auto stream = std::make_unique<StreamIn>(
             this, ioHandle, device, suggestedConfig, flags, sinkMetadata);
 
