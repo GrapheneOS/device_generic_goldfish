@@ -45,6 +45,7 @@ size_t getBytesPerSample(const AudioFormat &format);
 bool checkAudioConfig(const AudioConfig &cfg);
 bool checkAudioConfig(bool isOut,
                       size_t duration_ms,
+                      size_t extraAlignment,
                       const AudioConfig &cfg,
                       AudioConfig &suggested);
 
