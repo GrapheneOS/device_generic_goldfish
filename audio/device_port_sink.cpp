@@ -159,7 +159,7 @@ struct TinyalsaSink : public DevicePortSink {
                 mReceivedFrames += szFrames;
                 bytesToWrite -= szBytes;
             } else {
-                ALOGV("TinyalsaSink::%s:%d pcm_write was late reading "
+                ALOGV("TinyalsaSink::%s:%d pcm_writei was late reading "
                       "frames, dropping %zu us of audio",
                       __func__, __LINE__,
                       size_t(1000000 * bytesToWrite / mFrameSize / mSampleRateHz));
@@ -209,7 +209,16 @@ struct TinyalsaSink : public DevicePortSink {
                     LOG_ALWAYS_FATAL_IF(mRingBuffer.consume(chunk, szBytes) < szBytes);
                 }
 
-                talsa::pcmWrite(mPcm.get(), writeBuffer.data(), szBytes);
+                const uint8_t *data8 = writeBuffer.data();
+                while (szBytes > 0) {
+                    const int n = talsa::pcmWrite(mPcm.get(), data8, szBytes, mFrameSize);
+                    LOG_ALWAYS_FATAL_IF(n > szBytes);
+                    if (n < 0) {
+                        break;
+                    }
+                    data8 += n;
+                    szBytes -= n;
+                }
             }
         }
     }
