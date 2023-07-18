@@ -152,6 +152,8 @@ PcmPtr pcmOpen(const unsigned int dev,
     pcm_config.period_size =
         periodSettings.periodSizeMultiplier * frameCount / periodSettings.periodCount;
     pcm_config.format = PCM_FORMAT_S16_LE;
+    pcm_config.start_threshold = pcm_config.period_size * (pcm_config.period_count - 1);
+    pcm_config.stop_threshold = pcm_config.period_size * pcm_config.period_count;
 
     pcm_t *pcmRaw = ::pcm_open(dev, card,
                                (isOut ? PCM_OUT : PCM_IN) | PCM_MONOTONIC,
@@ -183,58 +185,64 @@ PcmPtr pcmOpen(const unsigned int dev,
     return pcm;
 }
 
-bool pcmRead(pcm_t *pcm, void *data, unsigned int count) {
+int pcmRead(pcm_t *pcm, void *data, const unsigned int count,
+             const unsigned int frameSize) {
+    LOG_ALWAYS_FATAL_IF(frameSize == 0);
     if (!pcm) {
-        return FAILURE(false);
+        return FAILURE(-1);
     }
 
     int tries = 3;
     while (true) {
-        --tries;
-        const int r = ::pcm_read(pcm, data, count);
-        switch (-r) {
-        case 0:
-            return true;
+        const int framesRead = ::pcm_readi(pcm, data, count / frameSize);
+        if (framesRead > 0) {
+            return framesRead * frameSize;
+        } else {
+            --tries;
+            switch (-framesRead) {
+            case EIO:
+            case EAGAIN:
+                if (tries > 0) {
+                    break;
+                }
+                [[fallthrough]];
 
-        case EIO:
-        case EAGAIN:
-            if (tries > 0) {
-                break;
+            default:
+                ALOGW("%s:%d pcm_readi failed with '%s' (%d)",
+                      __func__, __LINE__, ::pcm_get_error(pcm), framesRead);
+                return FAILURE(-1);
             }
-            [[fallthrough]];
-
-        default:
-            ALOGW("%s:%d pcm_read failed with '%s' (%d)",
-                  __func__, __LINE__, ::pcm_get_error(pcm), r);
-            return FAILURE(false);
         }
     }
 }
 
-bool pcmWrite(pcm_t *pcm, const void *data, unsigned int count) {
+int pcmWrite(pcm_t *pcm, const void *data, const unsigned int count,
+              const unsigned int frameSize) {
+    LOG_ALWAYS_FATAL_IF(frameSize == 0);
     if (!pcm) {
-        return FAILURE(false);
+        return FAILURE(-1);
     }
 
     int tries = 3;
     while (true) {
-        --tries;
-        const int r = ::pcm_write(pcm, data, count);
-        switch (-r) {
-        case 0:
-            return true;
+        const int framesWritten = ::pcm_writei(pcm, data, count / frameSize);
+        if (framesWritten > 0) {
+            return framesWritten * frameSize;
+        } else {
+            --tries;
+            switch (-framesWritten) {
+            case EIO:
+            case EAGAIN:
+                if (tries > 0) {
+                    break;
+                }
+                [[fallthrough]];
 
-        case EIO:
-        case EAGAIN:
-            if (tries > 0) {
-                break;
+            default:
+                ALOGW("%s:%d pcm_writei failed with '%s' (%d)",
+                      __func__, __LINE__, ::pcm_get_error(pcm), framesWritten);
+                return FAILURE(-1);
             }
-            [[fallthrough]];
-
-        default:
-            ALOGW("%s:%d pcm_write failed with '%s' (%d)",
-                  __func__, __LINE__, ::pcm_get_error(pcm), r);
-            return FAILURE(false);
         }
     }
 }
