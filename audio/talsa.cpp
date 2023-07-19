@@ -152,8 +152,10 @@ PcmPtr pcmOpen(const unsigned int dev,
     pcm_config.period_size =
         periodSettings.periodSizeMultiplier * frameCount / periodSettings.periodCount;
     pcm_config.format = PCM_FORMAT_S16_LE;
-    pcm_config.start_threshold = pcm_config.period_size * (pcm_config.period_count - 1);
-    pcm_config.stop_threshold = pcm_config.period_size * pcm_config.period_count;
+    if (isOut) {
+        pcm_config.start_threshold = pcm_config.period_size * (pcm_config.period_count - 1);
+        pcm_config.stop_threshold = pcm_config.period_size * pcm_config.period_count;
+    }
 
     pcm_t *pcmRaw = ::pcm_open(dev, card,
                                (isOut ? PCM_OUT : PCM_IN) | PCM_MONOTONIC,
