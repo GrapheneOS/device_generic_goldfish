@@ -432,7 +432,7 @@ void FakeRotatingCamera::closeImpl(const bool everything) {
     }
 }
 
-std::tuple<int64_t, CameraMetadata,
+std::tuple<int64_t, int64_t, CameraMetadata,
            std::vector<StreamBuffer>, std::vector<DelayedStreamBuffer>>
 FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
                                           Span<CachedStreamBuffer*> csbs) {
@@ -494,7 +494,7 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
         }
     }
 
-    return make_tuple(mFrameDurationNs,
+    return make_tuple(mFrameDurationNs, kDefaultSensorExposureTimeNs,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 
@@ -505,7 +505,7 @@ fail:
         outputBuffers.push_back(csb->finish(false));
     }
 
-    return make_tuple(FAILURE(-1),
+    return make_tuple(FAILURE(-1), 0,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 }
