@@ -65,9 +65,6 @@ struct CameraDevice : public BnCameraDevice {
 
     CameraMetadataMap constructDefaultRequestSettings(RequestTemplate tpl) const;
 
-    static std::string getPhysicalId(int index);
-    static std::optional<int> parsePhysicalId(std::string_view str);
-
 private:
     friend struct CameraProvider;
 
