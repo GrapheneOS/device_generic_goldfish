@@ -16,7 +16,6 @@
 
 #define FAILURE_DEBUG_PREFIX "CameraDevice"
 
-#include <charconv>
 #include <string_view>
 
 #include <system/camera_metadata.h>
@@ -32,8 +31,6 @@ namespace camera {
 namespace provider {
 namespace implementation {
 namespace {
-constexpr char kCameraIdPrefix[] = "device@1.0/internal/";
-
 const uint32_t kExtraResultKeys[] = {
     ANDROID_CONTROL_AE_STATE,
     ANDROID_CONTROL_AF_STATE,
@@ -507,31 +504,6 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
     m[ANDROID_DISTORTION_CORRECTION_MODE] = ANDROID_DISTORTION_CORRECTION_MODE_OFF;
 
     return m;
-}
-
-std::string CameraDevice::getPhysicalId(const int index) {
-    char buf[sizeof(kCameraIdPrefix) + 8];
-    snprintf(buf, sizeof(buf), "%s%d", kCameraIdPrefix, index);
-    return buf;
-}
-
-std::optional<int> CameraDevice::parsePhysicalId(const std::string_view str) {
-    if (str.size() < sizeof(kCameraIdPrefix)) {
-        return FAILURE(std::nullopt);
-    }
-
-    if (memcmp(str.data(), kCameraIdPrefix, sizeof(kCameraIdPrefix) - 1) != 0) {
-        return FAILURE(std::nullopt);
-    }
-
-    int index;
-    const auto r = std::from_chars(&str[sizeof(kCameraIdPrefix) - 1],
-                                   &*str.end(), index, 10);
-    if (r.ec == std::errc()) {
-        return index;
-    } else {
-        return FAILURE(std::nullopt);
-    }
 }
 
 }  // namespace implementation
