@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <charconv>
+
 #include <inttypes.h>
 
 #include <log/log.h>
@@ -28,6 +30,34 @@ namespace hardware {
 namespace camera {
 namespace provider {
 namespace implementation {
+namespace {
+constexpr char kCameraIdPrefix[] = "device@1.0/internal/";
+
+std::string getLogicalCameraId(const int index) {
+    char buf[sizeof(kCameraIdPrefix) + 8];
+    snprintf(buf, sizeof(buf), "%s%d", kCameraIdPrefix, index);
+    return buf;
+}
+
+std::optional<int> parseLogicalCameraId(const std::string_view str) {
+    if (str.size() < sizeof(kCameraIdPrefix)) {
+        return FAILURE(std::nullopt);
+    }
+
+    if (memcmp(str.data(), kCameraIdPrefix, sizeof(kCameraIdPrefix) - 1) != 0) {
+        return FAILURE(std::nullopt);
+    }
+
+    int index;
+    const auto r = std::from_chars(&str[sizeof(kCameraIdPrefix) - 1],
+                                   &*str.end(), index, 10);
+    if (r.ec == std::errc()) {
+        return index;
+    } else {
+        return FAILURE(std::nullopt);
+    }
+}
+}  // namespace
 
 using aidl::android::hardware::camera::common::Status;
 
@@ -53,7 +83,7 @@ ScopedAStatus CameraProvider::getCameraIdList(std::vector<std::string>* camera_i
     camera_ids->reserve(mAvailableCameras.size());
 
     for (int i = 0; i < mAvailableCameras.size(); ++i) {
-        camera_ids->push_back(CameraDevice::getPhysicalId(mDeviceIdBase + i));
+        camera_ids->push_back(getLogicalCameraId(mDeviceIdBase + i));
     }
 
     return ScopedAStatus::ok();
@@ -62,7 +92,7 @@ ScopedAStatus CameraProvider::getCameraIdList(std::vector<std::string>* camera_i
 ScopedAStatus CameraProvider::getCameraDeviceInterface(
         const std::string& name,
         std::shared_ptr<ICameraDevice>* device) {
-    const std::optional<int> maybeIndex = CameraDevice::parsePhysicalId(name);
+    const std::optional<int> maybeIndex = parseLogicalCameraId(name);
     if (!maybeIndex) {
         return toScopedAStatus(FAILURE(Status::ILLEGAL_ARGUMENT));
     }
