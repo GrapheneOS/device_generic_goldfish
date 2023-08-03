@@ -70,6 +70,13 @@
 /vendor/lib(64)?/libdrm.so  u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/hw/android\.hardware\.graphics\.mapper@3\.0-impl-ranchu\.so   u:object_r:same_process_hal_file:s0
 /vendor/lib(64)?/libGoldfishProfiler\.so       u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/dri/.* u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/hw/android\.hardware\.graphics\.mapper@4\.0-impl\.minigbm\.so u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/hw/mapper\.minigbm\.so u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/libminigbm_gralloc.so  u:object_r:same_process_hal_file:s0
+/vendor/lib(64)?/libminigbm_gralloc4_utils.so  u:object_r:same_process_hal_file:s0
+/vendor/bin/hw/android\.hardware\.graphics\.allocator-service\.minigbm   u:object_r:hal_graphics_allocator_default_exec:s0
+/vendor/bin/hw/android\.hardware\.graphics\.allocator@4\.0-service\.minigbm   u:object_r:hal_graphics_allocator_default_exec:s0
 
 # data
 /data/vendor/mediadrm(/.*)?            u:object_r:mediadrm_vendor_data_file:s0
