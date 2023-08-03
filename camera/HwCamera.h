@@ -80,7 +80,7 @@ struct HwCamera {
                            const Stream* streams, const HalStream* halStreams) = 0;
     virtual void close() = 0;
 
-    virtual std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
+    virtual std::tuple<int64_t, int64_t, CameraMetadata, std::vector<StreamBuffer>,
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
 
