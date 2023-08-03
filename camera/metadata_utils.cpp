@@ -62,16 +62,35 @@ std::optional<CameraMetadata> serializeCameraMetadataMap(const CameraMetadataMap
 
     CameraMetadataPtr cm(allocate_camera_metadata(m.size() * 5 / 4, dataSize * 3 / 2));
 
+    unsigned numIncorrectTagDataSize = 0;
     for (const auto& [tag, value] : m) {
         if (value.count > 0) {
-            if (add_camera_metadata_entry(cm.get(), tag, value.data.data(), value.count)) {
-                return FAILURE_V(std::nullopt, "failed to add tag=%s.%s(%u), count=%u",
-                                 get_camera_metadata_section_name(tag),
-                                 get_camera_metadata_tag_name(tag), tag,
-                                 value.count);
+            const int tagType = get_camera_metadata_tag_type(tag);
+            const size_t elementSize = camera_metadata_type_size[tagType];
+            const size_t expectedDataSize = value.count * elementSize;
+
+            if (value.data.size() == expectedDataSize) {
+                if (add_camera_metadata_entry(cm.get(), tag, value.data.data(), value.count)) {
+                    return FAILURE_V(std::nullopt, "failed to add tag=%s.%s(%u), count=%u",
+                                     get_camera_metadata_section_name(tag),
+                                     get_camera_metadata_tag_name(tag), tag,
+                                     value.count);
+                }
+            } else {
+                ++numIncorrectTagDataSize;
+                ALOGE("%s:%d: Incorrect tag (%s.%s(%u), %s[%u]) data size, "
+                      "expected=%zu, actual=%zu", __func__, __LINE__,
+                       get_camera_metadata_section_name(tag),
+                       get_camera_metadata_tag_name(tag),
+                       tag, camera_metadata_type_names[tagType],
+                       value.count, expectedDataSize, value.data.size());
             }
         }
     }
+
+    LOG_ALWAYS_FATAL_IF(numIncorrectTagDataSize > 0, "%s:%d: there are %u tags "
+                        "with incorrect data size, see the messages above.",
+                        __func__, __LINE__, numIncorrectTagDataSize);
 
     if (sort_camera_metadata(cm.get())) {
         return FAILURE(std::nullopt);
