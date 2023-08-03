@@ -52,6 +52,7 @@ struct FakeRotatingCamera : public HwCamera {
     Span<const std::pair<int32_t, int32_t>> getTargetFpsRanges() const override;
     Span<const Rect<uint16_t>> getAvailableThumbnailSizes() const override;
     bool isBackFacing() const override;
+    Span<const float> getAvailableFocalLength() const override;
     std::tuple<int32_t, int32_t, int32_t> getMaxNumOutputStreams() const override;
     Span<const PixelFormat> getSupportedPixelFormats() const override;
     Span<const Rect<uint16_t>> getSupportedResolutions() const override;
