@@ -321,6 +321,8 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
             int64_t(mHwCamera->getSensorMaxFrameDuration());
         m[ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE] =
             ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN;  // SYSTEM_TIME_MONOTONIC
+        m[ANDROID_SENSOR_READOUT_TIMESTAMP] =
+            ANDROID_SENSOR_READOUT_TIMESTAMP_HARDWARE;
     }
     {   // ANDROID_SHADING_...
         m[ANDROID_SHADING_AVAILABLE_MODES]
