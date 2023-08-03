@@ -49,7 +49,7 @@ struct QemuCamera : public HwCamera {
                    const Stream* streams, const HalStream* halStreams) override;
     void close() override;
 
-    std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
+    std::tuple<int64_t, int64_t, CameraMetadata, std::vector<StreamBuffer>,
                std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) override;
 
