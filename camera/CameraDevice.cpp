@@ -92,7 +92,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
 
     {
         m[ANDROID_COLOR_CORRECTION_AVAILABLE_ABERRATION_MODES]
-            .add(ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF);
+            .add<uint8_t>(ANDROID_COLOR_CORRECTION_ABERRATION_MODE_OFF);
     }
     {   // ANDROID_CONTROL_...
         m[ANDROID_CONTROL_AE_AVAILABLE_ANTIBANDING_MODES]
@@ -136,9 +136,9 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
             .add<int32_t>(0)    // AWB
             .add<int32_t>(0);   // AF
         m[ANDROID_CONTROL_AE_LOCK_AVAILABLE] =
-            ANDROID_CONTROL_AE_LOCK_AVAILABLE_FALSE;
+            uint8_t(ANDROID_CONTROL_AE_LOCK_AVAILABLE_FALSE);
         m[ANDROID_CONTROL_AWB_LOCK_AVAILABLE] =
-            ANDROID_CONTROL_AWB_LOCK_AVAILABLE_FALSE;
+            uint8_t(ANDROID_CONTROL_AWB_LOCK_AVAILABLE_FALSE);
         m[ANDROID_CONTROL_AVAILABLE_MODES]
             .add<uint8_t>(ANDROID_CONTROL_MODE_OFF)
             .add<uint8_t>(ANDROID_CONTROL_MODE_AUTO);
@@ -156,13 +156,13 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
     {   // ANDROID_FLASH_INFO_...
         const auto supportedFlashStrength = mHwCamera->getSupportedFlashStrength();
         if (supportedFlashStrength.first > 0) {
-            m[ANDROID_FLASH_INFO_AVAILABLE] = ANDROID_FLASH_INFO_AVAILABLE_TRUE;
+            m[ANDROID_FLASH_INFO_AVAILABLE] = uint8_t(ANDROID_FLASH_INFO_AVAILABLE_TRUE);
             m[ANDROID_FLASH_INFO_STRENGTH_MAXIMUM_LEVEL] =
                 int32_t(supportedFlashStrength.first);
             m[ANDROID_FLASH_INFO_STRENGTH_DEFAULT_LEVEL] =
                 int32_t(supportedFlashStrength.second);
         } else {
-            m[ANDROID_FLASH_INFO_AVAILABLE] = ANDROID_FLASH_INFO_AVAILABLE_FALSE;
+            m[ANDROID_FLASH_INFO_AVAILABLE] = uint8_t(ANDROID_FLASH_INFO_AVAILABLE_FALSE);
         }
     }
     {   // ANDROID_HOT_PIXEL_...
@@ -179,8 +179,8 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         m[ANDROID_JPEG_MAX_SIZE] = int32_t(mHwCamera->getJpegMaxSize());
     }
     {   // ANDROID_LENS_...
-        m[ANDROID_LENS_FACING] = mHwCamera->isBackFacing() ?
-            ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT;
+        m[ANDROID_LENS_FACING] = uint8_t(mHwCamera->isBackFacing() ?
+            ANDROID_LENS_FACING_BACK : ANDROID_LENS_FACING_FRONT);
 
         {
             auto& v = m[ANDROID_LENS_INFO_AVAILABLE_APERTURES];
@@ -202,7 +202,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         m[ANDROID_LENS_INFO_MINIMUM_FOCUS_DISTANCE] =
             float(mHwCamera->getMinimumFocusDistance());
         m[ANDROID_LENS_INFO_FOCUS_DISTANCE_CALIBRATION] =
-            ANDROID_LENS_INFO_FOCUS_DISTANCE_CALIBRATION_APPROXIMATE;
+            uint8_t(ANDROID_LENS_INFO_FOCUS_DISTANCE_CALIBRATION_APPROXIMATE);
     }
     {   // ANDROID_NOISE_REDUCTION_...
         m[ANDROID_NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES]
@@ -218,17 +218,17 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
 
         m[ANDROID_REQUEST_MAX_NUM_INPUT_STREAMS] = int32_t(0);
-        m[ANDROID_REQUEST_PIPELINE_MAX_DEPTH] = mHwCamera->getPipelineMaxDepth();
+        m[ANDROID_REQUEST_PIPELINE_MAX_DEPTH] = uint8_t(mHwCamera->getPipelineMaxDepth());
         m[ANDROID_REQUEST_PARTIAL_RESULT_COUNT] = int32_t(1);
         m[ANDROID_REQUEST_AVAILABLE_CAPABILITIES]
-            .add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE)
-            .add(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS);
+            .add<uint8_t>(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE)
+            .add<uint8_t>(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS);
     }
     {   // ANDROID_SCALER_...
         {
             auto& v = m[ANDROID_SCALER_AVAILABLE_FORMATS];
             for (const auto fmt : mHwCamera->getSupportedPixelFormats()) {
-                v.add(fmt);
+                v.add<int32_t>(static_cast<int32_t>(fmt));
             }
         }
         {
@@ -274,7 +274,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
 
         m[ANDROID_SCALER_CROPPING_TYPE] =
-            ANDROID_SCALER_CROPPING_TYPE_CENTER_ONLY;
+            uint8_t(ANDROID_SCALER_CROPPING_TYPE_CENTER_ONLY);
     }
     {   // ANDROID_SENSOR_...
         m[ANDROID_SENSOR_ORIENTATION] =
@@ -310,7 +310,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
 
         m[ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT] =
-            ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGB;
+            uint8_t(ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGB);
 
         {
             const auto exposureTimeRange = mHwCamera->getSensorExposureTimeRange();
@@ -323,7 +323,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         m[ANDROID_SENSOR_INFO_MAX_FRAME_DURATION] =
             int64_t(mHwCamera->getSensorMaxFrameDuration());
         m[ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE] =
-            ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN;  // SYSTEM_TIME_MONOTONIC
+            uint8_t(ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);  // SYSTEM_TIME_MONOTONIC
     }
     {   // ANDROID_SHADING_...
         m[ANDROID_SHADING_AVAILABLE_MODES]
@@ -340,7 +340,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
     }
     {   // ANDROID_INFO_...
         m[ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL] =
-            ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED;
+            uint8_t(ANDROID_INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED);
     }
     {   // ANDROID_SYNC_
         m[ANDROID_SYNC_MAX_LATENCY] = ANDROID_SYNC_MAX_LATENCY_UNKNOWN;
