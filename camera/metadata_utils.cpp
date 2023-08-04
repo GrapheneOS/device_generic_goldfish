@@ -127,54 +127,60 @@ void prettyPrintCameraMetadata(const CameraMetadata& m) {
     for (size_t i = 0; i < n; ++i) {
         camera_metadata_ro_entry_t e;
         get_camera_metadata_ro_entry(raw, i, &e);
-        char value[256];
+        std::vector<char> value;
 
         if (e.count > 0) {
             switch (e.type) {
             case TYPE_BYTE: {
-                    char* s = value;
+                    int s = 0;
                     for (unsigned j = 0; j < e.count; ++j) {
-                        s += snprintf(s, sizeof(value), "%s%u",
+                        value.resize(s + 4);
+                        s += snprintf(&value[s], value.size() - s, "%s%u",
                                       ((j > 0) ? "," : ""), e.data.u8[j]);
                     }
                 }
                 break;
             case TYPE_INT32: {
-                    char* s = value;
+                    int s = 0;
                     for (unsigned j = 0; j < e.count; ++j) {
-                        s += snprintf(s, sizeof(value), "%s%d",
+                        value.resize(s + 12);
+                        s += snprintf(&value[s], value.size() - s, "%s%d",
                                       ((j > 0) ? "," : ""), e.data.i32[j]);
                     }
                 }
                 break;
             case TYPE_FLOAT: {
-                    char* s = value;
+                    int s = 0;
                     for (unsigned j = 0; j < e.count; ++j) {
-                        s += snprintf(s, sizeof(value), "%s%g",
+                        value.resize(s + 12);
+                        s += snprintf(&value[s], value.size() - s, "%s%g",
                                       ((j > 0) ? "," : ""), e.data.f[j]);
                     }
                 }
                 break;
             case TYPE_INT64: {
-                    char* s = value;
+                    int s = 0;
                     for (unsigned j = 0; j < e.count; ++j) {
-                        s += snprintf(s, sizeof(value), "%s%" PRId64,
+                        value.resize(s + 24);
+                        s += snprintf(&value[s], value.size() - s, "%s%" PRId64,
                                       ((j > 0) ? "," : ""), e.data.i64[j]);
                     }
                 }
                 break;
             case TYPE_DOUBLE: {
-                    char* s = value;
+                    int s = 0;
                     for (unsigned j = 0; j < e.count; ++j) {
-                        s += snprintf(s, sizeof(value), "%s%g",
+                        value.resize(s + 25);
+                        s += snprintf(&value[s], value.size() - s, "%s%g",
                                       ((j > 0) ? "," : ""), e.data.d[j]);
                     }
                 }
                 break;
             case TYPE_RATIONAL: {
-                    char* s = value;
+                    int s = 0;
                     for (unsigned j = 0; j < e.count; ++j) {
-                        s += snprintf(s, sizeof(value), "%s%d/%d",
+                        value.resize(s + 25);
+                        s += snprintf(&value[s], value.size() - s, "%s%d/%d",
                                       ((j > 0) ? "," : ""),
                                       e.data.r[j].numerator,
                                       e.data.r[j].denominator);
@@ -182,17 +188,19 @@ void prettyPrintCameraMetadata(const CameraMetadata& m) {
                 }
                 break;
             default:
-                snprintf(value, sizeof(value), "%s", "bad type");
+                value.resize(12);
+                snprintf(&value[0], value.size(), "%s", "bad type");
                 break;
             }
         } else {
-            snprintf(value, sizeof(value), "%s", "empty");
+            value.resize(8);
+            snprintf(&value[0], value.size(), "%s", "empty");
         }
 
         ALOGD("%s:%d i=%zu tag=%s.%s(%u),%s[%zu]: %s", __func__, __LINE__, i,
               get_camera_metadata_section_name(e.tag),
               get_camera_metadata_tag_name(e.tag),
-              e.tag, camera_metadata_type_names[e.type], e.count, value);
+              e.tag, camera_metadata_type_names[e.type], e.count, value.data());
     }
 }
 
