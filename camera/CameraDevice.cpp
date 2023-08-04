@@ -220,9 +220,17 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         m[ANDROID_REQUEST_MAX_NUM_INPUT_STREAMS] = int32_t(0);
         m[ANDROID_REQUEST_PIPELINE_MAX_DEPTH] = uint8_t(mHwCamera->getPipelineMaxDepth());
         m[ANDROID_REQUEST_PARTIAL_RESULT_COUNT] = int32_t(1);
-        m[ANDROID_REQUEST_AVAILABLE_CAPABILITIES]
-            .add<uint8_t>(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE)
-            .add<uint8_t>(ANDROID_REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS);
+        {
+            auto& availableCaps = m[ANDROID_REQUEST_AVAILABLE_CAPABILITIES];
+            uint32_t availableCapsBitmap =
+                mHwCamera->getAvailableCapabilitiesBitmap();
+
+            for (int i = 0; availableCapsBitmap; ++i, availableCapsBitmap >>= 1) {
+                if (availableCapsBitmap & 1) {
+                    availableCaps.add<uint8_t>(i);
+                }
+            }
+        }
     }
     {   // ANDROID_SCALER_...
         {

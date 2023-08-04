@@ -147,6 +147,12 @@ int32_t HwCamera::getPipelineMaxDepth() const {
     return 4;
 }
 
+uint32_t HwCamera::getAvailableCapabilitiesBitmap() const {
+    return
+        (1U << ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) |
+        (1U << ANDROID_REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS);
+}
+
 float HwCamera::getMaxDigitalZoom() const {
     return 1.0;
 }
