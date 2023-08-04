@@ -174,7 +174,7 @@ void QemuCamera::close() {
     }
 }
 
-std::tuple<int64_t, CameraMetadata,
+std::tuple<int64_t, int64_t, CameraMetadata,
            std::vector<StreamBuffer>, std::vector<DelayedStreamBuffer>>
 QemuCamera::processCaptureRequest(CameraMetadata metadataUpdate,
                                   Span<CachedStreamBuffer*> csbs) {
@@ -211,6 +211,7 @@ QemuCamera::processCaptureRequest(CameraMetadata metadataUpdate,
     }
 
     return make_tuple((mQemuChannel.ok() ? mFrameDurationNs : FAILURE(-1)),
+                      mSensorExposureDurationNs,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 }

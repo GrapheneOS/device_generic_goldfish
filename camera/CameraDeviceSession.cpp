@@ -105,7 +105,8 @@ void notifyError(ICameraDeviceCallback* cb,
 
 void notifyShutter(ICameraDeviceCallback* cb,
                    const int32_t frameNumber,
-                   const int64_t timestamp) {
+                   const int64_t shutterTimestamp,
+                   const int64_t readoutTimestamp) {
     using aidl::android::hardware::camera::device::NotifyMsg;
     using aidl::android::hardware::camera::device::ShutterMsg;
     using NotifyMsgTag = NotifyMsg::Tag;
@@ -115,7 +116,8 @@ void notifyShutter(ICameraDeviceCallback* cb,
     {
         ShutterMsg shutterMsg;
         shutterMsg.frameNumber = frameNumber;
-        shutterMsg.timestamp = timestamp;
+        shutterMsg.timestamp = shutterTimestamp;
+        shutterMsg.readoutTimestamp = readoutTimestamp;
         msg.set<NotifyMsgTag::shutter>(shutterMsg);
     }
 
@@ -529,11 +531,9 @@ struct timespec CameraDeviceSession::captureOneFrame(struct timespec nextFrameT,
     }
 
     const int32_t frameNumber = req.frameNumber;
-    const int64_t shutterTimestampNs = timespec2nanos(nextFrameT);
 
-    notifyShutter(&*mCb, frameNumber, shutterTimestampNs);
-
-    auto [frameDurationNs, metadata, outputBuffers, delayedOutputBuffers] =
+    auto [frameDurationNs, exposureDurationNs, metadata,
+          outputBuffers, delayedOutputBuffers] =
         mHwCamera.processCaptureRequest(std::move(req.metadataUpdate),
                                         {req.buffers.begin(), req.buffers.end()});
 
@@ -547,6 +547,8 @@ struct timespec CameraDeviceSession::captureOneFrame(struct timespec nextFrameT,
         }
     }
 
+    const int64_t shutterTimestampNs = timespec2nanos(nextFrameT);
+    notifyShutter(&*mCb, frameNumber, shutterTimestampNs, shutterTimestampNs + exposureDurationNs);
     metadataSetShutterTimestamp(&metadata, shutterTimestampNs);
     consumeCaptureResult(makeCaptureResult(frameNumber,
         std::move(metadata), std::move(outputBuffers)));
