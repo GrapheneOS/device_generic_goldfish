@@ -61,6 +61,8 @@ constexpr int kMedFPS = 15;
 constexpr int kMaxFPS = 30;
 constexpr int64_t kOneSecondNs = 1000000000;
 
+constexpr float kDefaultFocalLength = 2.8;
+
 constexpr int64_t kMinFrameDurationNs = kOneSecondNs / kMaxFPS;
 constexpr int64_t kMaxFrameDurationNs = kOneSecondNs / kMinFPS;
 constexpr int64_t kDefaultFrameDurationNs = kOneSecondNs / kMedFPS;
@@ -432,7 +434,7 @@ void FakeRotatingCamera::closeImpl(const bool everything) {
     }
 }
 
-std::tuple<int64_t, CameraMetadata,
+std::tuple<int64_t, int64_t, CameraMetadata,
            std::vector<StreamBuffer>, std::vector<DelayedStreamBuffer>>
 FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
                                           Span<CachedStreamBuffer*> csbs) {
@@ -494,7 +496,7 @@ FakeRotatingCamera::processCaptureRequest(CameraMetadata metadataUpdate,
         }
     }
 
-    return make_tuple(mFrameDurationNs,
+    return make_tuple(mFrameDurationNs, kDefaultSensorExposureTimeNs,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 
@@ -505,7 +507,7 @@ fail:
         outputBuffers.push_back(csb->finish(false));
     }
 
-    return make_tuple(FAILURE(-1),
+    return make_tuple(FAILURE(-1), 0,
                       std::move(resultMetadata), std::move(outputBuffers),
                       std::move(delayedOutputBuffers));
 }
@@ -908,6 +910,14 @@ bool FakeRotatingCamera::isBackFacing() const {
     return mIsBackFacing;
 }
 
+Span<const float> FakeRotatingCamera::getAvailableFocalLength() const {
+    static const float availableFocalLengths[] = {
+        kDefaultFocalLength
+    };
+
+    return availableFocalLengths;
+}
+
 std::tuple<int32_t, int32_t, int32_t> FakeRotatingCamera::getMaxNumOutputStreams() const {
     return {
         0,  // raw
@@ -978,7 +988,7 @@ int64_t FakeRotatingCamera::getDefaultSensorFrameDuration() const {
 }
 
 float FakeRotatingCamera::getDefaultFocalLength() const {
-    return 2.8;
+    return kDefaultFocalLength;
 }
 
 }  // namespace hw

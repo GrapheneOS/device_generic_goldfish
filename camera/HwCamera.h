@@ -80,7 +80,7 @@ struct HwCamera {
                            const Stream* streams, const HalStream* halStreams) = 0;
     virtual void close() = 0;
 
-    virtual std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
+    virtual std::tuple<int64_t, int64_t, CameraMetadata, std::vector<StreamBuffer>,
                        std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) = 0;
 
@@ -107,6 +107,7 @@ struct HwCamera {
     virtual float getMinimumFocusDistance() const;
     virtual std::tuple<int32_t, int32_t, int32_t> getMaxNumOutputStreams() const = 0;
     virtual int32_t getPipelineMaxDepth() const;
+    virtual uint32_t getAvailableCapabilitiesBitmap() const;
     virtual Span<const PixelFormat> getSupportedPixelFormats() const = 0;
     virtual Span<const Rect<uint16_t>> getSupportedResolutions() const = 0;
     virtual float getMaxDigitalZoom() const;

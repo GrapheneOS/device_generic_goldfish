@@ -62,8 +62,6 @@ PRODUCT_PACKAGES += \
     qemu-export-property \
     qemu-props \
     stagefright \
-    android.hardware.graphics.allocator@3.0-service.ranchu \
-    android.hardware.graphics.mapper@3.0-impl-ranchu \
     android.hardware.graphics.composer3-service.ranchu \
     toybox_vendor \
     android.hardware.wifi-service \
@@ -79,6 +77,19 @@ PRODUCT_PACKAGES += \
     MultiDisplayProvider \
     libGoldfishProfiler \
     dlkm_loader
+
+ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
+PRODUCT_VENDOR_PROPERTIES += ro.hardware.gralloc=minigbm
+PRODUCT_PACKAGES += \
+    android.hardware.graphics.allocator-service.minigbm \
+    android.hardware.graphics.mapper@4.0-impl.minigbm \
+    mapper.minigbm
+else
+PRODUCT_VENDOR_PROPERTIES += ro.hardware.gralloc=ranchu
+PRODUCT_PACKAGES += \
+    android.hardware.graphics.allocator@3.0-service.ranchu \
+    android.hardware.graphics.mapper@3.0-impl-ranchu
+endif
 
 ifneq ($(EMULATOR_DISABLE_RADIO),true)
 PRODUCT_PACKAGES += \

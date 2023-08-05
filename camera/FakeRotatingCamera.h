@@ -44,7 +44,7 @@ struct FakeRotatingCamera : public HwCamera {
                    const Stream* streams, const HalStream* halStreams) override;
     void close() override;
 
-    std::tuple<int64_t, CameraMetadata, std::vector<StreamBuffer>,
+    std::tuple<int64_t, int64_t, CameraMetadata, std::vector<StreamBuffer>,
                std::vector<DelayedStreamBuffer>>
         processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) override;
 
@@ -52,6 +52,7 @@ struct FakeRotatingCamera : public HwCamera {
     Span<const std::pair<int32_t, int32_t>> getTargetFpsRanges() const override;
     Span<const Rect<uint16_t>> getAvailableThumbnailSizes() const override;
     bool isBackFacing() const override;
+    Span<const float> getAvailableFocalLength() const override;
     std::tuple<int32_t, int32_t, int32_t> getMaxNumOutputStreams() const override;
     Span<const PixelFormat> getSupportedPixelFormats() const override;
     Span<const Rect<uint16_t>> getSupportedResolutions() const override;
