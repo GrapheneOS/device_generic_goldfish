@@ -149,7 +149,6 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay \
     EmulationPixelFoldOverlay \
-    GoldfishSkinConfig \
     SystemUIEmulationPixelFoldOverlay \
     EmulationPixel7ProOverlay \
     SystemUIEmulationPixel7ProOverlay \
