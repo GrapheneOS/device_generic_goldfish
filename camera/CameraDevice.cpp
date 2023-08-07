@@ -233,22 +233,6 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
     }
     {   // ANDROID_SCALER_...
-        {
-            auto& v = m[ANDROID_SCALER_AVAILABLE_FORMATS];
-            for (const auto fmt : mHwCamera->getSupportedPixelFormats()) {
-                v.add<int32_t>(static_cast<int32_t>(fmt));
-            }
-        }
-        {
-            auto& jpeg = m[ANDROID_SCALER_AVAILABLE_JPEG_SIZES];
-            auto& processed = m[ANDROID_SCALER_AVAILABLE_PROCESSED_SIZES];
-
-            for (const auto sz : mHwCamera->getSupportedResolutions()) {
-                jpeg.add<int32_t>(sz.width).add<int32_t>(sz.height);
-                processed.add<int32_t>(sz.width).add<int32_t>(sz.height);
-            }
-        }
-
         m[ANDROID_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM] =
             float(mHwCamera->getMaxDigitalZoom());
 
@@ -495,10 +479,8 @@ CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTem
 
     m[ANDROID_SENSOR_TEST_PATTERN_MODE] = int32_t(ANDROID_SENSOR_TEST_PATTERN_MODE_OFF);
 
-    m[ANDROID_REQUEST_FRAME_COUNT] = int32_t(0);
     m[ANDROID_REQUEST_ID] = int32_t(0);
     m[ANDROID_REQUEST_METADATA_MODE] = uint8_t(ANDROID_REQUEST_METADATA_MODE_FULL);
-    m[ANDROID_REQUEST_TYPE] = uint8_t(ANDROID_REQUEST_TYPE_CAPTURE);
 
     m[ANDROID_SCALER_CROP_REGION]
         .add<int32_t>(0).add<int32_t>(0)
