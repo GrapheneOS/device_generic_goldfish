@@ -40,6 +40,9 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_product.mk)
 PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
     development/sys-img/images_x86_64_source.prop_template
 
+PRODUCT_PACKAGES += \
+    GoldfishSkinConfig
+
 #
 # All components inherited here go to vendor image
 #
