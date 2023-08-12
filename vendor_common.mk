@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PRODUCT_SHIPPING_API_LEVEL := 34
-
 #
 # This file is to configure vendor/data partitions of emulator-related products
 #

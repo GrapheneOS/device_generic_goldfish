@@ -26,20 +26,10 @@ PRODUCT_SDK_ADDON_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/configs/gpu.config:data/misc/gceconfigs/gpu.config
 
-# a hack to reduce presubmit time where CTS tries to install media files one by one
-# taking more than 30 minutes; following is just the list of files needed by current
-# tests on presubmit
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/media/test/swirl_136x144_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_136x144_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_132x130_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_132x130_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_130x132_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_130x132_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_144x136_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_144x136_mpeg4.mp4 \
-    device/generic/goldfish/data/media/test/swirl_128x128_mpeg4.mp4:data/media/0/test/CtsMediaTestCases-1.4/swirl_128x128_mpeg4.mp4
-
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.crypto.dm_default_key.options_format.version=2
 
-PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
+PRODUCT_SHIPPING_API_LEVEL := 34
 TARGET_USES_MKE2FS := true
 
 PRODUCT_COPY_FILES += \
