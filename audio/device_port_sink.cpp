@@ -212,10 +212,12 @@ struct TinyalsaSink : public DevicePortSink {
                 const uint8_t *data8 = writeBuffer.data();
                 while (szBytes > 0) {
                     const int n = talsa::pcmWrite(mPcm.get(), data8, szBytes, mFrameSize);
-                    LOG_ALWAYS_FATAL_IF(n > szBytes);
                     if (n < 0) {
                         break;
                     }
+                    LOG_ALWAYS_FATAL_IF(static_cast<size_t>(n) > szBytes,
+                                        "n=%d szBytes=%zu mFrameSize=%u",
+                                        n, szBytes, mFrameSize);
                     data8 += n;
                     szBytes -= n;
                 }
