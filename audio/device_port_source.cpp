@@ -186,7 +186,13 @@ struct TinyalsaSource : public DevicePortSource {
 
     size_t doRead(void *dst, size_t sz) {
         const int n = talsa::pcmRead(mPcm.get(), dst, sz, mFrameSize);
-        return (n > 0) ? n : 0;
+        if (n > 0) {
+            LOG_ALWAYS_FATAL_IF(static_cast<size_t>(n) > sz,
+                                "n=%d sz=%zu mFrameSize=%u", n, sz, mFrameSize);
+            return n;
+        } else {
+            return 0;
+        }
     }
 
     static std::unique_ptr<TinyalsaSource> create(unsigned pcmCard,
