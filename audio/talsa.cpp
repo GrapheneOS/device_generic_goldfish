@@ -187,17 +187,24 @@ PcmPtr pcmOpen(const unsigned int dev,
     return pcm;
 }
 
-int pcmRead(pcm_t *pcm, void *data, const unsigned int count,
+int pcmRead(pcm_t *pcm, void *data, const int szBytes,
              const unsigned int frameSize) {
     LOG_ALWAYS_FATAL_IF(frameSize == 0);
+    LOG_ALWAYS_FATAL_IF(szBytes < 0, "szBytes=%d", szBytes);
+    LOG_ALWAYS_FATAL_IF((szBytes % frameSize) != 0, "szBytes=%d frameSize=%u",
+                        szBytes, frameSize);
     if (!pcm) {
         return FAILURE(-1);
     }
 
+    const int szFrames = szBytes / frameSize;
     int tries = 3;
     while (true) {
-        const int framesRead = ::pcm_readi(pcm, data, count / frameSize);
+        const int framesRead = ::pcm_readi(pcm, data, szFrames);
         if (framesRead > 0) {
+            LOG_ALWAYS_FATAL_IF(framesRead > szFrames,
+                                "framesRead=%d szFrames=%d szBytes=%u frameSize=%u",
+                                framesRead, szFrames, szBytes, frameSize);
             return framesRead * frameSize;
         } else {
             --tries;
@@ -218,17 +225,24 @@ int pcmRead(pcm_t *pcm, void *data, const unsigned int count,
     }
 }
 
-int pcmWrite(pcm_t *pcm, const void *data, const unsigned int count,
+int pcmWrite(pcm_t *pcm, const void *data, const int szBytes,
               const unsigned int frameSize) {
     LOG_ALWAYS_FATAL_IF(frameSize == 0);
+    LOG_ALWAYS_FATAL_IF(szBytes < 0, "szBytes=%d", szBytes);
+    LOG_ALWAYS_FATAL_IF((szBytes % frameSize) != 0, "szBytes=%d frameSize=%u",
+                        szBytes, frameSize);
     if (!pcm) {
         return FAILURE(-1);
     }
 
+    const int szFrames = szBytes / frameSize;
     int tries = 3;
     while (true) {
-        const int framesWritten = ::pcm_writei(pcm, data, count / frameSize);
+        const int framesWritten = ::pcm_writei(pcm, data, szFrames);
         if (framesWritten > 0) {
+            LOG_ALWAYS_FATAL_IF(framesWritten > szFrames,
+                                "framesWritten=%d szFrames=%d szBytes=%u frameSize=%u",
+                                framesWritten, szFrames, szBytes, frameSize);
             return framesWritten * frameSize;
         } else {
             --tries;
