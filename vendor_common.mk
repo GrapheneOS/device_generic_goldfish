@@ -27,6 +27,11 @@ PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
     device/generic/goldfish-opengl
 
+# RKPD
+PRODUCT_PRODUCT_PROPERTIES += \
+    remote_provisioning.enable_rkpd=true \
+    remote_provisioning.hostname=remoteprovisioning.googleapis.com
+
 PRODUCT_VENDOR_PROPERTIES += \
     ro.control_privapp_permissions=enforce \
     ro.crypto.volume.filenames_mode=aes-256-cts \
