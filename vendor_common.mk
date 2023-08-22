@@ -260,7 +260,7 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/window_extensions.mk)
 # "Hello, world!" HAL implementations, mostly for compliance
 PRODUCT_PACKAGES += \
     android.hardware.atrace@1.0-service \
-    android.hardware.authsecret-service.example \
+    com.android.hardware.authsecret \
     android.hardware.contexthub-service.example \
     android.hardware.dumpstate-service.example \
     android.hardware.health-service.example \
