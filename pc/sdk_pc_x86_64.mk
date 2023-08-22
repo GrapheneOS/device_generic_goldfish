@@ -15,7 +15,7 @@
 
 PRODUCT_COPY_FILES += device/generic/goldfish/pc/config.ini.pc:config.ini
 
-$(call inherit-product, $(SRC_TARGET_DIR)/product/sdk_x86_64.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/sdk_phone_x86_64.mk)
 
 PRODUCT_NAME := sdk_pc_x86_64
 PRODUCT_DEVICE := emulator64_x86_64
