@@ -72,6 +72,6 @@
         <item>network</item>
     </string-array>
 
-    <bool name="config_supportMicNearUltrasound">false</bool>
-    <bool name="config_supportSpeakerNearUltrasound">false</bool>
+    <bool name="config_supportMicNearUltrasound">true</bool>
+    <bool name="config_supportSpeakerNearUltrasound">true</bool>
 </resources>
