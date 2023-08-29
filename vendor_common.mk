@@ -266,9 +266,7 @@ PRODUCT_PACKAGES += \
     android.hardware.health-service.example \
     android.hardware.health.storage-service.default \
     android.hardware.lights-service.example \
-    android.hardware.neuralnetworks-shim-service-sample \
-    android.hardware.neuralnetworks-service-sample-all \
-    android.hardware.neuralnetworks-service-sample-limited \
+    com.android.hardware.neuralnetworks \
     android.hardware.power-service.example \
     android.hardware.power.stats-service.example \
     android.hardware.rebootescrow-service.default \
