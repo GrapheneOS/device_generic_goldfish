@@ -29,6 +29,7 @@ cc_library_shared {
     relative_install_path: "hw",
     defaults: ["hidl_defaults"],
     srcs: [
+        "multihal_sensors_transport.cpp",
         "multihal_sensors.cpp",
         "multihal_sensors_epoll.cpp",
         "multihal_sensors_qemu.cpp",
