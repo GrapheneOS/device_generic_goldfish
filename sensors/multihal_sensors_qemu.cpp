@@ -53,8 +53,7 @@ int64_t weigthedAverage(const int64_t a, int64_t aw, int64_t b, int64_t bw) {
 
 }  // namespace
 
-bool MultihalSensors::activateQemuSensorImpl(const int pipe,
-                                             const int sensorHandle,
+bool MultihalSensors::activateQemuSensorImpl(const int sensorHandle,
                                              const bool enabled) {
     char buffer[64];
     int len = snprintf(buffer, sizeof(buffer),
@@ -62,8 +61,8 @@ bool MultihalSensors::activateQemuSensorImpl(const int pipe,
                        getQemuSensorNameByHandle(sensorHandle),
                        (enabled ? 1 : 0));
 
-    if (qemud_channel_send(pipe, buffer, len) < 0) {
-        ALOGE("%s:%d: qemud_channel_send failed", __func__, __LINE__);
+    if (m_sensorsTransport->Send(buffer, len) < 0) {
+        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
         return false;
     } else {
         return true;
@@ -74,7 +73,7 @@ bool MultihalSensors::setAllQemuSensors(const bool enabled) {
     uint32_t mask = m_availableSensorsMask;
     for (int i = 0; mask; ++i, mask >>= 1) {
         if (mask & 1) {
-            if (!activateQemuSensorImpl(m_qemuSensorsFd.get(), i, enabled)) {
+            if (!activateQemuSensorImpl(i, enabled)) {
                 return false;
             }
         }
@@ -88,12 +87,11 @@ double MultihalSensors::randomError(float lo, float hi) {
     return distribution(gen);
 }
 
-void MultihalSensors::parseQemuSensorEventLocked(const int pipe,
-                                                 QemuSensorsProtocolState* state) {
+void MultihalSensors::parseQemuSensorEventLocked(QemuSensorsProtocolState* state) {
     char buf[256];
-    const int len = qemud_channel_recv(pipe, buf, sizeof(buf) - 1);
+    const int len = m_sensorsTransport->Receive(buf, sizeof(buf) - 1);
     if (len < 0) {
-        ALOGE("%s:%d: qemud_channel_recv failed", __func__, __LINE__);
+        ALOGE("%s:%d: receive for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
     }
     const int64_t nowNs = ::android::elapsedRealtimeNano();
     buf[len] = 0;
