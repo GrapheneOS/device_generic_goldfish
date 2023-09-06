@@ -25,6 +25,8 @@
 #include <thread>
 #include <vector>
 
+#include "multihal_sensors_transport.h"
+
 namespace goldfish {
 namespace ahs = ::android::hardware::sensors;
 namespace ahs21 = ahs::V2_1;
@@ -95,9 +97,9 @@ private:
         return m_activeSensorsMask & (1u << sensorHandle);  // m_mtx required
     }
     Event activationOnChangeSensorEvent(int32_t sensorHandle, const SensorInfo& sensor) const;
-    static bool activateQemuSensorImpl(int pipe, int sensorHandle, bool enabled);
+    bool activateQemuSensorImpl(int sensorHandle, bool enabled);
     bool setAllQemuSensors(bool enabled);
-    void parseQemuSensorEventLocked(const int pipe, QemuSensorsProtocolState* state);
+    void parseQemuSensorEventLocked(QemuSensorsProtocolState* state);
     void postSensorEventLocked(const Event& event);
     void doPostSensorEventLocked(const SensorInfo& sensor, const Event& event);
     void setAdditionalInfoFrames();
@@ -111,8 +113,7 @@ private:
     static constexpr char kCMD_QUIT = 'q';
     bool qemuSensorThreadSendCommand(char cmd) const;
 
-    // set in ctor, never change
-    const unique_fd     m_qemuSensorsFd;
+    const std::unique_ptr<SensorsTransport> m_sensorsTransport;
     uint32_t            m_availableSensorsMask = 0;
     // a pair of connected sockets to talk to the worker thread
     unique_fd           m_callersFd;        // a caller writes here
