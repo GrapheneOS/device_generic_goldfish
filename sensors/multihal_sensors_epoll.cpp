@@ -39,13 +39,14 @@ int qemuSensortThreadRcvCommand(const int fd) {
 }  // namespace
 
 void MultihalSensors::qemuSensorListenerThread() {
+    const int transportFd = m_sensorsTransport->Fd();
     const unique_fd epollFd(epoll_create1(0));
     if (!epollFd.ok()) {
         ALOGE("%s:%d: epoll_create1 failed", __func__, __LINE__);
         ::abort();
     }
 
-    epollCtlAdd(epollFd.get(), m_qemuSensorsFd.get());
+    epollCtlAdd(epollFd.get(), transportFd);
     epollCtlAdd(epollFd.get(), m_sensorThreadFd.get());
 
     while (true) {
@@ -65,14 +66,14 @@ void MultihalSensors::qemuSensorListenerThread() {
             const int fd = ev->data.fd;
             const int ev_events = ev->events;
 
-            if (fd == m_qemuSensorsFd.get()) {
+            if (fd == transportFd) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
                     ALOGE("%s:%d: epoll_wait: devFd has an error, ev_events=%x",
                           __func__, __LINE__, ev_events);
                     ::abort();
                 } else if (ev_events & EPOLLIN) {
                     std::unique_lock<std::mutex> lock(m_mtx);
-                    parseQemuSensorEventLocked(m_qemuSensorsFd.get(), &m_protocolState);
+                    parseQemuSensorEventLocked(&m_protocolState);
                 }
             } else if (fd == m_sensorThreadFd.get()) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
