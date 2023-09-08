@@ -138,3 +138,5 @@ key 137   CUT
 key 133   COPY
 key 135   PASTE
 key 111   FORWARD_DEL
+key 452   MOVE_HOME
+key 453   MOVE_END
