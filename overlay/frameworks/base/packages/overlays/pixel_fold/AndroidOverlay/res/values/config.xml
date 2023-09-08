@@ -46,6 +46,9 @@
         @left
     </string>
 
+    <!-- WindowsManager JetPack display features -->
+    <string name="config_display_features" translatable="false">fold-[1104,0,1104,1848]</string>
+
     <!-- Map of System DeviceState supplied by DeviceStateManager to WM Jetpack posture. -->
     <string-array name="config_device_state_postures" translatable="false">
         <item>0:1</item> <!-- CLOSED -->
