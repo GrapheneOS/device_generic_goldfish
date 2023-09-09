@@ -49,6 +49,18 @@
     <!-- WindowsManager JetPack display features -->
     <string name="config_display_features" translatable="false">fold-[1104,0,1104,1848]</string>
 
+    <!-- Map of DeviceState to rotation lock setting. Each entry must be in the format "key:value",
+         or "key:value:fallback_key" for example: "0:1" or "2:0:1". The keys are device states, and
+         the values are one of Settings.Secure.DeviceStateRotationLockSetting.
+         The fallback is a key to a device state that can be specified when the value is
+         Settings.Secure.DEVICE_STATE_ROTATION_LOCK_IGNORED.
+     -->
+    <string-array name="config_perDeviceStateRotationLockDefaults" translatable="false">
+        <item>0:1</item> <!-- CLOSED -> LOCKED -->
+        <item>2:0:1</item> <!-- HALF_OPENED -> IGNORED and fallback to device state OPENED -->
+        <item>1:2</item> <!-- OPENED -> UNLOCKED -->
+    </string-array>
+
     <!-- Map of System DeviceState supplied by DeviceStateManager to WM Jetpack posture. -->
     <string-array name="config_device_state_postures" translatable="false">
         <item>0:1</item> <!-- CLOSED -->
