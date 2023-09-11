@@ -27,6 +27,39 @@
     <!--  Whether Multiuser UI should be shown -->
     <bool name="config_enableMultiUserUI">true</bool>
 
+        <!-- Map of System DeviceState supplied by DeviceStateManager to WM Jetpack posture. -->
+    <string-array name="config_device_state_postures" translatable="false">
+        <item>0:1</item> <!-- CLOSED -->
+        <item>1:2</item> <!-- HALF_OPENED -->
+        <item>2:3</item> <!-- OPENED -->
+        <item>3:1</item> <!-- FLIPPED -->
+    </string-array>
+
+    <!-- The device states (supplied by DeviceStateManager) that should be treated as open by the
+         display fold controller. -->
+    <integer-array name="config_openDeviceStates" translatable="false">
+        <item>2</item> <!-- OPEN -->
+    </integer-array>
+
+    <!-- The device states (supplied by DeviceStateManager) that should be treated as folded by the
+         display fold controller. This also controls the folded bit in CameraServiceProxy. -->
+    <integer-array name="config_foldedDeviceStates" translatable="false">
+        <item>0</item> <!-- CLOSED -->
+    </integer-array>
+
+    <!-- The device states (supplied by DeviceStateManager) that should be treated as half folded by
+         the display fold controller. This also controls the folded bit in CameraServiceProxy. -->
+    <integer-array name="config_halfFoldedDeviceStates" translatable="false">
+        <item>1</item> <!-- HALF_OPENED -->
+    </integer-array>
+
+    <!-- The device states (supplied by DeviceStateManager) that should be treated as a rear display
+         state. Default is empty. -->
+    <integer-array name="config_rearDisplayDeviceStates" translatable="false">
+        <item>3</item> <!-- REAR_DISPLAY_STATE -->
+    </integer-array>
+
+
     <!-- Set to true to add links to Cell Broadcast app from Settings and MMS app. -->
     <bool name="config_cellBroadcastAppLinks">true</bool>
 
@@ -46,20 +79,7 @@
       <item>"wlan\\d"</item>
     </string-array>
 
-    <!-- Map of System DeviceState supplied by DeviceStateManager to WM Jetpack posture. -->
-    <string-array name="config_device_state_postures" translatable="false">
-        <item>1:1</item> <!-- CLOSED -->
-        <item>2:2</item> <!-- HALF_OPENED -->
-        <item>3:3</item> <!-- OPENED -->
-        <item>4:4</item> <!-- FLIPPED -->
-        <item>5:5</item> <!-- TENT -->
-    </string-array>
 
-    <!-- The device states (supplied by DeviceStateManager) that should be treated as folded by the
-         display fold controller. -->
-    <integer-array name="config_foldedDeviceStates" translatable="false">
-      <item>1</item> <!-- CLOSED -->
-    </integer-array>
 
     <!-- This device is able to support the microphone and camera global toggles. -->
     <bool name="config_supportsMicToggle">true</bool>
@@ -72,6 +92,13 @@
         <item>network</item>
     </string-array>
 
+    <string-array name="config_perDeviceStateRotationLockDefaults" translatable="false">
+        <item>0:1</item> <!-- CLOSED -> LOCKED -->
+        <item>2:0:1</item> <!-- HALF_OPENED -> IGNORED and fallback to device state OPENED -->
+        <item>1:2</item> <!-- OPENED -> UNLOCKED -->
+    </string-array>
+
     <bool name="config_supportMicNearUltrasound">true</bool>
     <bool name="config_supportSpeakerNearUltrasound">true</bool>
+
 </resources>
