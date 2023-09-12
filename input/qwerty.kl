@@ -132,6 +132,7 @@ key 581   STEM_PRIMARY
 key 582   STEM_1
 key 583   STEM_2
 key 584   STEM_3
+key 585   KEYCODE_ASSIST
 
 # Edit keys
 key 137   CUT
