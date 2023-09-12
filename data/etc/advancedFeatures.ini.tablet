@@ -26,3 +26,4 @@ VulkanQueueSubmitWithCommands = on
 VulkanBatchedDescriptorSetUpdate = on
 DeviceStateOnBoot = on
 VirtioSndCard = on
+DeviceKeyboardHasAssistKey = on
