@@ -14,14 +14,49 @@
  * limitations under the License.
  */
 
+#include <android-base/unique_fd.h>
 #include <log/log.h>
-#include "multihal_sensors.h"
+#include <qemud.h>
+#include <multihal_sensors.h>
 
+using ::android::base::unique_fd;
 using ::android::hardware::sensors::V2_1::implementation::ISensorsSubHal;
 
 namespace {
-goldfish::MultihalSensors impl;
-}
+
+class QemudSensorsTransport : public goldfish::SensorsTransport {
+ public:
+    QemudSensorsTransport(const char* name)
+        : m_qemuSensorsFd(qemud_channel_open(name)) {}
+
+    int Send(const void* msg, int size) override {
+        return qemud_channel_send(m_qemuSensorsFd.get(), msg, size);
+    }
+
+    int Receive(void* msg, int maxsize) override {
+        return qemud_channel_recv(m_qemuSensorsFd.get(), msg, maxsize);
+    }
+
+    bool Ok() const override {
+        return m_qemuSensorsFd.ok();
+    }
+
+    int Fd() const override {
+        return m_qemuSensorsFd.get();
+    }
+
+    const char* Name() const override {
+        return "qemud_channel";
+    }
+
+ private:
+    const unique_fd m_qemuSensorsFd;
+};
+
+goldfish::MultihalSensors impl(
+    std::move(std::make_unique<QemudSensorsTransport>("qemud")));
+
+} // namespace
 
 extern "C" ISensorsSubHal* sensorsHalGetSubHal_2_1(uint32_t* version) {
     *version = SUB_HAL_2_1_VERSION;
