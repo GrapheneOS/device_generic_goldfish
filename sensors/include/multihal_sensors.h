@@ -49,7 +49,7 @@ using ::android::hardware::Return;
 using ::android::sp;
 
 struct MultihalSensors : public ahs21::implementation::ISensorsSubHal {
-    MultihalSensors();
+    MultihalSensors(std::unique_ptr<SensorsTransport> transport);
     ~MultihalSensors();
 
     Return<void> debug(const hidl_handle& fd, const hidl_vec<hidl_string>& args) override;
