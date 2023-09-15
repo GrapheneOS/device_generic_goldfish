@@ -84,6 +84,8 @@
         <MediaCodec name="OMX.google.mpeg4.decoder" type="video/mp4v-es" update="true">
             <!-- 4 runs, min 1439 max 1625 gmean 1523 -->
             <Limit name="measured-frame-rate-176x144" range="1439-1625" />
+            <Limit name="measured-frame-rate-480x360" range="200-400" />
+            <Limit name="measured-frame-rate-1280x720" range="100-200" />
         </MediaCodec>
         <MediaCodec name="OMX.google.vp8.decoder" type="video/x-vnd.on2.vp8" update="true">
             <!-- 3 runs, min 1129 max 1261 gmean 1190 -->
