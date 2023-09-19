@@ -16,9 +16,8 @@
 
 #include <cinttypes>
 #include <log/log.h>
-#include <qemud.h>
 #include <utils/SystemClock.h>
-#include "multihal_sensors.h"
+#include <multihal_sensors.h>
 #include "sensor_list.h"
 
 namespace goldfish {
@@ -33,8 +32,8 @@ namespace {
 constexpr int64_t kMaxSamplingPeriodNs = 1000000000;
 }
 
-MultihalSensors::MultihalSensors()
-        : m_sensorsTransport(std::make_unique<QemudSensorsTransport>("sensors"))
+MultihalSensors::MultihalSensors(std::unique_ptr<SensorsTransport> transport)
+        : m_sensorsTransport(std::move(transport))
         , m_batchInfo(getSensorNumber()) {
     if (!m_sensorsTransport->Ok()) {
         ALOGE("%s:%d: sensors transport is not opened", __func__, __LINE__);
