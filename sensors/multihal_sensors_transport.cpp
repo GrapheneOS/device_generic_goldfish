@@ -14,19 +14,31 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "multihal_sensors_transport.h"
 
 namespace goldfish {
 
-class SensorsTransport {
- public:
-    virtual int Send(const void* msg, int size) = 0;
-    virtual int Receive(void* msg, int maxsize) = 0;
-    virtual bool Ok() const = 0;
-    virtual int Fd() const = 0;
-    virtual const char* Name() const = 0;
+QemudSensorsTransport::QemudSensorsTransport(const char* name)
+    : m_qemuSensorsFd(qemud_channel_open(name)) {}
 
-    virtual ~SensorsTransport() = default;
-};
+int QemudSensorsTransport::Send(const void* msg, int size) {
+    return qemud_channel_send(m_qemuSensorsFd.get(), msg, size);
+}
+
+int QemudSensorsTransport::Receive(void* msg, int maxsize) {
+    return qemud_channel_recv(m_qemuSensorsFd.get(), msg, maxsize);
+}
+
+bool QemudSensorsTransport::Ok() const {
+    return m_qemuSensorsFd.ok();
+}
+
+int QemudSensorsTransport::Fd() const {
+    return m_qemuSensorsFd.get();
+}
+
+const char* QemudSensorsTransport::Name() const {
+    return "qemud_channel";
+}
 
 }  // namespace goldfish
