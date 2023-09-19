@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cinttypes>
+#include <cstdint>
 #include <log/log.h>
 #include <utils/SystemClock.h>
 #include <multihal_sensors.h>
@@ -30,43 +30,49 @@ using ahs10::AdditionalInfoType;
 
 namespace {
 constexpr int64_t kMaxSamplingPeriodNs = 1000000000;
+
+struct SensorsTransportStub : public SensorsTransport {
+    int Send(const void*, int) override { return -1; }
+    int Receive(void*, int) override { return -1; }
+    bool Ok() const override { return false; }
+    int Fd() const override { return -1; }
+    const char* Name() const override { return "stub"; }
+};
+
+const SensorsTransportStub g_sensorsTransportStub;
 }
 
-MultihalSensors::MultihalSensors(std::unique_ptr<SensorsTransport> transport)
-        : m_sensorsTransport(std::move(transport))
+MultihalSensors::MultihalSensors(SensorsTransportFactory stf)
+        : m_sensorsTransportFactory(std::move(stf))
+        , m_sensorsTransport(const_cast<SensorsTransportStub*>(&g_sensorsTransportStub))
         , m_batchInfo(getSensorNumber()) {
-    LOG_ALWAYS_FATAL_IF(!m_sensorsTransport->Ok(),
-                        "%s:%d: sensors transport is not opened", __func__, __LINE__);
+    {
+        const auto st = m_sensorsTransportFactory();
 
-    char buffer[64];
-    int len = snprintf(buffer, sizeof(buffer),
-                       "time:%" PRId64, ::android::elapsedRealtimeNano());
-    LOG_ALWAYS_FATAL_IF(m_sensorsTransport->Send(buffer, len) < 0,
-                        "%s:%d: send for %s failed", __func__, __LINE__,
-                        m_sensorsTransport->Name());
+        LOG_ALWAYS_FATAL_IF(!st->Ok(), "%s:%d: sensors transport is not opened",
+                            __func__, __LINE__);
 
-    using namespace std::literals;
-    const std::string_view kListSensorsCmd = "list-sensors"sv;
+        using namespace std::literals;
+        const std::string_view kListSensorsCmd = "list-sensors"sv;
 
-    LOG_ALWAYS_FATAL_IF(m_sensorsTransport->Send(kListSensorsCmd.data(),
-                                                 kListSensorsCmd.size()) < 0,
-                        "%s:%d: send for %s failed", __func__, __LINE__,
-                        m_sensorsTransport->Name());
+        LOG_ALWAYS_FATAL_IF(st->Send(kListSensorsCmd.data(), kListSensorsCmd.size()) < 0,
+                            "%s:%d: send for %s failed", __func__, __LINE__, st->Name());
 
-    len = m_sensorsTransport->Receive(buffer, sizeof(buffer) - 1);
-    LOG_ALWAYS_FATAL_IF(len < 0, "%s:%d: receive for %s failed", __func__, __LINE__,
-                        m_sensorsTransport->Name());
+        char buffer[64];
+        const int len = st->Receive(buffer, sizeof(buffer) - 1);
+        LOG_ALWAYS_FATAL_IF(len < 0, "%s:%d: receive for %s failed", __func__, __LINE__,
+                            st->Name());
 
-    buffer[len] = 0;
-    uint32_t hostSensorsMask = 0;
-    LOG_ALWAYS_FATAL_IF(sscanf(buffer, "%u", &hostSensorsMask) != 1,
-                        "%s:%d: Can't parse qemud response", __func__, __LINE__);
+        buffer[len] = 0;
+        uint32_t hostSensorsMask = 0;
+        LOG_ALWAYS_FATAL_IF(sscanf(buffer, "%u", &hostSensorsMask) != 1,
+                            "%s:%d: Can't parse qemud response", __func__, __LINE__);
 
-    m_availableSensorsMask = hostSensorsMask
-        & ((1u << getSensorNumber()) - 1);
+        m_availableSensorsMask = hostSensorsMask & ((1u << getSensorNumber()) - 1);
 
-    ALOGI("%s:%d: host sensors mask=%x, available sensors mask=%x",
-          __func__, __LINE__, hostSensorsMask, m_availableSensorsMask);
+        ALOGI("%s:%d: host sensors mask=%x, available sensors mask=%x",
+              __func__, __LINE__, hostSensorsMask, m_availableSensorsMask);
+    }
 
     LOG_ALWAYS_FATAL_IF(!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
                                                      &m_callersFd, &m_sensorThreadFd),
@@ -79,8 +85,6 @@ MultihalSensors::MultihalSensors(std::unique_ptr<SensorsTransport> transport)
 }
 
 MultihalSensors::~MultihalSensors() {
-    setAllQemuSensors(false);
-
     m_batchRunning = false;
     m_batchUpdated.notify_one();
     m_batchThread.join();
@@ -257,14 +261,11 @@ Return<Result> MultihalSensors::batch(const int32_t sensorHandle,
             activeSensorsMask >>= 1;
         }
 
-        const int delayMs = std::max(1, int(minSamplingPeriodNs / 1000000));
-
-        char buffer[64];
-        const int len = snprintf(buffer, sizeof(buffer), "set-delay:%d", delayMs);
-
-        LOG_ALWAYS_FATAL_IF(m_sensorsTransport->Send(buffer, len) < 0,
-                            "%s:%d: send for %s failed", __func__, __LINE__,
-                            m_sensorsTransport->Name());
+        const uint32_t sensorsUpdateIntervalMs = std::max(1, int(minSamplingPeriodNs / 1000000));
+        m_protocolState.sensorsUpdateIntervalMs = sensorsUpdateIntervalMs;
+        if (!setSensorsUpdateIntervalMs(*m_sensorsTransport, sensorsUpdateIntervalMs)) {
+            qemuSensorThreadSendCommand(kCMD_RESTART);
+        }
     }
 
     return Result::OK;
@@ -318,7 +319,6 @@ Return<Result> MultihalSensors::injectSensorData_2_1(const Event& event) {
 
 Return<Result> MultihalSensors::initialize(const sp<IHalProxyCallback>& halProxyCallback) {
     std::unique_lock<std::mutex> lock(m_mtx);
-    setAllQemuSensors(true);   // we need to start sampling sensors for batching
     m_opMode = OperationMode::NORMAL;
     m_halProxyCallback = halProxyCallback;
     return Result::OK;
@@ -404,6 +404,35 @@ bool MultihalSensors::isSensorHandleValid(int sensorHandle) const {
     }
 
     return true;
+}
+
+void MultihalSensors::qemuSensorListenerThread() {
+    while (true) {
+        const auto st = m_sensorsTransportFactory();
+
+        LOG_ALWAYS_FATAL_IF(!setSensorsGuestTime(
+            *st, ::android::elapsedRealtimeNano()));
+        LOG_ALWAYS_FATAL_IF(!setSensorsUpdateIntervalMs(
+            *st, m_protocolState.sensorsUpdateIntervalMs));
+        LOG_ALWAYS_FATAL_IF(!setAllSensorsReporting(
+            *st, m_availableSensorsMask, true));
+
+        {
+            std::unique_lock<std::mutex> lock(m_mtx);
+            m_sensorsTransport = st.get();
+        }
+
+        const bool cont = qemuSensorListenerThreadImpl(st->Fd());
+
+        {
+            std::unique_lock<std::mutex> lock(m_mtx);
+            m_sensorsTransport = const_cast<SensorsTransportStub*>(&g_sensorsTransportStub);
+        }
+
+        if (!cont) {
+            break;
+        }
+    }
 }
 
 void MultihalSensors::batchThread() {
