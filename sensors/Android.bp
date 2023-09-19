@@ -23,18 +23,29 @@ package {
     default_applicable_licenses: ["device_generic_goldfish_license"],
 }
 
-cc_library_shared {
-    name: "android.hardware.sensors@2.1-impl.ranchu",
-    vendor: true,
-    relative_install_path: "hw",
-    defaults: ["hidl_defaults"],
+filegroup {
+    name: "android.hardware.sensors@2.1-impl.virtual_srcs",
     srcs: [
-        "multihal_sensors_transport.cpp",
         "multihal_sensors.cpp",
         "multihal_sensors_epoll.cpp",
         "multihal_sensors_qemu.cpp",
         "sensor_list.cpp",
-        "entry.cpp"
+    ]
+}
+
+cc_library_headers {
+    name: "android.hardware.sensors@2.1-impl.virtual_headers",
+    vendor_available: true,
+    export_include_dirs: ["include"],
+}
+
+cc_defaults {
+    name: "android.hardware.sensors@2.1-impl.virtual.defaults",
+    vendor: true,
+    relative_install_path: "hw",
+    defaults: ["hidl_defaults"],
+    srcs: [
+        ":android.hardware.sensors@2.1-impl.virtual_srcs",
     ],
     shared_libs: [
         "android.hardware.sensors@2.0",
@@ -45,8 +56,19 @@ cc_library_shared {
         "liblog",
         "libutils",
     ],
+    header_libs: [
+        "android.hardware.sensors@2.X-multihal.header",
+        "android.hardware.sensors@2.1-impl.virtual_headers"
+    ],
+}
+
+cc_library_shared {
+    name: "android.hardware.sensors@2.1-impl.ranchu",
+    defaults: ["android.hardware.sensors@2.1-impl.virtual.defaults"],
+    srcs: [
+        "entry.cpp"
+    ],
     static_libs: ["libqemud.ranchu"],
-    header_libs: ["android.hardware.sensors@2.X-multihal.header"],
     cflags: [
         "-DLOG_TAG=\"android.hardware.sensors@2.1-impl.ranchu\"",
         "-DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION",
