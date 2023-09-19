@@ -34,34 +34,33 @@ constexpr int64_t kMaxSamplingPeriodNs = 1000000000;
 }
 
 MultihalSensors::MultihalSensors()
-        : m_qemuSensorsFd(qemud_channel_open("sensors"))
+        : m_sensorsTransport(std::make_unique<QemudSensorsTransport>("sensors"))
         , m_batchInfo(getSensorNumber()) {
-    if (!m_qemuSensorsFd.ok()) {
-        ALOGE("%s:%d: m_qemuSensorsFd is not opened", __func__, __LINE__);
+    if (!m_sensorsTransport->Ok()) {
+        ALOGE("%s:%d: sensors transport is not opened", __func__, __LINE__);
         ::abort();
     }
 
     char buffer[64];
     int len = snprintf(buffer, sizeof(buffer),
                        "time:%" PRId64, ::android::elapsedRealtimeNano());
-    if (qemud_channel_send(m_qemuSensorsFd.get(), buffer, len) < 0) {
-        ALOGE("%s:%d: qemud_channel_send failed", __func__, __LINE__);
+    if (m_sensorsTransport->Send(buffer, len) < 0) {
+        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
         ::abort();
     }
 
     using namespace std::literals;
     const std::string_view kListSensorsCmd = "list-sensors"sv;
 
-    if (qemud_channel_send(m_qemuSensorsFd.get(),
-                           kListSensorsCmd.data(),
-                           kListSensorsCmd.size()) < 0) {
-        ALOGE("%s:%d: qemud_channel_send failed", __func__, __LINE__);
+    if (m_sensorsTransport->Send(kListSensorsCmd.data(),
+                                 kListSensorsCmd.size()) < 0) {
+        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
         ::abort();
     }
 
-    len = qemud_channel_recv(m_qemuSensorsFd.get(), buffer, sizeof(buffer) - 1);
+    len = m_sensorsTransport->Receive(buffer, sizeof(buffer) - 1);
     if (len < 0) {
-        ALOGE("%s:%d: qemud_channel_recv failed", __func__, __LINE__);
+        ALOGE("%s:%d: receive for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
         ::abort();
     }
     buffer[len] = 0;
@@ -273,8 +272,8 @@ Return<Result> MultihalSensors::batch(const int32_t sensorHandle,
         char buffer[64];
         const int len = snprintf(buffer, sizeof(buffer), "set-delay:%d", delayMs);
 
-        if (qemud_channel_send(m_qemuSensorsFd.get(), buffer, len) < 0) {
-            ALOGE("%s:%d: qemud_channel_send failed", __func__, __LINE__);
+        if (m_sensorsTransport->Send(buffer, len) < 0) {
+            ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
             ::abort();
         }
     }
