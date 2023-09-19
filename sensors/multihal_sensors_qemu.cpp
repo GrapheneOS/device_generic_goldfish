@@ -17,8 +17,9 @@
 #include <log/log.h>
 #include <utils/SystemClock.h>
 #include <math.h>
+#include <qemud.h>
 #include <random>
-#include <multihal_sensors.h>
+#include "multihal_sensors.h"
 #include "sensor_list.h"
 
 namespace goldfish {
