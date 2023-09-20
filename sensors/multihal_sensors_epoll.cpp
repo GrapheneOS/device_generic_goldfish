@@ -38,8 +38,7 @@ int qemuSensortThreadRcvCommand(const int fd) {
 }
 }  // namespace
 
-void MultihalSensors::qemuSensorListenerThread() {
-    const int transportFd = m_sensorsTransport->Fd();
+bool MultihalSensors::qemuSensorListenerThreadImpl(const int transportFd) {
     const unique_fd epollFd(epoll_create1(0));
     LOG_ALWAYS_FATAL_IF(!epollFd.ok(), "%s:%d: epoll_create1 failed",
                         __func__, __LINE__);
@@ -54,9 +53,9 @@ void MultihalSensors::qemuSensorListenerThread() {
                                                     events, 2,
                                                     kTimeoutMs));
         if (n < 0) {
-            ALOGE("%s:%d: epoll_wait failed with '%s'",
+            ALOGW("%s:%d: epoll_wait failed with '%s'",
                   __func__, __LINE__, strerror(errno));
-            continue;
+            return true;
         }
 
         for (int i = 0; i < n; ++i) {
@@ -66,8 +65,9 @@ void MultihalSensors::qemuSensorListenerThread() {
 
             if (fd == transportFd) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
-                    LOG_ALWAYS_FATAL("%s:%d: epoll_wait: transportFd has an error, "
-                                     "ev_events=%x", __func__, __LINE__, ev_events);
+                    ALOGW("%s:%d: epoll_wait: transportFd has an error, "
+                          "ev_events=%x", __func__, __LINE__, ev_events);
+                    return true;
                 } else if (ev_events & EPOLLIN) {
                     std::unique_lock<std::mutex> lock(m_mtx);
                     parseQemuSensorEventLocked(&m_protocolState);
@@ -78,17 +78,20 @@ void MultihalSensors::qemuSensorListenerThread() {
                                      "ev_events=%x", __func__, __LINE__, ev_events);
                 } else if (ev_events & EPOLLIN) {
                     const int cmd = qemuSensortThreadRcvCommand(fd);
-                    if (cmd == kCMD_QUIT) {
-                        return;
-                    } else {
-                        LOG_ALWAYS_FATAL("%s:%d: qemuSensortThreadRcvCommand "
-                                         "returned unexpected command, cmd=%d",
-                                          __func__, __LINE__, cmd);
+                    switch (cmd) {
+                    case kCMD_QUIT: return false;
+                    case kCMD_RESTART: return true;
+                    default:
+                        ALOGW("%s:%d: qemuSensortThreadRcvCommand "
+                              "returned unexpected command, cmd=%d",
+                              __func__, __LINE__, cmd);
+                        return true;
                     }
                 }
             } else {
-                ALOGE("%s:%d: epoll_wait() returned unexpected fd",
+                ALOGW("%s:%d: epoll_wait() returned unexpected fd",
                       __func__, __LINE__);
+                return true;
             }
         }
     }
