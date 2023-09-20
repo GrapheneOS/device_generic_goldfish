@@ -25,8 +25,8 @@ namespace {
 
 class QemudSensorsTransport : public goldfish::SensorsTransport {
  public:
-    QemudSensorsTransport(const char* name)
-        : m_qemuSensorsFd(qemud_channel_open(name)) {}
+    QemudSensorsTransport()
+        : m_qemuSensorsFd(qemud_channel_open("sensors")) {}
 
     int Send(const void* msg, int size) override {
         return qemud_channel_send(m_qemuSensorsFd.get(), msg, size);
@@ -52,8 +52,7 @@ class QemudSensorsTransport : public goldfish::SensorsTransport {
     const unique_fd m_qemuSensorsFd;
 };
 
-goldfish::MultihalSensors impl(
-    std::move(std::make_unique<QemudSensorsTransport>("sensors")));
+goldfish::MultihalSensors impl([](){ return std::make_unique<QemudSensorsTransport>(); });
 
 } // namespace
 
