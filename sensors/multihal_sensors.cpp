@@ -35,39 +35,32 @@ constexpr int64_t kMaxSamplingPeriodNs = 1000000000;
 MultihalSensors::MultihalSensors(std::unique_ptr<SensorsTransport> transport)
         : m_sensorsTransport(std::move(transport))
         , m_batchInfo(getSensorNumber()) {
-    if (!m_sensorsTransport->Ok()) {
-        ALOGE("%s:%d: sensors transport is not opened", __func__, __LINE__);
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(!m_sensorsTransport->Ok(),
+                        "%s:%d: sensors transport is not opened", __func__, __LINE__);
 
     char buffer[64];
     int len = snprintf(buffer, sizeof(buffer),
                        "time:%" PRId64, ::android::elapsedRealtimeNano());
-    if (m_sensorsTransport->Send(buffer, len) < 0) {
-        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(m_sensorsTransport->Send(buffer, len) < 0,
+                        "%s:%d: send for %s failed", __func__, __LINE__,
+                        m_sensorsTransport->Name());
 
     using namespace std::literals;
     const std::string_view kListSensorsCmd = "list-sensors"sv;
 
-    if (m_sensorsTransport->Send(kListSensorsCmd.data(),
-                                 kListSensorsCmd.size()) < 0) {
-        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(m_sensorsTransport->Send(kListSensorsCmd.data(),
+                                                 kListSensorsCmd.size()) < 0,
+                        "%s:%d: send for %s failed", __func__, __LINE__,
+                        m_sensorsTransport->Name());
 
     len = m_sensorsTransport->Receive(buffer, sizeof(buffer) - 1);
-    if (len < 0) {
-        ALOGE("%s:%d: receive for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(len < 0, "%s:%d: receive for %s failed", __func__, __LINE__,
+                        m_sensorsTransport->Name());
+
     buffer[len] = 0;
     uint32_t hostSensorsMask = 0;
-    if (sscanf(buffer, "%u", &hostSensorsMask) != 1) {
-        ALOGE("%s:%d: Can't parse qemud response", __func__, __LINE__);
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(sscanf(buffer, "%u", &hostSensorsMask) != 1,
+                        "%s:%d: Can't parse qemud response", __func__, __LINE__);
 
     m_availableSensorsMask = hostSensorsMask
         & ((1u << getSensorNumber()) - 1);
@@ -75,11 +68,9 @@ MultihalSensors::MultihalSensors(std::unique_ptr<SensorsTransport> transport)
     ALOGI("%s:%d: host sensors mask=%x, available sensors mask=%x",
           __func__, __LINE__, hostSensorsMask, m_availableSensorsMask);
 
-    if (!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
-                                     &m_callersFd, &m_sensorThreadFd)) {
-        ALOGE("%s:%d: Socketpair failed", __func__, __LINE__);
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(!::android::base::Socketpair(AF_LOCAL, SOCK_STREAM, 0,
+                                                     &m_callersFd, &m_sensorThreadFd),
+                        "%s:%d: Socketpair failed", __func__, __LINE__);
 
     setAdditionalInfoFrames();
 
@@ -271,10 +262,9 @@ Return<Result> MultihalSensors::batch(const int32_t sensorHandle,
         char buffer[64];
         const int len = snprintf(buffer, sizeof(buffer), "set-delay:%d", delayMs);
 
-        if (m_sensorsTransport->Send(buffer, len) < 0) {
-            ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
-            ::abort();
-        }
+        LOG_ALWAYS_FATAL_IF(m_sensorsTransport->Send(buffer, len) < 0,
+                            "%s:%d: send for %s failed", __func__, __LINE__,
+                            m_sensorsTransport->Name());
     }
 
     return Result::OK;
