@@ -41,10 +41,8 @@ int qemuSensortThreadRcvCommand(const int fd) {
 void MultihalSensors::qemuSensorListenerThread() {
     const int transportFd = m_sensorsTransport->Fd();
     const unique_fd epollFd(epoll_create1(0));
-    if (!epollFd.ok()) {
-        ALOGE("%s:%d: epoll_create1 failed", __func__, __LINE__);
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(!epollFd.ok(), "%s:%d: epoll_create1 failed",
+                        __func__, __LINE__);
 
     epollCtlAdd(epollFd.get(), transportFd);
     epollCtlAdd(epollFd.get(), m_sensorThreadFd.get());
@@ -68,26 +66,24 @@ void MultihalSensors::qemuSensorListenerThread() {
 
             if (fd == transportFd) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
-                    ALOGE("%s:%d: epoll_wait: devFd has an error, ev_events=%x",
-                          __func__, __LINE__, ev_events);
-                    ::abort();
+                    LOG_ALWAYS_FATAL("%s:%d: epoll_wait: transportFd has an error, "
+                                     "ev_events=%x", __func__, __LINE__, ev_events);
                 } else if (ev_events & EPOLLIN) {
                     std::unique_lock<std::mutex> lock(m_mtx);
                     parseQemuSensorEventLocked(&m_protocolState);
                 }
             } else if (fd == m_sensorThreadFd.get()) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
-                    ALOGE("%s:%d: epoll_wait: threadsFd has an error, ev_events=%x",
-                          __func__, __LINE__, ev_events);
-                    ::abort();
+                    LOG_ALWAYS_FATAL("%s:%d: epoll_wait: threadFd has an error, "
+                                     "ev_events=%x", __func__, __LINE__, ev_events);
                 } else if (ev_events & EPOLLIN) {
                     const int cmd = qemuSensortThreadRcvCommand(fd);
                     if (cmd == kCMD_QUIT) {
                         return;
                     } else {
-                        ALOGE("%s:%d: qemuSensortThreadRcvCommand returned unexpected command, cmd=%d",
-                              __func__, __LINE__, cmd);
-                        ::abort();
+                        LOG_ALWAYS_FATAL("%s:%d: qemuSensortThreadRcvCommand "
+                                         "returned unexpected command, cmd=%d",
+                                          __func__, __LINE__, cmd);
                     }
                 }
             } else {
