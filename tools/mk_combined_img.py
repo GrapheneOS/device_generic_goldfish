@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
-
 import argparse
 import codecs
 import math
 import operator
 import os
 import sys
-from subprocess import Popen, PIPE
+import subprocess
 from tempfile import mkstemp
 
 
@@ -22,11 +20,7 @@ def check_sparse(filename):
 
 
 def shell_command(comm_list):
-    command = Popen(comm_list, stdout=PIPE, stderr=PIPE)
-    command.communicate()
-    command.wait()
-    if command.returncode != 0:
-        sys.exit(1)
+    subprocess.run(comm_list, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def parse_input(input_file):
@@ -56,19 +50,16 @@ def parse_input(input_file):
         try:
             partition_info["num"] = int(line[2])
         except ValueError:
-            print("'%s' cannot be converted to int" % (line[2]))
-            sys.exit(1)
+            sys.exit(f"'{line[2]}' cannot be converted to int")
 
         # check if the partition number is out of range
         if partition_info["num"] > len(lines) or partition_info["num"] < 0:
-            print("Invalid partition number: %d, range [1..%d]" % \
-                  (partition_info["num"], len(lines)))
-            sys.exit(1)
+            sys.exit("Invalid partition number: %d, range [1..%d]" % \
+                     (partition_info["num"], len(lines)))
 
         # check if the partition number is duplicated
         if partition_info["num"] in num_used:
-            print("Duplicated partition number:%d" % (partition_info["num"]))
-            sys.exit(1)
+            sys.exit(f"Duplicated partition number: {partition_info['num']}")
         num_used.add(partition_info["num"])
         partitions.append(partition_info)
 
@@ -88,17 +79,14 @@ def write_partition(partition, output_file, offset):
 def unsparse_partition(partition):
     # if the input image is in sparse format, unsparse it
     simg2img = os.environ.get('SIMG2IMG', 'simg2img')
-    print("Unsparsing %s" % (partition["path"]), end=' ')
     partition["fd"], temp_file = mkstemp()
     shell_command([simg2img, partition["path"], temp_file])
     partition["path"] = temp_file
-    print("Done")
     return
 
 
 def clear_partition_table(filename):
     sgdisk = os.environ.get('SGDISK', 'sgdisk')
-    print("%s --clear %s" % (sgdisk, filename))
     shell_command([sgdisk, '--clear', filename])
     return
 
@@ -130,14 +118,12 @@ def main():
     output_filename = os.path.expandvars(args.output)
 
     # remove the output_filename.qcow2
-    print("removing " + output_filename + ".qcow2")
     shell_command(['rm', '-rf', output_filename + ".qcow2"])
 
     # check input file
     config_filename = args.input
     if not os.path.exists(config_filename):
-        print("Invalid config file name " + config_filename)
-        sys.exit(1)
+        sys.exit("Invalid config file name " + config_filename)
 
     # read input file
     config = open(config_filename, "r")
@@ -146,12 +132,10 @@ def main():
 
     # take a shortcut in build environment
     if os.path.exists(output_filename) and len(partitions) == 2:
-        print("updating " + output_filename + " ...")
         shell_command(['dd', "if=" + partitions[0]["path"], "of=" + output_filename,
                        "conv=notrunc,sync", "ibs=1024k", "obs=1024k", "seek=1"])
         shell_command(['dd', "if=" + partitions[1]["path"], "of=" + output_filename,
                        "conv=notrunc,sync", "ibs=1024k", "obs=1024k", "seek=2"])
-        print("done")
         sys.exit(0)
     elif len(partitions) == 2:
         gptprefix = partitions[0]["sizeByMb"] + "_" + partitions[1]["sizeByMb"]
@@ -159,7 +143,6 @@ def main():
         gpt_head = prebuilt_gpt_dir + "/head.img"
         gpt_tail = prebuilt_gpt_dir + "/head.img"
         if os.path.exists(gpt_head) and os.path.exists(gpt_tail):
-            print("found prebuilt gpt header and footer, use it")
             shell_command(['dd', "if=" + gpt_head, "of=" + output_filename, "bs=1024k",
                     "conv=notrunc,sync", "count=1"])
             shell_command(['dd', "if=" + partitions[0]["path"], "of=" + output_filename,
@@ -169,7 +152,6 @@ def main():
             shell_command(['dd', "if=" + gpt_tail, "of=" + output_filename,
                     "bs=1024k", "conv=notrunc,sync",
                     "seek=" + str(1 + int(partitions[0]["sizeByMb"]) + int(partitions[1]["sizeByMb"]))])
-            print("done")
             sys.exit(0)
 
     # combine the images

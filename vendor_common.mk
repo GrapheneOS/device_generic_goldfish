@@ -27,6 +27,11 @@ PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
     device/generic/goldfish-opengl
 
+# RKPD
+PRODUCT_PRODUCT_PROPERTIES += \
+    remote_provisioning.enable_rkpd=true \
+    remote_provisioning.hostname=remoteprovisioning.googleapis.com
+
 PRODUCT_VENDOR_PROPERTIES += \
     ro.control_privapp_permissions=enforce \
     ro.crypto.volume.filenames_mode=aes-256-cts \
@@ -34,7 +39,6 @@ PRODUCT_VENDOR_PROPERTIES += \
     ro.hardware.audio.tinyalsa.period_size_multiplier=2 \
     ro.hardware.audio.tinyalsa.host_latency_ms=80 \
     ro.hardware.power=ranchu \
-    ro.hardware.vulkan=ranchu \
     ro.incremental.enable=yes \
     ro.logd.size=1M \
     ro.kernel.qemu=1 \
@@ -211,7 +215,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/camera/media/codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
     device/generic/goldfish/camera/media/codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
     device/generic/goldfish/camera/media/codecs_performance_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
-    frameworks/native/data/etc/android.hardware.camera.ar.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.ar.xml \
     frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.flash-autofocus.xml \
     frameworks/native/data/etc/android.hardware.camera.concurrent.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.concurrent.xml \
     frameworks/native/data/etc/android.hardware.camera.front.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.front.xml \
@@ -255,15 +258,13 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/window_extensions.mk)
 # "Hello, world!" HAL implementations, mostly for compliance
 PRODUCT_PACKAGES += \
     android.hardware.atrace@1.0-service \
-    android.hardware.authsecret-service.example \
+    com.android.hardware.authsecret \
     android.hardware.contexthub-service.example \
     android.hardware.dumpstate-service.example \
     android.hardware.health-service.example \
     android.hardware.health.storage-service.default \
     android.hardware.lights-service.example \
-    android.hardware.neuralnetworks-shim-service-sample \
-    android.hardware.neuralnetworks-service-sample-all \
-    android.hardware.neuralnetworks-service-sample-limited \
+    com.android.hardware.neuralnetworks \
     android.hardware.power-service.example \
     android.hardware.power.stats-service.example \
     android.hardware.rebootescrow-service.default \

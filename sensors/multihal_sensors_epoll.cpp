@@ -38,14 +38,12 @@ int qemuSensortThreadRcvCommand(const int fd) {
 }
 }  // namespace
 
-void MultihalSensors::qemuSensorListenerThread() {
+bool MultihalSensors::qemuSensorListenerThreadImpl(const int transportFd) {
     const unique_fd epollFd(epoll_create1(0));
-    if (!epollFd.ok()) {
-        ALOGE("%s:%d: epoll_create1 failed", __func__, __LINE__);
-        ::abort();
-    }
+    LOG_ALWAYS_FATAL_IF(!epollFd.ok(), "%s:%d: epoll_create1 failed",
+                        __func__, __LINE__);
 
-    epollCtlAdd(epollFd.get(), m_qemuSensorsFd.get());
+    epollCtlAdd(epollFd.get(), transportFd);
     epollCtlAdd(epollFd.get(), m_sensorThreadFd.get());
 
     while (true) {
@@ -55,9 +53,9 @@ void MultihalSensors::qemuSensorListenerThread() {
                                                     events, 2,
                                                     kTimeoutMs));
         if (n < 0) {
-            ALOGE("%s:%d: epoll_wait failed with '%s'",
+            ALOGW("%s:%d: epoll_wait failed with '%s'",
                   __func__, __LINE__, strerror(errno));
-            continue;
+            return true;
         }
 
         for (int i = 0; i < n; ++i) {
@@ -65,33 +63,35 @@ void MultihalSensors::qemuSensorListenerThread() {
             const int fd = ev->data.fd;
             const int ev_events = ev->events;
 
-            if (fd == m_qemuSensorsFd.get()) {
+            if (fd == transportFd) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
-                    ALOGE("%s:%d: epoll_wait: devFd has an error, ev_events=%x",
-                          __func__, __LINE__, ev_events);
-                    ::abort();
+                    ALOGW("%s:%d: epoll_wait: transportFd has an error, "
+                          "ev_events=%x", __func__, __LINE__, ev_events);
+                    return true;
                 } else if (ev_events & EPOLLIN) {
                     std::unique_lock<std::mutex> lock(m_mtx);
-                    parseQemuSensorEventLocked(m_qemuSensorsFd.get(), &m_protocolState);
+                    parseQemuSensorEventLocked(&m_protocolState);
                 }
             } else if (fd == m_sensorThreadFd.get()) {
                 if (ev_events & (EPOLLERR | EPOLLHUP)) {
-                    ALOGE("%s:%d: epoll_wait: threadsFd has an error, ev_events=%x",
-                          __func__, __LINE__, ev_events);
-                    ::abort();
+                    LOG_ALWAYS_FATAL("%s:%d: epoll_wait: threadFd has an error, "
+                                     "ev_events=%x", __func__, __LINE__, ev_events);
                 } else if (ev_events & EPOLLIN) {
                     const int cmd = qemuSensortThreadRcvCommand(fd);
-                    if (cmd == kCMD_QUIT) {
-                        return;
-                    } else {
-                        ALOGE("%s:%d: qemuSensortThreadRcvCommand returned unexpected command, cmd=%d",
+                    switch (cmd) {
+                    case kCMD_QUIT: return false;
+                    case kCMD_RESTART: return true;
+                    default:
+                        ALOGW("%s:%d: qemuSensortThreadRcvCommand "
+                              "returned unexpected command, cmd=%d",
                               __func__, __LINE__, cmd);
-                        ::abort();
+                        return true;
                     }
                 }
             } else {
-                ALOGE("%s:%d: epoll_wait() returned unexpected fd",
+                ALOGW("%s:%d: epoll_wait() returned unexpected fd",
                       __func__, __LINE__);
+                return true;
             }
         }
     }
