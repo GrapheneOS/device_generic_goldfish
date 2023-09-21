@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cinttypes>
 #include <log/log.h>
 #include <utils/SystemClock.h>
 #include <math.h>
@@ -52,33 +53,58 @@ int64_t weigthedAverage(const int64_t a, int64_t aw, int64_t b, int64_t bw) {
 
 }  // namespace
 
-bool MultihalSensors::activateQemuSensorImpl(const int sensorHandle,
-                                             const bool enabled) {
+bool MultihalSensors::setSensorsReportingImpl(SensorsTransport& st,
+                                              const int sensorHandle,
+                                              const bool enabled) {
     char buffer[64];
     int len = snprintf(buffer, sizeof(buffer),
                        "set:%s:%d",
                        getQemuSensorNameByHandle(sensorHandle),
                        (enabled ? 1 : 0));
 
-    if (m_sensorsTransport->Send(buffer, len) < 0) {
-        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
+    if (st.Send(buffer, len) < 0) {
+        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, st.Name());
         return false;
     } else {
         return true;
     }
 }
 
-bool MultihalSensors::setAllQemuSensors(const bool enabled) {
-    uint32_t mask = m_availableSensorsMask;
-    for (int i = 0; mask; ++i, mask >>= 1) {
-        if (mask & 1) {
-            if (!activateQemuSensorImpl(i, enabled)) {
+bool MultihalSensors::setAllSensorsReporting(SensorsTransport& st,
+                                             uint32_t availableSensorsMask,
+                                             const bool enabled) {
+    for (int i = 0; availableSensorsMask; ++i, availableSensorsMask >>= 1) {
+        if (availableSensorsMask & 1) {
+            if (!setSensorsReportingImpl(st, i, enabled)) {
                 return false;
             }
         }
     }
 
     return true;
+}
+
+bool MultihalSensors::setSensorsGuestTime(SensorsTransport& st, const int64_t value) {
+    char buffer[64];
+    int len = snprintf(buffer, sizeof(buffer), "time:%" PRId64, value);
+    if (st.Send(buffer, len) < 0) {
+        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, st.Name());
+        return false;
+    } else {
+        return true;
+    }
+}
+
+bool MultihalSensors::setSensorsUpdateIntervalMs(SensorsTransport& st,
+                                                 const uint32_t intervalMs) {
+    char buffer[64];
+    const int len = snprintf(buffer, sizeof(buffer), "set-delay:%u", intervalMs);
+    if (st.Send(buffer, len) < 0) {
+        ALOGE("%s:%d: send for %s failed", __func__, __LINE__, st.Name());
+        return false;
+    } else {
+        return true;
+    }
 }
 
 double MultihalSensors::randomError(float lo, float hi) {
