@@ -53,6 +53,7 @@
     <feature name="android.hardware.sensor.gyroscope" />
     <feature name="android.hardware.sensor.hinge_angle" />
     <feature name="android.hardware.telephony" />
+    <feature name="android.hardware.telephony.calling" />
     <feature name="android.hardware.telephony.data" />
     <feature name="android.hardware.telephony.gsm" />
     <feature name="android.hardware.telephony.ims" />
