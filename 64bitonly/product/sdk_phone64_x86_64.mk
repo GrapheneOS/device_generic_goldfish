@@ -15,6 +15,10 @@
 #
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
+# 1.5G + 8M
+BOARD_SUPER_PARTITION_SIZE := 1619001344
+BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE := 1610612736
+
 #
 # All components inherited here go to system image
 #
@@ -53,5 +57,5 @@ $(call inherit-product, device/generic/goldfish/emulator64_x86_64/device.mk)
 # Overrides
 PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_phone64_x86_64
-PRODUCT_DEVICE := emulator64_x86_64
+PRODUCT_DEVICE := emu64x
 PRODUCT_MODEL := Android SDK built for x86_64
