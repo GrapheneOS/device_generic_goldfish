@@ -32,7 +32,6 @@ PRODUCT_COPY_FILES += device/generic/goldfish/tablet/data/etc/tablet.xml:$(TARGE
 
 PRODUCT_CHARACTERISTICS := tablet,nosdcard
 
-PRODUCT_PACKAGE_OVERLAYS += vendor/google/products/emulator/overlay/tangoremulator
 
 #
 # All components inherited here go to system image
