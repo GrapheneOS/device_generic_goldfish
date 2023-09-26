@@ -18,6 +18,7 @@
 #include <android-base/unique_fd.h>
 #include <V2_1/SubHal.h>
 #include <atomic>
+#include <functional>
 #include <condition_variable>
 #include <cstdint>
 #include <random>
@@ -49,7 +50,9 @@ using ::android::hardware::Return;
 using ::android::sp;
 
 struct MultihalSensors : public ahs21::implementation::ISensorsSubHal {
-    MultihalSensors(std::unique_ptr<SensorsTransport> transport);
+    using SensorsTransportFactory = std::function<std::unique_ptr<SensorsTransport>()>;
+
+    MultihalSensors(SensorsTransportFactory);
     ~MultihalSensors();
 
     Return<void> debug(const hidl_handle& fd, const hidl_vec<hidl_string>& args) override;
@@ -77,6 +80,7 @@ struct MultihalSensors : public ahs21::implementation::ISensorsSubHal {
 private:
     struct QemuSensorsProtocolState {
         int64_t timeBiasNs = -500000000;
+        int32_t sensorsUpdateIntervalMs = 200;
 
         static constexpr float kSensorNoValue = -1e+30;
 
@@ -97,23 +101,30 @@ private:
         return m_activeSensorsMask & (1u << sensorHandle);  // m_mtx required
     }
     Event activationOnChangeSensorEvent(int32_t sensorHandle, const SensorInfo& sensor) const;
-    bool activateQemuSensorImpl(int sensorHandle, bool enabled);
-    bool setAllQemuSensors(bool enabled);
+    static bool setSensorsReportingImpl(SensorsTransport& st, int sensorHandle, bool enabled);
+    static bool setAllSensorsReporting(SensorsTransport& st,
+                                       uint32_t availableSensorsMask, bool enabled);
+    static bool setSensorsGuestTime(SensorsTransport& st, int64_t value);
+    static bool setSensorsUpdateIntervalMs(SensorsTransport& st, uint32_t value);
     void parseQemuSensorEventLocked(QemuSensorsProtocolState* state);
     void postSensorEventLocked(const Event& event);
     void doPostSensorEventLocked(const SensorInfo& sensor, const Event& event);
     void setAdditionalInfoFrames();
     void sendAdditionalInfoReport(int sensorHandle);
 
+    bool qemuSensorListenerThreadImpl(int transportFd);
     void qemuSensorListenerThread();
     void batchThread();
 
     double randomError(float lo, float hi);
 
     static constexpr char kCMD_QUIT = 'q';
+    static constexpr char kCMD_RESTART = 'r';
     bool qemuSensorThreadSendCommand(char cmd) const;
 
-    const std::unique_ptr<SensorsTransport> m_sensorsTransport;
+    const SensorsTransportFactory m_sensorsTransportFactory;
+    SensorsTransport*   m_sensorsTransport;
+
     uint32_t            m_availableSensorsMask = 0;
     // a pair of connected sockets to talk to the worker thread
     unique_fd           m_callersFd;        // a caller writes here
