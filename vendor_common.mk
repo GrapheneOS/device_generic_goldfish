@@ -331,8 +331,10 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.software.verified_boot.xml:${TARGET_COPY_OUT_PRODUCT}/etc/permissions/android.software.verified_boot.xml \
     device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-goldfish.xml \
 
+ifneq ($(EMULATOR_DISABLE_RADIO),true)
 # Android TV ingests this file, but declares its own set of hardware permissions.
 ifneq ($(PRODUCT_IS_ATV_SDK),true)
     PRODUCT_COPY_FILES+= \
         device/generic/goldfish/data/etc/handheld_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/handheld_core_hardware.xml
+endif
 endif

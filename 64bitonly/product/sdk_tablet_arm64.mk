@@ -20,7 +20,6 @@ EMULATOR_DISABLE_RADIO := true
 BOARD_SUPER_PARTITION_SIZE := 1619001344
 BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE := 1610612736
 
-
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/tablet/data/etc/display_settings.xml:$(TARGET_COPY_OUT_VENDOR)/etc/display_settings.xml \
     device/generic/goldfish/data/etc/advancedFeatures.ini.tablet:advancedFeatures.ini \
@@ -86,13 +85,13 @@ PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += system/bin/curl
 #
 # All components inherited here go to vendor image
 #
-$(call inherit-product, device/generic/goldfish/64bitonly/product/x86_64-vendor.mk)
+$(call inherit-product, device/generic/goldfish/arm64-vendor.mk)
 $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_vendor.mk)
-$(call inherit-product, device/generic/goldfish/emulator64_x86_64/device.mk)
+$(call inherit-product, device/generic/goldfish/emulator64_arm64/device.mk)
 
 # Overrides
 PRODUCT_BRAND := Android
-PRODUCT_NAME := sdk_tablet_x86_64
-PRODUCT_DEVICE := emu64x
-PRODUCT_MODEL := Android SDK Tablet for x86_64
+PRODUCT_NAME := sdk_tablet_arm64
+PRODUCT_DEVICE := emu64a
+PRODUCT_MODEL := Android SDK Tablet for arm64
 
