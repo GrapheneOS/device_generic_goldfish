@@ -54,6 +54,10 @@ ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
 ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.minigbm
 endif
 
+ifneq ($(filter sdk_tablet% sdk_gtablet%, $(TARGET_PRODUCT)),)
+ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.tablet
+endif
+
 ADVANCED_FEATURES_FILES :=
 ifeq ($(TARGET_BUILD_VARIANT),user)
 ADVANCED_FEATURES_FILES += device/generic/goldfish/data/etc/google/$(INTERNAL_EMULATOR_FEATURE_DIR)/user/$(ADVANCED_FEATURES_FILENAME)
