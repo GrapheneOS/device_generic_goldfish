@@ -28,7 +28,11 @@ endif
 PRODUCT_PACKAGES += \
     vndk-sp
 
+ifeq ($(EMULATOR_DISABLE_RADIO),true)
+DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/tablet/overlay
+else
 DEVICE_PACKAGE_OVERLAYS := device/generic/goldfish/overlay
+endif
 
 PRODUCT_CHARACTERISTICS := emulator
 
