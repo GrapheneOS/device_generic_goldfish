@@ -111,13 +111,4 @@
     <!-- The device states (supplied by DeviceStateManager) that should be treated as folded by the
          display fold controller. -->
 
-    <dimen name="rounded_corner_content_padding">50px</dimen>
-    <dimen name="rounded_corner_radius">25px</dimen>
-    <dimen name="rounded_corner_radius_adjustment">5px</dimen>
-    <dimen name="rounded_corner_radius_top">52px</dimen>
-    <dimen name="rounded_corner_radius_bottom">48px</dimen>
-    <dimen name="secondary_rounded_corner_radius_top">91px</dimen>
-    <dimen name="secondary_rounded_corner_radius_bottom">91px</dimen>
-    <dimen name="rounded_corner_radius_top_adjustment">5px</dimen>
-    <dimen name="rounded_corner_radius_bottom_adjustment">4px</dimen>
 </resources>
