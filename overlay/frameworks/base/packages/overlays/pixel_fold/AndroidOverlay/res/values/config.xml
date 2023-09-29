@@ -106,7 +106,6 @@
          This launcher package must have an activity that supports multiple instances and has
          corresponding launch mode set in AndroidManifest.
          {@see android.view.Display#FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS} -->
-    <string name="config_secondaryHomePackage" translatable="false">com.android.launcher3</string>
 
     <!-- The device states (supplied by DeviceStateManager) that should be treated as folded by the
          display fold controller. -->
