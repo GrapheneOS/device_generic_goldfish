@@ -49,13 +49,13 @@ ifneq ($(filter sdk_phone64_% sdk_gphone64_% sdk_tablet% sdk_gtablet%, $(TARGET_
 INTERNAL_EMULATOR_FEATURE_DIR := 64bit
 endif
 
-ifneq ($(filter %_tablet%, $(TARGET_PRODUCT)),)
-ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.tablet
-endif
-
 ADVANCED_FEATURES_FILENAME := advancedFeatures.ini
 ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
 ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.minigbm
+endif
+
+ifneq ($(filter sdk_tablet% sdk_gtablet%, $(TARGET_PRODUCT)),)
+ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.tablet
 endif
 
 ADVANCED_FEATURES_FILES :=
