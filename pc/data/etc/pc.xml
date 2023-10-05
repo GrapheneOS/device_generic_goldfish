@@ -37,4 +37,19 @@
 
     <!-- PC-like device should not support MOTION_TRACKING capability level. -->
     <unavailable-feature name="android.hardware.camera.ar" />
+
+    <!-- Currently, Picture-In-Picture is not enabled for PC. -->
+    <unavailable-feature name="android.software.picture_in_picture" />
+
+    <!-- Disabling voice recognizers for fixing CTS b/215277148 -->
+    <unavailable-feature name="android.software.voice_recognizers" />
+
+    <!-- For PC-like device we usually don't have GPS. b/221120472 -->
+    <unavailable-feature name="android.hardware.location.gps" />
+
+    <!-- For PC-like device we usually don't have these sensors. -->
+    <unavailable-feature name="android.hardware.sensor.accelerometer" />
+    <unavailable-feature name="android.hardware.sensor.hinge_angle" />
+    <unavailable-feature name="android.hardware.sensor.proximity" />
+    <unavailable-feature name="android.hardware.touchscreen" />
 </permissions>
