@@ -154,10 +154,16 @@ PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay \
     EmulationPixelFoldOverlay \
     SystemUIEmulationPixelFoldOverlay \
+    EmulationPixel8ProOverlay \
+    SystemUIEmulationPixel8ProOverlay \
+    EmulationPixel8Overlay \
+    SystemUIEmulationPixel8Overlay \
     EmulationPixel7ProOverlay \
     SystemUIEmulationPixel7ProOverlay \
     EmulationPixel7Overlay \
     SystemUIEmulationPixel7Overlay \
+    EmulationPixel7aOverlay \
+    SystemUIEmulationPixel7aOverlay \
     EmulationPixel6ProOverlay \
     SystemUIEmulationPixel6ProOverlay \
     EmulationPixel6Overlay \
