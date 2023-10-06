@@ -82,6 +82,9 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += system/bin/curl
 
+PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
+    device/generic/goldfish/64bitonly/product/tablet_images_x86_64_source.prop_template
+
 #
 # All components inherited here go to vendor image
 #
