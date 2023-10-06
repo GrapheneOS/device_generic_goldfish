@@ -66,7 +66,7 @@ PRODUCT_PACKAGES += \
     android.hardware.graphics.mapper@3.0-impl-ranchu \
     android.hardware.graphics.composer3-service.ranchu \
     toybox_vendor \
-    android.hardware.wifi@1.0-service \
+    android.hardware.wifi-service \
     android.hardware.media.c2@1.0-service-goldfish \
     libcodec2_goldfish_vp8dec \
     libcodec2_goldfish_vp9dec \
@@ -137,6 +137,16 @@ PRODUCT_COPY_FILES += \
 
 PRODUCT_PACKAGES += \
     DisplayCutoutEmulationEmu01Overlay \
+    EmulationPixel7ProOverlay \
+    SystemUIEmulationPixel7ProOverlay \
+    EmulationPixel7Overlay \
+    SystemUIEmulationPixel7Overlay \
+    EmulationPixel6ProOverlay \
+    SystemUIEmulationPixel6ProOverlay \
+    EmulationPixel6Overlay \
+    SystemUIEmulationPixel6Overlay \
+    EmulationPixel6aOverlay \
+    SystemUIEmulationPixel6aOverlay \
     EmulationPixel5Overlay \
     SystemUIEmulationPixel5Overlay \
     EmulationPixel4XLOverlay \
@@ -226,10 +236,8 @@ PRODUCT_PACKAGES += \
     hostapd \
     wpa_supplicant \
 
-# Extension implementation for Jetpack WindowManager
-PRODUCT_PACKAGES += \
-    androidx.window.extensions \
-    androidx.window.sidecar \
+# Window Extensions
+$(call inherit-product, $(SRC_TARGET_DIR)/product/window_extensions.mk)
 
 # "Hello, world!" HAL implementations, mostly for compliance
 PRODUCT_PACKAGES += \
@@ -298,8 +306,8 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.level.xml \
     frameworks/native/data/etc/android.hardware.vulkan.compute-0.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.compute.xml \
     frameworks/native/data/etc/android.hardware.vulkan.version-1_1.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.vulkan.version.xml \
-    frameworks/native/data/etc/android.software.vulkan.deqp.level-2022-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level.xml \
-    frameworks/native/data/etc/android.software.opengles.deqp.level-2022-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.opengles.deqp.level.xml \
+    frameworks/native/data/etc/android.software.vulkan.deqp.level-2023-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.vulkan.deqp.level.xml \
+    frameworks/native/data/etc/android.software.opengles.deqp.level-2023-03-01.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.opengles.deqp.level.xml \
     frameworks/native/data/etc/android.software.autofill.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.software.autofill.xml \
     frameworks/native/data/etc/android.software.verified_boot.xml:${TARGET_COPY_OUT_PRODUCT}/etc/permissions/android.software.verified_boot.xml \
     device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-goldfish.xml \

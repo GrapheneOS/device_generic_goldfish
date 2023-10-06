@@ -21,7 +21,7 @@ import android.app.StatusBarManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.hardware.input.InputManager;
+import android.hardware.input.InputManagerGlobal;
 import android.hardware.input.KeyboardLayout;
 import android.location.LocationManager;
 import android.net.wifi.WifiManager;
@@ -205,7 +205,7 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     protected void setKeyboardLayout(final InputDevice keyboardDevice, final String layoutName) {
-        final InputManager im = InputManager.getInstance();
+        final InputManagerGlobal im = InputManagerGlobal.getInstance();
 
         final KeyboardLayout[] keyboardLayouts =
                 im.getKeyboardLayoutsForInputDevice(keyboardDevice.getIdentifier());
