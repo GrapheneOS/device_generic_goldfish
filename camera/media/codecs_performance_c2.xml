@@ -93,8 +93,8 @@
             <Limit name="measured-frame-rate-176x144" range="1400-1560" /> <!-- SHOULDN'T HAVE TWEAKED N=220 v90%=4.0 -->
         </MediaCodec>
         <MediaCodec name="c2.android.vp8.encoder" type="video/x-vnd.on2.vp8" update="true">
-            <Limit name="measured-frame-rate-320x180" range="178-245" /> <!-- Manual N=20 -->
-            <Limit name="measured-frame-rate-640x360" range="100-126" /> <!-- Manual N=20 -->
+            <Limit name="measured-frame-rate-320x180" range="200-300" /> <!-- Manual N=20 -->
+            <Limit name="measured-frame-rate-640x360" range="200-300" /> <!-- Manual N=20 -->
             <Limit name="measured-frame-rate-1280x720" range="35-37" /> <!-- Manual N=20 -->
             <Limit name="measured-frame-rate-1920x1080" range="24-31" /> <!-- Manual N=20 -->
         </MediaCodec>
@@ -105,11 +105,11 @@
         </MediaCodec>
         <MediaCodec name="c2.android.av1.encoder" type="video/av01" update="true">
             <!-- MANUALLY ADJUSTED -->
-            <Limit name="measured-frame-rate-320x240" range="84-130" />
+            <Limit name="measured-frame-rate-320x240" range="300-400" />
             <!-- MANUALLY ADJUSTED -->
-            <Limit name="measured-frame-rate-720x480" range="20-43" />
+            <Limit name="measured-frame-rate-720x480" range="80-120" />
             <!-- MANUALLY ADJUSTED -->
-            <Limit name="measured-frame-rate-1280x720" range="8-21" />
+            <Limit name="measured-frame-rate-1280x720" range="40-50" />
         </MediaCodec>
     </Encoders>
 </MediaCodecs>
