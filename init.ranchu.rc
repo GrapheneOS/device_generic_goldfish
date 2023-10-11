@@ -15,6 +15,7 @@ on early-init
     setprop ro.config.low_ram ${ro.boot.config.low_ram}
     setprop ro.cpuvulkan.version ${ro.boot.qemu.cpuvulkan.version}
     setprop ro.hardware.egl ${ro.boot.hardwareegl:-emulation}
+    setprop ro.hardware.vulkan ${ro.boot.hardware.vulkan}
     setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize:-192m}
     setprop dalvik.vm.checkjni ${ro.boot.dalvik.vm.checkjni}
