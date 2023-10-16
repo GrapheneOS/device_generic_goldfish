@@ -25,7 +25,6 @@ PRODUCT_SDK_ADDON_COPY_FILES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.crypto.dm_default_key.options_format.version=2
 
-PRODUCT_SHIPPING_API_LEVEL := 34
 TARGET_USES_MKE2FS := true
 
 PRODUCT_COPY_FILES += \
