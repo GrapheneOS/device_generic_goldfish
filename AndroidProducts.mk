@@ -1,5 +1,4 @@
 PRODUCT_MAKEFILES := \
-    $(LOCAL_DIR)/sdk_phone_x86_vendor.mk \
     $(LOCAL_DIR)/64bitonly/product/sdk_phone64_x86_64.mk \
     $(LOCAL_DIR)/64bitonly/product/sdk_phone64_x86_64_riscv64.mk \
     $(LOCAL_DIR)/64bitonly/product/sdk_tablet_arm64.mk \
