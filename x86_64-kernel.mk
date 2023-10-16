@@ -1,8 +1,5 @@
 TARGET_KERNEL_USE ?= 6.1
-PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS ?= false
-
 KERNEL_ARTIFACTS_PATH := kernel/prebuilts/$(TARGET_KERNEL_USE)/x86_64
-
 VIRTUAL_DEVICE_KERNEL_MODULES_PATH := \
     kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/x86-64
 
