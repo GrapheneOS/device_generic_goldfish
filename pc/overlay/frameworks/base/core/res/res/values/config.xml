@@ -19,4 +19,6 @@
     <string name="config_defaultContentCaptureService" translatable="false"></string>
     <!-- Disable Dream (VR) -->
     <bool name="config_dreamsSupported">false</bool>
+    <!-- Disable split screen b/183906779 -->
+    <bool name="config_supportsSplitScreenMultiWindow">false</bool>
 </resources>
