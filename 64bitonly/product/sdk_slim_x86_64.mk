@@ -49,7 +49,7 @@ PRODUCT_PACKAGES += \
 $(call inherit-product, device/generic/goldfish/slim/vendor.mk)
 $(call inherit-product, device/generic/goldfish/64bitonly/product/x86_64-vendor.mk)
 $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_vendor.mk)
-$(call inherit-product, device/generic/goldfish/emulator64_x86_64/device.mk)
+$(call inherit-product, device/generic/goldfish/emu64x/device.mk)
 # include the overlay that overrides systemui definitions with fakesystemapp
 PRODUCT_PACKAGES += slim_overlay_frameworks_base_core
 
@@ -59,7 +59,7 @@ PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
 # Overrides
 PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_slim_x86_64
-PRODUCT_DEVICE := emulator64_x86_64
+PRODUCT_DEVICE := emu64x
 PRODUCT_MODEL := Android SDK built for x86_64
 # Disable <uses-library> checks for SDK product. It lacks some libraries (e.g.
 # RadioConfigLib), which makes it impossible to translate their module names to
