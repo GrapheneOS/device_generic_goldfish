@@ -50,7 +50,6 @@ PRODUCT_VENDOR_PROPERTIES += \
     debug.sf.vsync_reactor_ignore_present_fences=true \
     debug.stagefright.c2inputsurface=-1 \
     debug.stagefright.ccodec=4 \
-    graphics.gpu.profiler.support=true \
     persist.sys.zram_enabled=1 \
     wifi.direct.interface=p2p-dev-wlan0 \
     wifi.interface=wlan0 \
