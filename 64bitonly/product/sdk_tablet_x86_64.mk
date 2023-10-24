@@ -90,7 +90,7 @@ PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
 #
 $(call inherit-product, device/generic/goldfish/64bitonly/product/x86_64-vendor.mk)
 $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_vendor.mk)
-$(call inherit-product, device/generic/goldfish/emulator64_x86_64/device.mk)
+$(call inherit-product, device/generic/goldfish/emu64x/device.mk)
 
 # Overrides
 PRODUCT_BRAND := Android
