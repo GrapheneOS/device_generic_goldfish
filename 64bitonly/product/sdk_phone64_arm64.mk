@@ -54,7 +54,7 @@ PRODUCT_PACKAGES += \
 #
 $(call inherit-product, device/generic/goldfish/arm64-vendor.mk)
 $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_vendor.mk)
-$(call inherit-product, device/generic/goldfish/emulator64_arm64/device.mk)
+$(call inherit-product, device/generic/goldfish/emu64a/device.mk)
 
 # Overrides
 PRODUCT_BRAND := Android
