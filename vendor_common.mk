@@ -273,7 +273,7 @@ PRODUCT_PACKAGES += \
     com.android.hardware.neuralnetworks \
     android.hardware.power-service.example \
     android.hardware.power.stats-service.example \
-    android.hardware.rebootescrow-service.default \
+    com.android.hardware.rebootescrow \
     android.hardware.thermal@2.0-service.mock \
     android.hardware.vibrator-service.example
 
