@@ -23,7 +23,7 @@ TARGET_2ND_ARCH_VARIANT := armv8-a
 TARGET_2ND_CPU_VARIANT := generic
 
 include build/make/target/board/BoardConfigGsiCommon.mk
-include build/make/target/board/BoardConfigEmuCommon.mk
+include device/generic/goldfish/board/BoardConfigEmuCommon.mk
 
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0x02000000
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
