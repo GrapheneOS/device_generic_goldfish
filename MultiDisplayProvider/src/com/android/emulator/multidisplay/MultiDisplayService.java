@@ -17,23 +17,26 @@
 package com.android.emulator.multidisplay;
 
 import android.app.Service;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Messenger;
+import android.os.Parcel;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.util.DebugUtils;
 import android.util.Log;
-import android.hardware.display.DisplayManager;
-import android.hardware.display.VirtualDisplay;
 import android.view.Surface;
 
+import java.lang.Thread;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import android.os.Messenger;
 
 public final class MultiDisplayService extends Service {
     private static final String TAG = "MultiDisplayService";
@@ -47,6 +50,10 @@ public final class MultiDisplayService extends Service {
     private static final int MAX_DISPLAYS = 10;
     private static final int ADD = 1;
     private static final int DEL = 2;
+    // the following is used by resizabel to set display
+    // intentionally shifted 4 bits to avoid conflicting
+    // with existing multidisplay functions
+    private static final int SET_DISPLAY = 0x10;
 
     private static final int FLAGS = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC |
                                       DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY |
@@ -55,6 +62,8 @@ public final class MultiDisplayService extends Service {
                                       1 << 6 |//DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                                       1 << 9; //DisplayManager.VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
 
+    private static final String SURFACE_COMPOSER_INTERFACE_KEY = "android.ui.ISurfaceComposer";
+    private IBinder mSurfaceFlinger;
     private DisplayManager mDisplayManager;
     private VirtualDisplay mVirtualDisplay[];
     private Surface mSurface[];
@@ -130,7 +139,7 @@ public final class MultiDisplayService extends Service {
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "Creating service");
+        Log.i(TAG, "Creating service");
 
         super.onCreate();
 
@@ -359,12 +368,16 @@ public final class MultiDisplayService extends Service {
             while(nativeOpen() <= 0) {
                 Log.e(TAG, "failed to open multiDisplay pipe, retry");
             }
+            Log.d(TAG, "success open multiDisplay pipe");
             while(true) {
+                Log.d(TAG, "waiting to read pipe");
                 int[] array = {0, 0, 0, 0, 0, 0};
                 if (!nativeReadPipe(array)) {
+                    Log.e(TAG, "failed and try again");
                     continue;
                 }
-                Log.v(TAG, "run(): array= " + Arrays.toString(array));
+                Log.d(TAG, "have read something from pipe");
+                Log.d(TAG, "run(): array= " + Arrays.toString(array));
                 switch (array[0]) {
                     case ADD: {
                         for (int j = 0; j < 6; j++) {
@@ -390,6 +403,34 @@ public final class MultiDisplayService extends Service {
                             break;
                         }
                         deleteVirtualDisplay(i);
+                        break;
+                    }
+                    case SET_DISPLAY: {
+                         for (int j = 0; j < 6; j++) {
+                             Log.d(TAG, "SET_DISPLAY received " + array[j]);
+                         }
+                         if (mSurfaceFlinger == null) {
+                             Log.d(TAG, "obtain surfaceflinger " );
+                             mSurfaceFlinger = ServiceManager.getService("SurfaceFlinger");
+                         }
+                         if (mSurfaceFlinger != null) {
+                             int i = array[1];
+                             Parcel data = Parcel.obtain();
+                             data.writeInterfaceToken(SURFACE_COMPOSER_INTERFACE_KEY);
+                             data.writeInt(i);
+                             try {
+                                 if (i >=0) {
+                                    mSurfaceFlinger.transact(1035, data, null, 0 /* flags */);
+                                    Log.d(TAG, "setting display to " + i);
+                                 } else {
+                                    Log.e(TAG, "invalid display id " + i);
+                                 }
+                             } catch (RemoteException e) {
+                                 Log.e(TAG, "Could not set display:" + e.toString());
+                             }
+                         } else {
+                             Log.e(TAG, "cannot get SurfaceFlinger service");
+                         }
                         break;
                     }
                     // TODO(b/231763427): implement LIST
