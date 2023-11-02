@@ -24,10 +24,6 @@ TARGET_NATIVE_BRIDGE_ARCH_VARIANT :=
 TARGET_NATIVE_BRIDGE_CPU_VARIANT := generic
 TARGET_NATIVE_BRIDGE_ABI := riscv64
 
-BUILD_BROKEN_DUP_RULES := true
-
-TARGET_PRELINK_MODULE := false
-
 include build/make/target/board/BoardConfigGsiCommon.mk
 include device/generic/goldfish/board/BoardConfigEmuCommon.mk
 
