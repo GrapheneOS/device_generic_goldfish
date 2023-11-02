@@ -43,6 +43,7 @@ static const uint8_t ADD = 1;
 static const uint8_t DEL = 2;
 static const uint8_t QUERY = 3;
 static const uint8_t BIND = 4;
+static const uint8_t SET_DISPLAY = 0x10;
 
 static void fillMsg(std::vector<uint8_t>& buf, uint8_t cmd, uint8_t* data, uint32_t size) {
     // msg format is size(4B) + cmd(1B) + data(size B)
@@ -125,6 +126,14 @@ static bool nativeReadPipe(JNIEnv* env, jobject obj, jintArray arr) {
     std::vector<uint8_t> args(length, 0);
     qemu_pipe_read_fully(gFd, args.data(), (size_t)length);
     switch(args[0]) {
+        case SET_DISPLAY:
+            ALOGV("received setdisplay event");
+            *arrp = SET_DISPLAY;
+            for (int i = 1; i < 6; i++) {
+                *(arrp + i) = *(uint32_t*)(&args[(i - 1) * 4 + 1]);
+            }
+            env->ReleaseIntArrayElements(arr, arrp, JNI_COMMIT);
+            break;
         case ADD: {
             ALOGV("received add event");
             *arrp = ADD;
