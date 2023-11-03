@@ -19,10 +19,6 @@ TARGET_ARCH := x86_64
 TARGET_ARCH_VARIANT := x86_64
 TARGET_2ND_ARCH_VARIANT := x86_64
 
-BUILD_BROKEN_DUP_RULES := true
-
-TARGET_PRELINK_MODULE := false
-
 include build/make/target/board/BoardConfigGsiCommon.mk
 include device/generic/goldfish/board/BoardConfigEmuCommon.mk
 
