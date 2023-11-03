@@ -14,15 +14,10 @@
 # limitations under the License.
 #
 
-HAVE_HTC_AUDIO_DRIVER := true
-BOARD_USES_GENERIC_AUDIO := true
 TARGET_BOOTLOADER_BOARD_NAME := goldfish_$(TARGET_ARCH)
 
 # No Kernel
 TARGET_NO_KERNEL := true
-
-# no hardware camera
-USE_CAMERA_STUB := true
 
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 
