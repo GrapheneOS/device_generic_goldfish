@@ -16,9 +16,6 @@
 
 TARGET_BOOTLOADER_BOARD_NAME := goldfish_$(TARGET_ARCH)
 
-# No Kernel
-TARGET_NO_KERNEL := true
-
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 
 # Build OpenGLES emulation guest and host libraries
