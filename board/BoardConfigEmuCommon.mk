@@ -14,15 +14,7 @@
 # limitations under the License.
 #
 
-HAVE_HTC_AUDIO_DRIVER := true
-BOARD_USES_GENERIC_AUDIO := true
 TARGET_BOOTLOADER_BOARD_NAME := goldfish_$(TARGET_ARCH)
-
-# No Kernel
-TARGET_NO_KERNEL := true
-
-# no hardware camera
-USE_CAMERA_STUB := true
 
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 
@@ -39,6 +31,7 @@ TARGET_USERIMAGES_SPARSE_EXT_DISABLED := true
 
 # emulator is Non-A/B device
 AB_OTA_UPDATER := false
+BOARD_USES_SYSTEM_OTHER_ODEX :=
 
 # emulator needs super.img
 BOARD_BUILD_SUPER_IMAGE_BY_DEFAULT := true
@@ -83,3 +76,14 @@ BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_FLASH_BLOCK_SIZE := 512
 
 BOARD_SEPOLICY_DIRS += device/generic/goldfish/sepolicy/common
+
+# Wifi.
+BOARD_WLAN_DEVICE           := emulator
+BOARD_HOSTAPD_DRIVER        := NL80211
+BOARD_WPA_SUPPLICANT_DRIVER := NL80211
+BOARD_HOSTAPD_PRIVATE_LIB   := lib_driver_cmd_simulated
+BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_simulated
+WPA_SUPPLICANT_VERSION      := VER_0_8_X
+WIFI_DRIVER_FW_PATH_PARAM   := "/dev/null"
+WIFI_DRIVER_FW_PATH_STA     := "/dev/null"
+WIFI_DRIVER_FW_PATH_AP      := "/dev/null"
