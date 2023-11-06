@@ -24,9 +24,6 @@ TARGET_NATIVE_BRIDGE_ARCH_VARIANT :=
 TARGET_NATIVE_BRIDGE_CPU_VARIANT := generic
 TARGET_NATIVE_BRIDGE_ABI := riscv64
 
-include build/make/target/board/BoardConfigGsiCommon.mk
 include device/generic/goldfish/board/BoardConfigEmuCommon.mk
 
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
-
-BOARD_SEPOLICY_DIRS += device/generic/goldfish/sepolicy/x86
