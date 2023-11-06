@@ -18,11 +18,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu
 
-PRODUCT_SDK_ADDON_COPY_FILES += \
-    device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):images/x86_64/advancedFeatures.ini \
-    device/generic/goldfish/data/etc/encryptionkey.img:images/x86_64/encryptionkey.img \
-    $(EMULATOR_KERNEL_FILE):images/x86_64/kernel-ranchu
-
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/configs/gpu.config:data/misc/gceconfigs/gpu.config
 
