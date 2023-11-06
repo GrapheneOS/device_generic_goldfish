@@ -17,16 +17,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu-64
 
-PRODUCT_SDK_ADDON_COPY_FILES += \
-    device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):images/x86/advancedFeatures.ini \
-    device/generic/goldfish/data/etc/encryptionkey.img:images/x86/encryptionkey.img \
-    $(EMULATOR_KERNEL_FILE):images/x86/kernel-ranchu-64
-
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.crypto.dm_default_key.options_format.version=2
-
-TARGET_USES_MKE2FS := true
-
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.x86:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
     device/generic/goldfish/fstab.ranchu.x86:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
