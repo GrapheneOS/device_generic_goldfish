@@ -14,6 +14,10 @@
 # limitations under the License.
 #
 
+include build/make/target/board/BoardConfigGsiCommon.mk
+
+BOARD_SEPOLICY_DIRS += device/generic/goldfish/sepolicy
+
 TARGET_BOOTLOADER_BOARD_NAME := goldfish_$(TARGET_ARCH)
 
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
@@ -74,8 +78,6 @@ BOARD_AVB_SYSTEM_ROLLBACK_INDEX_LOCATION := 1
 
 BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_FLASH_BLOCK_SIZE := 512
-
-BOARD_SEPOLICY_DIRS += device/generic/goldfish/sepolicy/common
 
 # Wifi.
 BOARD_WLAN_DEVICE           := emulator
