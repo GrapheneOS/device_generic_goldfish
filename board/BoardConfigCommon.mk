@@ -16,7 +16,7 @@
 
 include build/make/target/board/BoardConfigGsiCommon.mk
 
-BOARD_SEPOLICY_DIRS += device/generic/goldfish/sepolicy
+BOARD_VENDOR_SEPOLICY_DIRS += device/generic/goldfish/sepolicy/vendor
 
 TARGET_BOOTLOADER_BOARD_NAME := goldfish_$(TARGET_ARCH)
 
