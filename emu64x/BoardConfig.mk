@@ -19,9 +19,6 @@ TARGET_ARCH := x86_64
 TARGET_ARCH_VARIANT := x86_64
 TARGET_2ND_ARCH_VARIANT := x86_64
 
-include build/make/target/board/BoardConfigGsiCommon.mk
-include device/generic/goldfish/board/BoardConfigEmuCommon.mk
+include device/generic/goldfish/board/BoardConfigCommon.mk
 
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
-
-BOARD_SEPOLICY_DIRS += device/generic/goldfish/sepolicy/x86
