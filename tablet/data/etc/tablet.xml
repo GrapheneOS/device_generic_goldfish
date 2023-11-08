@@ -17,4 +17,6 @@
 <permissions>
   <!-- Do not support autofocus in tablet devices. -->
   <unavailable-feature name="android.hardware.camera.autofocus" />
+  <!-- Do not support hinge angle sensors in tablet devices. -->
+  <unavailable-feature name="android.hardware.sensor.hinge_angle" />
 </permissions>
