@@ -14,8 +14,6 @@
 # limitations under the License.
 #
 
-$(call inherit-product, device/generic/goldfish/soong_namespaces.mk)
-
 ifdef NET_ETH0_STARTONBOOT
   PRODUCT_VENDOR_PROPERTIES += net.eth0.startonboot=1
 endif
