@@ -14,4 +14,4 @@
 # limitations under the License.
 #
 
-$(call inherit-product, device/generic/goldfish/device_common.mk)
+# This file to be retired.
