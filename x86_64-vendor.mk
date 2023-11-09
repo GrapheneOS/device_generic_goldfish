@@ -14,8 +14,7 @@ endif
 # entirely appropriate to inherit from for on-device configurations.
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.xl:config.ini \
-	device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):advancedFeatures.ini \
-    device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
+    device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):advancedFeatures.ini \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu
 
 PRODUCT_COPY_FILES += \

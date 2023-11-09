@@ -14,7 +14,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.xl:config.ini \
     device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):advancedFeatures.ini \
-    device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu-64
 
 PRODUCT_COPY_FILES += \

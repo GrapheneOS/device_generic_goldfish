@@ -285,6 +285,7 @@ endif
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/dtb.img:dtb.img \
+    device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     device/generic/goldfish/emulator-info.txt:data/misc/emulator/version.txt \
     device/generic/goldfish/data/etc/apns-conf.xml:data/misc/apns/apns-conf.xml \
     device/generic/goldfish/radio/RadioConfig/radioconfig.xml:data/misc/emulator/config/radioconfig.xml \
