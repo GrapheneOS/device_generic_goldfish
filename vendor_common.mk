@@ -145,9 +145,6 @@ ifeq ($(TARGET_PRODUCT_PROP),)
 TARGET_PRODUCT_PROP := $(LOCAL_PATH)/bluetooth.prop
 endif
 
-# Bluetooth se policies
-BOARD_SEPOLICY_DIRS += system/bt/vendor_libs/linux/sepolicy
-
 PRODUCT_PACKAGES += \
     android.hardware.security.keymint-service
 PRODUCT_COPY_FILES += \
