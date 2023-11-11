@@ -15,7 +15,6 @@ endif
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.xl:config.ini \
     device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):advancedFeatures.ini \
-    device/generic/goldfish/data/etc/encryptionkey.img:encryptionkey.img \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu
 
 PRODUCT_COPY_FILES += \
