@@ -36,11 +36,6 @@ PRODUCT_FULL_TREBLE_OVERRIDE := true
 # goldfish vendor partition configurations
 $(call inherit-product-if-exists, device/generic/goldfish/64bitonly/product/vendor.mk)
 
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.has_wide_color_display=false
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.has_HDR_display=false
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.use_color_management=false
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.surface_flinger.protected_contents=false
-
 # enable Google-specific location features,
 # like NetworkLocationProvider and LocationCollector
 PRODUCT_SYSTEM_EXT_PROPERTIES += \
