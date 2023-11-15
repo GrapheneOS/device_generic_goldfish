@@ -33,8 +33,3 @@ PRODUCT_CHARACTERISTICS := emulator
 
 # goldfish vendor partition configurations
 $(call inherit-product-if-exists, device/generic/goldfish/64bitonly/product/vendor.mk)
-
-# enable Google-specific location features,
-# like NetworkLocationProvider and LocationCollector
-PRODUCT_SYSTEM_EXT_PROPERTIES += \
-    ro.com.google.locationfeatures=1
