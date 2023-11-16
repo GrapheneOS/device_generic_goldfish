@@ -22,6 +22,7 @@ $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvi
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
 PRODUCT_SHIPPING_API_LEVEL := 34
+PRODUCT_FULL_TREBLE_OVERRIDE := true
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.xml
 
 PRODUCT_SOONG_NAMESPACES += \
@@ -48,7 +49,11 @@ PRODUCT_VENDOR_PROPERTIES += \
     ro.kernel.qemu=1 \
     ro.soc.manufacturer=AOSP \
     ro.soc.model=ranchu \
+    ro.surface_flinger.has_HDR_display=false \
+    ro.surface_flinger.has_wide_color_display=false \
+    ro.surface_flinger.protected_contents=false \
     ro.surface_flinger.supports_background_blur=1 \
+    ro.surface_flinger.use_color_management=false \
     ro.zygote.disable_gl_preload=1 \
     debug.sf.vsync_reactor_ignore_present_fences=true \
     debug.stagefright.c2inputsurface=-1 \
