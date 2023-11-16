@@ -18,8 +18,5 @@ PRODUCT_COPY_FILES += \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu
 
 PRODUCT_COPY_FILES += \
-    device/generic/goldfish/data/etc/configs/gpu.config:data/misc/gceconfigs/gpu.config
-
-PRODUCT_COPY_FILES += \
     device/generic/goldfish/fstab.ranchu.x86:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
     device/generic/goldfish/fstab.ranchu.x86:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
