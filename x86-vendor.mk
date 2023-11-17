@@ -1,4 +1,4 @@
-include device/generic/goldfish/x86_64-kernel.mk
+include device/generic/goldfish/board/kernel/x86_64.mk
 
 ADVANCED_FEATURES_FILE := advancedFeatures.ini
 ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
@@ -14,8 +14,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/config.ini.xl:config.ini \
     device/generic/goldfish/data/etc/$(ADVANCED_FEATURES_FILE):advancedFeatures.ini \
-    $(EMULATOR_KERNEL_FILE):kernel-ranchu-64
-
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/fstab.ranchu.x86:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
-    device/generic/goldfish/fstab.ranchu.x86:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
+    $(EMULATOR_KERNEL_FILE):kernel-ranchu-64 \
+    device/generic/goldfish/board/fstab/x86:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
+    device/generic/goldfish/board/fstab/x86:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
