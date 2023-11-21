@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$(call inherit-product, $(LOCAL_PATH)/vendor_common.mk)
+$(call inherit-product, device/generic/goldfish/product/generic.mk)
