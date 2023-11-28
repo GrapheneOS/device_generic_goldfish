@@ -14,7 +14,13 @@
 # limitations under the License.
 #
 
-# This file should be removed once all references toit are replaced
-# with the file below:
+include device/generic/goldfish/board/kernel/arm64.mk
 
-$(call inherit-product, device/generic/goldfish/board/emu64x/details.mk)
+PRODUCT_PROPERTY_OVERRIDES += \
+       vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
+
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
+    device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
+    $(EMULATOR_KERNEL_FILE):kernel-ranchu \
+    device/generic/goldfish/data/etc/advancedFeatures.ini.arm:advancedFeatures.ini \

@@ -47,7 +47,7 @@ PRODUCT_PACKAGES += \
 #
 # this must go first - overwrites the goldfish handheld_core_hardware.xml
 $(call inherit-product, device/generic/goldfish/slim/vendor.mk)
-$(call inherit-product, device/generic/goldfish/64bitonly/product/x86_64-vendor.mk)
+$(call inherit-product, device/generic/goldfish/board/emu64x/details.mk)
 $(call inherit-product, device/generic/goldfish/64bitonly/product/emulator64_vendor.mk)
 
 # include the overlay that overrides systemui definitions with fakesystemapp
