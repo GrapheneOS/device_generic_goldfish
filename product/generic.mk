@@ -111,7 +111,7 @@ PRODUCT_PACKAGES += \
     EmulatorRadioConfig \
     EmulatorTetheringConfigOverlay
 
-DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.radio.xml
+DEVICE_MANIFEST_FILE += device/generic/goldfish/radio/manifest.radio.xml
 DISABLE_RILD_OEM_HOOK := true
 endif
 
