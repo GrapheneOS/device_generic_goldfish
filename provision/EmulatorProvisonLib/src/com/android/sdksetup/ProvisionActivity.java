@@ -122,6 +122,8 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     protected void provisionDisplay() {
+        Settings.Global.putInt(getContentResolver(), Settings.Global.STAY_ON_WHILE_PLUGGED_IN, 1);
+
         final int screen_off_timeout =
             SystemProperties.getInt("ro.boot.qemu.settings.system.screen_off_timeout", 0);
         if (screen_off_timeout > 0) {
