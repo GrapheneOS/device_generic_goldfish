@@ -12,9 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
-# This file should be removed once all references toit are replaced
-# with the file below:
+# All tablet specific stuff should be moved here.
 
-$(call inherit-product, device/generic/goldfish/board/emu64x/details.mk)
+$(call inherit-product, device/generic/goldfish/product/generic.mk)

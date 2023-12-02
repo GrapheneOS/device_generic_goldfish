@@ -31,5 +31,4 @@ endif
 
 PRODUCT_CHARACTERISTICS := emulator
 
-# goldfish vendor partition configurations
-$(call inherit-product-if-exists, device/generic/goldfish/64bitonly/product/vendor.mk)
+$(call inherit-product, device/generic/goldfish/product/generic.mk)

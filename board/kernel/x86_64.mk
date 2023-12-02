@@ -28,6 +28,6 @@ BOARD_VENDOR_KERNEL_MODULES := \
                  $(wildcard $(VIRTUAL_DEVICE_KERNEL_MODULES_PATH)/*.ko))
 
 BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE := \
-    device/generic/goldfish/kernel_modules.blocklist
+    device/generic/goldfish/board/kernel/kernel_modules.blocklist
 
 EMULATOR_KERNEL_FILE := $(KERNEL_ARTIFACTS_PATH)/kernel-$(TARGET_KERNEL_USE)
