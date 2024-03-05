@@ -15,9 +15,6 @@
 #
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
-BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE ?= $(shell expr 1800 \* 1048576 )
-BOARD_SUPER_PARTITION_SIZE := $(shell expr $(BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE) + 8388608 )  # +8M
-
 #
 # All components inherited here go to system image
 #
