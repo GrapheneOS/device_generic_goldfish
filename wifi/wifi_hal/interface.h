@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 #include <hardware_legacy/wifi_hal.h>
 
 class Netlink;
@@ -69,6 +70,8 @@ public:
                                 size_t numRequestedFates,
                                 size_t* numProvidedFates);
     wifi_error getPacketFilterCapabilities(u32* version, u32* maxLength);
+    wifi_error readPacketFilter(u32 src_offset, u8 *host_dst, u32 length);
+    wifi_error setPacketFilter(const u8 *program, u32 len);
     wifi_error getWakeReasonStats(WLAN_DRIVER_WAKE_REASON_CNT* wakeReasonCount);
     wifi_error startSendingOffloadedPacket(wifi_request_id id,
                                            u16 ether_type,
@@ -90,5 +93,6 @@ private:
     Netlink& mNetlink;
     std::string mName;
     uint32_t mInterfaceIndex;
+    std::vector<u8> mApfMemory;
 };
 

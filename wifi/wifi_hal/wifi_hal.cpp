@@ -357,6 +357,25 @@ wifi_error wifi_get_packet_filter_capabilities(wifi_interface_handle handle,
     return asInterface(handle)->getPacketFilterCapabilities(version, max_len);
 }
 
+wifi_error wifi_set_packet_filter(wifi_interface_handle handle,
+                                  const u8 *program, u32 len) {
+    if (handle == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+
+    return asInterface(handle)->setPacketFilter(program, len);
+}
+
+wifi_error wifi_read_packet_filter(wifi_interface_handle handle,
+                                      u32 src_offset, u8 *host_dst,
+                                      u32 length) {
+    if (handle == nullptr) {
+        return WIFI_ERROR_INVALID_ARGS;
+    }
+
+    return asInterface(handle)->readPacketFilter(src_offset, host_dst, length);
+}
+
 wifi_error
 wifi_get_wake_reason_stats(wifi_interface_handle handle,
                            WLAN_DRIVER_WAKE_REASON_CNT *wifi_wake_reason_cnt) {
@@ -432,6 +451,8 @@ wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn* fn)
     fn->wifi_get_rx_pkt_fates = wifi_get_rx_pkt_fates;
     fn->wifi_get_packet_filter_capabilities
         = wifi_get_packet_filter_capabilities;
+    fn->wifi_set_packet_filter = wifi_set_packet_filter;
+    fn->wifi_read_packet_filter = wifi_read_packet_filter;
     fn->wifi_get_wake_reason_stats = wifi_get_wake_reason_stats;
 
     fn->wifi_start_sending_offloaded_packet
@@ -461,7 +482,6 @@ wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn* fn)
     notSupported(fn->wifi_reset_log_handler);
     notSupported(fn->wifi_start_rssi_monitoring);
     notSupported(fn->wifi_stop_rssi_monitoring);
-    notSupported(fn->wifi_set_packet_filter);
 
     return WIFI_SUCCESS;
 }
