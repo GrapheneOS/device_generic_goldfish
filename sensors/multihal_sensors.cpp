@@ -39,6 +39,17 @@ struct SensorsTransportStub : public SensorsTransport {
     const char* Name() const override { return "stub"; }
 };
 
+// https://android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/sensors/aidl/android/hardware/sensors/SensorInfo.aidl#146
+// 3 bits starting from the 1st: MMMx
+uint32_t getSensorReportingMode(const uint32_t sensorFlagBits) {
+    return sensorFlagBits & (7U << 1);
+}
+
+bool isOnChangeSensor(const uint32_t sensorFlagBits) {
+    return getSensorReportingMode(sensorFlagBits) ==
+        static_cast<uint32_t>(SensorFlagBits::ON_CHANGE_MODE);
+}
+
 const SensorsTransportStub g_sensorsTransportStub;
 }
 
@@ -140,7 +151,7 @@ Return<Result> MultihalSensors::activate(const int32_t sensorHandle,
     if (enabled) {
         const SensorInfo* sensor = getSensorInfoByHandle(sensorHandle);
         LOG_ALWAYS_FATAL_IF(!sensor);
-        if (sensor->flags & static_cast<uint32_t>(SensorFlagBits::ON_CHANGE_MODE)) {
+        if (isOnChangeSensor(sensor->flags)) {
             doPostSensorEventLocked(*sensor,
                                     activationOnChangeSensorEvent(sensorHandle, *sensor));
         } else {
