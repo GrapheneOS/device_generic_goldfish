@@ -31,9 +31,11 @@ LOCAL_LICENSE_CONDITIONS := notice
 
 # following is **needed**, as the framework only looks at vendor/etc/displayconfig
 # that may change in the future, such as V or later
-LOCAL_POST_INSTALL_CMD := ln -sf /data/system/displayconfig $(PRODUCT_OUT)/vendor/etc/displayconfig
+LOCAL_POST_INSTALL_CMD := mkdir -p $(PRODUCT_OUT)/vendor/etc/permissions ; ln -sf /data/system/extra_feature.xml $(PRODUCT_OUT)/vendor/etc/permissions/extra_feature.xml
+LOCAL_POST_INSTALL_CMD += ; ln -sf /data/system/displayconfig $(PRODUCT_OUT)/vendor/etc/displayconfig
 
-LOCAL_ALL_SYMLINKS := $(PRODUCT_OUT)/vendor/etc/displayconfig
+LOCAL_ALL_SYMLINKS := $(PRODUCT_OUT)/vendor/etc/permissions/extra_feature.xml
+LOCAL_ALL_SYMLINKS += $(PRODUCT_OUT)/vendor/etc/displayconfig
 
 ALL_DEFAULT_INSTALLED_MODULES += $(LOCAL_ALL_SYMLINKS)
 
