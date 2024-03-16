@@ -32,9 +32,7 @@ RAMDISK_KERNEL_MODULES := \
     virtio_pci_legacy_dev.ko \
     virtio_pci_modern_dev.ko \
     virtio-rng.ko \
-    vmw_vsock_virtio_transport_common.ko \
     vmw_vsock_virtio_transport.ko \
-    vsock.ko \
 
 BOARD_SYSTEM_KERNEL_MODULES := $(wildcard $(KERNEL_ARTIFACTS_PATH)/*.ko)
 

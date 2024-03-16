@@ -72,7 +72,6 @@ PRODUCT_PACKAGES += \
     libandroidemu \
     libOpenglCodecCommon \
     libOpenglSystemCommon \
-    qemu-export-property \
     qemu-props \
     stagefright \
     android.hardware.graphics.composer3-service.ranchu \
@@ -300,6 +299,7 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/numeric_operator.xml:data/misc/modem_simulator/etc/modem_simulator/files/numeric_operator.xml \
     device/generic/goldfish/data/etc/local.prop:data/local.prop \
     device/generic/goldfish/init.ranchu.adb.setup.sh:$(TARGET_COPY_OUT_SYSTEM_EXT)/bin/init.ranchu.adb.setup.sh \
+    device/generic/goldfish/init_ranchu_device_state.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init_ranchu_device_state.sh \
     device/generic/goldfish/init.ranchu-core.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-core.sh \
     device/generic/goldfish/init.ranchu-net.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.ranchu-net.sh \
     device/generic/goldfish/init.ranchu.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.ranchu.rc \

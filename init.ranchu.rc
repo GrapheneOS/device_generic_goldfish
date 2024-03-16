@@ -57,8 +57,6 @@ on init
     start qemu-props
 
 on post-fs-data
-    mkdir /data/vendor/adb 0755 root root
-    mkdir /data/vendor/devicestate 0755 root root
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
 
@@ -147,11 +145,12 @@ service qemu-props-bootcomplete /vendor/bin/qemu-props "bootcomplete"
     oneshot
     disabled
 
-service qemu-device-state /vendor/bin/qemu-export-property -f qemu.device_state /data/vendor/devicestate/device_state_configuration.xml
+service qemu-device-state /vendor/bin/init_ranchu_device_state.sh
     user root
     group root
     oneshot
     disabled
+    stdio_to_kmsg
 
 service goldfish-logcat /system/bin/logcat -f /dev/hvc1 ${ro.boot.logcat}
     class main

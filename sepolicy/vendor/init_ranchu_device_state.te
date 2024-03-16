@@ -1,0 +1,11 @@
+type init_ranchu_device_state, domain;
+type init_ranchu_device_state_exec, vendor_file_type, exec_type, file_type;
+
+init_daemon_domain(init_ranchu_device_state)
+
+# Permission to write to /data/vendor/*
+allow init_ranchu_device_state vendor_data_file:dir create_dir_perms;
+allow init_ranchu_device_state vendor_data_file:file create_file_perms;
+
+# Allow write to /dev/kmsg
+allow init_ranchu_device_state kmsg_debug_device:chr_file { w_file_perms getattr ioctl };
