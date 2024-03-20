@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <android-base/unique_fd.h>
-#include <log/log.h>
+#include <debug.h>
 #include "storage.h"
 
 namespace aidl::android::hardware::biometrics::fingerprint {
@@ -44,9 +44,8 @@ unique_fd openFile(const int32_t sensorId, const int32_t userId, const bool outp
     if (fd >= 0) {
         return unique_fd(fd);
     } else {
-        ALOGE("%s:%d open('%s', output=%d) failed with errno=%d",
-              __func__, __LINE__, filename, output, errno);
-        return {};
+        return FAILURE_V(unique_fd(), "open('%s', output=%d) failed with errno=%d",
+                         filename, output, errno);
     }
 }
 
@@ -61,9 +60,8 @@ std::vector<uint8_t> loadFile(const int fd) {
         if (n > 0) {
             size += n;
         } else if (n < 0) {
-            ALOGE("%s:%d error reading from a file, errno=%d",
-                  __func__, __LINE__, errno);
-            return {};
+            decltype(result) empty;
+            return FAILURE_V(empty, "error reading from a file, errno=%d", errno);
         } else {
             result.resize(size);
             return result;
@@ -78,13 +76,10 @@ bool saveFile(const int fd, const uint8_t* i, size_t size) {
             i += n;
             size -= n;
         } else if (n < 0) {
-            ALOGE("%s:%d error writing to a file, errno=%d",
-                  __func__, __LINE__, errno);
-            return false;
+            return FAILURE_V(false, "error writing to a file, errno=%d", errno);
         } else {
-            ALOGE("%s:%d `write` returned zero, size=%zu, errno=%d",
-                  __func__, __LINE__, size, errno);
-            return false;
+            return FAILURE_V(false, "`write` returned zero, size=%zu, errno=%d",
+                             size, errno);
         }
     }
     return true;

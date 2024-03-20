@@ -68,8 +68,8 @@ struct Session : public BnSession {
     ErrorCode validateHat(const keymaster::HardwareAuthToken& hat) const;
     bool sensorListenerFuncImpl();
     void sensorListenerFunc() { while (sensorListenerFuncImpl()) {} }
-    void onSenserEventOn(int fid);
-    void onSenserEventOff();
+    void onSensorEventOn(int fid);
+    void onSensorEventOff();
     void cancellEnroll();
     void cancellAuthenticate();
     void cancellDetectInteraction();

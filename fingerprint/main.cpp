@@ -17,7 +17,7 @@
 #include <memory>
 #include <android/binder_manager.h>
 #include <android/binder_process.h>
-#include <log/log.h>
+#include <debug.h>
 #include <utils/Errors.h>
 #include "hal.h"
 
@@ -33,8 +33,8 @@ int main() {
         const std::string instance = std::string(Hal::descriptor) + "/default";
         if (AServiceManager_registerLazyService(hal->asBinder().get(),
                                                 instance.c_str()) != STATUS_OK) {
-            ALOGE("%s:%d: Could not register '%s'", __func__, __LINE__, instance.c_str());
-            return android::NO_INIT;
+            return FAILURE_V(android::NO_INIT,
+                             "Could not register '%s'", instance.c_str());
         }
     }
 

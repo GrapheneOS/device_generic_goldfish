@@ -46,6 +46,7 @@ cc_binary {
     ],
     header_libs: [
         "libutils_headers",
+        "libdebug.ranchu",
     ],
     cflags: [
         "-DLOG_TAG=\"fingerprint-service.ranchu\"",
