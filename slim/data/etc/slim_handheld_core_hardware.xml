@@ -45,7 +45,12 @@ This file should be almost identical to device/generic/goldfish/data/etc/handhel
     <feature name="android.hardware.sensor.gyroscope" />
     <feature name="android.hardware.sensor.hinge_angle" />
     <feature name="android.hardware.telephony" />
+    <feature name="android.hardware.telephony.calling" />
+    <feature name="android.hardware.telephony.data" />
     <feature name="android.hardware.telephony.gsm" />
+    <feature name="android.hardware.telephony.ims" />
+    <feature name="android.hardware.telephony.radio.access" />
+    <feature name="android.hardware.telephony.subscription" />
     <feature name="android.hardware.touchscreen" />
     <feature name="android.hardware.microphone" />
     <feature name="android.hardware.screen.portrait" />
@@ -62,6 +67,7 @@ This file should be almost identical to device/generic/goldfish/data/etc/handhel
     <feature name="android.software.print" />
     <feature name="android.software.cant_save_state" />
     <feature name="android.software.companion_device_setup" />
+    <feature name="android.software.credentials" />
 
     <!-- Feature to specify if the device supports adding device admins. -->
     <feature name="android.software.device_admin" />
@@ -72,6 +78,8 @@ This file should be almost identical to device/generic/goldfish/data/etc/handhel
     <feature name="android.software.activities_on_secondary_displays" />
 
     <feature name="android.software.cts" />
+
+    <feature name="android.hardware.security.model.compatible" />
 
     <!-- Feature to specify if the device supports controls. -->
     <feature name="android.software.controls" />
