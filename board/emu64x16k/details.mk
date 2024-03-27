@@ -31,4 +31,4 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/board/fstab/x86:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
     device/generic/goldfish/board/fstab/x86:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
 
-PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true
+$(call inherit-product, device/generic/goldfish/board/16k.mk)

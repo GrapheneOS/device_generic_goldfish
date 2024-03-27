@@ -24,3 +24,5 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
     $(EMULATOR_KERNEL_FILE):kernel-ranchu \
     device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
+
+$(call inherit-product, device/generic/goldfish/board/16k.mk)

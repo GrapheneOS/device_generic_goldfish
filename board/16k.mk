@@ -14,15 +14,6 @@
 # limitations under the License.
 #
 
-include device/generic/goldfish/board/kernel/arm64_16k.mk
-
-PRODUCT_PROPERTY_OVERRIDES += \
-       vendor.rild.libpath=/vendor/lib64/libgoldfish-ril.so
-
-PRODUCT_COPY_FILES += \
-    device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
-    device/generic/goldfish/board/fstab/arm:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
-    $(EMULATOR_KERNEL_FILE):kernel-ranchu \
-    device/generic/goldfish/data/etc/advancedFeatures.ini:advancedFeatures.ini \
-
-$(call inherit-product, device/generic/goldfish/board/16k.mk)
+# Enable large page size support
+PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384
+PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true
