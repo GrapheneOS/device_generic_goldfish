@@ -269,7 +269,7 @@ wifi_error Interface::getPacketFilterCapabilities(u32* version,
 
 wifi_error Interface::readPacketFilter(u32 src_offset, u8 *host_dst, u32 length) {
     if (src_offset >= mApfMemory.size() || host_dst == nullptr
-        || src_offset + length > mApfMemory.size()) {
+        || length > mApfMemory.size() - src_offset) {
         return WIFI_ERROR_INVALID_ARGS;
     }
     std::copy(mApfMemory.begin() + src_offset, mApfMemory.begin() + src_offset + length, host_dst);
