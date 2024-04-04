@@ -40,7 +40,7 @@ cc_library_static {
         "libnl",
         "liblog",
         "libcutils",
-        "libhardware_legacy",
+        "wifi_legacy",
     ],
     proprietary: true,
 }
