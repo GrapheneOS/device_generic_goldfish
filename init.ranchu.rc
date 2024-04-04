@@ -61,6 +61,7 @@ on post-fs-data
     mkdir /data/vendor/var/run 0755 root root
 
     start qemu-device-state
+    start ranchu-adb-setup
 
 on zygote-start
     # Create the directories used by the Wireless subsystem
@@ -103,7 +104,6 @@ on property:vendor.qemu.timezone=*
 
 on property:dev.bootcomplete=1 && property:vendor.qemu.dev.bootcomplete=0
     setprop vendor.qemu.dev.bootcomplete 1
-    start ranchu-adb-setup
     start qemu-props-bootcomplete
     start ranchu-setup
 
