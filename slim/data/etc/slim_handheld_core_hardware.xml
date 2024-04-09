@@ -48,6 +48,7 @@ This file should be almost identical to device/generic/goldfish/data/etc/handhel
     <feature name="android.hardware.telephony.calling" />
     <feature name="android.hardware.telephony.data" />
     <feature name="android.hardware.telephony.gsm" />
+    <feature name="android.hardware.telephony.messaging" />
     <feature name="android.hardware.telephony.ims" />
     <feature name="android.hardware.telephony.radio.access" />
     <feature name="android.hardware.telephony.subscription" />

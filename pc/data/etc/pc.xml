@@ -31,6 +31,7 @@
     <unavailable-feature name="android.hardware.telephony" />
     <unavailable-feature name="android.hardware.telephony.data" />
     <unavailable-feature name="android.hardware.telephony.gsm" />
+    <unavailable-feature name="android.hardware.telephony.messaging" />
     <unavailable-feature name="android.hardware.telephony.ims" />
     <unavailable-feature name="android.hardware.telephony.radio.access" />
     <unavailable-feature name="android.hardware.telephony.subscription" />
