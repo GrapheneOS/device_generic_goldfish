@@ -31,6 +31,9 @@ PRODUCT_SOONG_NAMESPACES += \
 
 TARGET_USES_MKE2FS := true
 
+# Set Vendor SPL to match platform
+VENDOR_SECURITY_PATCH = $(PLATFORM_SECURITY_PATCH)
+
 # RKPD
 PRODUCT_PRODUCT_PROPERTIES += \
     remote_provisioning.enable_rkpd=true \

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<overlay>
+  <item target="bool/show_play_store" value="false" /> <!-- default true -->
+  <item target="bool/skip_tutorial_in_launching" value="true" /> <!-- default false -->
+</overlay>
