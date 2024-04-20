@@ -218,7 +218,7 @@ Storage::authenticate(const int32_t enrollmentId) {
             const int64_t inMs =
                 std::chrono::duration_cast<
                     std::chrono::milliseconds>(mLockOut.nextAttempt - now).count();
-            return {AuthResult::LOCKED_OUT_TIMED, inMs, {}};
+            return {AuthResult::LOCKED_OUT_TIMED, static_cast<int>(inMs), {}};
         }
         break;
 
