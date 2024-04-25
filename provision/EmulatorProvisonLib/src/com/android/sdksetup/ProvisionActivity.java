@@ -97,6 +97,12 @@ public abstract class ProvisionActivity extends Activity {
     protected void provisionWifi(final String ssid) {
         Settings.Global.putInt(getContentResolver(), Settings.Global.TETHER_OFFLOAD_DISABLED, 1);
 
+        final WifiManager mWifiManager = getApplicationContext().getSystemService(WifiManager.class);
+        if (!mWifiManager.setWifiEnabled(true)) {
+            Log.e(TAG(), "Unable to turn on Wi-Fi");
+            return;
+        }
+
         final int ADD_NETWORK_FAIL = -1;
         final String quotedSsid = "\"" + ssid + "\"";
 
@@ -104,7 +110,6 @@ public abstract class ProvisionActivity extends Activity {
         config.SSID = quotedSsid;
         config.setSecurityParams(WifiConfiguration.SECURITY_TYPE_OPEN);
 
-        final WifiManager mWifiManager = getApplicationContext().getSystemService(WifiManager.class);
         final int netId = mWifiManager.addNetwork(config);
 
         if (netId == ADD_NETWORK_FAIL || !mWifiManager.enableNetwork(netId, true)) {
@@ -114,6 +119,8 @@ public abstract class ProvisionActivity extends Activity {
 
     // Set physical keyboard layout based on the system property set by emulator host.
     protected void provisionKeyboard(final String deviceName) {
+        Settings.Secure.putInt(getContentResolver(), Settings.Secure.SHOW_IME_WITH_HARD_KEYBOARD, 1);
+
         final String layoutName = SystemProperties.get("vendor.qemu.keyboard_layout");
         final InputDevice device = getKeyboardDevice(deviceName);
         if (device != null && !layoutName.isEmpty()) {
