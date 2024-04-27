@@ -91,6 +91,7 @@ PRODUCT_PACKAGES += \
     local_time.default \
     SdkSetup \
     goldfish_overlay_connectivity_gsi \
+    RanchuCommonOverlay \
     libGoldfishProfiler \
     dlkm_loader
 
