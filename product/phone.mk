@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2023 The Android Open Source Project
+# Copyright (C) 2012 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# All phone specific stuff should be moved here.
+#
+# This file is included by other product makefiles to add all the
+# emulator-related modules to PRODUCT_PACKAGES.
+#
+
+$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_vendor.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_vendor.mk)
+
+DEVICE_PACKAGE_OVERLAYS := device/generic/goldfish/phone/overlay
+PRODUCT_CHARACTERISTICS := emulator
 
 $(call inherit-product, device/generic/goldfish/product/generic.mk)

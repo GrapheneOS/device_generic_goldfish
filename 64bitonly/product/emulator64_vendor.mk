@@ -26,7 +26,7 @@ endif
 ifeq ($(EMULATOR_DISABLE_RADIO),true)
 DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/tablet/overlay
 else
-DEVICE_PACKAGE_OVERLAYS := device/generic/goldfish/overlay
+DEVICE_PACKAGE_OVERLAYS := device/generic/goldfish/phone/overlay
 endif
 
 PRODUCT_CHARACTERISTICS := emulator
