@@ -13,14 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#
-# This file is included by other product makefiles to add all the
-# emulator-related modules to PRODUCT_PACKAGES.
-#
-
+$(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_system_ext.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_product.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_product.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_vendor.mk)
+$(call inherit-product, frameworks/base/data/sounds/AllAudio.mk)
 
 DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/tablet/overlay
-PRODUCT_CHARACTERISTICS := emulator
+PRODUCT_CHARACTERISTICS := tablet,nosdcard
+
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.config.ringtone?=Ring_Synth_04.ogg \
+    ro.config.notification_sound?=pixiedust.ogg \
+
+PRODUCT_PACKAGES += \
+    initial-package-stopped-states-aosp.xml \
+    PhotoTable \
+    preinstalled-packages-platform-aosp-product.xml \
+    WallpaperPicker \
+    LargeScreenSettingsProviderOverlay \
+    curl \
+
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += system/bin/curl
 
 $(call inherit-product, device/generic/goldfish/product/generic.mk)
