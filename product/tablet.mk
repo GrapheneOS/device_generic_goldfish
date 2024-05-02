@@ -13,12 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_system_ext.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_product.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_product.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_vendor.mk)
-$(call inherit-product, frameworks/base/data/sounds/AllAudio.mk)
+$(call inherit-product, device/generic/goldfish/product/handheld.mk)
 
 DEVICE_PACKAGE_OVERLAYS += device/generic/goldfish/tablet/overlay
 PRODUCT_CHARACTERISTICS := tablet,nosdcard
