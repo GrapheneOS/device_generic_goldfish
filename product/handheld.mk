@@ -20,3 +20,4 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_product.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_vendor.mk)
 $(call inherit-product, frameworks/base/data/sounds/AllAudio.mk)
 
+$(call inherit-product, device/generic/goldfish/product/multidisplay.mk)
