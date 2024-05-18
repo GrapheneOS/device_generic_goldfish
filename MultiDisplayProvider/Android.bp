@@ -32,5 +32,6 @@ android_app {
     certificate: "platform",
     resource_dirs: ["res"],
     jni_libs: ["libemulator_multidisplay_jni"],
+    required: ["libemulator_multidisplay_jni"],
     system_ext_specific: true,
 }

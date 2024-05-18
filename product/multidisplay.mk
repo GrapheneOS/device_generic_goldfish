@@ -16,7 +16,7 @@
 
 PRODUCT_PACKAGES += MultiDisplayProvider
 
-PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST := \
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST += \
     system/lib/libemulator_multidisplay_jni.so \
     system/lib64/libemulator_multidisplay_jni.so \
     system/priv-app/MultiDisplayProvider/MultiDisplayProvider.apk \
