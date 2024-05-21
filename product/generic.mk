@@ -166,6 +166,8 @@ PRODUCT_PACKAGES += \
     SystemUIEmulationPixelFoldOverlay \
     EmulationPixel8ProOverlay \
     SystemUIEmulationPixel8ProOverlay \
+    EmulationPixel8aOverlay \
+    SystemUIEmulationPixel8aOverlay \
     EmulationPixel8Overlay \
     SystemUIEmulationPixel8Overlay \
     EmulationPixel7ProOverlay \
