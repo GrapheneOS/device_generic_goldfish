@@ -36,6 +36,8 @@ TARGET_USERIMAGES_SPARSE_EXT_DISABLED := true
 
 # emulator is Non-A/B device
 AB_OTA_UPDATER := false
+AB_OTA_PARTITIONS :=
+
 BOARD_USES_SYSTEM_OTHER_ODEX :=
 
 # emulator needs super.img
