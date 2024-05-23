@@ -18,51 +18,26 @@ PRODUCT_USE_DYNAMIC_PARTITIONS := true
 # for headless automated testing. Compared to the full AOSP 'sdk_phone'
 # image it removes/replaces most product apps, and turns off rendering
 # by default.
-#
-# All components inherited here go to system image
-#
-$(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system.mk)
 
-# Enable mainline checking for exact this product name
+# Enable mainline checking for this exact product name
 ifeq (sdk_slim_arm64,$(TARGET_PRODUCT))
 PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS := relaxed
 endif
-#
-# All components inherited here go to system_ext image
-#
-# don't include full handheld_system_Ext which includes SystemUi, Settings etc
-$(call inherit-product, $(SRC_TARGET_DIR)/product/media_system_ext.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_system_ext.mk)
-#
-# All components inherited here go to product image
-#
-# Just include webview, do not include most other apps
-$(call inherit-product, $(SRC_TARGET_DIR)/product/media_product.mk)
-# Include FakeSystemApp which replaces core system apps like Settings,
-# Launcher
-PRODUCT_PACKAGES += \
-    FakeSystemApp \
-#
-# All components inherited here go to vendor image
-#
+
+BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE ?= $(shell expr 1536 \* 1048576 )
+BOARD_SUPER_PARTITION_SIZE := $(shell expr $(BOARD_EMULATOR_DYNAMIC_PARTITIONS_SIZE) + 8388608 )  # +8M
+
+$(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
+
+PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
+    development/sys-img/images_atd_source.prop_template
+
 # this must go first - overwrites the goldfish handheld_core_hardware.xml
 $(call inherit-product, device/generic/goldfish/slim/vendor.mk)
 $(call inherit-product, device/generic/goldfish/board/emu64a/details.mk)
-$(call inherit-product, device/generic/goldfish/product/phone.mk)
+$(call inherit-product, device/generic/goldfish/product/slim_handheld.mk)
 
-# include the overlay that overrides systemui definitions with fakesystemapp
-PRODUCT_PACKAGES += slim_overlay_frameworks_base_core
-
-PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP := \
-     development/sys-img/images_atd_source.prop_template
-
-# Overrides
 PRODUCT_BRAND := Android
 PRODUCT_NAME := sdk_slim_arm64
 PRODUCT_DEVICE := emu64a
 PRODUCT_MODEL := Android ATD built for arm64
-# Disable <uses-library> checks for SDK product. It lacks some libraries (e.g.
-# RadioConfigLib), which makes it impossible to translate their module names to
-# library name, so the check fails.
-PRODUCT_BROKEN_VERIFY_USES_LIBRARIES := true
