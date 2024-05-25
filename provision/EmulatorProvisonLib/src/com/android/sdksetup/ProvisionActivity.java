@@ -199,7 +199,6 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     protected void provisionAdb() {
-        Settings.Global.putInt(getContentResolver(), Settings.Global.ADB_ENABLED, 1);
         Settings.Global.putInt(getContentResolver(), Settings.Global.PACKAGE_VERIFIER_INCLUDE_ADB, 0);
     }
 
