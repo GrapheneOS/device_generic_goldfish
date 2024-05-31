@@ -169,6 +169,7 @@ service wpa_supplicant /vendor/bin/hw/wpa_supplicant -Dnl80211 -iwlan0 -c/vendor
     group system wifi inet
     oneshot
     disabled
+    user root
 
 on property:vendor.qemu.vport.bluetooth=*
     symlink ${vendor.qemu.vport.bluetooth} /dev/bluetooth0
