@@ -17,12 +17,12 @@
 # we do NOT support OTA - suppress the build warning
 PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
 
-# Use 16K page size kernel
-TARGET_KERNEL_USE := 6.1
+# Use 6.6 kernel
+TARGET_KERNEL_USE := 6.6
 TARGET_KERNEL_ARCH := x86_64
-KERNEL_ARTIFACTS_PATH := kernel/prebuilts/$(TARGET_KERNEL_USE)/$(TARGET_KERNEL_ARCH)/16k
+KERNEL_ARTIFACTS_PATH := kernel/prebuilts/$(TARGET_KERNEL_USE)/$(TARGET_KERNEL_ARCH)
 VIRTUAL_DEVICE_KERNEL_MODULES_PATH := \
-    kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/$(subst _,-,$(TARGET_KERNEL_ARCH))/16k
+    kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/$(subst _,-,$(TARGET_KERNEL_ARCH))
 
 # The list of modules to reach the second stage. For performance reasons we
 # don't want to put all modules into the ramdisk.
@@ -47,5 +47,8 @@ BOARD_VENDOR_KERNEL_MODULES := \
 
 BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE := \
     device/generic/goldfish/board/kernel/kernel_modules.blocklist
+
+# Emulate 16KB page size
+BOARD_KERNEL_CMDLINE += androidboot.page_shift=14
 
 EMULATOR_KERNEL_FILE := $(KERNEL_ARTIFACTS_PATH)/kernel-$(TARGET_KERNEL_USE)
