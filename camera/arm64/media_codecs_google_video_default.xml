@@ -49,6 +49,7 @@
             <Limit name="measured-frame-rate-1920x1080" range="235-247" />
             <Limit name="measured-frame-rate-3840x2160" range="235-247" />
             <Feature name="adaptive-playback" />
+            <Feature name="dynamic-color-aspects" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.h264.decoder" type="video/avc">
             <Limit name="size" min="96x96" max="4096x4096" />
@@ -64,6 +65,7 @@
             <Limit name="measured-frame-rate-1920x1080" range="235-247" />
             <Limit name="measured-frame-rate-3840x2160" range="235-247" />
             <Feature name="adaptive-playback" />
+            <Feature name="dynamic-color-aspects" />
         </MediaCodec>
         <MediaCodec name="OMX.google.h264.decoder" type="video/avc">
             <Limit name="size" min="2x2" max="2560x2560" />
@@ -105,6 +107,7 @@
             <Limit name="measured-frame-rate-1920x1080" range="293-302" />
             <Limit name="measured-frame-rate-3840x2160" range="150-150" />
             <Feature name="adaptive-playback" />
+            <Feature name="dynamic-color-aspects" />
         </MediaCodec>
         <MediaCodec name="OMX.android.goldfish.vp8.decoder" type="video/x-vnd.on2.vp8">
             <Limit name="size" min="96x96" max="3840x2160" />
@@ -120,6 +123,7 @@
             <Limit name="measured-frame-rate-1920x1080" range="30-160" />
             <Limit name="measured-frame-rate-3840x2160" range="30-90" />
             <Feature name="adaptive-playback" />
+            <Feature name="dynamic-color-aspects" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.vp8.decoder" type="video/x-vnd.on2.vp8">
             <Limit name="size" min="96x96" max="3840x2160" />
@@ -135,6 +139,7 @@
             <Limit name="measured-frame-rate-1920x1080" range="30-160" />
             <Limit name="measured-frame-rate-3840x2160" range="30-90" />
             <Feature name="adaptive-playback" />
+            <Feature name="dynamic-color-aspects" />
         </MediaCodec>
         <MediaCodec name="c2.goldfish.vp9.decoder" type="video/x-vnd.on2.vp9">
             <Limit name="size" min="96x96" max="3840x2160" />
@@ -150,6 +155,7 @@
             <Limit name="measured-frame-rate-1920x1080" range="75-280" />
             <Limit name="measured-frame-rate-3840x2160" range="30-90" />
             <Feature name="adaptive-playback" />
+            <Feature name="dynamic-color-aspects" />
         </MediaCodec>
         <MediaCodec name="OMX.google.vp8.decoder" type="video/x-vnd.on2.vp8">
             <Limit name="size" min="2x2" max="2560x2560" />
