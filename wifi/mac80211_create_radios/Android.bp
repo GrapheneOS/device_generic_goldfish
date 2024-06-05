@@ -13,7 +13,6 @@ cc_binary {
     cppflags: [
              "-Wall",
              "-Werror",
-             "--std=c++17",
             ],
     srcs: ["main.cpp",],
     shared_libs: [
