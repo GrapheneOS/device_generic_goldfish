@@ -17,3 +17,6 @@
 # Enable large page size support
 PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384
 PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true
+
+# Verify all prebuilts are compatible with 16 KB mode as well
+PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true
