@@ -28,6 +28,8 @@
 # Bluetooth
 /dev/vhci                    u:object_r:bt_device:s0
 /dev/bluetooth0              u:object_r:bt_device:s0
+# UWB
+/dev/hvc2                    u:object_r:uwb_device:s0
 
 
 /system_ext/bin/init\.ranchu\.adb\.setup\.sh u:object_r:goldfish_system_setup_exec:s0

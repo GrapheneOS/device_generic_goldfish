@@ -5,6 +5,7 @@ vendor.qemu.sf.fake_camera     u:object_r:vendor_qemu_prop:s0 exact string
 vendor.qemu.vport.bluetooth u:object_r:vendor_qemu_prop:s0 exact string
 vendor.qemu.vport.modem u:object_r:vendor_qemu_prop:s0 exact string
 vendor.qemu.vport.gnss  u:object_r:vendor_qemu_prop:s0 exact string
+vendor.qemu.vport.uwb   u:object_r:vendor_qemu_prop:s0 exact string
 vendor.qemu.timezone    u:object_r:vendor_qemu_prop:s0 exact string
 vendor.qemu.FakeRotatingCamera.frustum u:object_r:vendor_qemu_prop:s0 exact string
 vendor.qemu.FakeRotatingCamera.eyeCoordinates u:object_r:vendor_qemu_prop:s0 exact string

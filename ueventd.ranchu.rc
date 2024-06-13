@@ -16,3 +16,5 @@
 # bluetooth
 /dev/vhci                 0660   system  bluetooth
 
+# uwb virtconsole
+/dev/hvc2                 0660   uwb     uwb
