@@ -36,6 +36,7 @@ $(INSTALLED_EMULATOR_INFO_TXT_TARGET): $(emulator_info_txt)
     subdir_makefiles=$(call first-makefiles-under,$(LOCAL_PATH))
     $(foreach mk,$(subdir_makefiles),$(info including $(mk) ...)$(eval include $(mk)))
 
+    include device/generic/goldfish/tools/emu_extra_imgs.mk
     include device/generic/goldfish/tasks/emu_img_zip.mk
   endif
 endif
