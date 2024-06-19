@@ -1,0 +1,44 @@
+// Copyright (C) 2006 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {
+    // See: http://go/android-license-faq
+    default_applicable_licenses: [
+        "Android-Apache-2.0",
+    ],
+}
+
+cc_binary {
+    name: "libgoldfish-rild",
+    cflags: [
+        "-DPRODUCT_COMPATIBLE_PROPERTY",
+        "-DRIL_SHLIB",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+    ],
+    srcs: ["rild_goldfish.c"],
+    shared_libs: [
+        "libcutils",
+        "libdl",
+        "liblog",
+        "libril-modem-lib",
+    ],
+    // Temporary hack for broken vendor RILs.
+    whole_static_libs: ["librilutils-goldfish-fork"],
+    relative_install_path: "hw",
+    proprietary: true,
+    overrides: ["rild"],
+    init_rc: ["rild_goldfish.rc"],
+}
