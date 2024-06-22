@@ -15,8 +15,9 @@
 #
 
 # create skin related configuration files and symlinks
-# 
+#
 
+ifeq ($(EMULATOR_DEVICE_TYPE_FOLDABLE), true)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -32,9 +33,21 @@ LOCAL_LICENSE_CONDITIONS := notice
 # that may change in the future, such as V or later
 LOCAL_POST_INSTALL_CMD := ln -sf /data/system/displayconfig $(PRODUCT_OUT)/vendor/etc/displayconfig
 
+LOCAL_ALL_SYMLINKS := $(PRODUCT_OUT)/vendor/etc/displayconfig
+
+ALL_DEFAULT_INSTALLED_MODULES += $(LOCAL_ALL_SYMLINKS)
+
+include $(BUILD_SYSTEM)/base_rules.mk
+
+$(LOCAL_ALL_SYMLINKS): $(LOCAL_BUILT_MODULE)
+$(LOCAL_BUILT_MODULE): $(LOCAL_PATH)/readme.txt
+	@echo "Generate: $< -> $@"
+	@mkdir -p $(dir $@)
+	$(hide) cp $< $@
+
+
 # following is not needed, but keep a note here, as the framework already
 # take /data/system/devicestate/ before accessing /vendor/etc/devicestate
 # LOCAL_POST_INSTALL_CMD += ln -sf /data/system/devicestate $(PRODUCT_OUT)/vendor/etc/devicestate
 
-include $(BUILD_PREBUILT)
-
+endif
