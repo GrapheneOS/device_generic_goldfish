@@ -234,11 +234,6 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     protected boolean provisionRequired() {
-        return (Settings.Global.getInt(getContentResolver(),
-                Settings.Global.DEVICE_PROVISIONED, 0) != 1) || forceProvision();
-    }
-
-    protected boolean forceProvision() {
-        return SystemProperties.get("ro.automotive_emulator.provisioning", "").equals("SdkSetup");
+        return Settings.Global.getInt(getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 0) != 1;
     }
 }
