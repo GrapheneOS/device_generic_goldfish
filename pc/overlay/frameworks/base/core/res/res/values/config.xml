@@ -23,4 +23,6 @@
     <bool name="config_supportsSplitScreenMultiWindow">false</bool>
     <!-- Disable quick settings b/240884945 -->
     <bool name="config_quickSettingsSupported">false</bool>
+    <!-- Enable close button on notifications -->
+    <bool name="config_notificationCloseButtonSupported">true</bool>
 </resources>
