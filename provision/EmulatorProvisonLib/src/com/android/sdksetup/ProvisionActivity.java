@@ -40,7 +40,7 @@ import com.android.internal.widget.LockPatternUtils;
 
 public abstract class ProvisionActivity extends Activity {
     protected abstract String TAG();
-    private StatusBarManager mStatusBarManager;
+    protected StatusBarManager mStatusBarManager;
 
     @Override
     protected void onCreate(Bundle icicle) {
