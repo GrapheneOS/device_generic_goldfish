@@ -122,6 +122,8 @@ PRODUCT_PACKAGES += \
 
 DEVICE_MANIFEST_FILE += device/generic/goldfish/radio/manifest.radio.xml
 DISABLE_RILD_OEM_HOOK := true
+# For customize cflags for libril share library building by soong.
+$(call soong_config_set,ril,disable_rild_oem_hook,true)
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_BIOMETRICS), true)
