@@ -17,6 +17,7 @@
 package com.android.emulatorprovisionlib;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.StatusBarManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -32,6 +33,8 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemProperties;
+import android.os.UserHandle;
+import android.os.UserManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.InputDevice;
@@ -60,13 +63,19 @@ public abstract class ProvisionActivity extends Activity {
 
     protected void preProvivion() {
         final Context appContext = getApplicationContext();
-        mStatusBarManager = appContext.getSystemService(StatusBarManager.class);
+        if (!isVisibleBackgroundUser(appContext)) {
+            mStatusBarManager = appContext.getSystemService(StatusBarManager.class);
+        }
 
-        mStatusBarManager.setDisabledForSetup(true);
+        if (mStatusBarManager != null) {
+            mStatusBarManager.setDisabledForSetup(true);
+        }
     }
 
     protected void postProvision() {
-        mStatusBarManager.setDisabledForSetup(false);
+        if (mStatusBarManager != null) {
+            mStatusBarManager.setDisabledForSetup(false);
+        }
 
         removeSelf();
 
@@ -235,5 +244,16 @@ public abstract class ProvisionActivity extends Activity {
 
     protected boolean provisionRequired() {
         return Settings.Global.getInt(getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 0) != 1;
+    }
+
+    protected boolean isVisibleBackgroundUser(Context context) {
+        if (!UserManager.isVisibleBackgroundUsersEnabled()) {
+            return false;
+        }
+        UserHandle user = context.getUser();
+        if (user.isSystem() || user.getIdentifier() == ActivityManager.getCurrentUser()) {
+            return false;
+        }
+        return true;
     }
 }
