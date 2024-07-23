@@ -67,12 +67,15 @@ ndk::ScopedAStatus GnssBatching::start(const Options& options) {
     std::lock_guard<std::mutex> lock(mMtx);
     mRunning = true;
     mThread = std::thread([this, interval, wakeUpOnFifoFull](){
-        Clock::time_point wakeupT = Clock::now() + interval;
+        std::unique_lock<std::mutex> lock(mMtx);
+        if (!mRunning) {
+            return;
+        }
 
+        Clock::time_point wakeupT = Clock::now() + interval;
         for (;; wakeupT += interval) {
-            std::unique_lock<std::mutex> lock(mMtx);
-            if ((mThreadNotification.wait_until(lock, wakeupT) == std::cv_status::no_timeout) &&
-                    !mRunning) {
+            mThreadNotification.wait_until(lock, wakeupT);
+            if (!mRunning) {
                 return;
             }
 

@@ -169,15 +169,17 @@ ndk::ScopedAStatus GnssMeasurementInterface::setCallbackImpl(
 
     std::lock_guard<std::mutex> lock(mMtx);
     mRunning = true;
-
     mThread = std::thread([this, callback, interval](){
-        Clock::time_point wakeupT = Clock::now() + interval;
+        std::unique_lock<std::mutex> lock(mMtx);
+        if (!mRunning) {
+            return;
+        }
 
+        Clock::time_point wakeupT = Clock::now() + interval;
         for (unsigned gnssDataIndex = 0;; gnssDataIndex = (gnssDataIndex + 1) % mGnssData.size(),
                                           wakeupT += interval) {
-            std::unique_lock<std::mutex> lock(mMtx);
-            if ((mThreadNotification.wait_until(lock, wakeupT) == std::cv_status::no_timeout) &&
-                    !mRunning) {
+            mThreadNotification.wait_until(lock, wakeupT);
+            if (!mRunning) {
                 return;
             }
 
