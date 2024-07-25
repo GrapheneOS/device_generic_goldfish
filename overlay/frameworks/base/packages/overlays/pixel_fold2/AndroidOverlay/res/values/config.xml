@@ -34,6 +34,14 @@
         @left
     </string>
 
+
+    <integer-array name="config_mainBuiltInDisplayCutoutSideOverride" translatable="false">
+        <item>1</item> <!-- Top -->
+        <item>1</item> <!-- Top -->
+        <item>3</item> <!-- Bottom -->
+        <item>3</item> <!-- Bottom -->
+    </integer-array>
+
     <string translatable="false" name="config_mainBuiltInDisplayCutoutRectApproximation">
         m 0,0
         V 136
