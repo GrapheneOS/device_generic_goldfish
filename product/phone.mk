@@ -23,7 +23,8 @@ PRODUCT_CHARACTERISTICS := emulator
 
 $(call inherit-product, device/generic/goldfish/product/generic.mk)
 
-PRODUCT_PACKAGES += GoldfishSkinConfig
+PRODUCT_PACKAGES += GoldfishSkinConfig \
+                    GoldfishExtraFeature
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/phone/overlay/frameworks/base/packages/overlays/GoldfishSkinConfig/readme.txt:$(TARGET_COPY_OUT_DATA)/misc/GoldfishSkinConfig \
