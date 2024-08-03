@@ -77,11 +77,18 @@ public abstract class ProvisionActivity extends Activity {
             mStatusBarManager.setDisabledForSetup(false);
         }
 
-        removeSelf();
 
         // Add a persistent setting to allow other apps to know the device has been provisioned.
         Settings.Secure.putInt(getContentResolver(), Settings.Secure.USER_SETUP_COMPLETE, 1);
         Settings.Global.putInt(getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 1);
+        final boolean isDeviceProvisioned = (Settings.Global.getInt(getContentResolver(),
+                Settings.Global.DEVICE_PROVISIONED, 0) == 1);
+        if (isDeviceProvisioned) {
+            Log.i(TAG(), "Successfully set device_provisioned to 1");
+        } else {
+            Log.e(TAG(), "Unable to set device_provisioned to 1");
+        }
+        removeSelf();
     }
 
     // remove this activity from the package manager.

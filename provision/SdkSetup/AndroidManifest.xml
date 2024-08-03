@@ -35,6 +35,7 @@
         <activity android:name="DefaultActivity"
                 android:excludeFromRecents="true"
                 android:exported="True"
+                android:directBootAware="true"
                 android:launchMode="singleTask">
             <intent-filter android:priority="3">
                 <action android:name="android.intent.action.MAIN" />
