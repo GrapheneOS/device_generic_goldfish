@@ -151,6 +151,10 @@ PRODUCT_PACKAGES += \
     libGLESv2_angle
 endif
 
+# Enable Thread Network HAL with simulation RCP
+PRODUCT_PACKAGES += \
+    com.android.hardware.threadnetwork-simulation-rcp
+
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth-service.default \
