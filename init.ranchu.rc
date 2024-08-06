@@ -198,6 +198,7 @@ service vendor.uwb_hal /vendor/bin/hw/android.hardware.uwb-service /dev/hvc2
 
 on property:sys.boot_completed=1
     trigger sys-boot-completed-set
+    start vendor.ril-daemon
 
 on sys-boot-completed-set && property:persist.sys.zram_enabled=1
     swapon_all /vendor/etc/fstab.${ro.hardware}
