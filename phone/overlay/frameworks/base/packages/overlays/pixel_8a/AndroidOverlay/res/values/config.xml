@@ -47,18 +47,4 @@
         @left
     </string>
 
-    <!-- A string config in svg path format for the main display shape.
-         (@see https://www.w3.org/TR/SVG/paths.html#PathData).
-
-         This config must be set unless:
-         1. {@link Configuration#isScreenRound} is true which means the display shape is circular
-            and the system will auto-generate a circular shape.
-         2. The display has no rounded corner and the system will auto-generate a rectangular shape.
-         (@see DisplayShape#createDefaultDisplayShape)
-
-         Note: If the display supports multiple resolutions, please define the path config based on
-         the highest resolution so that it can be scaled correctly in each resolution.
-    -->
-    <string name="config_mainDisplayShape" translatable="false">M 96.5,0.09 C 91.13,0.36 82.7,1.63 79.38,2.34 59.53,6.58 50.35,10.97 39.94,18.2 27.73,26.69 16.6,39.86 10.5,52.79 6.41,61.47 2.37,75.03 1.22,83.76 0.14,91.99 0.31,92.14 0.09,96.34 V 2307.68 l 1.59,11.48 c 4.89,22.96 11.89,37.01 25.55,51.29 13.95,14.57 29.8,22.8 53.75,27.88 l 11.5,1.59 H 987.52 l 11.5,-1.59 c 23.95,-5.08 39.8,-13.31 53.75,-27.88 13.66,-14.27 20.66,-28.33 25.55,-51.29 l 1.59,-11.48 V 96.34 c -0.23,-4.2 -0.05,-4.34 -1.13,-12.57 -1.15,-8.73 -5.19,-22.3 -9.28,-30.98 C 1063.4,39.86 1052.27,26.69 1040.06,18.2 1029.65,10.97 1020.47,6.58 1000.62,2.34 997.3,1.63 988.87,0.36 983.5,0.09 Z</string>
-
 </resources>
