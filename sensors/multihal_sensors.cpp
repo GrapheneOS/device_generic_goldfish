@@ -42,12 +42,12 @@ struct SensorsTransportStub : public SensorsTransport {
 // https://android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/sensors/aidl/android/hardware/sensors/SensorInfo.aidl#146
 // 3 bits starting from the 1st: MMMx
 uint32_t getSensorReportingMode(const uint32_t sensorFlagBits) {
-    return sensorFlagBits & (7U << 1);
+    return sensorFlagBits & (3U << 1);
 }
 
-bool isOnChangeSensor(const uint32_t sensorFlagBits) {
+bool isContiniousReportingSensor(const uint32_t sensorFlagBits) {
     return getSensorReportingMode(sensorFlagBits) ==
-        static_cast<uint32_t>(SensorFlagBits::ON_CHANGE_MODE);
+        static_cast<uint32_t>(SensorFlagBits::CONTINUOUS_MODE);
 }
 
 const SensorsTransportStub g_sensorsTransportStub;
@@ -151,10 +151,7 @@ Return<Result> MultihalSensors::activate(const int32_t sensorHandle,
     if (enabled) {
         const SensorInfo* sensor = getSensorInfoByHandle(sensorHandle);
         LOG_ALWAYS_FATAL_IF(!sensor);
-        if (isOnChangeSensor(sensor->flags)) {
-            doPostSensorEventLocked(*sensor,
-                                    activationOnChangeSensorEvent(sensorHandle, *sensor));
-        } else {
+        if (isContiniousReportingSensor(sensor->flags)) {
             if (batchInfo.samplingPeriodNs <= 0) {
                 return Result::BAD_VALUE;
             }
@@ -167,6 +164,9 @@ Return<Result> MultihalSensors::activate(const int32_t sensorHandle,
 
             m_batchQueue.push(batchEventRef);
             m_batchUpdated.notify_one();
+        } else {
+            doPostSensorEventLocked(*sensor,
+                                    activationOnChangeSensorEvent(sensorHandle, *sensor));
         }
         sendAdditionalInfoReport(sensorHandle);
         m_activeSensorsMask = m_activeSensorsMask | (1u << sensorHandle);
