@@ -16,23 +16,23 @@
 */
 
 #define LOG_TAG "android_emulator_multidisplay_JNI"
-#include <gui/BufferQueue.h>
-#include <gui/BufferItemConsumer.h>
-#include <gui/Surface.h>
-#include <gui/ISurfaceComposer.h>
-#include <gui/SurfaceComposerClient.h>
 
+#include <com_android_graphics_libgui_flags.h>
+#include <gralloc_cb_bp.h>
+#include <gui/BufferItemConsumer.h>
+#include <gui/BufferQueue.h>
+#include <gui/ISurfaceComposer.h>
+#include <gui/Surface.h>
+#include <gui/SurfaceComposerClient.h>
+#include <nativehelper/ScopedLocalRef.h>
+#include <qemu_pipe_bp.h>
 #include <sys/epoll.h>
 
-#include <gralloc_cb_bp.h>
-#include <qemu_pipe_bp.h>
-
-#include "utils/Log.h"
-#include "nativehelper/JNIHelp.h"
-#include <nativehelper/ScopedLocalRef.h>
-#include "jni.h"
 #include "android_runtime/AndroidRuntime.h"
 #include "android_runtime/android_view_Surface.h"
+#include "jni.h"
+#include "nativehelper/JNIHelp.h"
+#include "utils/Log.h"
 
 #define MAX_DISPLAYS 10
 
@@ -94,15 +94,25 @@ static jobject nativeCreateSurface(JNIEnv *env, jobject obj, jint id, jint width
 {
     ALOGI("create surface for %d", id);
     // Create surface for this new display
+#if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
+    sp<BufferItemConsumer> bufferItemConsumer =
+        new BufferItemConsumer(GRALLOC_USAGE_HW_RENDER);
+#else
     sp<IGraphicBufferProducer> producer;
     sp<IGraphicBufferConsumer> consumer;
     sp<BufferItemConsumer> bufferItemConsumer;
     BufferQueue::createBufferQueue(&producer, &consumer);
     bufferItemConsumer = new BufferItemConsumer(consumer, GRALLOC_USAGE_HW_RENDER);
+#endif  // COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
     gFrameListener[id] = new FrameListener(bufferItemConsumer, id);
     gFrameListener[id]->setDefaultBufferSize(width, height);
     bufferItemConsumer->setFrameAvailableListener(gFrameListener[id]);
+#if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
+    return android_view_Surface_createSurface(env,
+                                              bufferItemConsumer->getSurface());
+#else
     return android_view_Surface_createFromIGraphicBufferProducer(env, producer);
+#endif  // COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
 }
 
 static jint nativeOpen(JNIEnv* env, jobject obj) {
