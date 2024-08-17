@@ -48,11 +48,6 @@ ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
 ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.minigbm
 endif
 
-# Experimental Feature (Uwb | b/237088064)
-ifneq ($(filter %_uwb, $(TARGET_PRODUCT)),)
-ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.uwb
-endif
-
 ifneq ($(filter sdk_tablet% sdk_gtablet%, $(TARGET_PRODUCT)),)
 ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.tablet
 endif
