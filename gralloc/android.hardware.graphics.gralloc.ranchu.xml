@@ -1,0 +1,17 @@
+<manifest version="1.0" type="device">
+    <hal format="aidl">
+        <name>android.hardware.graphics.allocator</name>
+        <version>2</version>
+        <interface>
+            <name>IAllocator</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+    <hal format="native">
+        <name>mapper</name>
+        <version>5.0</version>
+        <interface>
+            <instance>ranchu</instance>
+        </interface>
+    </hal>
+</manifest>

@@ -107,9 +107,7 @@ PRODUCT_PACKAGES += \
     mapper.minigbm
 else
 PRODUCT_VENDOR_PROPERTIES += ro.hardware.gralloc=ranchu
-PRODUCT_PACKAGES += \
-    android.hardware.graphics.allocator@3.0-service.ranchu \
-    android.hardware.graphics.mapper@3.0-impl-ranchu
+PRODUCT_PACKAGES += android.hardware.graphics.allocator-service.ranchu
 endif
 
 ifneq ($(EMULATOR_DISABLE_RADIO),true)
@@ -322,6 +320,7 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/data/etc/apns-conf.xml:data/misc/apns/apns-conf.xml \
     device/generic/goldfish/radio/RadioConfig/radioconfig.xml:data/misc/emulator/config/radioconfig.xml \
     device/generic/goldfish/data/etc/iccprofile_for_sim0.xml:data/misc/modem_simulator/iccprofile_for_sim0.xml \
+    device/google/cuttlefish/host/commands/modem_simulator/files/iccprofile_for_sim0.xml:data/misc/modem_simulator/iccprofile_for_sim_tel_alaska.xml \
     device/google/cuttlefish/host/commands/modem_simulator/files/iccprofile_for_sim0_for_CtsCarrierApiTestCases.xml:data/misc/modem_simulator/iccprofile_for_carrierapitests.xml \
     device/generic/goldfish/data/etc/numeric_operator.xml:data/misc/modem_simulator/etc/modem_simulator/files/numeric_operator.xml \
     device/generic/goldfish/data/etc/local.prop:data/local.prop \

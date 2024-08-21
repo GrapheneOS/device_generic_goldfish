@@ -5,3 +5,4 @@ android.hardware.neuralnetworks.IDevice/nnapi-sample_quant    u:object_r:hal_neu
 android.hardware.neuralnetworks.IDevice/nnapi-sample_sl_shim  u:object_r:hal_neuralnetworks_service:s0
 # see https://android.googlesource.com/platform/hardware/interfaces/+/refs/heads/main/graphics/mapper/stable-c
 mapper/minigbm u:object_r:hal_graphics_mapper_service:s0
+mapper/ranchu u:object_r:hal_graphics_mapper_service:s0

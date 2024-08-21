@@ -1,0 +1,90 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "device_generic_goldfish-opengl_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["device_generic_goldfish_license"],
+}
+
+cc_defaults {
+    name: "gralloc_defaults",
+    relative_install_path: "hw",
+    vendor: true,
+    static_libs: [
+        "libGoldfishAddressSpace",
+        "libmesa_util_gfxstream",
+    ],
+    shared_libs: [
+        "android.hardware.graphics.allocator-V2-ndk",
+        "libbase",
+        "libcutils",
+        "libdrm",
+        "liblog",
+        "libutils",
+        "libOpenglCodecCommon",
+        "libOpenglSystemCommon",
+    ],
+    header_libs: [
+        "libdebug.ranchu",
+        "libgralloc_cb.ranchu",
+    ],
+    cflags: [
+        "-DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION",
+    ],
+}
+
+cc_library_shared {
+    name: "mapper.ranchu",
+    defaults: ["gralloc_defaults"],
+    srcs: ["mapper.cpp"],
+    shared_libs: [
+        "libsync",
+        "libandroidemu",
+    ],
+    header_libs: [
+        "libbase_headers",
+        "libimapper_stablec",
+        "libimapper_providerutils",
+    ],
+    cflags: [
+        "-DLOG_TAG=\"mapper.ranchu\"",
+    ],
+}
+
+cc_binary {
+    name: "android.hardware.graphics.allocator-service.ranchu",
+    defaults: ["gralloc_defaults"],
+    srcs: ["allocator.cpp"],
+    init_rc: ["android.hardware.graphics.allocator-service.ranchu.rc"],
+    vintf_fragments: ["android.hardware.graphics.gralloc.ranchu.xml"],
+    shared_libs: [
+        "libbinder_ndk",
+        "libqemupipe.ranchu",
+    ],
+    static_libs: [
+        "libaidlcommonsupport",
+    ],
+    required: [
+        "mapper.ranchu",
+    ],
+    cflags: [
+        "-DLOG_TAG=\"allocator-service.ranchu\"",
+    ],
+}

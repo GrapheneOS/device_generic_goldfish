@@ -250,7 +250,7 @@ public abstract class ProvisionActivity extends Activity {
     }
 
     protected boolean provisionRequired() {
-        return Settings.Global.getInt(getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 0) != 1;
+        return true;
     }
 
     protected boolean isVisibleBackgroundUser(Context context) {
