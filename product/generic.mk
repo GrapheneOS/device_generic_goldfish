@@ -127,11 +127,8 @@ ifneq ($(EMULATOR_VENDOR_NO_BIOMETRICS), true)
 PRODUCT_PACKAGES += \
     android.hardware.biometrics.fingerprint-service.ranchu \
     android.hardware.biometrics.face-service.example \
-
-PRODUCT_COPY_FILES += \
-    frameworks/native/data/etc/android.hardware.fingerprint.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.fingerprint.xml \
-    frameworks/native/data/etc/android.hardware.biometrics.face.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.biometrics.face.xml \
-
+    android.hardware.fingerprint.prebuilt.xml \
+    android.hardware.biometrics.face.prebuilt.xml
 endif
 
 ifneq ($(BUILD_EMULATOR_OPENGL),false)
@@ -168,46 +165,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.keystore.app_attest_key.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.keystore.app_attest_key.xml
 
-PRODUCT_PACKAGES += \
-    DisplayCutoutEmulationEmu01Overlay \
-    EmulationPixelFoldOverlay \
-    SystemUIEmulationPixelFoldOverlay \
-    EmulationPixel8ProOverlay \
-    SystemUIEmulationPixel8ProOverlay \
-    EmulationPixel8aOverlay \
-    SystemUIEmulationPixel8aOverlay \
-    EmulationPixel8Overlay \
-    SystemUIEmulationPixel8Overlay \
-    EmulationPixel7ProOverlay \
-    SystemUIEmulationPixel7ProOverlay \
-    EmulationPixel7Overlay \
-    SystemUIEmulationPixel7Overlay \
-    EmulationPixel7aOverlay \
-    SystemUIEmulationPixel7aOverlay \
-    EmulationPixel6ProOverlay \
-    SystemUIEmulationPixel6ProOverlay \
-    EmulationPixel6Overlay \
-    SystemUIEmulationPixel6Overlay \
-    EmulationPixel6aOverlay \
-    SystemUIEmulationPixel6aOverlay \
-    EmulationPixel5Overlay \
-    SystemUIEmulationPixel5Overlay \
-    EmulationPixel4XLOverlay \
-    SystemUIEmulationPixel4XLOverlay \
-    EmulationPixel4Overlay \
-    SystemUIEmulationPixel4Overlay \
-    EmulationPixel4aOverlay \
-    SystemUIEmulationPixel4aOverlay \
-    EmulationPixel3XLOverlay \
-    SystemUIEmulationPixel3XLOverlay \
-    EmulationPixel3Overlay \
-    SystemUIEmulationPixel3Overlay \
-    EmulationPixel3aOverlay \
-    SystemUIEmulationPixel3aOverlay \
-    EmulationPixel3aXLOverlay \
-    SystemUIEmulationPixel3aXLOverlay \
-    EmulationPixel2XLOverlay \
-    NavigationBarMode2ButtonOverlay \
+# b/361152997: move to the phone specific place
+$(call inherit-product, device/generic/goldfish/product/phone_overlays.mk)
 
 # Enable Uwb
 PRODUCT_PACKAGES += \
@@ -243,6 +202,11 @@ PRODUCT_PACKAGES += \
     android.hardware.camera.provider.ranchu \
     android.hardware.camera.provider@2.7-service-google \
     libgooglecamerahwl_impl \
+    android.hardware.camera.flash-autofocus.prebuilt.xml \
+    android.hardware.camera.concurrent.prebuilt.xml \
+    android.hardware.camera.front.prebuilt.xml \
+    android.hardware.camera.full.prebuilt.xml \
+    android.hardware.camera.raw.prebuilt.xml \
 
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/camera/media/profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml \
@@ -250,11 +214,6 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/camera/media/codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
     device/generic/goldfish/camera/media/codecs_performance.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance.xml \
     device/generic/goldfish/camera/media/codecs_performance_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_performance_c2.xml \
-    frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.flash-autofocus.xml \
-    frameworks/native/data/etc/android.hardware.camera.concurrent.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.concurrent.xml \
-    frameworks/native/data/etc/android.hardware.camera.front.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.front.xml \
-    frameworks/native/data/etc/android.hardware.camera.full.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.full.xml \
-    frameworks/native/data/etc/android.hardware.camera.raw.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.raw.xml \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_back.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_back.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_front.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_front.json \
     hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_depth.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_depth.json \
