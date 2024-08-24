@@ -22,6 +22,8 @@ TARGET_CPU_ABI := arm64-v8a
 TARGET_2ND_ARCH_VARIANT := armv8-a
 TARGET_2ND_CPU_VARIANT := generic
 
+TARGET_BOOTS_16K := true
+
 include device/generic/goldfish/board/BoardConfigCommon.mk
 
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0x02000000

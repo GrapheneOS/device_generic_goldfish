@@ -19,6 +19,8 @@ TARGET_ARCH := x86_64
 TARGET_ARCH_VARIANT := x86_64
 TARGET_2ND_ARCH_VARIANT := x86_64
 
+TARGET_BOOTS_16K := true
+
 include device/generic/goldfish/board/BoardConfigCommon.mk
 
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
