@@ -74,6 +74,7 @@ private:
         Rect<uint16_t> size;
         PixelFormat pixelFormat;
         uint32_t blobBufferSize;
+        uint32_t stride;
     };
 
     struct SensorValues {

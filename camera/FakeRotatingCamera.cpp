@@ -23,7 +23,6 @@
 #include <ui/GraphicBufferAllocator.h>
 #include <ui/GraphicBufferMapper.h>
 
-#include <gralloc_cb_bp.h>
 #include <qemu_pipe_bp.h>
 
 #define GL_GLEXT_PROTOTYPES
@@ -316,14 +315,13 @@ bool FakeRotatingCamera::configure(const CameraMetadata& sessionParams,
         if (si.pixelFormat != PixelFormat::RGBA_8888) {
             const native_handle_t* buffer;
             GraphicBufferAllocator& gba = GraphicBufferAllocator::get();
-            uint32_t stride;
 
             if (gba.allocate(si.size.width, si.size.height,
                     static_cast<int>(PixelFormat::RGBA_8888), 1,
                     static_cast<uint64_t>(usageOr(BufferUsage::GPU_RENDER_TARGET,
                                                   usageOr(BufferUsage::CPU_READ_OFTEN,
                                                           BufferUsage::CAMERA_OUTPUT))),
-                    &buffer, &stride, kClass) == NO_ERROR) {
+                    &buffer, &si.stride, kClass) == NO_ERROR) {
                 si.rgbaBuffer.reset(buffer);
             } else {
                 mStreamInfoCache.clear();
@@ -731,15 +729,10 @@ bool FakeRotatingCamera::drawSceneImpl(const float pvMatrix44[]) const {
 bool FakeRotatingCamera::renderIntoRGBA(const StreamInfo& si,
                                         const RenderParams& renderParams,
                                         const native_handle_t* rgbaBuffer) const {
-    const cb_handle_t* const cb = cb_handle_t::from(rgbaBuffer);
-    if (!cb) {
-        return FAILURE(false);
-    }
-
     const auto gb = sp<GraphicBuffer>::make(
         rgbaBuffer, GraphicBuffer::WRAP_HANDLE, si.size.width,
         si.size.height, static_cast<int>(si.pixelFormat), 1,
-        static_cast<uint64_t>(si.usage), cb->stride);
+        static_cast<uint64_t>(si.usage), si.stride);
 
     const EGLClientBuffer clientBuf =
         eglGetNativeClientBufferANDROID(gb->toAHardwareBuffer());
