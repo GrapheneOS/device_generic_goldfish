@@ -47,3 +47,7 @@ BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE := \
     device/generic/goldfish/board/kernel/kernel_modules.blocklist
 
 EMULATOR_KERNEL_FILE := $(KERNEL_ARTIFACTS_PATH)/kernel-$(TARGET_KERNEL_USE)
+
+# BOARD_KERNEL_CMDLINE is not supported (b/361341981), use the file below
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/board/kernel/x86_64_cmdline.txt:kernel_cmdline.txt

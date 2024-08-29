@@ -48,7 +48,8 @@ BOARD_VENDOR_KERNEL_MODULES := \
 BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE := \
     device/generic/goldfish/board/kernel/kernel_modules.blocklist
 
-# Emulate 16KB page size
-BOARD_KERNEL_CMDLINE += page_shift=14
-
 EMULATOR_KERNEL_FILE := $(KERNEL_ARTIFACTS_PATH)/kernel-$(TARGET_KERNEL_USE)
+
+# BOARD_KERNEL_CMDLINE is not supported (b/361341981), use the file below
+PRODUCT_COPY_FILES += \
+    device/generic/goldfish/board/kernel/x86_64_16k_cmdline.txt:kernel_cmdline.txt
