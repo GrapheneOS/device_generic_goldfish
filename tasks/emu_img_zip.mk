@@ -1,7 +1,7 @@
 # Rules to generate a zip file that contains google emulator images
 # and other files for distribution
 
-ifneq ($(filter emu_img_zip goog_emu_imgs emu_kernel_zip, $(MAKECMDGOALS)),)
+ifneq ($(filter sdk_% gcar_%, $(TARGET_PRODUCT)),)
 emulator_img_source_prop := $(TARGET_OUT_INTERMEDIATES)/source.properties
 target_notice_file_txt := $(TARGET_OUT_INTERMEDIATES)/NOTICE.txt
 $(emulator_img_source_prop): $(PRODUCT_SDK_ADDON_SYS_IMG_SOURCE_PROP)
@@ -89,6 +89,7 @@ INTERNAL_EMULATOR_PACKAGE_TARGET_DEPENDENCIES := \
 	$(FINAL_INSTALLED_QEMU_RAMDISKIMAGE) \
 	$(FINAL_INSTALLED_QEMU_VENDORIMAGE) \
 	$(EMULATOR_KERNEL_FILE) \
+	$(PRODUCT_OUT)/kernel_cmdline.txt \
 	$(ADVANCED_FEATURES_FILES) \
 	$(PRODUCT_OUT_DATA_FILES) \
 
@@ -122,4 +123,4 @@ $(INTERNAL_EMULATOR_KERNEL_TARGET): $(INSTALLED_QEMU_RAMDISKIMAGE) $(EMULATOR_KE
 emu_kernel_zip: $(INTERNAL_EMULATOR_KERNEL_TARGET)
 
 $(call dist-for-goals-with-filenametag, emu_kernel_zip, $(INTERNAL_EMULATOR_KERNEL_TARGET))
-endif  # filter for the [emu_img_zip, goog_emu_imgs, emu_kernel_zip] goals
+endif
