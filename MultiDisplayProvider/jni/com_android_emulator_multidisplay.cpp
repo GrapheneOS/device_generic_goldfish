@@ -108,8 +108,8 @@ static jobject nativeCreateSurface(JNIEnv *env, jobject obj, jint id, jint width
     gFrameListener[id]->setDefaultBufferSize(width, height);
     bufferItemConsumer->setFrameAvailableListener(gFrameListener[id]);
 #if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
-    return android_view_Surface_createSurface(env,
-                                              bufferItemConsumer->getSurface());
+    return android_view_Surface_createFromSurface(
+        env, bufferItemConsumer->getSurface());
 #else
     return android_view_Surface_createFromIGraphicBufferProducer(env, producer);
 #endif  // COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)

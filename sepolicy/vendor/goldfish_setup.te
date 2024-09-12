@@ -25,7 +25,6 @@ allow goldfish_setup self:netlink_generic_socket create_socket_perms_no_ioctl;
 allow goldfish_setup self:capability { sys_module sys_admin };
 allow goldfish_setup proc_net:file rw_file_perms;
 allow goldfish_setup proc:file r_file_perms;
-allow goldfish_setup nsfs:file r_file_perms;
 allow goldfish_setup system_data_file:dir getattr;
 set_prop(goldfish_setup, vendor_qemu_prop);
 get_prop(goldfish_setup, vendor_net_share_prop);

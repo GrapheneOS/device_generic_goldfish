@@ -42,22 +42,6 @@ $(eval $(call copy-one-file,$(INSTALLED_QEMU_VENDORIMAGE),$(FINAL_INSTALLED_QEMU
 
 INTERNAL_EMULATOR_PACKAGE_FILES += device/generic/goldfish/data/etc/encryptionkey.img
 
-ADVANCED_FEATURES_FILENAME := advancedFeatures.ini
-ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
-ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.minigbm
-endif
-
-ifneq ($(filter sdk_tablet% sdk_gtablet%, $(TARGET_PRODUCT)),)
-ADVANCED_FEATURES_FILENAME := advancedFeatures.ini.tablet
-endif
-
-ADVANCED_FEATURES_FILES :=
-ifeq ($(TARGET_BUILD_VARIANT),user)
-ADVANCED_FEATURES_FILES += device/generic/goldfish/data/etc/google/user/$(ADVANCED_FEATURES_FILENAME)
-else
-ADVANCED_FEATURES_FILES += device/generic/goldfish/data/etc/google/userdebug/$(ADVANCED_FEATURES_FILENAME)
-endif
-
 ifneq ($(filter $(PRODUCT_DEVICE), emulator_car64_arm64 emulator_car64_x86_64),)
 INTERNAL_EMULATOR_PACKAGE_FILES += hardware/interfaces/automotive/vehicle/aidl/emu_metadata/android.hardware.automotive.vehicle-types-meta.json
 endif
@@ -89,15 +73,15 @@ INTERNAL_EMULATOR_PACKAGE_TARGET_DEPENDENCIES := \
 	$(FINAL_INSTALLED_QEMU_RAMDISKIMAGE) \
 	$(FINAL_INSTALLED_QEMU_VENDORIMAGE) \
 	$(EMULATOR_KERNEL_FILE) \
+	$(PRODUCT_OUT)/advancedFeatures.ini \
 	$(PRODUCT_OUT)/kernel_cmdline.txt \
-	$(ADVANCED_FEATURES_FILES) \
 	$(PRODUCT_OUT_DATA_FILES) \
 
 $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_TARGET_DEPENDENCIES)
 	@echo "Package: $@"
 	$(hide) mkdir -p $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)
 	$(hide) $(foreach f,$(INTERNAL_EMULATOR_PACKAGE_FILES), $(ACP) $(f) $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)/$(notdir $(f));)
-	$(hide) $(foreach f,$(ADVANCED_FEATURES_FILES), $(ACP) $(f) $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)/advancedFeatures.ini;)
+	$(hide) $(ACP) $(PRODUCT_OUT)/advancedFeatures.ini $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)
 	$(hide) $(ACP) $(PRODUCT_OUT)/kernel_cmdline.txt $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)
 	$(hide) ($(ACP) $(EMULATOR_KERNEL_FILE) $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)/${EMULATOR_KERNEL_DIST_NAME})
 	$(hide) $(ACP) -r $(PRODUCT_OUT)/data $(INTERNAL_EMULATOR_PACKAGE_SOURCE)/$(TARGET_CPU_ABI)
@@ -117,6 +101,7 @@ goog_emu_imgs: emu_img_zip
 EMU_EXTRA_FILES := \
         $(INTERNAL_EMULATOR_PACKAGE_FILES) \
         $(INSTALLED_QEMU_RAMDISKIMAGE) \
+        $(PRODUCT_OUT)/advancedFeatures.ini \
         $(PRODUCT_OUT)/kernel_cmdline.txt \
         $(PRODUCT_OUT)/system-qemu-config.txt \
         $(PRODUCT_OUT)/misc_info.txt \
@@ -140,7 +125,6 @@ $(EMU_EXTRA_TARGET): $(EMU_EXTRA_TARGET_DEPENDENCIES) $(SOONG_ZIP)
 	$(hide) mkdir -p $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
 	$(hide) $(ACP) $(PRODUCT_OUT)/system/build.prop $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/system
 	$(hide) $(foreach f,$(EMU_EXTRA_FILES), $(ACP) $(f) $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/$(notdir $(f)) &&) true
-	$(hide) $(foreach f,$(ADVANCED_FEATURES_FILES), $(ACP) $(f) $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/advancedFeatures.ini &&) true
 	$(hide) $(ACP) $(EMULATOR_KERNEL_FILE) $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)/${EMULATOR_KERNEL_DIST_NAME}
 	$(hide) $(ACP) -r $(PRODUCT_OUT)/data $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)
 	$(SOONG_ZIP) -o $@ -C $(PRIVATE_PACKAGE_SRC) -D $(PRIVATE_PACKAGE_SRC)/$(TARGET_ARCH)

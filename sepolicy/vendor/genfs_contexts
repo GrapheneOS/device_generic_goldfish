@@ -146,6 +146,3 @@ genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup40                     
 genfscon sysfs /devices/platform/rtc-test.2/wakeup/wakeup40/event_count            u:object_r:sysfs_wakeup:s0
 
 genfscon sysfs /bus/iio/devices                                                    u:object_r:sysfs_iio_devices:s0
-
-# /proc/<pid>/ns
-genfscon nsfs / u:object_r:nsfs:s0

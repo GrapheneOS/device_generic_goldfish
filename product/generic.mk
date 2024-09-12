@@ -164,9 +164,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.keystore.app_attest_key.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.keystore.app_attest_key.xml
 
-# b/361152997: move to the phone specific place
-$(call inherit-product, device/generic/goldfish/product/phone_overlays.mk)
-
 # Enable Uwb
 PRODUCT_PACKAGES += \
     com.android.hardware.uwb \
