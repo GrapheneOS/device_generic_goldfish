@@ -28,8 +28,8 @@ cc_defaults {
     relative_install_path: "hw",
     vendor: true,
     static_libs: [
-        "libGoldfishAddressSpace",
-        "libmesa_util_gfxstream",
+        "mesa_goldfish_address_space",
+        "mesa_util",
     ],
     shared_libs: [
         "android.hardware.graphics.allocator-V2-ndk",
