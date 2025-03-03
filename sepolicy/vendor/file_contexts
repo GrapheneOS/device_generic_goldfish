@@ -40,7 +40,6 @@
 /vendor/bin/qemu-props       u:object_r:qemu_props_exec:s0
 /vendor/bin/mac80211_create_radios u:object_r:mac80211_create_radios_exec:s0
 /vendor/bin/hw/android\.hardware\.radio-service\.ranchu       u:object_r:hal_radio_default_exec:s0
-/vendor/bin/dhcpclient       u:object_r:dhcpclient_exec:s0
 /vendor/bin/bt_vhci_forwarder  u:object_r:bt_vhci_forwarder_exec:s0
 /vendor/bin/hw/android\.hardware\.graphics\.allocator-service\.ranchu u:object_r:hal_graphics_allocator_default_exec:s0
 /vendor/bin/hw/android\.hardware\.drm-service\.widevine    u:object_r:hal_drm_widevine_exec:s0

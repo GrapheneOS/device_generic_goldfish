@@ -18,9 +18,9 @@
 PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
 
 TARGET_KERNEL_USE ?= 6.6
-KERNEL_ARTIFACTS_PATH := kernel/prebuilts/$(TARGET_KERNEL_USE)/x86_64
-VIRTUAL_DEVICE_KERNEL_MODULES_PATH := \
-    kernel/prebuilts/common-modules/virtual-device/$(TARGET_KERNEL_USE)/x86-64
+KERNEL_ARTIFACTS_PATH := prebuilts/qemu-kernel/x86_64/$(TARGET_KERNEL_USE)
+KERNEL_MODULES_ARTIFACTS_PATH := $(KERNEL_ARTIFACTS_PATH)/gki_modules
+VIRTUAL_DEVICE_KERNEL_MODULES_PATH := $(KERNEL_ARTIFACTS_PATH)/goldfish_modules
 
 # The list of modules to reach the second stage. For performance reasons we
 # don't want to put all modules into the ramdisk.
@@ -28,7 +28,7 @@ RAMDISK_KERNEL_MODULES := \
     virtio_dma_buf.ko \
     virtio-rng.ko \
 
-RAMDISK_SYSTEM_KERNEL_MODULES += \
+RAMDISK_SYSTEM_KERNEL_MODULES := \
     virtio_blk.ko \
     virtio_console.ko \
     virtio_pci.ko \
@@ -36,11 +36,11 @@ RAMDISK_SYSTEM_KERNEL_MODULES += \
     virtio_pci_modern_dev.ko \
     vmw_vsock_virtio_transport.ko \
 
-BOARD_SYSTEM_KERNEL_MODULES := $(wildcard $(KERNEL_ARTIFACTS_PATH)/*.ko)
+BOARD_SYSTEM_KERNEL_MODULES := $(wildcard $(KERNEL_MODULES_ARTIFACTS_PATH)/*.ko)
 
 BOARD_VENDOR_RAMDISK_KERNEL_MODULES := \
     $(wildcard $(patsubst %,$(VIRTUAL_DEVICE_KERNEL_MODULES_PATH)/%,$(RAMDISK_KERNEL_MODULES))) \
-    $(wildcard $(patsubst %,$(KERNEL_ARTIFACTS_PATH)/%,$(RAMDISK_SYSTEM_KERNEL_MODULES)))
+    $(wildcard $(patsubst %,$(KERNEL_MODULES_ARTIFACTS_PATH)/%,$(RAMDISK_SYSTEM_KERNEL_MODULES)))
 
 BOARD_VENDOR_KERNEL_MODULES := \
     $(filter-out $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES),\

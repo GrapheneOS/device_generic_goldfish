@@ -128,11 +128,6 @@ service ranchu-net /vendor/bin/init.ranchu-net.sh
     oneshot
     disabled    # Started on post-fs-data
 
-service dhcpclient_wifi /vendor/bin/dhcpclient -i wlan0 --no-gateway
-    user root
-    group root
-    disabled
-
 # The qemu-props program is used to set various system
 # properties on boot. It must be run early during the boot
 # process to avoid race conditions with other daemons that

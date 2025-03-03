@@ -49,6 +49,7 @@ struct AtResponse {
 
     struct OK {};
     struct ERROR {};
+    struct RING {};
     struct SmsPrompt {};
 
     struct CmeError {
@@ -178,10 +179,10 @@ struct AtResponse {
         }
         static AtResponsePtr parse(std::string_view str);
 
-        ratUtils::ModemTechnology getCurrentModemTechnology() const;
+        std::optional<ratUtils::ModemTechnology> getCurrentModemTechnology() const;
+        bool isDONE() const;
 
-        std::vector<int32_t> values;
-        bool done = false;
+        std::vector<std::string> values;
     };
 
     struct COPS {
@@ -244,6 +245,8 @@ struct AtResponse {
     };
 
     struct CSQ {
+        static constexpr int32_t kUnknown = INT32_MAX;
+
         static constexpr std::string_view id() {
             using namespace std::literals;
             return "CSQ"sv;
@@ -252,36 +255,36 @@ struct AtResponse {
 
         network::SignalStrength toSignalStrength() const;
 
-        int32_t gsm_signalStrength = INT32_MAX;
-        int32_t gsm_bitErrorRate = INT32_MAX;
-        int32_t gsm_timingAdvance = INT32_MAX;
-        int32_t cdma_dbm = INT32_MAX;
-        int32_t cdma_ecio = INT32_MAX;
-        int32_t evdo_dbm = INT32_MAX;
-        int32_t evdo_ecio = INT32_MAX;
-        int32_t evdo_signalNoiseRatio = INT32_MAX;
-        int32_t lte_signalStrength = INT32_MAX;
-        int32_t lte_rsrp = INT32_MAX;
-        int32_t lte_rsrq = INT32_MAX;
-        int32_t lte_rssnr = INT32_MAX;
-        int32_t lte_cqi = INT32_MAX;
-        int32_t lte_timingAdvance = INT32_MAX;
-        int32_t lte_cqiTableIndex = INT32_MAX;
-        int32_t tdscdma_signalStrength = INT32_MAX;
-        int32_t tdscdma_bitErrorRate = INT32_MAX;
-        int32_t tdscdma_rscp = INT32_MAX;
-        int32_t wcdma_signalStrength = INT32_MAX;
-        int32_t wcdma_bitErrorRate = INT32_MAX;
-        int32_t wcdma_rscp = INT32_MAX;
-        int32_t wcdma_ecno = INT32_MAX;
-        int32_t nr_ssRsrp = INT32_MAX;
-        int32_t nr_ssRsrq = INT32_MAX;
-        int32_t nr_ssSinr = INT32_MAX;
-        int32_t nr_csiRsrp = INT32_MAX;
-        int32_t nr_csiRsrq = INT32_MAX;
-        int32_t nr_csiSinr = INT32_MAX;
-        int32_t nr_csiCqiTableIndex = INT32_MAX;
-        int32_t nr_timingAdvance = INT32_MAX;
+        int32_t gsm_signalStrength = kUnknown;
+        int32_t gsm_bitErrorRate = kUnknown;
+        int32_t gsm_timingAdvance = kUnknown;
+        int32_t cdma_dbm = kUnknown;
+        int32_t cdma_ecio = kUnknown;
+        int32_t evdo_dbm = kUnknown;
+        int32_t evdo_ecio = kUnknown;
+        int32_t evdo_signalNoiseRatio = kUnknown;
+        int32_t lte_signalStrength = kUnknown;
+        int32_t lte_rsrp = kUnknown;
+        int32_t lte_rsrq = kUnknown;
+        int32_t lte_rssnr = kUnknown;
+        int32_t lte_cqi = kUnknown;
+        int32_t lte_timingAdvance = kUnknown;
+        int32_t lte_cqiTableIndex = kUnknown;
+        int32_t tdscdma_signalStrength = kUnknown;
+        int32_t tdscdma_bitErrorRate = kUnknown;
+        int32_t tdscdma_rscp = kUnknown;
+        int32_t wcdma_signalStrength = kUnknown;
+        int32_t wcdma_bitErrorRate = kUnknown;
+        int32_t wcdma_rscp = kUnknown;
+        int32_t wcdma_ecno = kUnknown;
+        int32_t nr_ssRsrp = kUnknown;
+        int32_t nr_ssRsrq = kUnknown;
+        int32_t nr_ssSinr = kUnknown;
+        int32_t nr_csiRsrp = kUnknown;
+        int32_t nr_csiRsrq = kUnknown;
+        int32_t nr_csiSinr = kUnknown;
+        int32_t nr_csiCqiTableIndex = kUnknown;
+        int32_t nr_timingAdvance = kUnknown;
     };
 
     struct CLCC {
@@ -631,7 +634,7 @@ struct AtResponse {
 
 private:
     using Value = std::variant<OK, ParseError,
-                               ERROR, SmsPrompt, CmeError, CmsError,
+                               ERROR, RING, SmsPrompt, CmeError, CmsError,
                                CPIN, CPINR, CRSM, CFUN,
                                CREG, CEREG, CGREG,
                                CTEC, COPS, WRMP, CCSS, CSQ,

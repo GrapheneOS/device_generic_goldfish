@@ -474,6 +474,13 @@ void RadioVoice::atResponseSink(const AtResponsePtr& response) {
     }
 }
 
+void RadioVoice::handleUnsolicited(const AtResponse::RING&) {
+    if (mRadioVoiceIndication) {
+        mRadioVoiceIndication->callRing(RadioIndicationType::UNSOLICITED, true, {});
+        mRadioVoiceIndication->callStateChanged(RadioIndicationType::UNSOLICITED);
+    }
+}
+
 ScopedAStatus RadioVoice::responseAcknowledgement() {
     return ScopedAStatus::ok();
 }

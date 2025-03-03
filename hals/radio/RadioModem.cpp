@@ -16,6 +16,7 @@
 
 #define FAILURE_DEBUG_PREFIX "RadioModem"
 
+#include <charconv>
 #include <format>
 
 #include "RadioModem.h"
@@ -297,7 +298,10 @@ std::pair<RadioError, uint32_t> RadioModem::getSupportedRadioTechs(
     } else if (const CTEC* ctec = response->get_if<CTEC>()) {
         uint32_t rafBitmask = 0;
 
-        for (const int mtech : ctec->values) {
+        for (const std::string& mtechStr : ctec->values) {
+            int mtech;
+            std::from_chars(&*mtechStr.begin(), &*mtechStr.end(), mtech, 10);
+
             rafBitmask |= ratUtils::supportedRadioTechBitmask(
                 static_cast<ModemTechnology>(mtech));
         }

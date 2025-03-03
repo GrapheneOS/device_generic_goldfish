@@ -54,6 +54,10 @@ struct CmdIdVisitor {
         return "ERROR"sv;
     }
 
+    std::string_view operator()(const AtResponse::RING&) const {
+        return "RING"sv;
+    }
+
     std::string_view operator()(const AtResponse::SmsPrompt&) const {
         return "SmsPrompt"sv;
     }
@@ -189,6 +193,11 @@ AtResponse::ParseResult AtResponse::parse(const std::string_view str) {
     };
 #undef CMD
 
+    static constexpr std::string_view kRING = "RING\r"sv;
+    if (str.starts_with(kRING)) {
+        return { int(kRING.size()), AtResponse::make(RING()) };
+    }
+
     static constexpr std::string_view kCMT = "+CMT:"sv;
     if (str.starts_with(kCMT)) {
         const std::string_view trimmed = ltrim(str.substr(kCMT.size()));
@@ -247,7 +256,6 @@ AtResponse::ParseResult AtResponse::parse(const std::string_view str) {
 
     return { 0, nullptr };
 }
-
 
 #undef FAILURE_DEBUG_PREFIX
 #define FAILURE_DEBUG_PREFIX "CmeError"
@@ -560,63 +568,61 @@ AtResponsePtr AtResponse::CEREG::parse(const std::string_view str) {
 
 #undef FAILURE_DEBUG_PREFIX
 #define FAILURE_DEBUG_PREFIX "CTEC"
-/*      +CTEC: current,preferred
+/*      +CTEC: current (decimal),preferred_bitmask (hex)
  *  OR
- *      +CTEC: comma_separated_list_of_supported
+ *      +CTEC: comma_separated_list_of_supported (decimal)
  *  OR
- *      +CTEC: current
+ *      +CTEC: current (decimal)
  *  OR
  *      +CTEC: DONE
 */
 AtResponsePtr AtResponse::CTEC::parse(const std::string_view str) {
     CTEC ctec;
-    if (str.compare("DONE"sv) == 0) {
-        ctec.done = true;
-        return make(std::move(ctec));
-    }
 
-    Parser parser(str);
-    int val;
-    if (parser(&val).matchSoFar()) {
-        ctec.values.push_back(val);
-    } else {
-        return FAILURE_V(makeParseErrorFor<CTEC>(),
-                         "Can't parse: '%*.*s'",
-                         int(str.size()), int(str.size()), str.data());
-    }
-
-    while (parser.hasMore()) {
-        if (parser.skip(',')(&val).matchSoFar()) {
-            ctec.values.push_back(val);
+    size_t i = 0;
+    while (true) {
+        const size_t comma = str.find(',', i);
+        if (comma != std::string_view::npos) {
+            ctec.values.push_back(std::string(str.substr(i, comma - i)));
+            i = comma + 1;
         } else {
-            return FAILURE_V(makeParseErrorFor<CTEC>(),
-                             "Can't parse: '%*.*s'",
-                             int(str.size()), int(str.size()), str.data());
+            ctec.values.push_back(std::string(str.substr(i)));
+            break;
         }
     }
 
     return make(std::move(ctec));
 }
 
-ratUtils::ModemTechnology AtResponse::CTEC::getCurrentModemTechnology() const {
+std::optional<ratUtils::ModemTechnology> AtResponse::CTEC::getCurrentModemTechnology() const {
     using ratUtils::ModemTechnology;
 
-    LOG_ALWAYS_FATAL_IF(values.size() != 2);
+    if ((values.size() == 0) || (values.size() > 2) ||
+            ((values.size() == 1) && (values[0] == "DONE"))) {
+        return FAILURE(std::nullopt);
+    }
+
+    int mtech;
+    std::from_chars_result r =
+        std::from_chars(&*values[0].begin(), &*values[0].end(), mtech, 10);
+
+    if ((r.ec != std::errc()) || (r.ptr != &*values[0].end())) {
+        return FAILURE(std::nullopt);
+    }
 
     for (unsigned i = static_cast<unsigned>(ModemTechnology::GSM);
                   i <= static_cast<unsigned>(ModemTechnology::NR); ++i) {
-        if (values[0] & (1U << i)) {
+        if (mtech & (1U << i)) {
             return static_cast<ratUtils::ModemTechnology>(i);
         }
     }
 
-    return ModemTechnology::GSM;
+    return FAILURE(std::nullopt);
 }
 
-/*uint32_t AtResponse::CTEC::getSupportedRadioTechMask() const {
-    return std::accumulate(values.begin(), values.end(), 0U,
-                           [](uint32_t z, int32_t t){ return z | (1U << t); });
-}*/
+bool AtResponse::CTEC::isDONE() const {
+    return (values.size() == 1) && (values[0] == "DONE");
+}
 
 #undef FAILURE_DEBUG_PREFIX
 #define FAILURE_DEBUG_PREFIX "COPS"
@@ -768,9 +774,11 @@ AtResponsePtr AtResponse::CSQ::parse(const std::string_view str) {
     switch (n) {
     case 22:
         csq.wcdma_signalStrength = values[14];
+        if (csq.wcdma_signalStrength != kUnknown) {
+            csq.wcdma_rscp = 42;
+            csq.wcdma_ecno = 19;
+        }
         csq.wcdma_bitErrorRate = values[15];
-        csq.wcdma_rscp = 42;
-        csq.wcdma_ecno = 19;
         csq.nr_ssRsrp = values[16];
         csq.nr_ssRsrq = values[17];
         csq.nr_ssSinr = values[18];
@@ -875,7 +883,7 @@ AtResponsePtr AtResponse::CLCC::parse(const std::string_view str) {
         std::string number;
 
         // +CLCC: <index>,<dir>,<state>,<mode>,<mpty>,<number>,<type>\r
-        if (parser.skip("+CLCC").skip(' ')(&index).skip(',')
+        if (parser.skip("+CLCC:").skip(' ')(&index).skip(',')
                   (&dir).skip(',')(&state).skip(',')
                   (&mode).skip(',')(&mpty).skip(',')
                   (&number, ',')(&type).skip(kCR).matchSoFar()) {

@@ -124,7 +124,7 @@ private:
     AtResponse::CGREG   mCgreg;
     AtResponse::CSQ     mCsq;
     std::optional<AtResponse::COPS::OperatorInfo> mCurrentOperator;
-    std::optional<std::pair<ratUtils::ModemTechnology, RadioTechnology>> mCurrentRadio;
+    std::optional<ratUtils::ModemTechnology> mCurrentModemTech;
     AtResponse::CTZV    mCtzv;
     int64_t             mCtzvTimestamp;
     modem::RadioState   mRadioState = modem::RadioState::OFF;

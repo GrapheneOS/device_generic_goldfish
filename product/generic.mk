@@ -115,6 +115,9 @@ endif
 ifneq ($(EMULATOR_DISABLE_RADIO),true)
 PRODUCT_PACKAGES += android.hardware.radio-service.ranchu
 
+# NR 5G, LTE, TD-SCDMA, CDMA, EVDO, GSM and WCDMA
+PRODUCT_VENDOR_PROPERTIES += ro.telephony.default_network=33
+
 PRODUCT_COPY_FILES += \
     device/generic/goldfish/hals/radio/init.system_ext.radio.rc:$(TARGET_COPY_OUT_SYSTEM_EXT)/etc/init/init.system_ext.radio.rc \
     device/generic/goldfish/hals/radio/data/apns-conf.xml:$(TARGET_COPY_OUT_VENDOR)/etc/apns/apns-conf.xml \
@@ -146,9 +149,11 @@ PRODUCT_PACKAGES += \
     libGLESv2_angle
 endif
 
+ifneq ($(EMULATOR_VENDOR_NO_THREADNETWORK), true)
 # Enable Thread Network HAL with simulation RCP
 PRODUCT_PACKAGES += \
     com.android.hardware.threadnetwork-simulation-rcp
+endif
 
 # Enable bluetooth
 PRODUCT_PACKAGES += \
@@ -235,7 +240,6 @@ endif
 # WiFi: vendor side
 PRODUCT_PACKAGES += \
     mac80211_create_radios \
-    dhcpclient \
     hostapd \
     wpa_supplicant \
 

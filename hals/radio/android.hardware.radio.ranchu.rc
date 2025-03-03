@@ -1,4 +1,5 @@
 service vendor.radio-ranchu /vendor/bin/hw/android.hardware.radio-service.ranchu
     class hal
-    user nobody
-    group system
+    user radio
+    group radio inet misc log readproc wakelock
+    capabilities BLOCK_SUSPEND NET_ADMIN NET_RAW

@@ -1,14 +1,12 @@
 #!/vendor/bin/sh
 
 # Check if VirtIO Wi-Fi is enabled. If so, create a mac80211_hwsim radio
-# and run the DHCP client
 wifi_virtio=`getprop ro.boot.qemu.virtiowifi`
 case "$wifi_virtio" in
     1) wifi_mac_prefix=`getprop vendor.net.wifi_mac_prefix`
       if [ -n "$wifi_mac_prefix" ]; then
           /vendor/bin/mac80211_create_radios 1 $wifi_mac_prefix || exit 1
       fi
-      setprop ctl.start dhcpclient_wifi
       ;;
 esac
 

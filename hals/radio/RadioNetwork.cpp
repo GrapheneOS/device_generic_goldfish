@@ -31,7 +31,10 @@ namespace android {
 namespace hardware {
 namespace radio {
 namespace implementation {
+using network::AccessTechnologySpecificInfo;
 using network::EutranBands;
+using network::EutranRegistrationInfo;
+using network::Cdma2000RegistrationInfo;
 using network::CellConnectionStatus;
 using network::CellIdentity;
 using network::CellIdentityCdma;
@@ -264,7 +267,7 @@ CellIdentityResult getCellIdentityImpl(const int areaCode, const int cellId, std
     if (!response || response->isParseError()) {
         return FAILURE(fail(RadioError::INTERNAL_ERR));
     } else if (const CTEC* ctec = response->get_if<CTEC>()) {
-        mtech = ctec->getCurrentModemTechnology();
+        mtech = ctec->getCurrentModemTechnology().value();
     } else {
         response->unexpected(FAILURE_DEBUG_PREFIX, __func__);
     }
@@ -345,6 +348,65 @@ std::pair<RadioError, CellInfo> buildCellInfo(const bool registered,
     return {RadioError::NONE, std::move(cellInfo)};
 }
 
+void setAccessTechnologySpecificInfo(
+        AccessTechnologySpecificInfo* accessTechnologySpecificInfo,
+        const RadioTechnology rat) {
+    switch (rat) {
+    case RadioTechnology::LTE:
+    case RadioTechnology::LTE_CA: {
+            EutranRegistrationInfo eri = {
+                .lteVopsInfo = {
+                    .isVopsSupported = false,
+                    .isEmcBearerSupported = false,
+                },
+            };
+
+            accessTechnologySpecificInfo->set<
+                AccessTechnologySpecificInfo::eutranInfo>(std::move(eri));
+        }
+        break;
+
+    case RadioTechnology::NR: {
+            EutranRegistrationInfo eri = {
+                .nrIndicators = {
+                    .isNrAvailable = true,
+                    .isDcNrRestricted = false,
+                    .isEndcAvailable = false,
+                },
+            };
+
+            accessTechnologySpecificInfo->set<
+                AccessTechnologySpecificInfo::eutranInfo>(std::move(eri));
+        }
+        break;
+
+    case RadioTechnology::HSUPA:
+    case RadioTechnology::HSDPA:
+    case RadioTechnology::HSPA:
+    case RadioTechnology::HSPAP:
+    case RadioTechnology::UMTS:
+    case RadioTechnology::IS95A:
+    case RadioTechnology::IS95B:
+    case RadioTechnology::ONE_X_RTT:
+    case RadioTechnology::EVDO_0:
+    case RadioTechnology::EVDO_A:
+    case RadioTechnology::EVDO_B:
+    case RadioTechnology::EHRPD:
+    case RadioTechnology::TD_SCDMA: {
+            Cdma2000RegistrationInfo cri = {
+                .systemIsInPrl = Cdma2000RegistrationInfo::PRL_INDICATOR_IN_PRL,
+            };
+
+            accessTechnologySpecificInfo->set<
+                AccessTechnologySpecificInfo::cdmaInfo>(std::move(cri));
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 }  // namespace
 
 RadioNetwork::RadioNetwork(std::shared_ptr<AtChannel> atChannel) : mAtChannel(std::move(atChannel)) {
@@ -368,7 +430,7 @@ ScopedAStatus RadioNetwork::getAllowedNetworkTypesBitmap(const int32_t serial) {
         } else if (const CTEC* ctec = response->get_if<CTEC>()) {
             networkTypeBitmap =
                 ratUtils::supportedRadioTechBitmask(
-                    ctec->getCurrentModemTechnology());
+                    ctec->getCurrentModemTechnology().value());
         } else {
             response->unexpected(FAILURE_DEBUG_PREFIX, kFunc);
         }
@@ -567,11 +629,15 @@ ScopedAStatus RadioNetwork::getDataRegistrationState(const int32_t serial) {
             } else if (const CTEC* ctec = response->get_if<CTEC>()) {
                 regStateResult.rat =
                     ratUtils::currentRadioTechnology(
-                        ctec->getCurrentModemTechnology());
+                        ctec->getCurrentModemTechnology().value());
             } else {
                 response->unexpected(FAILURE_DEBUG_PREFIX, kFunc);
             }
         }
+
+        setAccessTechnologySpecificInfo(
+            &regStateResult.accessTechnologySpecificInfo,
+            regStateResult.rat);
 
         if (status == RadioError::NONE) {
             NOT_NULL(mRadioNetworkResponse)->getDataRegistrationStateResponse(
@@ -701,7 +767,8 @@ ScopedAStatus RadioNetwork::getVoiceRadioTechnology(const int32_t serial) {
         } else if (const CTEC* ctec = response->get_if<CTEC>()) {
             NOT_NULL(mRadioNetworkResponse)->getVoiceRadioTechnologyResponse(
                 makeRadioResponseInfo(serial),
-                ratUtils::currentRadioTechnology(ctec->getCurrentModemTechnology()));
+                ratUtils::currentRadioTechnology(
+                    ctec->getCurrentModemTechnology().value()));
             return true;
         } else {
             response->unexpected(FAILURE_DEBUG_PREFIX, kFunc);
@@ -750,13 +817,17 @@ ScopedAStatus RadioNetwork::getVoiceRegistrationState(const int32_t serial) {
             } else if (const CTEC* ctec = response->get_if<CTEC>()) {
                 regStateResult.rat =
                     ratUtils::currentRadioTechnology(
-                        ctec->getCurrentModemTechnology());
+                        ctec->getCurrentModemTechnology().value());
             } else {
                 response->unexpected(FAILURE_DEBUG_PREFIX, kFunc);
             }
         }
 
-       if (status == RadioError::NONE) {
+        setAccessTechnologySpecificInfo(
+            &regStateResult.accessTechnologySpecificInfo,
+            regStateResult.rat);
+
+        if (status == RadioError::NONE) {
             NOT_NULL(mRadioNetworkResponse)->getVoiceRegistrationStateResponse(
                 makeRadioResponseInfo(serial), std::move(regStateResult));
             return true;
@@ -797,7 +868,7 @@ ScopedAStatus RadioNetwork::setAllowedNetworkTypesBitmap(const int32_t serial,
             ratUtils::modemTechnologyBitmaskFromRadioTechnologyBitmask(networkTypeBitmap);
 
         const std::string request = std::format("AT+CTEC={0:d},\"{1:X}\"",
-            static_cast<int>(currentTech), techBitmask);
+            (1 << static_cast<int>(currentTech)), techBitmask);
         const AtResponsePtr response =
             mAtConversation(requestPipe, request,
                             [](const AtResponse& response) -> bool {
@@ -1267,12 +1338,12 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
         if (poweredOn) {
             signalStrength = csq.toSignalStrength();
 
-            if (mCurrentOperator && mCurrentRadio) {
+            if (mCurrentOperator && mCurrentModemTech) {
                 RadioError status;
                 CellIdentity cellIdentity;
                 std::tie(status, cellIdentity) =
                     getCellIdentityImpl(toOperatorInfo(mCurrentOperator.value()),
-                                        mCurrentRadio.value().first,
+                                        mCurrentModemTech.value(),
                                         mCreg.areaCode, mCreg.cellId,
                                         nullptr);
                 if (status == RadioError::NONE) {
@@ -1311,11 +1382,10 @@ void RadioNetwork::handleUnsolicited(const AtResponse::COPS& cops) {
 }
 
 void RadioNetwork::handleUnsolicited(const AtResponse::CTEC& ctec) {
-    if (ctec.values.size() == 2) {
+    auto currentModemTech = ctec.getCurrentModemTechnology();
+    if (currentModemTech) {
         std::lock_guard<std::mutex> lock(mMtx);
-        mCurrentRadio = std::make_pair(
-            ctec.getCurrentModemTechnology(),
-            static_cast<RadioTechnology>(ctec.values[1]));
+        mCurrentModemTech = std::move(currentModemTech.value());
     }
 }
 
