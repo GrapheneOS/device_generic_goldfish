@@ -79,6 +79,7 @@ struct RadioVoice : public voice::BnRadioVoice {
 
     void atResponseSink(const AtResponsePtr& response);
     void handleUnsolicited(const AtResponse::RING&);
+    void handleUnsolicited(const AtResponse::WSOS&);
     template <class IGNORE> void handleUnsolicited(const IGNORE&) {}
 
     ScopedAStatus responseAcknowledgement() override;

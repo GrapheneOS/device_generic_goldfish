@@ -206,16 +206,17 @@ ScopedAStatus RadioModem::requestShutdown(const int32_t serial) {
 ScopedAStatus RadioModem::sendDeviceState(const int32_t serial,
                                           const modem::DeviceStateType /*stateType*/,
                                           const bool /*state*/) {
+    // matches reference-ril.c
     NOT_NULL(mRadioModemResponse)->sendDeviceStateResponse(
-            makeRadioResponseInfo(serial));
+        makeRadioResponseInfoNOP(serial));
     return ScopedAStatus::ok();
 }
 
 ScopedAStatus RadioModem::setRadioCapability(const int32_t serial,
                                              const modem::RadioCapability& /*rc*/) {
+    // matches reference-ril.c
     NOT_NULL(mRadioModemResponse)->setRadioCapabilityResponse(
-        makeRadioResponseInfoUnsupported(  // reference-ril.c returns OK but does nothing
-            serial, FAILURE_DEBUG_PREFIX, __func__), {});
+        makeRadioResponseInfoNOP(serial), {});
     return ScopedAStatus::ok();
 }
 

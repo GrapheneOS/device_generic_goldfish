@@ -32,6 +32,7 @@
 #include <aidl/android/hardware/radio/sim/CdmaSubscriptionSource.h>
 #include <aidl/android/hardware/radio/voice/Call.h>
 #include <aidl/android/hardware/radio/voice/CallForwardInfo.h>
+#include <aidl/android/hardware/radio/voice/ClipStatus.h>
 
 #include "ratUtils.h"
 
@@ -96,7 +97,7 @@ struct AtResponse {
     struct CPINR {
         static constexpr std::string_view id() {
             using namespace std::literals;
-            return "CPIN"sv;
+            return "CPINR"sv;
         }
         static AtResponsePtr parse(std::string_view str);
 
@@ -455,6 +456,48 @@ struct AtResponse {
         static AtResponsePtr parse(std::string_view str);
     };
 
+    struct CLIP {
+        static constexpr std::string_view id() {
+            using namespace std::literals;
+            return "CLIP"sv;
+        }
+        static AtResponsePtr parse(std::string_view str);
+
+        bool enable = false;
+        voice::ClipStatus status = voice::ClipStatus::UNKNOWN;
+    };
+
+    struct CLIR {
+        static constexpr std::string_view id() {
+            using namespace std::literals;
+            return "CLIR"sv;
+        }
+        static AtResponsePtr parse(std::string_view str);
+
+        int n = -1;
+        int m = -1;
+    };
+
+    struct CMUT {
+        static constexpr std::string_view id() {
+            using namespace std::literals;
+            return "CMUT"sv;
+        }
+        static AtResponsePtr parse(std::string_view str);
+
+        bool on = false;
+    };
+
+    struct WSOS {
+        static constexpr std::string_view id() {
+            using namespace std::literals;
+            return "WSOS"sv;
+        }
+        static AtResponsePtr parse(std::string_view str);
+
+        bool isEmergencyMode = false;
+    };
+
     struct CSCA {
         static constexpr std::string_view id() {
             using namespace std::literals;
@@ -642,6 +685,7 @@ private:
                                CGDCONT, CGCONTRDP, CGFPCCFG,
                                CUSATD, CUSATP, CUSATE, CUSATT, CUSATEND,
                                CLCK, CSIM, CGLA, CCHC,
+                               CLIP, CLIR, CMUT, WSOS,
                                CSCA, CSCB, CMGS, CMGW, CMT, CDS,
                                MBAU,
                                CTZV,

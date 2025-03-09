@@ -102,6 +102,21 @@ static constexpr std::string_view getCdmaSubscriptionSource =
 
 static constexpr std::string_view getCurrentCalls = "AT+CLCC"sv;
 
+static constexpr std::string_view acceptCall = "ATA"sv;
+static constexpr std::string_view rejectCall = "ATH"sv;
+static constexpr std::string_view hangupWaiting = "AT+CHLD=0"sv;
+static constexpr std::string_view hangupForeground = "AT+CHLD=1"sv;
+static constexpr std::string_view switchWaiting = "AT+CHLD=2"sv;
+static constexpr std::string_view conference = "AT+CHLD=3"sv;
+
+static constexpr std::string_view cancelUssd = "AT+CUSD=2"sv;
+
+static constexpr std::string_view getClip = "AT+CLIP?"sv;
+static constexpr std::string_view getClir = "AT+CLIR?"sv;
+static constexpr std::string_view getMute = "AT+CMUT?"sv;
+
+static constexpr std::string_view exitEmergencyMode = "AT+WSOS=0"sv;
+
 static constexpr std::string_view getSmscAddress = "AT+CSCA?"sv;
 
 static constexpr std::string_view getBroadcastConfig = "AT+CSCB?"sv;

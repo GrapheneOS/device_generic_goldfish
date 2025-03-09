@@ -171,6 +171,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.keystore.app_attest_key.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.keystore.app_attest_key.xml
 
+ifneq ($(EMULATOR_VENDOR_NO_UWB),true)
 # Enable Uwb
 PRODUCT_PACKAGES += \
     com.android.hardware.uwb \
@@ -179,6 +180,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_VENDOR_PROPERTIES += ro.vendor.uwb.dev=/dev/hvc2
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.uwb.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.uwb.xml
+endif
 
 ifneq ($(EMULATOR_VENDOR_NO_GNSS),true)
 PRODUCT_PACKAGES += android.hardware.gnss-service.ranchu
@@ -256,7 +258,6 @@ PRODUCT_PACKAGES += \
     android.hardware.lights-service.example \
     com.android.hardware.neuralnetworks \
     com.android.hardware.power \
-    com.android.hardware.rebootescrow \
     com.android.hardware.thermal \
     com.android.hardware.vibrator
 
@@ -266,6 +267,10 @@ ifneq ($(PRODUCT_IS_ATV_SDK),true)
         android.hardware.identity-service.example
 endif
 
+ifneq ($(EMULATOR_VENDOR_NO_REBOOT_ESCROW),true)
+PRODUCT_PACKAGES += \
+    com.android.hardware.rebootescrow
+endif
 
 ifeq (,$(filter %_arm64,$(TARGET_PRODUCT)))  # TARGET_ARCH is not available here
 CODECS_PERFORMANCE_C2_PROFILE := codecs_performance_c2.xml
