@@ -23,7 +23,9 @@ $(call inherit-product-if-exists, frameworks/native/build/phone-xhdpi-2048-dalvi
 # Enable Scoped Storage related
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
+ifneq ($(EMULATOR_VENDOR_NO_MANIFEST_FILE),true)
 DEVICE_MANIFEST_FILE += device/generic/goldfish/manifest.xml
+endif
 
 PRODUCT_SOONG_NAMESPACES += \
     device/generic/goldfish \
@@ -69,7 +71,6 @@ PRODUCT_VENDOR_PROPERTIES += \
     debug.stagefright.c2inputsurface=-1 \
     debug.stagefright.ccodec=4 \
     graphics.gpu.profiler.support=false \
-    persist.sys.usb.config="" \
     persist.sys.zram_enabled=1 \
     wifi.direct.interface=p2p-dev-wlan0 \
     wifi.interface=wlan0 \
