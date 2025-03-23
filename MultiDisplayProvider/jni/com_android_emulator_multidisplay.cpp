@@ -94,25 +94,13 @@ static jobject nativeCreateSurface(JNIEnv *env, jobject obj, jint id, jint width
 {
     ALOGI("create surface for %d", id);
     // Create surface for this new display
-#if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
-    sp<BufferItemConsumer> bufferItemConsumer =
-        new BufferItemConsumer(GRALLOC_USAGE_HW_RENDER);
-#else
-    sp<IGraphicBufferProducer> producer;
-    sp<IGraphicBufferConsumer> consumer;
-    sp<BufferItemConsumer> bufferItemConsumer;
-    BufferQueue::createBufferQueue(&producer, &consumer);
-    bufferItemConsumer = new BufferItemConsumer(consumer, GRALLOC_USAGE_HW_RENDER);
-#endif  // COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
+    auto [bufferItemConsumer, surface] =
+        BufferItemConsumer::create(GRALLOC_USAGE_HW_RENDER);
     gFrameListener[id] = new FrameListener(bufferItemConsumer, id);
     gFrameListener[id]->setDefaultBufferSize(width, height);
     bufferItemConsumer->setFrameAvailableListener(gFrameListener[id]);
-#if COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
-    return android_view_Surface_createFromSurface(
-        env, bufferItemConsumer->getSurface());
-#else
-    return android_view_Surface_createFromIGraphicBufferProducer(env, producer);
-#endif  // COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(WB_CONSUMER_BASE_OWNS_BQ)
+
+    return android_view_Surface_createFromSurface(env, surface);
 }
 
 static jint nativeOpen(JNIEnv* env, jobject obj) {

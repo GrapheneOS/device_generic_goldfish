@@ -159,7 +159,6 @@ endif
 # Enable bluetooth
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth-service.default \
-    android.hardware.bluetooth.audio-impl \
     bt_vhci_forwarder \
 
 # Bluetooth hardware properties.
@@ -226,6 +225,10 @@ PRODUCT_PACKAGES += \
     android.hardware.audio.service \
     android.hardware.audio@7.1-impl.ranchu \
     android.hardware.audio.effect@7.0-impl \
+
+# Bluetooth Audio HAL
+PRODUCT_PACKAGES += \
+    android.hardware.bluetooth.audio-impl \
 
 DEVICE_MANIFEST_FILE += device/generic/goldfish/hals/audio/android.hardware.audio.effects@7.0.xml
 
