@@ -27,16 +27,12 @@ namespace implementation {
 
 CachedStreamBuffer*
 StreamBufferCache::update(const StreamBuffer& sb) {
-    const auto bi = mCache.find(sb.bufferId);
-    if (bi == mCache.end()) {
-        const auto r = mCache.insert({sb.bufferId, CachedStreamBuffer(sb)});
-        LOG_ALWAYS_FATAL_IF(!r.second);
-        return &(r.first->second);
-    } else {
-        CachedStreamBuffer* csb = &bi->second;
+    const auto [it, inserted] = mCache.try_emplace(sb.bufferId, sb);
+    CachedStreamBuffer* csb = &it->second;
+    if (!inserted) {
         csb->importAcquireFence(sb.acquireFence);
-        return csb;
     }
+    return csb;
 }
 
 void StreamBufferCache::remove(const int64_t bufferId) {
