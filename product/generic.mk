@@ -203,8 +203,13 @@ PRODUCT_SOONG_NAMESPACES += \
     hardware/google/camera \
     hardware/google/camera/devices/EmulatedCamera \
 
+ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
+PRODUCT_PACKAGES += android.hardware.camera.provider.ranchu_minigbm
+else
+PRODUCT_PACKAGES += android.hardware.camera.provider.ranchu
+endif
+
 PRODUCT_PACKAGES += \
-    android.hardware.camera.provider.ranchu \
     android.hardware.camera.provider@2.7-service-google \
     libgooglecamerahwl_impl \
     android.hardware.camera.flash-autofocus.prebuilt.xml \

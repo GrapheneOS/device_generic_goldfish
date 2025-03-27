@@ -82,6 +82,7 @@
 
 # not yet AOSP HALs
 /vendor/bin/hw/android\.hardware\.camera\.provider\.ranchu u:object_r:hal_camera_default_exec:s0
+/vendor/bin/hw/android\.hardware\.camera\.provider\.ranchu_minigbm u:object_r:hal_camera_default_exec:s0
 /vendor/bin/hw/android\.hardware\.camera\.provider@2\.7-service-google u:object_r:hal_camera_default_exec:s0
 /vendor/bin/hw/android\.hardware\.rebootescrow-service\.default        u:object_r:hal_rebootescrow_default_exec:s0
 /vendor/bin/hw/android\.hardware\.contexthub-service\.example        u:object_r:hal_contexthub_default_exec:s0

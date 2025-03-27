@@ -16,10 +16,15 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 
 #include <android-base/unique_fd.h>
+
+#ifdef USE_MINIGBM_GRALLOC
+#include <gfxstream/guest/GfxStreamGralloc.h>
+#endif  // USE_MINIGBM_GRALLOC
 
 #include "HwCamera.h"
 #include "AFStateMachine.h"
@@ -95,14 +100,27 @@ private:
     const native_handle_t* captureFrameForCompressing(Rect<uint16_t> dim,
                                                       PixelFormat bufferFormat,
                                                       uint32_t qemuFormat) const;
+#ifdef USE_MINIGBM_GRALLOC
+    uint32_t getMinigbmHostHandle(const native_handle_t* buf) const;
+
+    bool queryFrame(Rect<uint16_t> dim, uint32_t pixelFormat,
+                    float exposureComp, uint32_t hostHandle) const;
+#else
     bool queryFrame(Rect<uint16_t> dim, uint32_t pixelFormat,
                     float exposureComp, uint64_t dataOffset) const;
+#endif  // USE_MINIGBM_GRALLOC
+
+
     static float calculateExposureComp(int64_t exposureNs, int sensorSensitivity,
                                        float aperture);
     CameraMetadata applyMetadata(const CameraMetadata& metadata);
     CameraMetadata updateCaptureResultMetadata();
 
     const Parameters& mParams;
+#ifdef USE_MINIGBM_GRALLOC
+    const std::unique_ptr<gfxstream::Gralloc> mGfxGralloc;
+#endif  // USE_MINIGBM_GRALLOC
+
     AFStateMachine mAFStateMachine;
     std::unordered_map<int32_t, StreamInfo> mStreamInfoCache;
     base::unique_fd mQemuChannel;

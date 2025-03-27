@@ -25,7 +25,9 @@
 #include <ui/GraphicBufferAllocator.h>
 #include <ui/GraphicBufferMapper.h>
 
+#ifndef USE_MINIGBM_GRALLOC
 #include <gralloc_cb_bp.h>
+#endif // USE_MINIGBM_GRALLOC
 
 #include "debug.h"
 #include "jpeg.h"
@@ -113,6 +115,9 @@ constexpr bool usageTest(const BufferUsage a, const BufferUsage b) {
 
 QemuCamera::QemuCamera(const Parameters& params)
         : mParams(params)
+#ifdef USE_MINIGBM_GRALLOC
+        , mGfxGralloc(gfxstream::createPlatformGralloc())
+#endif
         , mAFStateMachine(200, 1, 2) {}
 
 std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
@@ -285,12 +290,16 @@ void QemuCamera::captureFrame(const StreamInfo& si,
 
 bool QemuCamera::captureFrameYUV(const StreamInfo& si,
                                  CachedStreamBuffer* csb) const {
-    const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
-    if (!cb) {
+    if (!csb->waitAcquireFence(mFrameDurationNs / 2000000)) {
         return FAILURE(false);
     }
 
-    if (!csb->waitAcquireFence(mFrameDurationNs / 2000000)) {
+#ifdef USE_MINIGBM_GRALLOC
+    return queryFrame(si.size, V4L2_PIX_FMT_YUV420, mExposureComp,
+                      getMinigbmHostHandle(csb->getBuffer()));
+#else
+    const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
+    if (!cb) {
         return FAILURE(false);
     }
 
@@ -307,16 +316,21 @@ bool QemuCamera::captureFrameYUV(const StreamInfo& si,
 
     LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(cb) != NO_ERROR);
     return res;
+#endif  // USE_MINIGBM_GRALLOC
 }
 
 bool QemuCamera::captureFrameRGBA(const StreamInfo& si,
                                   CachedStreamBuffer* csb) const {
-    const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
-    if (!cb) {
+    if (!csb->waitAcquireFence(mFrameDurationNs / 2000000)) {
         return FAILURE(false);
     }
 
-    if (!csb->waitAcquireFence(mFrameDurationNs / 2000000)) {
+#ifdef USE_MINIGBM_GRALLOC
+    return queryFrame(si.size, V4L2_PIX_FMT_RGB32, mExposureComp,
+                      getMinigbmHostHandle(csb->getBuffer()));
+#else
+    const cb_handle_t* const cb = cb_handle_t::from(csb->getBuffer());
+    if (!cb) {
         return FAILURE(false);
     }
 
@@ -332,6 +346,7 @@ bool QemuCamera::captureFrameRGBA(const StreamInfo& si,
                                 mExposureComp, cb->getMmapedOffset());
     LOG_ALWAYS_FATAL_IF(GraphicBufferMapper::get().unlock(cb) != NO_ERROR);
     return res;
+#endif  // USE_MINIGBM_GRALLOC
 }
 
 DelayedStreamBuffer QemuCamera::captureFrameRAW16(const StreamInfo& si,
@@ -421,6 +436,12 @@ const native_handle_t* QemuCamera::captureFrameForCompressing(
         return FAILURE(nullptr);
     }
 
+#ifdef USE_MINIGBM_GRALLOC
+    if (!queryFrame(dim, qemuFormat, mExposureComp, getMinigbmHostHandle(image))) {
+        gba.free(image);
+        return FAILURE(nullptr);
+    }
+#else
     const cb_handle_t* const cb = cb_handle_t::from(image);
     if (!cb) {
         gba.free(image);
@@ -431,10 +452,34 @@ const native_handle_t* QemuCamera::captureFrameForCompressing(
         gba.free(image);
         return FAILURE(nullptr);
     }
+#endif  // USE_MINIGBM_GRALLOC
 
     return image;
 }
 
+#ifdef USE_MINIGBM_GRALLOC
+uint32_t QemuCamera::getMinigbmHostHandle(const native_handle_t* buf) const {
+    return mGfxGralloc->getHostHandle(buf);
+}
+
+bool QemuCamera::queryFrame(const Rect<uint16_t> dim,
+                            const uint32_t pixelFormat,
+                            const float exposureComp,
+                            const uint32_t hostHandle) const {
+    constexpr float scaleR = 1;
+    constexpr float scaleG = 1;
+    constexpr float scaleB = 1;
+
+    char queryStr[128];
+    const int querySize = snprintf(queryStr, sizeof(queryStr),
+        "frame dim=%" PRIu32 "x%" PRIu32 " pix=%" PRIu32 " hostHandle=%" PRIu32
+        " whiteb=%g,%g,%g expcomp=%g time=%d",
+        dim.width, dim.height, static_cast<uint32_t>(pixelFormat), hostHandle,
+        scaleR, scaleG, scaleB, exposureComp, 0);
+
+    return qemuRunQuery(mQemuChannel.get(), queryStr, querySize + 1) >= 0;
+}
+#else
 bool QemuCamera::queryFrame(const Rect<uint16_t> dim,
                             const uint32_t pixelFormat,
                             const float exposureComp,
@@ -452,6 +497,7 @@ bool QemuCamera::queryFrame(const Rect<uint16_t> dim,
 
     return qemuRunQuery(mQemuChannel.get(), queryStr, querySize + 1) >= 0;
 }
+#endif
 
 float QemuCamera::calculateExposureComp(const int64_t exposureNs,
                                         const int sensorSensitivity,
