@@ -13,5 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PRODUCT_SHIPPING_API_LEVEL := 35
-EMULATOR_MINIMAL_VERSION := 35.2.10
+PRODUCT_SHIPPING_API_LEVEL := 36
+EMULATOR_MINIMAL_VERSION := 35.4.9
