@@ -160,6 +160,7 @@ service goldfish-logcat /system/bin/logcat -f /dev/hvc1 ${ro.boot.logcat}
 
 service bugreport /system/bin/dumpstate -d -p -z
     class main
+    user root
     disabled
     oneshot
     keycodes 114 115 116
@@ -198,7 +199,6 @@ service vendor.uwb_hal /vendor/bin/hw/android.hardware.uwb-service /dev/hvc2
 
 on property:sys.boot_completed=1
     trigger sys-boot-completed-set
-    start vendor.ril-daemon
 
 on sys-boot-completed-set && property:persist.sys.zram_enabled=1
     swapon_all /vendor/etc/fstab.${ro.hardware}
