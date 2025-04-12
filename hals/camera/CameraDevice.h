@@ -50,23 +50,28 @@ struct CameraDevice : public BnCameraDevice {
 
     ScopedAStatus getCameraCharacteristics(CameraMetadata* metadata) override;
     ScopedAStatus getPhysicalCameraCharacteristics(
-            const std::string& in_physicalCameraId, CameraMetadata* metadata) override;
+            const std::string& physicalCameraId, CameraMetadata* metadata) override;
     ScopedAStatus getResourceCost(CameraResourceCost* cost) override;
     ScopedAStatus isStreamCombinationSupported(
-            const StreamConfiguration& in_streams, bool* support) override;
+            const StreamConfiguration& streams, bool* support) override;
+    ScopedAStatus isStreamCombinationWithSettingsSupported(
+            const StreamConfiguration& streams, bool* support) override;
     ScopedAStatus open(const std::shared_ptr<ICameraDeviceCallback>& in_callback,
                        std::shared_ptr<ICameraDeviceSession>* session) override;
     ScopedAStatus openInjectionSession(
-            const std::shared_ptr<ICameraDeviceCallback>& in_callback,
+            const std::shared_ptr<ICameraDeviceCallback>& callback,
             std::shared_ptr<ICameraInjectionSession>* session) override;
     ScopedAStatus setTorchMode(bool on) override;
     ScopedAStatus turnOnTorchWithStrengthLevel(int32_t strength) override;
     ScopedAStatus getTorchStrengthLevel(int32_t* strength) override;
-
-    CameraMetadataMap constructDefaultRequestSettings(RequestTemplate tpl) const;
+    ScopedAStatus constructDefaultRequestSettings(RequestTemplate tpl, CameraMetadata*) override;
+    ScopedAStatus getSessionCharacteristics(
+            const StreamConfiguration& sessionConfig, CameraMetadata* metadata) override;
 
 private:
     friend struct CameraProvider;
+
+    CameraMetadataMap constructDefaultRequestSettingsImpl(RequestTemplate tpl) const;
 
     hw::HwCameraFactoryProduct mHwCamera;
     std::weak_ptr<CameraDevice> mSelf;

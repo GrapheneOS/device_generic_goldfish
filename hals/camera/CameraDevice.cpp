@@ -397,7 +397,7 @@ ScopedAStatus CameraDevice::getCameraCharacteristics(CameraMetadata* metadata) {
         }
     }
     {
-        CameraMetadataMap r = constructDefaultRequestSettings(RequestTemplate::PREVIEW);
+        CameraMetadataMap r = constructDefaultRequestSettingsImpl(RequestTemplate::PREVIEW);
 
         {
             const std::vector<uint32_t> keys = getSortedKeys(r);
@@ -445,6 +445,11 @@ ScopedAStatus CameraDevice::isStreamCombinationSupported(
     return ScopedAStatus::ok();
 }
 
+ScopedAStatus CameraDevice::isStreamCombinationWithSettingsSupported(
+        const StreamConfiguration& streams, bool* support) {
+    return isStreamCombinationSupported(streams, support);
+}
+
 ScopedAStatus CameraDevice::open(const std::shared_ptr<ICameraDeviceCallback>& callback,
         std::shared_ptr<ICameraDeviceSession>* session) {
     *session = ndk::SharedRefBase::make<CameraDeviceSession>(
@@ -470,7 +475,43 @@ ScopedAStatus CameraDevice::getTorchStrengthLevel(int32_t* /*strength*/) {
     return toScopedAStatus(FAILURE(Status::OPERATION_NOT_SUPPORTED));
 }
 
-CameraMetadataMap CameraDevice::constructDefaultRequestSettings(const RequestTemplate tpl) const {
+ScopedAStatus CameraDevice::constructDefaultRequestSettings(const RequestTemplate tpl,
+                                                            CameraMetadata* metadata) {
+    auto maybeMetadata = serializeCameraMetadataMap(
+        constructDefaultRequestSettingsImpl(tpl));
+    if (maybeMetadata) {
+        *metadata = std::move(maybeMetadata.value());
+        return ScopedAStatus::ok();
+    } else {
+        return toScopedAStatus(Status::INTERNAL_ERROR);
+    }
+}
+
+ScopedAStatus CameraDevice::getSessionCharacteristics(
+          const StreamConfiguration& /*sessionConfig*/,
+          CameraMetadata* metadata) {
+    CameraMetadataMap m;
+
+    {
+        const auto zoomRatioRange = mHwCamera->getZoomRatioRange();
+        m[ANDROID_CONTROL_ZOOM_RATIO_RANGE]
+            .add<float>(zoomRatioRange.first)
+            .add<float>(zoomRatioRange.second);
+    }
+
+    m[ANDROID_SCALER_AVAILABLE_MAX_DIGITAL_ZOOM] =
+        float(mHwCamera->getMaxDigitalZoom());
+
+    auto maybeMetadata = serializeCameraMetadataMap(m);
+    if (maybeMetadata) {
+        *metadata = std::move(maybeMetadata.value());
+        return ScopedAStatus::ok();
+    } else {
+        return toScopedAStatus(Status::INTERNAL_ERROR);
+    }
+}
+
+CameraMetadataMap CameraDevice::constructDefaultRequestSettingsImpl(const RequestTemplate tpl) const {
     using namespace std::literals;
     const auto sensorSize = mHwCamera->getSensorSize();
     const std::pair<int32_t, int32_t> fpsRange = mHwCamera->getDefaultTargetFpsRange(tpl);

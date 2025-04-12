@@ -46,6 +46,7 @@ using aidl::android::hardware::camera::device::CameraMetadata;
 using aidl::android::hardware::camera::device::CameraOfflineSessionInfo;
 using aidl::android::hardware::camera::device::CaptureRequest;
 using aidl::android::hardware::camera::device::CaptureResult;
+using aidl::android::hardware::camera::device::ConfigureStreamsRet;
 using aidl::android::hardware::camera::device::HalStream;
 using aidl::android::hardware::camera::device::ICameraDeviceCallback;
 using aidl::android::hardware::camera::device::ICameraOfflineSession;
@@ -64,7 +65,7 @@ using ndk::ScopedAStatus;
 struct CameraDevice;
 
 struct CameraDeviceSession : public BnCameraDeviceSession {
-    CameraDeviceSession(std::shared_ptr<CameraDevice> parent,
+    CameraDeviceSession(std::shared_ptr<CameraDevice> device,
                         std::shared_ptr<ICameraDeviceCallback> cb,
                         hw::HwCamera& hwCamera);
     ~CameraDeviceSession() override;
@@ -72,6 +73,8 @@ struct CameraDeviceSession : public BnCameraDeviceSession {
     ScopedAStatus close() override;
     ScopedAStatus configureStreams(const StreamConfiguration& cfg,
                                    std::vector<HalStream>* halStreamsOut) override;
+    ScopedAStatus configureStreamsV2(const StreamConfiguration& cfg,
+                                     ConfigureStreamsRet* ret) override;
     ScopedAStatus constructDefaultRequestSettings(RequestTemplate tpl,
                                                   CameraMetadata* metadata) override;
     ScopedAStatus flush() override;
@@ -120,7 +123,7 @@ private:
     void consumeCaptureResult(CaptureResult cr);
     void notifyBuffersReturned(size_t n);
 
-    const std::shared_ptr<CameraDevice> mParent;
+    const std::shared_ptr<CameraDevice> mDevice;
     const std::shared_ptr<ICameraDeviceCallback> mCb;
     hw::HwCamera& mHwCamera;
     MetadataQueue mRequestQueue;
