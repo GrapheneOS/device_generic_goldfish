@@ -312,6 +312,7 @@ bool CameraDeviceSession::isStreamCombinationSupported(const StreamConfiguration
 void CameraDeviceSession::closeImpl() {
     flushImpl(std::chrono::steady_clock::now());
     mHwCamera.close();
+    mStreamBufferCache.clear();
 }
 
 void CameraDeviceSession::flushImpl(const std::chrono::steady_clock::time_point start) {

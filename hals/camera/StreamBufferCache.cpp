@@ -45,6 +45,10 @@ void StreamBufferCache::clearStreamInfo() {
     }
 }
 
+void StreamBufferCache::clear() {
+    mCache.clear();
+}
+
 }  // namespace implementation
 }  // namespace provider
 }  // namespace camera

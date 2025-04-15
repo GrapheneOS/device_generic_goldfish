@@ -36,6 +36,7 @@ struct StreamBufferCache {
     CachedStreamBuffer* update(const StreamBuffer& sb);
     void remove(int64_t bufferId);
     void clearStreamInfo();
+    void clear();
 
 private:
     // std::map is to keep iterators valid after `insert`
