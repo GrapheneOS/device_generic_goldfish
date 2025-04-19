@@ -41,7 +41,7 @@ cc_defaults {
         "list_qemu_cameras.cpp",
         "main.cpp",
         "metadata_utils.cpp",
-        "QemuCamera.cpp",
+        "BaseQemuCamera.cpp",
         "qemu_channel.cpp",
         "StreamBufferCache.cpp",
         "service_entry.cpp",
@@ -89,6 +89,9 @@ cc_binary {
     name: "android.hardware.camera.provider.ranchu",
     defaults: ["android.hardware.camera.provider.ranchu_defaults"],
     init_rc: ["android.hardware.camera.provider.ranchu.rc"],
+    srcs: [
+        "GasQemuCamera.cpp",
+    ],
     header_libs: [
         "libgralloc_cb.ranchu",
     ],
@@ -98,6 +101,9 @@ cc_binary {
     name: "android.hardware.camera.provider.ranchu_minigbm",
     defaults: ["android.hardware.camera.provider.ranchu_defaults"],
     init_rc: ["android.hardware.camera.provider.ranchu_minigbm.rc"],
+    srcs: [
+        "MinigbmQemuCamera.cpp",
+    ],
     shared_libs: [
         "libnativewindow",
     ],

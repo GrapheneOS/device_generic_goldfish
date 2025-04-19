@@ -16,11 +16,11 @@
 
 #pragma once
 
-#ifdef USE_MINIGBM_GRALLOC
-#include "MinigbmQemuCamera.h"
-#else
-#include "GasQemuCamera.h"
-#endif
+#include <vector>
+
+#include <gfxstream/guest/GfxStreamGralloc.h>
+
+#include "BaseQemuCamera.h"
 
 namespace android {
 namespace hardware {
@@ -29,11 +29,29 @@ namespace provider {
 namespace implementation {
 namespace hw {
 
-#ifdef USE_MINIGBM_GRALLOC
-using QemuCamera = MinigbmQemuCamera;
-#else
-using QemuCamera = GasQemuCamera;
-#endif
+struct MinigbmQemuCamera : public BaseQemuCamera {
+    explicit MinigbmQemuCamera (const Parameters& params);
+
+    bool configure(const CameraMetadata& sessionParams, size_t nStreams,
+                   const Stream* streams, const HalStream* halStreams) override;
+    void close() override;
+
+    std::tuple<int64_t, int64_t, CameraMetadata, std::vector<StreamBuffer>,
+               std::vector<DelayedStreamBuffer>>
+        processCaptureRequest(CameraMetadata, Span<CachedStreamBuffer*>) override;
+
+private:
+    struct StreamInfo {
+        int32_t id;
+        uint32_t blobBufferSize;
+        PixelFormat format;
+        Rect<uint16_t> size;
+    };
+
+    const std::unique_ptr<gfxstream::Gralloc> mGfxGralloc;
+    std::vector<StreamInfo> mStreams;
+    base::unique_fd mQemuChannel;
+};
 
 }  // namespace hw
 }  // namespace implementation
