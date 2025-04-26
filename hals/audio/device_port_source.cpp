@@ -73,12 +73,12 @@ struct TinyalsaSource : public DevicePortSource {
 
     ~TinyalsaSource() {
         mProduceThreadRunning = false;
+        ALOGD("%s: joining producerThread", __func__);
+        mProduceThread.join();
         if (mPcm) {
             ALOGD("%s: stopping PCM stream", __func__);
             LOG_ALWAYS_FATAL_IF(pcm_stop(mPcm.get()) != 0);
         }
-        ALOGD("%s: joining producerThread", __func__);
-        mProduceThread.join();
     }
 
     Result getCapturePosition(uint64_t &frames, uint64_t &time) override {

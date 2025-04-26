@@ -71,12 +71,12 @@ struct TinyalsaSink : public DevicePortSink {
 
     ~TinyalsaSink() {
         mConsumeThreadRunning = false;
+        ALOGD("%s: joining consumeThread", __func__);
+        mConsumeThread.join();
         if (mPcm) {
             ALOGD("%s: stopping PCM stream", __func__);
             LOG_ALWAYS_FATAL_IF(pcm_stop(mPcm.get()) != 0);
         }
-        ALOGD("%s: joining consumeThread", __func__);
-        mConsumeThread.join();
     }
 
     static int getLatencyMs(const AudioConfig &cfg) {
