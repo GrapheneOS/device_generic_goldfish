@@ -177,6 +177,7 @@ AtResponse::ParseResult AtResponse::parse(const std::string_view str) {
         { CMD(CGCONTRDP),   false },
         { CMD(CLCK),        false },
         { CMD(CSIM),        false },
+        { CMD(CGLA),        false },
         { CMD(CCHC),        false },
         { CMD(CLIP),        false },
         { CMD(CLIR),        false },
@@ -1418,7 +1419,8 @@ AtResponsePtr AtResponse::CGFPCCFG::parse(const std::string_view str) {
 
 #undef FAILURE_DEBUG_PREFIX
 #define FAILURE_DEBUG_PREFIX "MBAU"
-// <STATUS>[,<KC>,<SRES>][,<CK>,<IK>,<RES/AUTS>]
+// <STATUS>,<KC>,<SRES>
+// <STATUS>,<CK>,<IK>,<RES/AUTS>
 AtResponsePtr AtResponse::MBAU::parse(const std::string_view str) {
     MBAU mbau;
 
@@ -1450,9 +1452,8 @@ failed:
         }
         break;
 
-    case 5:
-        if (parser(&mbau.status).skip(',')(&kc, ',')(&sres, ',')
-                  (&ck, ',')(&ik, ',').matchSoFar()) {
+    case 3:
+        if (parser(&mbau.status).skip(',')(&ck, ',')(&ik, ',').matchSoFar()) {
             resAuts = parser.remaining();
         } else {
             goto failed;

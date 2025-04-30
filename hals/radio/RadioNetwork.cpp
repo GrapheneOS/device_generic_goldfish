@@ -16,6 +16,9 @@
 
 #define FAILURE_DEBUG_PREFIX "RadioNetwork"
 
+#include <chrono>
+#include <thread>
+
 #include <utils/SystemClock.h>
 
 #include <aidl/android/hardware/radio/RadioConst.h>
@@ -1130,11 +1133,17 @@ ScopedAStatus RadioNetwork::setSystemSelectionChannels(const int32_t serial,
 
 ScopedAStatus RadioNetwork::startNetworkScan(const int32_t serial,
                                              const network::NetworkScanRequest& /*request*/) {
+    using network::NetworkScanResult;
+
     NOT_NULL(mRadioNetworkResponse)->startNetworkScanResponse(
         makeRadioResponseInfoNOP(serial));
     if (mRadioNetworkIndication) {
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(2000ms);
+
         mRadioNetworkIndication->networkScanResult(
-            RadioIndicationType::UNSOLICITED, {});
+            RadioIndicationType::UNSOLICITED,
+            { .status = NetworkScanResult::SCAN_STATUS_COMPLETE });
     }
     return ScopedAStatus::ok();
 }

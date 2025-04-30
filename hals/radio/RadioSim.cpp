@@ -254,6 +254,50 @@ parseAuthData(const AuthContext authContext, const std::string_view authData64) 
     return {FAILURE(RadioError::REQUEST_NOT_SUPPORTED), {}, {}};
 }
 
+std::optional<std::vector<uint8_t>> getSelectResponse(const AtChannel::RequestPipe requestPipe,
+                                                      AtChannel::Conversation& atConversation,
+                                                      const int channel, const int p2) {
+    using CGLA = AtResponse::CGLA;
+    using CmeError = AtResponse::CmeError;
+
+    const std::string request =
+        std::format("AT+CGLA={0:d},14,00A400{1:02X}023F00", channel, p2);
+    AtResponsePtr response =
+        atConversation(requestPipe, request,
+                       [](const AtResponse& response) -> bool {
+                          return response.holds<CGLA>() || response.holds<CmeError>();
+                       });
+    if (!response || response->isParseError()) {
+        return FAILURE(std::nullopt);
+    } else if (const CGLA* cgla = response->get_if<CGLA>()) {
+        if (cgla->response.size() < 4) {
+            return FAILURE(std::nullopt);
+        }
+
+        int sw12;
+        const size_t size4 = cgla->response.size() - 4;
+        if (1 != ::sscanf(&cgla->response[size4], "%04x", &sw12)) {
+            return FAILURE(std::nullopt);
+        }
+
+        if (sw12 != 0x9000) {
+            return FAILURE(std::nullopt);
+        }
+
+        std::vector<uint8_t> selectResponse;
+        if (!hex2bin(cgla->response, &selectResponse)) {
+            return FAILURE(std::nullopt);
+        }
+
+        return selectResponse;
+    } else if (const CmeError* cmeError = response->get_if<CmeError>()) {
+        cmeError->getErrorAndLog(FAILURE_DEBUG_PREFIX, __func__, __LINE__);
+        return FAILURE(std::nullopt);
+    } else {
+        response->unexpected(FAILURE_DEBUG_PREFIX, __func__);
+    }
+}
+
 }  // namespace
 
 RadioSim::RadioSim(std::shared_ptr<AtChannel> atChannel) : mAtChannel(std::move(atChannel)) {
@@ -717,6 +761,9 @@ ScopedAStatus RadioSim::iccCloseLogicalChannelWithSessionInfo(const int32_t seri
             status = FAILURE(RadioError::INTERNAL_ERR);
         } else if (const CmeError* cmeError = response->get_if<CmeError>()) {
             status = cmeError->getErrorAndLog(FAILURE_DEBUG_PREFIX, kFunc, __LINE__);
+            if (status == RadioError::NO_SUCH_ELEMENT) {
+                status = RadioError::INVALID_ARGUMENTS;
+            }
         } else if (!response->get_if<CCHC>()) {
             response->unexpected(FAILURE_DEBUG_PREFIX, kFunc);
         }
@@ -795,14 +842,15 @@ ScopedAStatus RadioSim::iccIoForApp(const int32_t serial, const sim::IccIo& iccI
 
 ScopedAStatus RadioSim::iccOpenLogicalChannel(const int32_t serial,
                                               const std::string& aid,
-                                              const int32_t /*p2*/) {
+                                              const int32_t p2) {
     static const char* const kFunc = __func__;
-    mAtChannel->queueRequester([this, serial, aid](const AtChannel::RequestPipe requestPipe) -> bool {
+    mAtChannel->queueRequester([this, serial, aid, p2](const AtChannel::RequestPipe requestPipe) -> bool {
         using CSIM = AtResponse::CSIM;
         using CmeError = AtResponse::CmeError;
 
         RadioError status = RadioError::NONE;
         int channelId = 0;
+        std::vector<uint8_t> selectResponse;
 
         if (aid.empty()) {
             AtResponsePtr response =
@@ -813,12 +861,25 @@ ScopedAStatus RadioSim::iccOpenLogicalChannel(const int32_t serial,
             if (!response || response->isParseError()) {
                 status = FAILURE(RadioError::INTERNAL_ERR);
             } else if (const CSIM* csim = response->get_if<CSIM>()) {
-                const std::string& value = csim->response;
-                const char* valueEnd = value.data() + value.size();
-
-                if (std::from_chars(value.data(), valueEnd,
-                                channelId, 10).ptr != valueEnd) {
-                    status = FAILURE(RadioError::INTERNAL_ERR);
+                if (1 == ::sscanf(csim->response.c_str(), "%02x", &channelId)) {
+                    if (p2 >= 0) {
+                        auto maybeSelectResponse =
+                            getSelectResponse(requestPipe, mAtConversation,
+                                              channelId, p2);
+                        if (maybeSelectResponse) {
+                            selectResponse = std::move(maybeSelectResponse.value());
+                        } else {
+                            requestPipe(std::format("AT+CCHC={0:d}", channelId));
+                            status = FAILURE(RadioError::GENERIC_FAILURE);
+                        }
+                    } else {
+                        if (!hex2bin(std::string_view(csim->response).substr(2),
+                                     &selectResponse)) {
+                            status = FAILURE(RadioError::GENERIC_FAILURE);
+                        }
+                    }
+                } else {
+                    status = FAILURE(RadioError::GENERIC_FAILURE);
                 }
             } else if (const CmeError* cmeError = response->get_if<CmeError>()) {
                 status = cmeError->getErrorAndLog(FAILURE_DEBUG_PREFIX, kFunc, __LINE__);
@@ -848,7 +909,7 @@ ScopedAStatus RadioSim::iccOpenLogicalChannel(const int32_t serial,
         }
 
         NOT_NULL(mRadioSimResponse)->iccOpenLogicalChannelResponse(
-                makeRadioResponseInfo(serial, status), channelId, {});
+                makeRadioResponseInfo(serial, status), channelId, std::move(selectResponse));
         return status != RadioError::INTERNAL_ERR;
     });
 
@@ -871,17 +932,17 @@ ScopedAStatus RadioSim::iccTransmitApduBasicChannel(const int32_t serial,
         if (message.data.empty()) {
             if (message.p3 < 0) {
                 request = std::format(
-                        "AT+CSIM={0:d},{1:02X}{2:02X}{3:02X}{4:02X}", 8,
+                        "AT+CSIM={0:d},\"{1:02x}{2:02x}{3:02x}{4:02x}\"", 8,
                         message.cla, message.instruction, message.p1, message.p2);
             } else {
                 request = std::format(
-                        "AT+CSIM={0:d},{1:02X}{2:02X}{3:02X}{4:02X}{5:02X}", 10,
+                        "AT+CSIM={0:d},\"{1:02x}{2:02x}{3:02x}{4:02x}{5:02x}\"", 10,
                         message.cla, message.instruction, message.p1, message.p2, message.p3);
             }
         } else {
             const size_t dataSize = 10 + message.data.size();
             request = std::format(
-                    "AT+CSIM={0:d},{1:02X}{2:02X}{3:02X}{4:02X}{5:02X}{6:s}",
+                    "AT+CSIM={0:d},\"{1:02x}{2:02x}{3:02x}{4:02x}{5:02x}{6:s}\"",
                     dataSize, message.cla, message.instruction, message.p1,
                     message.p2, message.p3, message.data);
         }
@@ -939,7 +1000,7 @@ ScopedAStatus RadioSim::iccTransmitApduLogicalChannel(
 
         const size_t dataSize = 10 + message.data.size();
         const std::string request = std::format(
-                "AT+CGLA={0:d},{1:d},{2:02X}{3:02X}{4:02X}{5:02X}{6:02X}{7:s}",
+                "AT+CGLA={0:d},{1:d},{2:02x}{3:02x}{4:02x}{5:02x}{6:02x}{7:s}",
                 message.sessionId, dataSize,
                 message.cla, message.instruction, message.p1,
                 message.p2, message.p3, message.data);
@@ -951,7 +1012,17 @@ ScopedAStatus RadioSim::iccTransmitApduLogicalChannel(
         if (!response || response->isParseError()) {
             status = FAILURE(RadioError::INTERNAL_ERR);
         } else if (const CGLA* cgla = response->get_if<CGLA>()) {
-            iccIoResult.simResponse = cgla->response;
+            if (cgla->response.size() >= 4) {
+                const size_t size4 = cgla->response.size() - 4;
+                if (2 == ::sscanf(&cgla->response[size4], "%02x%02x",
+                                  &iccIoResult.sw1, &iccIoResult.sw2)) {
+                    iccIoResult.simResponse = cgla->response.substr(0, size4);
+                } else {
+                    status = FAILURE(RadioError::GENERIC_FAILURE);
+                }
+            } else {
+                status = FAILURE(RadioError::GENERIC_FAILURE);
+            }
         } else if (const CmeError* cmeError = response->get_if<CmeError>()) {
             status = cmeError->getErrorAndLog(FAILURE_DEBUG_PREFIX, kFunc, __LINE__);
         } else {
