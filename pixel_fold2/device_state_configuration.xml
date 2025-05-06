@@ -2,6 +2,12 @@
     <device-state>
         <identifier>0</identifier>
         <name>CLOSED</name>
+        <properties>
+            <property>com.android.server.policy.PROPERTY_POLICY_CANCEL_OVERRIDE_REQUESTS</property>
+            <property>com.android.server.policy.PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_CLOSED</property>
+            <property>com.android.server.policy.PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_OUTER_PRIMARY</property>
+            <property>com.android.server.policy.PROPERTY_POWER_CONFIGURATION_TRIGGER_SLEEP</property>
+        </properties>
         <conditions>
             <sensor>
                 <type>android.sensor.hinge_angle</type>
@@ -16,6 +22,11 @@
     <device-state>
         <identifier>1</identifier>
         <name>HALF_OPENED</name>
+        <properties>
+            <property>com.android.server.policy.PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_HALF_OPEN</property>
+            <property>com.android.server.policy.PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY</property>
+            <property>com.android.server.policy.PROPERTY_POWER_CONFIGURATION_TRIGGER_WAKE</property>
+        </properties>
         <conditions>
             <sensor>
                 <type>android.sensor.hinge_angle</type>
@@ -30,6 +41,11 @@
     <device-state>
         <identifier>2</identifier>
         <name>OPENED</name>
+        <properties>
+            <property>com.android.server.policy.PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_OPEN</property>
+            <property>com.android.server.policy.PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY</property>
+            <property>com.android.server.policy.PROPERTY_POWER_CONFIGURATION_TRIGGER_WAKE</property>
+       </properties>
             <conditions>
                 <sensor>
                     <type>android.sensor.hinge_angle</type>
@@ -44,6 +60,13 @@
     <device-state>
         <identifier>3</identifier>
         <name>REAR_DISPLAY_MODE</name>
+        <properties>
+            <property>com.android.server.policy.PROPERTY_EMULATED_ONLY</property>
+            <property>com.android.server.policy.PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_OUTER_PRIMARY</property>
+            <property>com.android.server.policy.PROPERTY_POLICY_AVAILABLE_FOR_APP_REQUEST</property>
+            <property>com.android.server.policy.PROPERTY_FEATURE_REAR_DISPLAY</property>
+        </properties>
+
         <flags>
             <flag>FLAG_EMULATED_ONLY</flag>
         </flags>
