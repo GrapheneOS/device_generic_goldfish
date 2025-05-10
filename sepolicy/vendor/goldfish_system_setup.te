@@ -1,4 +1,4 @@
-# goldfish-system-setup service: runs init.qemu-adb-keys.sh script
+# goldfish-system-setup service: runs init.adb-setup.ranchu.sh script
 type goldfish_system_setup, domain, coredomain;
 type goldfish_system_setup_exec, system_file_type, exec_type, file_type;
 

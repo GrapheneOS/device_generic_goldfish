@@ -32,10 +32,11 @@
 /dev/hvc2                    u:object_r:uwb_device:s0
 
 
-/system_ext/bin/init\.ranchu\.adb\.setup\.sh u:object_r:goldfish_system_setup_exec:s0
-/vendor/bin/init_ranchu_device_state\.sh u:object_r:init_ranchu_device_state_exec:s0
-/vendor/bin/init\.ranchu-core\.sh u:object_r:goldfish_setup_exec:s0
-/vendor/bin/init\.ranchu-net\.sh u:object_r:goldfish_setup_exec:s0
+/system_ext/bin/init\.adb-setup\.ranchu\.sh u:object_r:goldfish_system_setup_exec:s0
+/vendor/bin/init\.device-state\.ranchu\.sh u:object_r:init_ranchu_device_state_exec:s0
+/vendor/bin/init\.net\.ranchu\.sh u:object_r:goldfish_setup_exec:s0
+/vendor/bin/init\.setup\.ranchu\.sh u:object_r:goldfish_setup_exec:s0
+
 /vendor/bin/dlkm_loader  u:object_r:dlkm_loader_exec:s0
 /vendor/bin/qemu-props       u:object_r:qemu_props_exec:s0
 /vendor/bin/mac80211_create_radios u:object_r:mac80211_create_radios_exec:s0

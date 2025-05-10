@@ -70,7 +70,7 @@ on post-fs-data
     mkdir /data/vendor/var 0755 root root
     mkdir /data/vendor/var/run 0755 root root
 
-    start qemu-device-state
+    start ranchu-device-state
     start ranchu-adb-setup
 
 on zygote-start
@@ -93,18 +93,32 @@ service vendor.dlkm_loader /vendor/bin/dlkm_loader
     disabled
     oneshot
 
-service ranchu-setup /vendor/bin/init.ranchu-core.sh
-    user root
-    group root
-    oneshot
-    disabled
-
-service ranchu-adb-setup /system_ext/bin/init.ranchu.adb.setup.sh
+service ranchu-adb-setup /system_ext/bin/init.adb-setup.ranchu.sh
     user system
     group shell
     stdio_to_kmsg
     disabled
     oneshot
+
+service ranchu-device-state /vendor/bin/init.device-state.ranchu.sh
+    user root
+    group root
+    oneshot
+    disabled
+    stdio_to_kmsg
+
+service ranchu-net /vendor/bin/init.net.ranchu.sh
+    class late_start
+    user root
+    group root wakelock wifi
+    oneshot
+    disabled    # Started on post-fs-data
+
+service ranchu-setup /vendor/bin/init.setup.ranchu.sh
+    user root
+    group root
+    oneshot
+    disabled
 
 on property:vendor.qemu.vport.gnss=*
     symlink ${vendor.qemu.vport.gnss} /dev/gnss0
@@ -120,13 +134,6 @@ on property:dev.bootcomplete=1 && property:vendor.qemu.dev.bootcomplete=0
 
 on post-fs-data && property:ro.boot.qemu.virtiowifi=1
     start ranchu-net
-
-service ranchu-net /vendor/bin/init.ranchu-net.sh
-    class late_start
-    user root
-    group root wakelock wifi
-    oneshot
-    disabled    # Started on post-fs-data
 
 # The qemu-props program is used to set various system
 # properties on boot. It must be run early during the boot
@@ -145,13 +152,6 @@ service qemu-props-bootcomplete /vendor/bin/qemu-props "bootcomplete"
     group root
     oneshot
     disabled
-
-service qemu-device-state /vendor/bin/init_ranchu_device_state.sh
-    user root
-    group root
-    oneshot
-    disabled
-    stdio_to_kmsg
 
 service goldfish-logcat /system/bin/logcat -f /dev/hvc1 ${ro.boot.logcat}
     class main
