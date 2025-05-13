@@ -475,12 +475,9 @@ struct GoldfishAllocator : public BnAllocator {
             req.stride0 = 0;
         }
 
-        if (needGpuBuffer(usage)) {
-            req.rcAllocFormat = (req.format == PixelFormat::RGBX_8888) ? GL_RGB : req.glFormat;
-        } else {
+        if (!needGpuBuffer(usage)) {
             req.glFormat = -1;  // no GPU buffer - no GPU formats
             req.glType = -1;
-            req.rcAllocFormat = -1;
         }
 
         std::vector<std::unique_ptr<cb_handle_t>> cbs(count);
@@ -551,7 +548,6 @@ private:
         PixelFormat format = PixelFormat::UNSPECIFIED;
         int glFormat = -1;
         int glType = -1;
-        int rcAllocFormat = -1;
         EmulatorFrameworkFormat emuFwkFormat = EmulatorFrameworkFormat::GL_COMPATIBLE;
         uint8_t planeSize = 0;
     };
@@ -615,7 +611,7 @@ private:
 
             hostHandle = rcEnc.rcCreateColorBufferDMA(
                 &rcEnc, req.width, req.height,
-                req.rcAllocFormat, static_cast<int>(req.emuFwkFormat));
+                req.glFormat, static_cast<int>(req.emuFwkFormat));
             if (!hostHandle) {
                 return FAILURE(nullptr);
             }
@@ -633,8 +629,8 @@ private:
             if (hostHandle) {
                 snprintf(hostHandleValueStr, sizeof(hostHandleValueStr),
                          "0x%X glFormat=0x%X glType=0x%X "
-                         "rcAllocFormat=0x%X emuFwkFormat=%d",
-                         hostHandle, req.glFormat, req.glType, req.rcAllocFormat,
+                         "glFormat=0x%X emuFwkFormat=%d",
+                         hostHandle, req.glFormat, req.glType, req.glFormat,
                          static_cast<int>(req.emuFwkFormat));
             } else {
                 strcpy(hostHandleValueStr, "null");
