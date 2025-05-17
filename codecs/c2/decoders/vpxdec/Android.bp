@@ -23,6 +23,7 @@ cc_library_static {
 cc_defaults {
     name: "libcodec2_goldfish_vpXdec_defaults",
     defaults: [
+        "android.hardware.graphics.common-ndk_static",
         "libcodec2_goldfish-defaults",
     ],
 
@@ -34,7 +35,6 @@ cc_defaults {
         "libgralloc_cb.ranchu",
     ],
     static_libs: [
-        "android.hardware.graphics.common-V6-ndk",
         "goldfish_vpx_impl",
     ],
     shared_libs: [
