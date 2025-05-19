@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-soong_namespace {
-    imports: [
-        "device/generic/goldfish-opengl",
-    ],
-}
+soong_namespace {}
 
 package {
     default_applicable_licenses: ["device_generic_goldfish_license"],
