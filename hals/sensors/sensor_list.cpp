@@ -41,6 +41,7 @@ const char* const kQemuSensorName[] = {
     "rgbc-light",
     "wrist-tilt",
     "acceleration-uncalibrated",
+    "heading",
 };
 
 const SensorInfo kAllSensors[] = {
@@ -358,7 +359,26 @@ const SensorInfo kAllSensors[] = {
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::ADDITIONAL_INFO |
                  SensorFlagBits::CONTINUOUS_MODE
-    }};
+    },
+    {
+        .sensorHandle = kSensorHandleHeading,
+        .name = "Goldfish heading sensor",
+        .vendor = kAospVendor,
+        .version = 1,
+        .type = static_cast<SensorType>(42),  // sensors/aidl/android/hardware/sensors/SensorType.aidl#HEADING
+        .typeAsString = "android.sensor.heading",
+        .maxRange = 360,
+        .resolution = 1.0,
+        .power = 3.0,
+        .minDelay = 10000,
+        .fifoReservedEventCount = 0,
+        .fifoMaxEventCount = 0,
+        .requiredPermission = "",
+        .maxDelay = 500000,
+        .flags = SensorFlagBits::DATA_INJECTION |
+                 SensorFlagBits::CONTINUOUS_MODE
+    },
+};
 
 constexpr int kSensorNumber = sizeof(kAllSensors) / sizeof(kAllSensors[0]);
 

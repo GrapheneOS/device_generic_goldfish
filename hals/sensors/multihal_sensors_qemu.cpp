@@ -335,6 +335,14 @@ void MultihalSensors::parseQemuSensorEventLocked(QemuSensorsProtocolState* state
             // Skip if the measurement id is not included.
             parsed = true;
         }
+    } else if (const char* values = testPrefix(buf, end, "heading", ':')) {
+        float azimuthRad;
+        if (sscanf(values, "%f", &azimuthRad) == 1) {
+            const int azimuthDeg = int(azimuthRad / M_PI * 180.0 + 0.5f);
+            payload->data[0] = float((azimuthDeg + 360) % 360);
+            payload->data[1] = 10.0f; // precision
+            parsed = true;
+        }
     } else if (const char* values = testPrefix(buf, end, "guest-sync", ':')) {
         long long value;
         if ((sscanf(values, "%lld", &value) == 1) && (value >= 0)) {
