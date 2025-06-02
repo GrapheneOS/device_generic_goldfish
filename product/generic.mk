@@ -198,7 +198,6 @@ endif
 
 ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
 PRODUCT_SOONG_NAMESPACES += \
-    hardware/google/camera \
     hardware/google/camera/devices/EmulatedCamera \
 
 ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
