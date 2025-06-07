@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <android-base/stringify.h>
 #include <system/audio.h>
 #include <log/log.h>
 #include "device_factory.h"
@@ -33,9 +34,6 @@ using ::android::hardware::Void;
 #else
 #define LIB_PATH_PREFIX "vendor/lib/hw/"
 #endif
-
-#define QUOTE(x) #x
-#define STRINGIFY(x) QUOTE(x)
 
 DevicesFactory::DevicesFactory() {
     mLegacyLib.reset(dlopen(
