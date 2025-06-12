@@ -22,8 +22,6 @@
          the state of the headphone/microphone jack -->
     <bool name="config_useDevInputEventForAudioJack">true</bool>
 
-    <!--  Maximum number of supported users -->
-    <integer name="config_multiuserMaximumUsers">4</integer>
     <!--  Whether Multiuser UI should be shown -->
     <bool name="config_enableMultiUserUI">true</bool>
 
