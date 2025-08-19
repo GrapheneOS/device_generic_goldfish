@@ -19,6 +19,9 @@
 
 #include <cutils/properties.h>
 #include <fcntl.h>
+#include <linux/vm_sockets.h>
+
+#include <android-base/properties.h>
 
 #include <android/binder_interface_utils.h>
 #include <android/binder_manager.h>
@@ -41,20 +44,6 @@
 namespace {
 using ::android::base::unique_fd;
 namespace impl = ::aidl::android::hardware::radio::implementation;
-
-unique_fd openHostChannel(const char propertyName[]) {
-    char channelName[PROPERTY_VALUE_MAX];
-    if (::property_get(propertyName, channelName, nullptr) <= 0) {
-        return FAILURE_V(unique_fd(), "The '%s' property is not defined", propertyName);
-    }
-
-    const int fd = ::open(channelName, O_RDWR);
-    if (fd >= 0) {
-        return unique_fd(fd);
-    } else {
-        return FAILURE_V(unique_fd(), "Could not open '%s'", channelName);
-    }
-}
 
 std::string getInstanceName(const std::string_view descriptor,
                             const std::string_view slot) {
@@ -225,10 +214,61 @@ int mainImpl(impl::AtChannel::HostChannelFactory hostChannelFactory) {
     ABinderProcess_joinThreadPool();
     return EXIT_FAILURE;    // joinThreadPool is not expected to return
 }
+
+#ifdef ON_CUTTLEFISH
+unique_fd openHostChannel(const int vsockPort) {
+    unique_fd hostChannel(::socket(AF_VSOCK, SOCK_STREAM, 0));
+    if (!hostChannel.ok()) {
+        return FAILURE_V(unique_fd(), "%s", "Could not open AF_VSOCK");
+    }
+
+    struct sockaddr_vm sa;
+    memset(&sa, 0, sizeof(struct sockaddr_vm));
+    sa.svm_family = AF_VSOCK;
+    sa.svm_cid = VMADDR_CID_HOST;
+    sa.svm_port = vsockPort;
+
+    if (::connect(hostChannel.get(), (struct sockaddr *)(&sa), sizeof(sa)) < 0) {
+        return FAILURE_V(unique_fd(), "Can't connect to port:%d, errno: %s",
+                         vsockPort, strerror(errno));
+    }
+
+    return hostChannel;
+}
+#else
+unique_fd openHostChannel(const char* channelName) {
+    const int fd = ::open(channelName, O_RDWR);
+    if (fd >= 0) {
+        return unique_fd(fd);
+    } else {
+        return FAILURE_V(unique_fd(), "Could not open '%s'", channelName);
+    }
+}
+#endif
+
 }  // namespace
 
 int main(int /*argc*/, char** /*argv*/) {
-    return mainImpl([](){
-        return openHostChannel("vendor.qemu.vport.modem");
+#ifdef ON_CUTTLEFISH
+    const char kPropName[] = "ro.boot.modem_simulator_ports";
+    const int vsockPort = android::base::GetIntProperty(kPropName, 0, 1);
+    if (vsockPort <= 0) {
+        RLOGE("'%s' must be an integer vsock port for the modem simulator", kPropName);
+        return 1;
+    }
+
+    return mainImpl([vsockPort](){ return openHostChannel(vsockPort); });
+#else
+    const char kPropName[] = "vendor.qemu.vport.modem";
+
+    std::string channelName = android::base::GetProperty(kPropName, "");
+    if (channelName.empty()) {
+        RLOGE("'%s' is empty", kPropName);
+        return 1;
+    }
+
+    return mainImpl([channelName = std::move(channelName)](){
+        return openHostChannel(channelName.c_str());
     });
+#endif
 }
