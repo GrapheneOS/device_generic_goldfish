@@ -39,7 +39,11 @@ using data::PdpProtocolType;
 using data::SetupDataCallResult;
 
 namespace {
+#ifdef ON_CUTTLEFISH
+constexpr char kInterfaceName[] = "buried_eth0";
+#else
 constexpr char kInterfaceName[] = "eth0";
+#endif
 
 std::string_view getProtocolStr(const PdpProtocolType p) {
     using namespace std::literals;
