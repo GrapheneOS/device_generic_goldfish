@@ -245,16 +245,12 @@ ScopedAStatus RadioModem::nvResetConfig(const int32_t serial, const modem::Reset
 
     mAtChannel->queueRequester([this, serial]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
-        using namespace std::chrono_literals;
-
-        setRadioPowerImpl(requestPipe, false);
-        std::this_thread::sleep_for(5s);
-        setRadioPowerImpl(requestPipe, true);
+        // This what the previous implementation did.
 
         NOT_NULL(mRadioModemResponse)->nvResetConfigResponse(
             makeRadioResponseInfo(serial));
 
-        return true;
+        return setRadioPowerImpl(requestPipe, false);
     });
 
     return ScopedAStatus::ok();
