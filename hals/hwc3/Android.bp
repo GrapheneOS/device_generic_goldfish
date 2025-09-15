@@ -25,7 +25,6 @@ cc_binary {
     name: "android.hardware.graphics.composer3-service.ranchu",
 
     defaults: [
-        "android.hardware.graphics.composer3-ndk_shared",
         "mesa_platform_virtgpu_defaults",
     ],
 
@@ -33,8 +32,10 @@ cc_binary {
     vendor: true,
 
     shared_libs: [
+        "android.hardware.drm.common-V1-ndk",
         "android.hardware.graphics.composer@2.1-resources",
         "android.hardware.graphics.composer@2.2-resources",
+        "android.hardware.graphics.composer3-V5-ndk",
         "libbase",
         "libbinder_ndk",
         "libcutils",
