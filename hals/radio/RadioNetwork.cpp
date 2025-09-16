@@ -35,6 +35,7 @@ namespace hardware {
 namespace radio {
 namespace implementation {
 using network::AccessTechnologySpecificInfo;
+using network::BarringInfo;
 using network::EutranBands;
 using network::EutranRegistrationInfo;
 using network::Cdma2000RegistrationInfo;
@@ -409,6 +410,30 @@ void setAccessTechnologySpecificInfo(
     }
 }
 
+std::vector<BarringInfo> getBarringInfos() {
+    BarringInfo cs = {
+        .serviceType = BarringInfo::SERVICE_TYPE_CS_SERVICE,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    BarringInfo ps = {
+        .serviceType = BarringInfo::SERVICE_TYPE_PS_SERVICE,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    BarringInfo csVoice = {
+        .serviceType = BarringInfo::SERVICE_TYPE_CS_VOICE,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    BarringInfo emergency = {
+        .serviceType = BarringInfo::SERVICE_TYPE_EMERGENCY,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    return { cs, ps, csVoice, emergency };
+}
+
 }  // namespace
 
 RadioNetwork::RadioNetwork(std::shared_ptr<AtChannel> atChannel) : mAtChannel(std::move(atChannel)) {
@@ -480,37 +505,10 @@ ScopedAStatus RadioNetwork::getBarringInfo(const int32_t serial) {
         CellIdentityResult cellIdentityResult =
             getCellIdentityImpl(areaCode, cellId, nullptr, mAtConversation, requestPipe);
         if (cellIdentityResult.first == RadioError::NONE) {
-            using network::BarringInfo;
-
-            BarringInfo barringInfoCs = {
-                .serviceType = BarringInfo::SERVICE_TYPE_CS_SERVICE,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
-            BarringInfo barringInfoPs = {
-                .serviceType = BarringInfo::SERVICE_TYPE_PS_SERVICE,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
-            BarringInfo barringInfoCsVoice = {
-                .serviceType = BarringInfo::SERVICE_TYPE_CS_VOICE,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
-            BarringInfo barringInfoEmergency = {
-                .serviceType = BarringInfo::SERVICE_TYPE_EMERGENCY,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
             NOT_NULL(mRadioNetworkResponse)->getBarringInfoResponse(
                     makeRadioResponseInfo(serial),
                     std::move(cellIdentityResult.second),
-                    {
-                        std::move(barringInfoCs),
-                        std::move(barringInfoPs),
-                        std::move(barringInfoCsVoice),
-                        std::move(barringInfoEmergency),
-                    });
+                    getBarringInfos());
             return true;
         } else {
             NOT_NULL(mRadioNetworkResponse)->getBarringInfoResponse(
@@ -890,6 +888,10 @@ ScopedAStatus RadioNetwork::setAllowedNetworkTypesBitmap(const int32_t serial,
             mRadioNetworkIndication->voiceRadioTechChanged(
                 RadioIndicationType::UNSOLICITED,
                 ratUtils::currentRadioTechnology(currentTech));
+
+            std::lock_guard<std::mutex> lock(mMtx);
+            mCurrentModemTech = currentTech;
+            mBarringInfoChanged = true;
         }
         return status != RadioError::INTERNAL_ERR;
     });
@@ -1410,18 +1412,21 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
     SignalStrength signalStrength;
     std::vector<CellInfo> cellInfos;
 
+    CellIdentity cellIdentity;
     bool poweredOn;
+    bool barringInfoChanged;
+
     {
         std::lock_guard<std::mutex> lock(mMtx);
         mCsq = csq;
         poweredOn = (mRadioState == modem::RadioState::ON);
+        barringInfoChanged = std::exchange(mBarringInfoChanged, false);
 
         if (poweredOn) {
             signalStrength = csq.toSignalStrength();
 
             if (mCurrentOperator && mCurrentModemTech) {
                 RadioError status;
-                CellIdentity cellIdentity;
                 std::tie(status, cellIdentity) =
                     getCellIdentityImpl(toOperatorInfo(mCurrentOperator.value()),
                                         mCurrentModemTech.value(),
@@ -1433,8 +1438,7 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
 
                     CellInfo cellinfo;
                     std::tie(status, cellinfo) =
-                        buildCellInfo(registered, std::move(cellIdentity),
-                                      signalStrength);
+                        buildCellInfo(registered, cellIdentity, signalStrength);
                     if (status == RadioError::NONE) {
                         cellInfos.push_back(std::move(cellinfo));
                     }
@@ -1450,6 +1454,11 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
         if (!cellInfos.empty()) {
             mRadioNetworkIndication->cellInfoList(
                 RadioIndicationType::UNSOLICITED, std::move(cellInfos));
+        }
+
+        if (barringInfoChanged) {
+            mRadioNetworkIndication->barringInfoChanged(
+                RadioIndicationType::UNSOLICITED, std::move(cellIdentity), getBarringInfos());
         }
     }
 }

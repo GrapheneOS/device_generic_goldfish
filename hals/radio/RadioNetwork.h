@@ -143,6 +143,7 @@ private:
     bool                mSecurityAlgorithmsUpdatedEnabled = false;
     bool                mIsNrDualConnectivityEnabled = true;
     bool                mIsN1ModeEnabled = false;
+    bool                mBarringInfoChanged = false;
 };
 
 }  // namespace implementation
