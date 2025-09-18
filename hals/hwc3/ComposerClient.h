@@ -131,6 +131,7 @@ class ComposerClient : public BnComposerClient {
     ndk::ScopedAStatus getLuts(int64_t displayId,
             const std::vector<Buffer>&,
             std::vector<Luts>*) override;
+    ndk::ScopedAStatus getDisplayKnownVsyncSample(int64_t displayId, VsyncSample* sample) override;
 
    protected:
     ndk::SpAIBinder createBinder() override;
