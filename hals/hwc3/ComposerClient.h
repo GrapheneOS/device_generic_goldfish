@@ -148,6 +148,8 @@ class ComposerClient : public BnComposerClient {
                                                 Display& display, const std::vector<float>& matrix);
     void executeDisplayCommandSetBrightness(CommandResultWriter& commandResults, Display& display,
                                             const DisplayBrightness& brightness);
+    void executeDisplayCommandSetActiveConfig(CommandResultWriter& commandResults, Display& display,
+                                              ActiveConfigCommand activeConfig);
     void executeDisplayCommandSetClientTarget(CommandResultWriter& commandResults, Display& display,
                                               const ClientTarget& command);
     void executeDisplayCommandSetOutputBuffer(CommandResultWriter& commandResults, Display& display,
