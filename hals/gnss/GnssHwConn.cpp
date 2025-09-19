@@ -67,8 +67,6 @@ int workerThreadRcvCommand(const int fd) {
 }
 
 void workerThread(const int devFd, const int threadsFd, GnssHwListener& listener) {
-    ALOGD("%s:%s:%d", "GnssHwConn", __func__, __LINE__);
-
     const unique_fd epollFd(epoll_create1(0));
     LOG_ALWAYS_FATAL_IF(!epollFd.ok(), "%s:%d: epoll_create1 failed",
                         __func__, __LINE__);
@@ -116,7 +114,6 @@ void workerThread(const int devFd, const int threadsFd, GnssHwListener& listener
                     const int cmd = workerThreadRcvCommand(fd);
                     switch (cmd) {
                         case kCMD_QUIT:
-                            ALOGD("%s:%s:%d", "GnssHwConn", __func__, __LINE__);
                             return;
 
                         default:
