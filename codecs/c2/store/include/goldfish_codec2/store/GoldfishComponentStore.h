@@ -79,7 +79,7 @@ class GoldfishComponentStore : public C2ComponentStore {
         /**
          * \returns the traits of the component in this module.
          */
-        std::shared_ptr<const C2Component::Traits> getTraits();
+        std::shared_ptr<const C2Component::Traits> getTraits() const;
 
         /**
          * Creates an uninitialized component module.
@@ -89,7 +89,7 @@ class GoldfishComponentStore : public C2ComponentStore {
          * \note Only used by ComponentLoader.
          */
         ComponentModule()
-            : mInit(C2_NO_INIT), mLibHandle(nullptr), createFactory(nullptr),
+            : mInit(C2_NO_INIT), mLibHandle(nullptr),
               destroyFactory(nullptr), mComponentFactory(nullptr) {}
 
         /**
@@ -113,15 +113,12 @@ class GoldfishComponentStore : public C2ComponentStore {
         virtual ~ComponentModule() override;
 
       protected:
-        std::recursive_mutex mLock; ///< lock protecting mTraits
         std::shared_ptr<C2Component::Traits>
             mTraits; ///< cached component traits
 
         c2_status_t mInit; ///< initialization result
 
         void *mLibHandle; ///< loaded library handle
-        C2ComponentFactory::CreateCodec2FactoryFunc
-            createFactory; ///< loaded create function
         C2ComponentFactory::DestroyCodec2FactoryFunc
             destroyFactory; ///< loaded destroy function
         C2ComponentFactory
