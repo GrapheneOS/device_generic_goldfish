@@ -55,8 +55,9 @@ c2_status_t GoldfishComponentStore::ComponentModule::init(std::string libPath) {
     LOG_ALWAYS_FATAL_IF(mLibHandle == nullptr, "could not dlopen %s: %s",
                         libPath.c_str(), dlerror());
 
-    createFactory = (C2ComponentFactory::CreateCodec2FactoryFunc)dlsym(
-        mLibHandle, "CreateCodec2Factory");
+    const C2ComponentFactory::CreateCodec2FactoryFunc
+            createFactory = (C2ComponentFactory::CreateCodec2FactoryFunc)dlsym(
+                    mLibHandle, "CreateCodec2Factory");
     LOG_ALWAYS_FATAL_IF(createFactory == nullptr, "createFactory is null in %s",
                         libPath.c_str());
 
@@ -232,8 +233,7 @@ c2_status_t GoldfishComponentStore::ComponentModule::createComponent(
 }
 
 std::shared_ptr<const C2Component::Traits>
-GoldfishComponentStore::ComponentModule::getTraits() {
-    std::unique_lock<std::recursive_mutex> lock(mLock);
+GoldfishComponentStore::ComponentModule::getTraits() const {
     return mTraits;
 }
 
