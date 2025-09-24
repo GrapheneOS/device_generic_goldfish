@@ -89,8 +89,7 @@ class GoldfishComponentStore : public C2ComponentStore {
          * \note Only used by ComponentLoader.
          */
         ComponentModule()
-            : mInit(C2_NO_INIT), mLibHandle(nullptr),
-              destroyFactory(nullptr), mComponentFactory(nullptr) {}
+            : mLibHandle(nullptr), destroyFactory(nullptr), mComponentFactory(nullptr) {}
 
         /**
          * Initializes a component module with a given library path. Must be
@@ -115,8 +114,6 @@ class GoldfishComponentStore : public C2ComponentStore {
       protected:
         std::shared_ptr<C2Component::Traits>
             mTraits; ///< cached component traits
-
-        c2_status_t mInit; ///< initialization result
 
         void *mLibHandle; ///< loaded library handle
         C2ComponentFactory::DestroyCodec2FactoryFunc
@@ -146,20 +143,7 @@ class GoldfishComponentStore : public C2ComponentStore {
          * module \retval C2_CORRUPTED the component module could not be loaded
          * \retval C2_REFUSED   permission denied to load the component module
          */
-        c2_status_t fetchModule(std::shared_ptr<ComponentModule> *module) {
-            c2_status_t res = C2_OK;
-            std::lock_guard<std::mutex> lock(mMutex);
-            std::shared_ptr<ComponentModule> localModule = mModule.lock();
-            if (localModule == nullptr) {
-                localModule = std::make_shared<ComponentModule>();
-                res = localModule->init(mLibPath);
-                if (res == C2_OK) {
-                    mModule = localModule;
-                }
-            }
-            *module = localModule;
-            return res;
-        }
+        c2_status_t fetchModule(std::shared_ptr<ComponentModule> *module);
 
         /**
          * Creates a component loader for a specific library path (or name).
@@ -169,7 +153,7 @@ class GoldfishComponentStore : public C2ComponentStore {
       private:
         std::mutex mMutex; ///< mutex guarding the module
         std::weak_ptr<ComponentModule>
-            mModule;          ///< weak reference to the loaded module
+            mModuleCache;     ///< weak reference to the loaded module
         std::string mLibPath; ///< library path
     };
 

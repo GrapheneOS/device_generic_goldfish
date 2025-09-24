@@ -69,20 +69,14 @@ c2_status_t GoldfishComponentStore::ComponentModule::init(std::string libPath) {
     mComponentFactory = createFactory();
     if (mComponentFactory == nullptr) {
         ALOGD("could not create factory in %s", libPath.c_str());
-        mInit = C2_NO_MEMORY;
-    } else {
-        mInit = C2_OK;
-    }
-
-    if (mInit != C2_OK) {
-        return mInit;
+        return C2_NO_MEMORY;
     }
 
     std::shared_ptr<C2ComponentInterface> intf;
     c2_status_t res = createInterface(0, &intf);
     if (res != C2_OK) {
         ALOGD("failed to create interface: %d", res);
-        return mInit;
+        return res;
     }
 
     std::shared_ptr<C2Component::Traits> traits(new (std::nothrow)
@@ -116,18 +110,18 @@ c2_status_t GoldfishComponentStore::ComponentModule::init(std::string libPath) {
         res = intf->query_vb({}, {mediaTypeIndex}, C2_MAY_BLOCK, &params);
         if (res != C2_OK) {
             ALOGD("failed to query interface: %d", res);
-            return mInit;
+            return res;
         }
         if (params.size() != 1u) {
             ALOGD("failed to query interface: unexpected vector size: %zu",
                   params.size());
-            return mInit;
+            return C2_NO_INIT;
         }
         C2PortMediaTypeSetting *mediaTypeConfig =
             C2PortMediaTypeSetting::From(params[0].get());
         if (mediaTypeConfig == nullptr) {
             ALOGD("failed to query media type");
-            return mInit;
+            return C2_NO_INIT;
         }
         traits->mediaType = std::string(
             mediaTypeConfig->m.value,
@@ -180,7 +174,7 @@ c2_status_t GoldfishComponentStore::ComponentModule::init(std::string libPath) {
     }
     mTraits = traits;
 
-    return mInit;
+    return C2_OK;
 }
 
 GoldfishComponentStore::ComponentModule::~ComponentModule() {
@@ -198,9 +192,7 @@ c2_status_t GoldfishComponentStore::ComponentModule::createInterface(
     c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *interface,
     std::function<void(::C2ComponentInterface *)> deleter) {
     interface->reset();
-    if (mInit != C2_OK) {
-        return mInit;
-    }
+
     std::shared_ptr<ComponentModule> module = shared_from_this();
     c2_status_t res = mComponentFactory->createInterface(
         id, interface, [module, deleter](C2ComponentInterface *p) mutable {
@@ -217,9 +209,7 @@ c2_status_t GoldfishComponentStore::ComponentModule::createComponent(
     c2_node_id_t id, std::shared_ptr<C2Component> *component,
     std::function<void(::C2Component *)> deleter) {
     component->reset();
-    if (mInit != C2_OK) {
-        return mInit;
-    }
+
     std::shared_ptr<ComponentModule> module = shared_from_this();
     c2_status_t res = mComponentFactory->createComponent(
         id, component, [module, deleter](C2Component *p) mutable {
@@ -235,6 +225,26 @@ c2_status_t GoldfishComponentStore::ComponentModule::createComponent(
 std::shared_ptr<const C2Component::Traits>
 GoldfishComponentStore::ComponentModule::getTraits() const {
     return mTraits;
+}
+
+c2_status_t GoldfishComponentStore::ComponentLoader::fetchModule(
+        std::shared_ptr<ComponentModule> *module) {
+    std::lock_guard<std::mutex> lock(mMutex);
+    std::shared_ptr<ComponentModule> localModule = mModuleCache.lock();
+    if (localModule) {
+        *module = localModule;
+        return C2_OK;
+    }
+
+    localModule = std::make_shared<ComponentModule>();
+    const c2_status_t res = localModule->init(mLibPath);
+    if (res != C2_OK) {
+        return res;
+    }
+
+    mModuleCache = localModule;
+    *module = localModule;
+    return C2_OK;
 }
 
 // We have a property set indicating whether to use the host side codec
