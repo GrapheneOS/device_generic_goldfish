@@ -61,8 +61,6 @@ class GoldfishComponentStore : public C2ComponentStore {
     struct ComponentModule
             : public C2ComponentFactory,
               public std::enable_shared_from_this<ComponentModule> {
-        virtual ~ComponentModule() override;
-
         virtual c2_status_t
         createComponent(c2_node_id_t id,
                         std::shared_ptr<C2Component> *component,
@@ -78,12 +76,24 @@ class GoldfishComponentStore : public C2ComponentStore {
         std::shared_ptr<const C2Component::Traits> getTraits() const;
 
       protected:
+        struct LibraryDeleter {
+            void operator()(void*) const;
+        };
+
+        using LibHandle = std::unique_ptr<void, LibraryDeleter>;
+        using C2ComponentFactoryHandle =
+                std::unique_ptr<C2ComponentFactory,
+                                C2ComponentFactory::DestroyCodec2FactoryFunc>;
+
+        c2_status_t createInterfaceImpl(
+                c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *interface,
+                InterfaceDeleter deleter, C2ComponentFactory& factory) const;
+
         static std::pair<c2_status_t, std::shared_ptr<C2Component::Traits>>
                 buildTraits(const C2ComponentInterface& intf);
 
-        void *mLibHandle = nullptr;
-        C2ComponentFactory* mComponentFactory = nullptr;
-        C2ComponentFactory::DestroyCodec2FactoryFunc mDestroyFactory = nullptr;
+        LibHandle mLib;
+        C2ComponentFactoryHandle mComponentFactory = {nullptr, nullptr};
         std::shared_ptr<C2Component::Traits> mTraits;
     };
 
