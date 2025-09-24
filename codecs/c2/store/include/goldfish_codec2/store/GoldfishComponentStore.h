@@ -121,7 +121,7 @@ class GoldfishComponentStore : public C2ComponentStore {
     std::vector<ComponentLoader> mComponentLoaders;  // mMutex
     std::unordered_map<C2String, unsigned> mComponentLoaderIndex; // name->index
     std::vector<std::shared_ptr<const C2Component::Traits>> mComponentList;
-    std::shared_ptr<C2ReflectorHelper> mReflector;
+    const std::shared_ptr<C2ReflectorHelper> mReflector;
     std::mutex mMutex;
 };
 } // namespace android
