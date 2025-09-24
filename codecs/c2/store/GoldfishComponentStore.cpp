@@ -29,18 +29,17 @@ namespace android {
 
 // static
 std::shared_ptr<C2ComponentStore> GoldfishComponentStore::Create() {
-    ALOGI("%s()", __func__);
-
     static std::mutex mutex;
-    static std::weak_ptr<C2ComponentStore> platformStore;
+    static std::weak_ptr<C2ComponentStore> cachedStore;
 
     std::lock_guard<std::mutex> lock(mutex);
-    std::shared_ptr<C2ComponentStore> store = platformStore.lock();
-    if (store != nullptr)
+    std::shared_ptr<C2ComponentStore> store = cachedStore.lock();
+    if (store) {
         return store;
+    }
 
-    store = std::shared_ptr<C2ComponentStore>(new GoldfishComponentStore());
-    platformStore = store;
+    store = std::make_shared<GoldfishComponentStore>();
+    cachedStore = store;
     return store;
 }
 
@@ -48,27 +47,23 @@ C2String GoldfishComponentStore::getName() const {
     return "android.componentStore.goldfish";
 }
 
-c2_status_t GoldfishComponentStore::ComponentModule::init(std::string libPath) {
-    ALOGI("in %s", __func__);
-    ALOGI("loading dll of path %s", libPath.c_str());
-    mLibHandle = dlopen(libPath.c_str(), RTLD_NOW | RTLD_NODELETE);
-    LOG_ALWAYS_FATAL_IF(mLibHandle == nullptr, "could not dlopen %s: %s",
-                        libPath.c_str(), dlerror());
+c2_status_t GoldfishComponentStore::ComponentModule::init(const char* libPath) {
+    ALOGI("loading dll of path %s", libPath);
+    mLibHandle = dlopen(libPath, RTLD_NOW | RTLD_NODELETE);
+    LOG_ALWAYS_FATAL_IF(!mLibHandle, "could not dlopen %s: %s", libPath, dlerror());
 
     const C2ComponentFactory::CreateCodec2FactoryFunc
             createFactory = (C2ComponentFactory::CreateCodec2FactoryFunc)dlsym(
                     mLibHandle, "CreateCodec2Factory");
-    LOG_ALWAYS_FATAL_IF(createFactory == nullptr, "createFactory is null in %s",
-                        libPath.c_str());
+    LOG_ALWAYS_FATAL_IF(!createFactory, "createFactory is null in %s", libPath);
 
-    destroyFactory = (C2ComponentFactory::DestroyCodec2FactoryFunc)dlsym(
+    mDestroyFactory = (C2ComponentFactory::DestroyCodec2FactoryFunc)dlsym(
         mLibHandle, "DestroyCodec2Factory");
-    LOG_ALWAYS_FATAL_IF(destroyFactory == nullptr,
-                        "destroyFactory is null in %s", libPath.c_str());
+    LOG_ALWAYS_FATAL_IF(!mDestroyFactory, "destroyFactory is null in %s", libPath);
 
     mComponentFactory = createFactory();
-    if (mComponentFactory == nullptr) {
-        ALOGD("could not create factory in %s", libPath.c_str());
+    if (!mComponentFactory) {
+        ALOGD("could not create factory in %s", libPath);
         return C2_NO_MEMORY;
     }
 
@@ -178,9 +173,9 @@ c2_status_t GoldfishComponentStore::ComponentModule::init(std::string libPath) {
 }
 
 GoldfishComponentStore::ComponentModule::~ComponentModule() {
-    ALOGI("in %s", __func__);
-    if (destroyFactory && mComponentFactory) {
-        destroyFactory(mComponentFactory);
+    if (mComponentFactory) {
+        LOG_ALWAYS_FATAL_IF(!mDestroyFactory);
+        mDestroyFactory(mComponentFactory);
     }
     if (mLibHandle) {
         ALOGI("unloading dll");
@@ -189,34 +184,28 @@ GoldfishComponentStore::ComponentModule::~ComponentModule() {
 }
 
 c2_status_t GoldfishComponentStore::ComponentModule::createInterface(
-    c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *interface,
-    std::function<void(::C2ComponentInterface *)> deleter) {
-    interface->reset();
-
+        c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *interface,
+        std::function<void(::C2ComponentInterface *)> deleter) {
     std::shared_ptr<ComponentModule> module = shared_from_this();
     c2_status_t res = mComponentFactory->createInterface(
-        id, interface, [module, deleter](C2ComponentInterface *p) mutable {
+        id, interface, [module, deleter](C2ComponentInterface *p) {
             // capture module so that we ensure we still have it while deleting
             // interface
             deleter(p);     // delete interface first
-            module.reset(); // remove module ref (not technically needed)
         });
     ALOGI("created interface");
     return res;
 }
 
 c2_status_t GoldfishComponentStore::ComponentModule::createComponent(
-    c2_node_id_t id, std::shared_ptr<C2Component> *component,
-    std::function<void(::C2Component *)> deleter) {
-    component->reset();
-
+        c2_node_id_t id, std::shared_ptr<C2Component> *component,
+        std::function<void(::C2Component *)> deleter) {
     std::shared_ptr<ComponentModule> module = shared_from_this();
     c2_status_t res = mComponentFactory->createComponent(
-        id, component, [module, deleter](C2Component *p) mutable {
+        id, component, [module, deleter](C2Component *p) {
             // capture module so that we ensure we still have it while deleting
             // component
-            deleter(p);     // delete component first
-            module.reset(); // remove module ref (not technically needed)
+            deleter(p);
         });
     ALOGI("created component");
     return res;
@@ -237,7 +226,7 @@ c2_status_t GoldfishComponentStore::ComponentLoader::fetchModule(
     }
 
     localModule = std::make_shared<ComponentModule>();
-    const c2_status_t res = localModule->init(mLibPath);
+    const c2_status_t res = localModule->init(mLibPath.c_str());
     if (res != C2_OK) {
         return res;
     }
@@ -267,8 +256,7 @@ static bool useAndroidGoldfishComponentInstance(const char *libname) {
 }
 
 GoldfishComponentStore::GoldfishComponentStore()
-    : mVisited(false), mReflector(std::make_shared<C2ReflectorHelper>()) {
-
+        : mReflector(std::make_shared<C2ReflectorHelper>()) {
     ALOGW("created goldfish store %p reflector of param %p", this,
           mReflector.get());
     auto emplace = [this](const char *libPath) {
@@ -343,8 +331,7 @@ GoldfishComponentStore::listComponents() {
 }
 
 c2_status_t GoldfishComponentStore::findComponent(
-    C2String name, std::shared_ptr<ComponentModule> *module) {
-    (*module).reset();
+        const C2String& name, std::shared_ptr<ComponentModule> *module) {
     visitComponents();
 
     auto pos = mComponentNameToPath.find(name);
@@ -355,9 +342,8 @@ c2_status_t GoldfishComponentStore::findComponent(
 }
 
 c2_status_t GoldfishComponentStore::createComponent(
-    C2String name, std::shared_ptr<C2Component> *const component) {
+        C2String name, std::shared_ptr<C2Component> *const component) {
     // This method SHALL return within 100ms.
-    component->reset();
     std::shared_ptr<ComponentModule> module;
     c2_status_t res = findComponent(name, &module);
     if (res == C2_OK) {
@@ -368,9 +354,8 @@ c2_status_t GoldfishComponentStore::createComponent(
 }
 
 c2_status_t GoldfishComponentStore::createInterface(
-    C2String name, std::shared_ptr<C2ComponentInterface> *const interface) {
+        C2String name, std::shared_ptr<C2ComponentInterface> *const interface) {
     // This method SHALL return within 100ms.
-    interface->reset();
     std::shared_ptr<ComponentModule> module;
     c2_status_t res = findComponent(name, &module);
     if (res == C2_OK) {
