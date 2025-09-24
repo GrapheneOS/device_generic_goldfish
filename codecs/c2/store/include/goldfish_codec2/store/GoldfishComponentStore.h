@@ -78,6 +78,9 @@ class GoldfishComponentStore : public C2ComponentStore {
         std::shared_ptr<const C2Component::Traits> getTraits() const;
 
       protected:
+        static std::pair<c2_status_t, std::shared_ptr<C2Component::Traits>>
+                buildTraits(const C2ComponentInterface& intf);
+
         void *mLibHandle = nullptr;
         C2ComponentFactory* mComponentFactory = nullptr;
         C2ComponentFactory::DestroyCodec2FactoryFunc mDestroyFactory = nullptr;
