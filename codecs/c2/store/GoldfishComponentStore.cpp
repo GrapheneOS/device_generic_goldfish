@@ -216,24 +216,21 @@ GoldfishComponentStore::ComponentModule::getTraits() const {
     return mTraits;
 }
 
-c2_status_t GoldfishComponentStore::ComponentLoader::fetchModule(
-        std::shared_ptr<ComponentModule> *module) {
-    std::lock_guard<std::mutex> lock(mMutex);
+std::pair<c2_status_t, std::shared_ptr<GoldfishComponentStore::ComponentModule>>
+GoldfishComponentStore::ComponentLoader::fetch() {
     std::shared_ptr<ComponentModule> localModule = mModuleCache.lock();
     if (localModule) {
-        *module = localModule;
-        return C2_OK;
+        return {C2_OK, std::move(localModule)};
     }
 
     localModule = std::make_shared<ComponentModule>();
     const c2_status_t res = localModule->init(mLibPath.c_str());
     if (res != C2_OK) {
-        return res;
+        return {res, {}};
     }
 
     mModuleCache = localModule;
-    *module = localModule;
-    return C2_OK;
+    return {C2_OK, std::move(localModule)};
 }
 
 // We have a property set indicating whether to use the host side codec
@@ -257,21 +254,37 @@ static bool useAndroidGoldfishComponentInstance(const char *libname) {
 
 GoldfishComponentStore::GoldfishComponentStore()
         : mReflector(std::make_shared<C2ReflectorHelper>()) {
-    ALOGW("created goldfish store %p reflector of param %p", this,
-          mReflector.get());
-    auto emplace = [this](const char *libPath) {
-        mComponents.emplace(libPath, libPath);
-    };
-
     if (useAndroidGoldfishComponentInstance("vpxdec")) {
-        emplace("libcodec2_goldfish_vp8dec.so");
-        emplace("libcodec2_goldfish_vp9dec.so");
+        mComponentLoaders.emplace_back("libcodec2_goldfish_vp8dec.so");
+        mComponentLoaders.emplace_back("libcodec2_goldfish_vp9dec.so");
     }
     if (useAndroidGoldfishComponentInstance("avcdec")) {
-        emplace("libcodec2_goldfish_avcdec.so");
+        mComponentLoaders.emplace_back("libcodec2_goldfish_avcdec.so");
     }
     if (useAndroidGoldfishComponentInstance("hevcdec")) {
-        emplace("libcodec2_goldfish_hevcdec.so");
+        mComponentLoaders.emplace_back("libcodec2_goldfish_hevcdec.so");
+    }
+
+    const unsigned n = mComponentLoaders.size();
+    for (unsigned i = 0; i < n; ++i) {
+        ComponentLoader& loader = mComponentLoaders[i];
+        const auto [res, module] = loader.fetch();
+        if (res == C2_OK) {
+            std::shared_ptr<const C2Component::Traits> traits = module->getTraits();
+            if (traits) {
+                mComponentList.push_back(traits);
+                for (const C2String &alias : traits->aliases) {
+                    const auto [it, ok] = mComponentLoaderIndex.insert({alias, i});
+                    if (!ok) {
+                        ALOGE("Could not insert '%s' alias because it is "
+                              "already occupied by '%s'", alias.c_str(),
+                              mComponentLoaders[it->second].getLibPath().c_str());
+                    }
+                }
+            }
+        } else {
+            ALOGE("Could not fetch the module from '%s'", loader.getLibPath().c_str());
+        }
     }
 }
 
@@ -299,53 +312,24 @@ c2_status_t GoldfishComponentStore::config_sm(
     return params.empty() ? C2_OK : C2_BAD_INDEX;
 }
 
-void GoldfishComponentStore::visitComponents() {
-    std::lock_guard<std::mutex> lock(mMutex);
-    if (mVisited) {
-        return;
-    }
-    for (auto &pathAndLoader : mComponents) {
-        const C2String &path = pathAndLoader.first;
-        ComponentLoader &loader = pathAndLoader.second;
-        std::shared_ptr<ComponentModule> module;
-        if (loader.fetchModule(&module) == C2_OK) {
-            std::shared_ptr<const C2Component::Traits> traits =
-                module->getTraits();
-            if (traits) {
-                mComponentList.push_back(traits);
-                mComponentNameToPath.emplace(traits->name, path);
-                for (const C2String &alias : traits->aliases) {
-                    mComponentNameToPath.emplace(alias, path);
-                }
-            }
-        }
-    }
-    mVisited = true;
-}
-
 std::vector<std::shared_ptr<const C2Component::Traits>>
 GoldfishComponentStore::listComponents() {
-    // This method SHALL return within 500ms.
-    visitComponents();
     return mComponentList;
 }
 
-c2_status_t GoldfishComponentStore::findComponent(
-        const C2String& name, std::shared_ptr<ComponentModule> *module) {
-    visitComponents();
-
-    auto pos = mComponentNameToPath.find(name);
-    if (pos != mComponentNameToPath.end()) {
-        return mComponents.at(pos->second).fetchModule(module);
+std::pair<c2_status_t, std::shared_ptr<GoldfishComponentStore::ComponentModule>>
+GoldfishComponentStore::findComponent(const C2String& name) {
+    auto i = mComponentLoaderIndex.find(name);
+    if (i != mComponentLoaderIndex.end()) {
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mComponentLoaders[i->second].fetch();
     }
-    return C2_NOT_FOUND;
+    return {C2_NOT_FOUND, {}};
 }
 
 c2_status_t GoldfishComponentStore::createComponent(
-        C2String name, std::shared_ptr<C2Component> *const component) {
-    // This method SHALL return within 100ms.
-    std::shared_ptr<ComponentModule> module;
-    c2_status_t res = findComponent(name, &module);
+    C2String name, std::shared_ptr<C2Component> *const component) {
+    auto [res, module] = findComponent(name);
     if (res == C2_OK) {
         // TODO: get a unique node ID
         res = module->createComponent(0, component);
@@ -354,10 +338,8 @@ c2_status_t GoldfishComponentStore::createComponent(
 }
 
 c2_status_t GoldfishComponentStore::createInterface(
-        C2String name, std::shared_ptr<C2ComponentInterface> *const interface) {
-    // This method SHALL return within 100ms.
-    std::shared_ptr<ComponentModule> module;
-    c2_status_t res = findComponent(name, &module);
+    C2String name, std::shared_ptr<C2ComponentInterface> *const interface) {
+    auto [res, module] = findComponent(name);
     if (res == C2_OK) {
         // TODO: get a unique node ID
         res = module->createInterface(0, interface);

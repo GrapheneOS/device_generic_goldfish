@@ -12,8 +12,9 @@
 
 #pragma once
 
-#include <map>
 #include <mutex>
+#include <unordered_map>
+#include <vector>
 
 #include <C2Component.h>
 #include <C2ComponentFactory.h>
@@ -84,21 +85,18 @@ class GoldfishComponentStore : public C2ComponentStore {
     };
 
     struct ComponentLoader {
-        ComponentLoader(std::string libPath) : mLibPath(std::move(libPath)) {}
+        explicit ComponentLoader(std::string libPath) : mLibPath(std::move(libPath)) {}
 
-        c2_status_t fetchModule(std::shared_ptr<ComponentModule> *module);
+        std::pair<c2_status_t, std::shared_ptr<ComponentModule>> fetch();
+        const std::string& getLibPath() const { return mLibPath; }
 
       private:
         const std::string mLibPath;
         std::weak_ptr<ComponentModule> mModuleCache;
-        std::mutex mMutex;
     };
 
     /**
-     * Retrieves the component module for a component.
-     *
-     * \param module pointer to a shared_pointer where the component module will
-     * be stored on success.
+     * Retrieves the component module for a component by its name.
      *
      * \retval C2_OK        the component loader has been successfully retrieved
      * \retval C2_NO_MEMORY not enough memory to locate the component loader
@@ -111,19 +109,12 @@ class GoldfishComponentStore : public C2ComponentStore {
      * does not refer to an already identified component but some components
      * could not be loaded due to lack of permissions)
      */
-    c2_status_t findComponent(const C2String& name,
-                              std::shared_ptr<ComponentModule> *module);
+    std::pair<c2_status_t, std::shared_ptr<ComponentModule>> findComponent(const C2String& name);
 
-    /**
-     * Loads each component module and discover its contents.
-     */
-    void visitComponents();
-
-    std::map<C2String, ComponentLoader> mComponents; ///< path -> component module
-    std::map<C2String, C2String> mComponentNameToPath; ///< name -> path
+    std::vector<ComponentLoader> mComponentLoaders;  // mMutex
+    std::unordered_map<C2String, unsigned> mComponentLoaderIndex; // name->index
     std::vector<std::shared_ptr<const C2Component::Traits>> mComponentList;
     std::shared_ptr<C2ReflectorHelper> mReflector;
-    std::mutex mMutex;    ///< mutex guarding the component lists during construction
-    bool mVisited = false; ///< component modules visited
+    std::mutex mMutex;
 };
 } // namespace android
