@@ -302,30 +302,6 @@ void GoldfishComponentStore::visitComponents() {
     }
 }
 
-c2_status_t
-GoldfishComponentStore::copyBuffer(std::shared_ptr<C2GraphicBuffer> src,
-                                   std::shared_ptr<C2GraphicBuffer> dst) {
-    (void)src;
-    (void)dst;
-    return C2_OMITTED;
-}
-
-c2_status_t GoldfishComponentStore::query_sm(
-    const std::vector<C2Param *> &stackParams,
-    const std::vector<C2Param::Index> &heapParamIndices,
-    std::vector<std::unique_ptr<C2Param>> *const heapParams) const {
-    (void)heapParams;
-    return stackParams.empty() && heapParamIndices.empty() ? C2_OK
-                                                           : C2_BAD_INDEX;
-}
-
-c2_status_t GoldfishComponentStore::config_sm(
-    const std::vector<C2Param *> &params,
-    std::vector<std::unique_ptr<C2SettingResult>> *const failures) {
-    (void)failures;
-    return params.empty() ? C2_OK : C2_BAD_INDEX;
-}
-
 std::vector<std::shared_ptr<const C2Component::Traits>>
 GoldfishComponentStore::listComponents() {
     visitComponents();
@@ -364,20 +340,42 @@ c2_status_t GoldfishComponentStore::createInterface(
     return res;
 }
 
-c2_status_t GoldfishComponentStore::querySupportedParams_nb(
-    std::vector<std::shared_ptr<C2ParamDescriptor>> *const params) const {
-    (void)params;
-    return C2_OK;
-}
-
-c2_status_t GoldfishComponentStore::querySupportedValues_sm(
-    std::vector<C2FieldSupportedValuesQuery> &fields) const {
-    return fields.empty() ? C2_OK : C2_BAD_INDEX;
-}
-
 std::shared_ptr<C2ParamReflector>
 GoldfishComponentStore::getParamReflector() const {
     return mReflector;
 }
+
+/* no-op functions */
+
+c2_status_t
+GoldfishComponentStore::copyBuffer(std::shared_ptr<C2GraphicBuffer> /*src*/,
+                                   std::shared_ptr<C2GraphicBuffer> /*dst*/) {
+    return C2_OMITTED;
+}
+
+c2_status_t GoldfishComponentStore::query_sm(
+        const std::vector<C2Param *> &stackParams,
+        const std::vector<C2Param::Index> &heapParamIndices,
+        std::vector<std::unique_ptr<C2Param>> * /*heapParams*/) const {
+    return stackParams.empty() && heapParamIndices.empty() ? C2_OK
+                                                           : C2_BAD_INDEX;
+}
+
+c2_status_t GoldfishComponentStore::config_sm(
+        const std::vector<C2Param *> &params,
+        std::vector<std::unique_ptr<C2SettingResult>> * /*failures*/) {
+    return params.empty() ? C2_OK : C2_BAD_INDEX;
+}
+
+c2_status_t GoldfishComponentStore::querySupportedParams_nb(
+        std::vector<std::shared_ptr<C2ParamDescriptor>> * /*params*/) const {
+    return C2_OK;
+}
+
+c2_status_t GoldfishComponentStore::querySupportedValues_sm(
+        std::vector<C2FieldSupportedValuesQuery> &fields) const {
+    return fields.empty() ? C2_OK : C2_BAD_INDEX;
+}
+
 
 } // namespace android
