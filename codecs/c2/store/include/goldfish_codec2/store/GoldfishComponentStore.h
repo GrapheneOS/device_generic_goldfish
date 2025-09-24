@@ -12,8 +12,9 @@
 
 #pragma once
 
-#include <map>
 #include <mutex>
+#include <unordered_map>
+#include <vector>
 
 #include <C2Component.h>
 #include <C2ComponentFactory.h>
@@ -57,15 +58,11 @@ class GoldfishComponentStore : public C2ComponentStore {
     virtual ~GoldfishComponentStore() override = default;
 
   private:
-    /**
-     * An object encapsulating a loaded component module.
-     *
-     * \todo provide a way to add traits to known components here to avoid
-     * loading the .so-s for listComponents
-     */
     struct ComponentModule
-        : public C2ComponentFactory,
-          public std::enable_shared_from_this<ComponentModule> {
+            : public C2ComponentFactory,
+              public std::enable_shared_from_this<ComponentModule> {
+        virtual ~ComponentModule() override;
+
         virtual c2_status_t
         createComponent(c2_node_id_t id,
                         std::shared_ptr<C2Component> *component,
@@ -76,92 +73,30 @@ class GoldfishComponentStore : public C2ComponentStore {
             InterfaceDeleter deleter =
                 std::default_delete<C2ComponentInterface>()) override;
 
-        /**
-         * \returns the traits of the component in this module.
-         */
+        c2_status_t init(const char* libPath);
+
         std::shared_ptr<const C2Component::Traits> getTraits() const;
 
-        /**
-         * Creates an uninitialized component module.
-         *
-         * \param name[in]  component name.
-         *
-         * \note Only used by ComponentLoader.
-         */
-        ComponentModule()
-            : mLibHandle(nullptr), destroyFactory(nullptr), mComponentFactory(nullptr) {}
-
-        /**
-         * Initializes a component module with a given library path. Must be
-         * called exactly once.
-         *
-         * \note Only used by ComponentLoader.
-         *
-         * \param libPath[in] library path
-         *
-         * \retval C2_OK        the component module has been successfully
-         * loaded \retval C2_NO_MEMORY not enough memory to loading the
-         * component module \retval C2_NOT_FOUND could not locate the component
-         * module \retval C2_CORRUPTED the component module could not be loaded
-         * (unexpected) \retval C2_REFUSED   permission denied to load the
-         * component module (unexpected) \retval C2_TIMED_OUT could not load the
-         * module within the time limit (unexpected)
-         */
-        c2_status_t init(std::string libPath);
-
-        virtual ~ComponentModule() override;
-
       protected:
-        std::shared_ptr<C2Component::Traits>
-            mTraits; ///< cached component traits
-
-        void *mLibHandle; ///< loaded library handle
-        C2ComponentFactory::DestroyCodec2FactoryFunc
-            destroyFactory; ///< loaded destroy function
-        C2ComponentFactory
-            *mComponentFactory; ///< loaded/created component factory
+        void *mLibHandle = nullptr;
+        C2ComponentFactory* mComponentFactory = nullptr;
+        C2ComponentFactory::DestroyCodec2FactoryFunc mDestroyFactory = nullptr;
+        std::shared_ptr<C2Component::Traits> mTraits;
     };
 
-    /**
-     * An object encapsulating a loadable component module.
-     *
-     * \todo make this also work for enumerations
-     */
     struct ComponentLoader {
-        /**
-         * Load the component module.
-         *
-         * This method simply returns the component module if it is already
-         * currently loaded, or attempts to load it if it is not.
-         *
-         * \param module[out] pointer to the shared pointer where the loaded
-         * module shall be stored. This will be nullptr on error.
-         *
-         * \retval C2_OK        the component module has been successfully
-         * loaded \retval C2_NO_MEMORY not enough memory to loading the
-         * component module \retval C2_NOT_FOUND could not locate the component
-         * module \retval C2_CORRUPTED the component module could not be loaded
-         * \retval C2_REFUSED   permission denied to load the component module
-         */
-        c2_status_t fetchModule(std::shared_ptr<ComponentModule> *module);
+        explicit ComponentLoader(std::string libPath) : mLibPath(std::move(libPath)) {}
 
-        /**
-         * Creates a component loader for a specific library path (or name).
-         */
-        ComponentLoader(std::string libPath) : mLibPath(libPath) {}
+        std::pair<c2_status_t, std::shared_ptr<ComponentModule>> fetch();
+        const std::string& getLibPath() const { return mLibPath; }
 
       private:
-        std::mutex mMutex; ///< mutex guarding the module
-        std::weak_ptr<ComponentModule>
-            mModuleCache;     ///< weak reference to the loaded module
-        std::string mLibPath; ///< library path
+        const std::string mLibPath;
+        std::weak_ptr<ComponentModule> mModuleCache;
     };
 
     /**
-     * Retrieves the component module for a component.
-     *
-     * \param module pointer to a shared_pointer where the component module will
-     * be stored on success.
+     * Retrieves the component module for a component by its name.
      *
      * \retval C2_OK        the component loader has been successfully retrieved
      * \retval C2_NO_MEMORY not enough memory to locate the component loader
@@ -174,22 +109,12 @@ class GoldfishComponentStore : public C2ComponentStore {
      * does not refer to an already identified component but some components
      * could not be loaded due to lack of permissions)
      */
-    c2_status_t findComponent(C2String name,
-                              std::shared_ptr<ComponentModule> *module);
+    std::pair<c2_status_t, std::shared_ptr<ComponentModule>> findComponent(const C2String& name);
 
-    /**
-     * Loads each component module and discover its contents.
-     */
-    void visitComponents();
-
-    std::mutex
-        mMutex;    ///< mutex guarding the component lists during construction
-    bool mVisited; ///< component modules visited
-    std::map<C2String, ComponentLoader>
-        mComponents; ///< path -> component module
-    std::map<C2String, C2String> mComponentNameToPath; ///< name -> path
+    std::vector<ComponentLoader> mComponentLoaders;  // mMutex
+    std::unordered_map<C2String, unsigned> mComponentLoaderIndex; // name->index
     std::vector<std::shared_ptr<const C2Component::Traits>> mComponentList;
-
     std::shared_ptr<C2ReflectorHelper> mReflector;
+    std::mutex mMutex;
 };
 } // namespace android
