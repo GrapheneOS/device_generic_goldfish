@@ -23,30 +23,20 @@ static constexpr char kExtSeccompPolicyPath[] =
     "/vendor/etc/seccomp_policy/codec2.vendor.ext.policy";
 
 int main(int /* argc */, char ** /* argv */) {
-    ALOGD("Goldfish C2 Service starting...");
-
     signal(SIGPIPE, SIG_IGN);
     android::SetUpMinijail(kBaseSeccompPolicyPath, kExtSeccompPolicyPath);
 
     android::hardware::configureRpcThreadpool(8, true /* callerWillJoin */);
 
-    // Create IComponentStore service.
-    {
-        using namespace ::android::hardware::media::c2::V1_0;
+    using namespace ::android::hardware::media::c2::V1_0;
+    const auto store = ::android::sp<utils::ComponentStore>::make(
+            android::GoldfishComponentStore::Create());
 
-        ALOGD("Instantiating Codec2's Goldfish IComponentStore service...");
-        android::sp<IComponentStore> store(new utils::ComponentStore(
-            android::GoldfishComponentStore::Create()));
-        if (store == nullptr) {
-            ALOGE("Cannot create Codec2's Goldfish IComponentStore service.");
-        } else if (store->registerAsService("default") != android::OK) {
-            ALOGE("Cannot register Codec2's IComponentStore service.");
-        } else {
-            ALOGI("Codec2's IComponentStore service created.");
-        }
+    if (store->registerAsService("default") != android::OK) {
+        ALOGE("Cannot register Codec2's IComponentStore service.");
+        return 1;
     }
 
     android::hardware::joinRpcThreadpool();
-    ALOGD("Service shutdown.");
     return 0;
 }
