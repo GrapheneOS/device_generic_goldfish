@@ -111,6 +111,13 @@ class GoldfishComponentStore : public C2ComponentStore {
      */
     std::pair<c2_status_t, std::shared_ptr<ComponentModule>> findComponent(const C2String& name);
 
+    /**
+     * Loads each component module and discover its contents. This cannot be
+     * done in the ctor because the components need an instance of
+     * GoldfishComponentStore.
+     */
+    void visitComponents();
+
     std::vector<ComponentLoader> mComponentLoaders;  // mMutex
     std::unordered_map<C2String, unsigned> mComponentLoaderIndex; // name->index
     std::vector<std::shared_ptr<const C2Component::Traits>> mComponentList;

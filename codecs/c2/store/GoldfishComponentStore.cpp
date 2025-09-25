@@ -264,6 +264,13 @@ GoldfishComponentStore::GoldfishComponentStore()
     if (useAndroidGoldfishComponentInstance("hevcdec")) {
         mComponentLoaders.emplace_back("libcodec2_goldfish_hevcdec.so");
     }
+}
+
+void GoldfishComponentStore::visitComponents() {
+    std::lock_guard<std::mutex> lock(mMutex);
+    if (!mComponentList.empty()) {
+        return;
+    }
 
     const unsigned n = mComponentLoaders.size();
     for (unsigned i = 0; i < n; ++i) {
@@ -281,6 +288,9 @@ GoldfishComponentStore::GoldfishComponentStore()
                               mComponentLoaders[it->second].getLibPath().c_str());
                     }
                 }
+            } else {
+                ALOGE("The module from '%s' does not have traits",
+                      loader.getLibPath().c_str());
             }
         } else {
             ALOGE("Could not fetch the module from '%s'", loader.getLibPath().c_str());
@@ -314,11 +324,14 @@ c2_status_t GoldfishComponentStore::config_sm(
 
 std::vector<std::shared_ptr<const C2Component::Traits>>
 GoldfishComponentStore::listComponents() {
+    visitComponents();
     return mComponentList;
 }
 
 std::pair<c2_status_t, std::shared_ptr<GoldfishComponentStore::ComponentModule>>
 GoldfishComponentStore::findComponent(const C2String& name) {
+    visitComponents();
+
     auto i = mComponentLoaderIndex.find(name);
     if (i != mComponentLoaderIndex.end()) {
         std::lock_guard<std::mutex> lock(mMutex);
