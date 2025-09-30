@@ -78,13 +78,13 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
         // TODO: output latency and reordering
 
         addParameter(DefineParam(mAttrib, C2_PARAMKEY_COMPONENT_ATTRIBUTES)
-                         .withConstValue(new C2ComponentAttributesSetting(
+                         .withConstValue(std::make_shared<C2ComponentAttributesSetting>(
                              C2Component::ATTRIB_IS_TEMPORAL))
                          .build());
 
         addParameter(
             DefineParam(mSize, C2_PARAMKEY_PICTURE_SIZE)
-                .withDefault(new C2StreamPictureSizeInfo::output(0u, 320, 240))
+                .withDefault(std::make_shared<C2StreamPictureSizeInfo::output>(0u, 320, 240))
                 .withFields({
                     C2F(mSize, width).inRange(2, 4096, 2),
                     C2F(mSize, height).inRange(2, 4096, 2),
@@ -96,7 +96,7 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
         // TODO: Add C2Config::PROFILE_VP9_2HDR ??
         addParameter(
             DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
-                .withDefault(new C2StreamProfileLevelInfo::input(
+                .withDefault(std::make_shared<C2StreamProfileLevelInfo::input>(
                     0u, C2Config::PROFILE_VP9_0, C2Config::LEVEL_VP9_5))
                 .withFields({C2F(mProfileLevel, profile)
                                  .oneOf({C2Config::PROFILE_VP9_0,
@@ -166,13 +166,13 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 #else
         addParameter(
             DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
-                .withConstValue(new C2StreamProfileLevelInfo::input(
+                .withConstValue(std::make_shared<C2StreamProfileLevelInfo::input>(
                     0u, C2Config::PROFILE_UNUSED, C2Config::LEVEL_UNUSED))
                 .build());
 #endif
 
         addParameter(DefineParam(mMaxSize, C2_PARAMKEY_MAX_PICTURE_SIZE)
-                         .withDefault(new C2StreamMaxPictureSizeTuning::output(
+                         .withDefault(std::make_shared<C2StreamMaxPictureSizeTuning::output>(
                              0u, 320, 240))
                          .withFields({
                              C2F(mSize, width).inRange(2, 4096, 2),
@@ -183,7 +183,7 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mMaxInputSize, C2_PARAMKEY_INPUT_MAX_BUFFER_SIZE)
-                .withDefault(new C2StreamMaxBufferSizeInfo::input(
+                .withDefault(std::make_shared<C2StreamMaxBufferSizeInfo::input>(
                     0u, kMinInputBufferSize))
                 .withFields({
                     C2F(mMaxInputSize, value).any(),
@@ -209,7 +209,7 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mDefaultColorAspects, C2_PARAMKEY_DEFAULT_COLOR_ASPECTS)
-                .withDefault(new C2StreamColorAspectsTuning::output(
+                .withDefault(std::make_shared<C2StreamColorAspectsTuning::output>(
                     0u, C2Color::RANGE_UNSPECIFIED,
                     C2Color::PRIMARIES_UNSPECIFIED,
                     C2Color::TRANSFER_UNSPECIFIED, C2Color::MATRIX_UNSPECIFIED))
@@ -230,7 +230,7 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mCodedColorAspects, C2_PARAMKEY_VUI_COLOR_ASPECTS)
-                .withDefault(new C2StreamColorAspectsInfo::input(
+                .withDefault(std::make_shared<C2StreamColorAspectsInfo::input>(
                     0u, C2Color::RANGE_LIMITED, C2Color::PRIMARIES_UNSPECIFIED,
                     C2Color::TRANSFER_UNSPECIFIED, C2Color::MATRIX_UNSPECIFIED))
                 .withFields({C2F(mCodedColorAspects, range)
@@ -250,7 +250,7 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mColorAspects, C2_PARAMKEY_COLOR_ASPECTS)
-                .withDefault(new C2StreamColorAspectsInfo::output(
+                .withDefault(std::make_shared<C2StreamColorAspectsInfo::output>(
                     0u, C2Color::RANGE_UNSPECIFIED,
                     C2Color::PRIMARIES_UNSPECIFIED,
                     C2Color::TRANSFER_UNSPECIFIED, C2Color::MATRIX_UNSPECIFIED))
@@ -272,7 +272,7 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         // TODO: support more formats?
         addParameter(DefineParam(mPixelFormat, C2_PARAMKEY_PIXEL_FORMAT)
-                         .withConstValue(new C2StreamPixelFormatInfo::output(
+                         .withConstValue(std::make_shared<C2StreamPixelFormatInfo::output>(
                              0u, HAL_PIXEL_FORMAT_YCBCR_420_888))
                          .build());
     }
@@ -503,7 +503,7 @@ C2GoldfishVpxDec::C2GoldfishVpxDec(const char *name, c2_node_id_t id,
                                    const std::shared_ptr<IntfImpl> &intfImpl)
     : SimpleC2Component(
           std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)),
-      mIntf(intfImpl), mQueue(new Mutexed<ConversionQueue>) {}
+      mIntf(intfImpl), mQueue(std::make_shared<Mutexed<ConversionQueue>>()) {}
 
 C2GoldfishVpxDec::~C2GoldfishVpxDec() { onRelease(); }
 
@@ -1069,23 +1069,19 @@ class C2GoldfishVpxFactory : public C2ComponentFactory {
     virtual c2_status_t
     createComponent(c2_node_id_t id,
                     std::shared_ptr<C2Component> *const component,
-                    std::function<void(C2Component *)> deleter) override {
-        *component = std::shared_ptr<C2Component>(
-            new C2GoldfishVpxDec(
+                    std::function<void(C2Component *)> /*deleter*/) override {
+        *component = std::make_shared<C2GoldfishVpxDec>(
                 COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishVpxDec::IntfImpl>(mHelper)),
-            deleter);
+                std::make_shared<C2GoldfishVpxDec::IntfImpl>(mHelper));
         return C2_OK;
     }
 
     virtual c2_status_t createInterface(
         c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *const interface,
-        std::function<void(C2ComponentInterface *)> deleter) override {
-        *interface = std::shared_ptr<C2ComponentInterface>(
-            new SimpleInterface<C2GoldfishVpxDec::IntfImpl>(
+        std::function<void(C2ComponentInterface *)> /*deleter*/) override {
+        *interface = std::make_shared<SimpleInterface<C2GoldfishVpxDec::IntfImpl>>(
                 COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishVpxDec::IntfImpl>(mHelper)),
-            deleter);
+                std::make_shared<C2GoldfishVpxDec::IntfImpl>(mHelper));
         return C2_OK;
     }
 

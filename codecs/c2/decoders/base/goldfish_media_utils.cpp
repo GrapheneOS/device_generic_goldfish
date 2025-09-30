@@ -161,8 +161,8 @@ GoldfishMediaTransportImpl::GoldfishMediaTransportImpl() {
 // static
 GoldfishMediaTransport *GoldfishMediaTransport::getInstance() {
     std::lock_guard<std::mutex> g{sSingletonMutex};
-    if (sTransport == nullptr) {
-        sTransport.reset(new GoldfishMediaTransportImpl());
+    if (!sTransport) {
+        sTransport = std::make_unique<GoldfishMediaTransportImpl>();
     }
     return sTransport.get();
 }

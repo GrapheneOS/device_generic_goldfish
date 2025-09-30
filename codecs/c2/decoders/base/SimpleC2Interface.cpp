@@ -47,7 +47,7 @@ SimpleInterface<void>::BaseParams::BaseParams(
     /*
     addParameter(
         DefineParam(mApiFeatures, C2_PARAMKEY_API_FEATURES)
-            .withConstValue(new C2ApiFeaturesSetting(C2Config::api_feature_t(
+            .withConstValue(std::make_shared<C2ApiFeaturesSetting>(C2Config::api_feature_t(
                 API_REFLECTION | API_VALUES | API_CURRENT_VALUES |
                 API_DEPENDENCY | API_SAME_INPUT_BUFFER)))
             .build());
@@ -74,21 +74,21 @@ SimpleInterface<void>::BaseParams::BaseParams(
     }
 
     addParameter(DefineParam(mKind, C2_PARAMKEY_COMPONENT_KIND)
-                     .withConstValue(new C2ComponentKindSetting(kind))
+                     .withConstValue(std::make_shared<C2ComponentKindSetting>(kind))
                      .build());
 
     addParameter(DefineParam(mDomain, C2_PARAMKEY_COMPONENT_DOMAIN)
-                     .withConstValue(new C2ComponentDomainSetting(domain))
+                     .withConstValue(std::make_shared<C2ComponentDomainSetting>(domain))
                      .build());
 
     // simple interfaces have single streams
     addParameter(DefineParam(mInputStreamCount, C2_PARAMKEY_INPUT_STREAM_COUNT)
-                     .withConstValue(new C2PortStreamCountTuning::input(1))
+                     .withConstValue(std::make_shared<C2PortStreamCountTuning::input>(1))
                      .build());
 
     addParameter(
         DefineParam(mOutputStreamCount, C2_PARAMKEY_OUTPUT_STREAM_COUNT)
-            .withConstValue(new C2PortStreamCountTuning::output(1))
+            .withConstValue(std::make_shared<C2PortStreamCountTuning::output>(1))
             .build());
 
     // set up buffer formats and allocators
@@ -135,7 +135,7 @@ SimpleInterface<void>::BaseParams::BaseParams(
     }
 
     addParameter(DefineParam(mInputFormat, C2_PARAMKEY_INPUT_STREAM_BUFFER_TYPE)
-                     .withConstValue(new C2StreamBufferTypeSetting::input(
+                     .withConstValue(std::make_shared<C2StreamBufferTypeSetting::input>(
                          0u, isEncoder ? rawBufferType : codedBufferType))
                      .build());
 
@@ -147,7 +147,7 @@ SimpleInterface<void>::BaseParams::BaseParams(
 
     addParameter(
         DefineParam(mOutputFormat, C2_PARAMKEY_OUTPUT_STREAM_BUFFER_TYPE)
-            .withConstValue(new C2StreamBufferTypeSetting::output(
+            .withConstValue(std::make_shared<C2StreamBufferTypeSetting::output>(
                 0u, isEncoder ? codedBufferType : rawBufferType))
             .build());
 
@@ -211,7 +211,7 @@ SimpleInterface<void>::BaseParams::BaseParams(
 
     addParameter(
             DefineParam(mCurrentWorkOrdinal, C2_PARAMKEY_CURRENT_WORK)
-            .withDefault(new C2CurrentWorkTuning())
+            .withDefault(std::make_shared<C2CurrentWorkTuning>())
             .withFields({ C2F(mCurrentWorkOrdinal, m.timeStamp).any(),
                           C2F(mCurrentWorkOrdinal, m.frameIndex).any(),
                           C2F(mCurrentWorkOrdinal, m.customOrdinal).any() })
@@ -220,8 +220,8 @@ SimpleInterface<void>::BaseParams::BaseParams(
 
     addParameter(
             DefineParam(mLastInputQueuedWorkOrdinal,
-    C2_PARAMKEY_LAST_INPUT_QUEUED) .withDefault(new
-    C2LastWorkQueuedTuning::input()) .withFields({
+    C2_PARAMKEY_LAST_INPUT_QUEUED).withDefault(std::make_shared<C2LastWorkQueuedTuning::input>())
+                                  .withFields({
     C2F(mLastInputQueuedWorkOrdinal, m.timeStamp).any(),
                           C2F(mLastInputQueuedWorkOrdinal, m.frameIndex).any(),
                           C2F(mLastInputQueuedWorkOrdinal,
@@ -231,8 +231,8 @@ SimpleInterface<void>::BaseParams::BaseParams(
 
     addParameter(
             DefineParam(mLastOutputQueuedWorkOrdinal,
-    C2_PARAMKEY_LAST_OUTPUT_QUEUED) .withDefault(new
-    C2LastWorkQueuedTuning::output()) .withFields({
+    C2_PARAMKEY_LAST_OUTPUT_QUEUED).withDefault(std::make_shared<C2LastWorkQueuedTuning::output>())
+                                   .withFields({
     C2F(mLastOutputQueuedWorkOrdinal, m.timeStamp).any(),
                           C2F(mLastOutputQueuedWorkOrdinal, m.frameIndex).any(),
                           C2F(mLastOutputQueuedWorkOrdinal,
@@ -252,33 +252,33 @@ SimpleInterface<void>::BaseParams::BaseParams(
 void SimpleInterface<void>::BaseParams::noInputLatency() {
     addParameter(
         DefineParam(mRequestedInputDelay, C2_PARAMKEY_INPUT_DELAY_REQUEST)
-            .withConstValue(new C2PortRequestedDelayTuning::input(0u))
+            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::input>(0u))
             .build());
 
     addParameter(DefineParam(mActualInputDelay, C2_PARAMKEY_INPUT_DELAY)
-                     .withConstValue(new C2PortActualDelayTuning::input(0u))
+                     .withConstValue(std::make_shared<C2PortActualDelayTuning::input>(0u))
                      .build());
 }
 
 void SimpleInterface<void>::BaseParams::noOutputLatency() {
     addParameter(
         DefineParam(mRequestedOutputDelay, C2_PARAMKEY_OUTPUT_DELAY_REQUEST)
-            .withConstValue(new C2PortRequestedDelayTuning::output(0u))
+            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::output>(0u))
             .build());
 
     addParameter(DefineParam(mActualOutputDelay, C2_PARAMKEY_OUTPUT_DELAY)
-                     .withConstValue(new C2PortActualDelayTuning::output(0u))
+                     .withConstValue(std::make_shared<C2PortActualDelayTuning::output>(0u))
                      .build());
 }
 
 void SimpleInterface<void>::BaseParams::noPipelineLatency() {
     addParameter(
         DefineParam(mRequestedPipelineDelay, C2_PARAMKEY_PIPELINE_DELAY_REQUEST)
-            .withConstValue(new C2RequestedPipelineDelayTuning(0u))
+            .withConstValue(std::make_shared<C2RequestedPipelineDelayTuning>(0u))
             .build());
 
     addParameter(DefineParam(mActualPipelineDelay, C2_PARAMKEY_PIPELINE_DELAY)
-                     .withConstValue(new C2ActualPipelineDelayTuning(0u))
+                     .withConstValue(std::make_shared<C2ActualPipelineDelayTuning>(0u))
                      .build());
 }
 
@@ -301,13 +301,13 @@ void SimpleInterface<void>::BaseParams::noPrivateBuffers() {
 void SimpleInterface<void>::BaseParams::noInputReferences() {
     addParameter(
         DefineParam(mMaxInputReferenceAge, C2_PARAMKEY_INPUT_MAX_REFERENCE_AGE)
-            .withConstValue(new C2StreamMaxReferenceAgeTuning::input(0u))
+            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::input>(0u))
             .build());
 
     addParameter(
         DefineParam(mMaxInputReferenceCount,
                     C2_PARAMKEY_INPUT_MAX_REFERENCE_COUNT)
-            .withConstValue(new C2StreamMaxReferenceCountTuning::input(0u))
+            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::input>(0u))
             .build());
 }
 
@@ -315,19 +315,19 @@ void SimpleInterface<void>::BaseParams::noOutputReferences() {
     addParameter(
         DefineParam(mMaxOutputReferenceAge,
                     C2_PARAMKEY_OUTPUT_MAX_REFERENCE_AGE)
-            .withConstValue(new C2StreamMaxReferenceAgeTuning::output(0u))
+            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::output>(0u))
             .build());
 
     addParameter(
         DefineParam(mMaxOutputReferenceCount,
                     C2_PARAMKEY_OUTPUT_MAX_REFERENCE_COUNT)
-            .withConstValue(new C2StreamMaxReferenceCountTuning::output(0u))
+            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::output>(0u))
             .build());
 }
 
 void SimpleInterface<void>::BaseParams::noTimeStretch() {
     addParameter(DefineParam(mTimeStretch, C2_PARAMKEY_TIME_STRETCH)
-                     .withConstValue(new C2ComponentTimeStretchTuning(1.f))
+                     .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
                      .build());
 }
 

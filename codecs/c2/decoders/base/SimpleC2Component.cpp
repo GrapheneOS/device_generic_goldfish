@@ -199,8 +199,8 @@ struct DummyReadView : public C2ReadView {
 
 SimpleC2Component::SimpleC2Component(
     const std::shared_ptr<C2ComponentInterface> &intf)
-    : mDummyReadView(DummyReadView()), mIntf(intf), mLooper(new ALooper),
-      mHandler(new WorkHandler) {
+    : mDummyReadView(DummyReadView()), mIntf(intf), mLooper(sp<ALooper>::make()),
+      mHandler(sp<WorkHandler>::make()) {
     mLooper->setName(intf->getName().c_str());
     (void)mLooper->registerHandler(mHandler);
     mLooper->start(false, false, ANDROID_PRIORITY_VIDEO);
@@ -424,7 +424,7 @@ void SimpleC2Component::finish(
 void SimpleC2Component::cloneAndSend(
     uint64_t frameIndex, const std::unique_ptr<C2Work> &currentWork,
     std::function<void(const std::unique_ptr<C2Work> &)> fillWork) {
-    std::unique_ptr<C2Work> work(new C2Work);
+    std::unique_ptr<C2Work> work = std::make_unique<C2Work>();
     if (currentWork->input.ordinal.frameIndex == frameIndex) {
         work->input.flags = currentWork->input.flags;
         work->input.ordinal = currentWork->input.ordinal;
@@ -437,7 +437,7 @@ void SimpleC2Component::cloneAndSend(
         work->input.flags = queue->pending().at(frameIndex)->input.flags;
         work->input.ordinal = queue->pending().at(frameIndex)->input.ordinal;
     }
-    work->worklets.emplace_back(new C2Worklet);
+    work->worklets.emplace_back(std::make_unique<C2Worklet>());
     if (work) {
         fillWork(work);
         std::shared_ptr<C2Component::Listener> listener =
