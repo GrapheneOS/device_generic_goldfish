@@ -34,6 +34,7 @@ namespace android {
 namespace hardware {
 namespace radio {
 namespace implementation {
+using data::DataCallFailCause;
 using data::DataProfileInfo;
 using data::PdpProtocolType;
 using data::SetupDataCallResult;
@@ -55,20 +56,23 @@ std::string_view getProtocolStr(const PdpProtocolType p) {
     }
 }
 
-std::string formatCGDCONT(const int cid,
-                          const PdpProtocolType protocol,
-                          const std::string_view apn) {
+std::pair<DataCallFailCause, std::string>
+formatCGDCONT(const int cid,
+              const PdpProtocolType protocol,
+              const std::string_view apn) {
     const std::string_view protocolStr = getProtocolStr(protocol);
     if (protocolStr.empty()) {
-        return FAILURE_V("", "Unexpected protocol: %s", toString(protocol).c_str());
+        return FAILURE_V(std::make_pair(DataCallFailCause::UNKNOWN_PDP_ADDRESS_TYPE, ""),
+                         "Unexpected protocol: %s", toString(protocol).c_str());
     }
 
     if (apn.empty()) {
-        return FAILURE_V("", "%s", "APN is empty");
+        return FAILURE_V(std::make_pair(DataCallFailCause::MISSING_UNKNOWN_APN, ""),
+                         "%s", "APN is empty");
     }
 
-    return std::format("AT+CGDCONT={0:d},\"{1:s}\",\"{2:s}\",,0,0",
-                       cid, protocolStr, apn);
+    return {DataCallFailCause::NONE,
+            std::format("AT+CGDCONT={0:d},\"{1:s}\",\"{2:s}\",,0,0", cid, protocolStr, apn)};
 }
 
 bool setInterfaceState(const char* interfaceName, const bool on) {
@@ -166,6 +170,49 @@ bool setIpAddr(const char *addr, const int addrSize,
     return true;
 }
 
+DataCallFailCause toDataCallFailCause(const RadioError e) {
+    switch (e) {
+    case RadioError::NONE:
+        return DataCallFailCause::NONE;
+
+    case RadioError::INTERNAL_ERR:
+        return DataCallFailCause::MODEM_RESTART;
+
+    case RadioError::REQUEST_NOT_SUPPORTED:
+        return DataCallFailCause::FEATURE_NOT_SUPP;
+
+    case RadioError::RADIO_NOT_AVAILABLE:
+        return DataCallFailCause::RADIO_POWER_OFF;
+
+    case RadioError::SIM_ABSENT:
+    case RadioError::SIM_PIN2:
+    case RadioError::SIM_PUK2:
+    case RadioError::SIM_BUSY:
+    case RadioError::SIM_FULL:
+        return DataCallFailCause::INVALID_SIM_STATE;
+
+    case RadioError::NO_NETWORK_FOUND:
+        return DataCallFailCause::NETWORK_FAILURE;
+
+    case RadioError::NETWORK_REJECT:
+        return DataCallFailCause::OPERATOR_BARRED;
+
+    case RadioError::PASSWORD_INCORRECT:
+        return DataCallFailCause::USER_AUTHENTICATION;
+
+    case RadioError::INVALID_ARGUMENTS:
+    case RadioError::NO_SUCH_ELEMENT:
+        return DataCallFailCause::INVALID_MANDATORY_INFO;
+
+    case RadioError::NO_MEMORY:
+        return DataCallFailCause::INSUFFICIENT_RESOURCES;
+
+    default:
+    case RadioError::GENERIC_FAILURE:
+        return DataCallFailCause::ERROR_UNSPECIFIED;
+    }
+}
+
 } // namespace
 
 RadioData::RadioData(std::shared_ptr<AtChannel> atChannel) : mAtChannel(std::move(atChannel)) {
@@ -247,17 +294,38 @@ ScopedAStatus RadioData::setupDataCall(const int32_t serial,
         using CmeError = AtResponse::CmeError;
         using CGCONTRDP = AtResponse::CGCONTRDP;
 
-        RadioError status;
         const int32_t cid = allocateId();
+        RadioError status;
 
-        std::string request = formatCGDCONT(cid, dataProfileInfo.protocol,
-                                            dataProfileInfo.apn);
-        if (request.empty()) {
+        SetupDataCallResult setupDataCallResult = {
+            .suggestedRetryTime = -1,
+            .cid = cid,
+            .active = SetupDataCallResult::DATA_CONNECTION_STATUS_ACTIVE,
+            .type = dataProfileInfo.protocol,
+            .ifname = kInterfaceName,
+            .mtuV4 = 1500,
+            .mtuV6 = 1500,
+            .handoverFailureMode = SetupDataCallResult::HANDOVER_FAILURE_MODE_LEGACY,
+            .pduSessionId = pduSessionId,
+        };
+
+        std::string request;
+        std::tie(setupDataCallResult.cause, request) =
+                formatCGDCONT(cid, dataProfileInfo.protocol, dataProfileInfo.apn);
+        if (setupDataCallResult.cause != DataCallFailCause::NONE) {
             status = RadioError::INVALID_ARGUMENTS;
 
 failed:     releaseId(cid);
+            if (setupDataCallResult.cause == DataCallFailCause::NONE) {
+                setupDataCallResult.cause = toDataCallFailCause(status);
+            }
+
+            setupDataCallResult.cid = -1;
+            setupDataCallResult.active = SetupDataCallResult::DATA_CONNECTION_STATUS_INACTIVE;
+            setupDataCallResult.suggestedRetryTime = 10000;
+
             NOT_NULL(mRadioDataResponse)->setupDataCallResponse(
-                    makeRadioResponseInfo(serial, status), {});
+                    makeRadioResponseInfo(serial, status), setupDataCallResult);
             return status != RadioError::INTERNAL_ERR;
         }
 
@@ -276,18 +344,6 @@ failed:     releaseId(cid);
         } else if (!response->holds<AtResponse::OK>()) {
             response->unexpected(FAILURE_DEBUG_PREFIX, kFunc);
         }
-
-        SetupDataCallResult setupDataCallResult = {
-            .suggestedRetryTime = -1,
-            .cid = cid,
-            .active = SetupDataCallResult::DATA_CONNECTION_STATUS_ACTIVE,
-            .type = dataProfileInfo.protocol,
-            .ifname = kInterfaceName,
-            .mtuV4 = 1500,
-            .mtuV6 = 1500,
-            .handoverFailureMode = SetupDataCallResult::HANDOVER_FAILURE_MODE_LEGACY,
-            .pduSessionId = pduSessionId,
-        };
 
         request = std::format("AT+CGCONTRDP={0:d}", cid);
         response =
