@@ -8,11 +8,10 @@ package {
 }
 
 cc_binary {
-    name: "android.hardware.media.c2@1.0-service-goldfish",
+    name: "android.hardware.media.c2-service-goldfish",
 
     defaults: [
-        "hidl_defaults",
-        "libcodec2-hidl-defaults",
+        "libcodec2-aidl-defaults",
     ],
     vendor: true,
     relative_install_path: "hw",
@@ -21,8 +20,8 @@ cc_binary {
         "service.cpp",
     ],
 
-    init_rc: ["android.hardware.media.c2@1.0-service-goldfish.rc"],
-    vintf_fragments: ["android.hardware.media.c2@1.0-service-goldfish.xml"],
+    init_rc: ["android.hardware.media.c2-service-goldfish.rc"],
+    vintf_fragments: ["android.hardware.media.c2-service-goldfish.xml"],
 
     shared_libs: [
         "libgoldfish_codec2_store",
@@ -31,6 +30,14 @@ cc_binary {
         "libhidlbase",
         "liblog",
         "libutils",
+    ],
+
+    header_libs: [
+        "libdebug.ranchu",
+    ],
+
+    cflags: [
+        "-DLOG_TAG=\"android.hardware.media.c2-service-goldfish\"",
     ],
 
     required: ["android.hardware.media.c2-default-seccomp_policy"],

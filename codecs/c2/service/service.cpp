@@ -2,15 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-//#define LOG_NDEBUG 0
-#define LOG_TAG "android.hardware.media.c2@1.0-service-goldfish"
-
-#include <C2Component.h>
-#include <codec2/hidl/1.0/ComponentStore.h>
-#include <hidl/HidlTransportSupport.h>
+#include <android/binder_manager.h>
+#include <android/binder_process.h>
+#include <codec2/aidl/ComponentStore.h>
 #include <log/log.h>
 #include <minijail.h>
 
+#include <debug.h>
 #include <goldfish_codec2/store/GoldfishComponentStore.h>
 
 // Default policy for codec2.0 service.
@@ -23,20 +21,27 @@ static constexpr char kExtSeccompPolicyPath[] =
     "/vendor/etc/seccomp_policy/codec2.vendor.ext.policy";
 
 int main(int /* argc */, char ** /* argv */) {
+    using aidl::android::hardware::media::c2::utils::ComponentStore;
+
     signal(SIGPIPE, SIG_IGN);
     android::SetUpMinijail(kBaseSeccompPolicyPath, kExtSeccompPolicyPath);
 
-    android::hardware::configureRpcThreadpool(8, true /* callerWillJoin */);
+    ABinderProcess_setThreadPoolMaxThreadCount(4);
+    ABinderProcess_startThreadPool();
 
-    using namespace ::android::hardware::media::c2::V1_0;
-    const auto store = ::android::sp<utils::ComponentStore>::make(
+    const auto cs = ndk::SharedRefBase::make<ComponentStore>(
             android::GoldfishComponentStore::Create());
 
-    if (store->registerAsService("default") != android::OK) {
-        ALOGE("Cannot register Codec2's IComponentStore service.");
-        return 1;
+    {
+        const std::string instance = std::string(ComponentStore::descriptor) + "/default";
+
+        if (AServiceManager_addService(cs->asBinder().get(),
+                                       instance.c_str()) != STATUS_OK) {
+            return FAILURE_V(android::NO_INIT,
+                             "Could not register '%s'", instance.c_str());
+        }
     }
 
-    android::hardware::joinRpcThreadpool();
-    return 0;
+    ABinderProcess_joinThreadPool();
+    return EXIT_FAILURE;  // never exits
 }
