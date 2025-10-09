@@ -22,15 +22,11 @@ package {
     default_applicable_licenses: ["device_generic_goldfish_license"],
 }
 
-filegroup {
-    name: "android.hardware.radio.ranchu-manifests",
-    srcs: [
-        "android.hardware.radio.ranchu.xml",
-    ],
-}
-
-filegroup {
-    name: "android.hardware.radio.ranchu-src",
+cc_binary {
+    name: "android.hardware.radio-service.ranchu",
+    relative_install_path: "hw",
+    vendor: true,
+    cpp_std: "c++20",
     srcs: [
         "AtChannel.cpp",
         "AtResponse.cpp",
@@ -51,16 +47,8 @@ filegroup {
         "RadioVoice.cpp",
         "Sap.cpp",
     ],
-}
-
-cc_defaults {
-    name: "android.hardware.radio-service.ranchu.defaults",
-    vendor: true,
-    relative_install_path: "hw",
-    cpp_std: "c++20",
-    srcs: [
-        ":android.hardware.radio.ranchu-src",
-    ],
+    init_rc: ["android.hardware.radio.ranchu.rc"],
+    vintf_fragments: ["android.hardware.radio.ranchu.xml"],
     shared_libs: [
         "android.hardware.radio.config-V5-ndk",
         "android.hardware.radio.data-V5-ndk",
@@ -80,17 +68,8 @@ cc_defaults {
         "libutils",
     ],
     cflags: [
-        "-DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION",
-    ],
-}
-
-cc_binary {
-    name: "android.hardware.radio-service.ranchu",
-    defaults: ["android.hardware.radio-service.ranchu.defaults"],
-    init_rc: ["android.hardware.radio.ranchu.rc"],
-    vintf_fragments: ["android.hardware.radio.ranchu.xml"],
-    cflags: [
         "-DLOG_TAG=\"radio-service.ranchu\"",
+        "-DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION",
     ],
     required: [
         "EmulatorRadioConfig",
