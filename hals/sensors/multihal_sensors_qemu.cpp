@@ -62,7 +62,7 @@ bool MultihalSensors::setSensorsReportingImpl(SensorsTransport& st,
                        getQemuSensorNameByHandle(sensorHandle),
                        (enabled ? 1 : 0));
 
-    if (st.Send(buffer, len) < 0) {
+    if (st.Send(CONTROL, buffer, len) < 0) {
         ALOGE("%s:%d: send for %s failed", __func__, __LINE__, st.Name());
         return false;
     } else {
@@ -87,7 +87,7 @@ bool MultihalSensors::setAllSensorsReporting(SensorsTransport& st,
 bool MultihalSensors::setSensorsGuestTime(SensorsTransport& st, const int64_t value) {
     char buffer[64];
     int len = snprintf(buffer, sizeof(buffer), "time:%" PRId64, value);
-    if (st.Send(buffer, len) < 0) {
+    if (st.Send(CONTROL, buffer, len) < 0) {
         ALOGE("%s:%d: send for %s failed", __func__, __LINE__, st.Name());
         return false;
     } else {
@@ -99,7 +99,7 @@ bool MultihalSensors::setSensorsUpdateIntervalMs(SensorsTransport& st,
                                                  const uint32_t intervalMs) {
     char buffer[64];
     const int len = snprintf(buffer, sizeof(buffer), "set-delay:%u", intervalMs);
-    if (st.Send(buffer, len) < 0) {
+    if (st.Send(CONTROL, buffer, len) < 0) {
         ALOGE("%s:%d: send for %s failed", __func__, __LINE__, st.Name());
         return false;
     } else {
@@ -114,7 +114,7 @@ double MultihalSensors::randomError(float lo, float hi) {
 
 void MultihalSensors::parseQemuSensorEventLocked(QemuSensorsProtocolState* state) {
     char buf[256];
-    const int len = m_sensorsTransport->Receive(buf, sizeof(buf) - 1);
+    const int len = m_sensorsTransport->Receive(DATA, buf, sizeof(buf) - 1);
     if (len < 0) {
         ALOGE("%s:%d: receive for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
     }

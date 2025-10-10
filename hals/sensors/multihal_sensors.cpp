@@ -32,10 +32,10 @@ namespace {
 constexpr int64_t kMaxSamplingPeriodNs = 1000000000;
 
 struct SensorsTransportStub : public SensorsTransport {
-    int Send(const void*, int) override { return -1; }
-    int Receive(void*, int) override { return -1; }
+    int Send(SensorsMessageType, const void*, int) override { return -1; }
+    int Receive(SensorsMessageType, void*, int) override { return -1; }
     bool Ok() const override { return false; }
-    int Fd() const override { return -1; }
+    int Fd(SensorsMessageType) const override { return -1; }
     const char* Name() const override { return "stub"; }
 };
 
@@ -66,11 +66,11 @@ MultihalSensors::MultihalSensors(SensorsTransportFactory stf)
         using namespace std::literals;
         const std::string_view kListSensorsCmd = "list-sensors"sv;
 
-        LOG_ALWAYS_FATAL_IF(st->Send(kListSensorsCmd.data(), kListSensorsCmd.size()) < 0,
+        LOG_ALWAYS_FATAL_IF(st->Send(CONTROL, kListSensorsCmd.data(), kListSensorsCmd.size()) < 0,
                             "%s:%d: send for %s failed", __func__, __LINE__, st->Name());
 
         char buffer[64];
-        const int len = st->Receive(buffer, sizeof(buffer) - 1);
+        const int len = st->Receive(CONTROL, buffer, sizeof(buffer) - 1);
         LOG_ALWAYS_FATAL_IF(len < 0, "%s:%d: receive for %s failed", __func__, __LINE__,
                             st->Name());
 
@@ -437,7 +437,7 @@ void MultihalSensors::qemuSensorListenerThread() {
             m_sensorsTransport = st.get();
         }
 
-        const bool cont = qemuSensorListenerThreadImpl(st->Fd());
+        const bool cont = qemuSensorListenerThreadImpl(st->Fd(DATA));
 
         {
             std::unique_lock<std::mutex> lock(m_mtx);

@@ -18,12 +18,19 @@
 
 namespace goldfish {
 
+enum SensorsMessageType {
+    // Sensors HAL handshake and control messages.
+    CONTROL = 0,
+    // High-frequency sensors data reported from host.
+    DATA
+};
+
 class SensorsTransport {
  public:
-    virtual int Send(const void* msg, int size) = 0;
-    virtual int Receive(void* msg, int maxsize) = 0;
+    virtual int Send(SensorsMessageType type, const void* msg, int size) = 0;
+    virtual int Receive(SensorsMessageType type, void* msg, int maxsize) = 0;
     virtual bool Ok() const = 0;
-    virtual int Fd() const = 0;
+    virtual int Fd(SensorsMessageType type) const = 0;
     virtual const char* Name() const = 0;
 
     virtual ~SensorsTransport() = default;

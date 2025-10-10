@@ -28,11 +28,11 @@ class QemudSensorsTransport : public goldfish::SensorsTransport {
     QemudSensorsTransport()
         : m_qemuSensorsFd(qemud_channel_open("sensors")) {}
 
-    int Send(const void* msg, int size) override {
+    int Send(goldfish::SensorsMessageType, const void* msg, int size) override {
         return qemud_channel_send(m_qemuSensorsFd.get(), msg, size);
     }
 
-    int Receive(void* msg, int maxsize) override {
+    int Receive(goldfish::SensorsMessageType, void* msg, int maxsize) override {
         return qemud_channel_recv(m_qemuSensorsFd.get(), msg, maxsize);
     }
 
@@ -40,7 +40,7 @@ class QemudSensorsTransport : public goldfish::SensorsTransport {
         return m_qemuSensorsFd.ok();
     }
 
-    int Fd() const override {
+    int Fd(goldfish::SensorsMessageType) const override {
         return m_qemuSensorsFd.get();
     }
 
