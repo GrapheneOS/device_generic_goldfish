@@ -1596,29 +1596,29 @@ RadioError RadioNetwork::validateNetworkScanRequest(const network::NetworkScanRe
     case NetworkScanRequest::SCAN_TYPE_PERIODIC:
         if ((req.interval < NetworkScanRequest::SCAN_INTERVAL_RANGE_MIN) ||
                 (req.interval > NetworkScanRequest::SCAN_INTERVAL_RANGE_MAX)) {
-            return RadioError::INVALID_ARGUMENTS;
+            return FAILURE(RadioError::INVALID_ARGUMENTS);
         }
         break;
 
     default:
-        return RadioError::INVALID_ARGUMENTS;
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
     }
 
     if ((req.maxSearchTime < NetworkScanRequest::MAX_SEARCH_TIME_RANGE_MIN) ||
             (req.maxSearchTime > NetworkScanRequest::MAX_SEARCH_TIME_RANGE_MAX)) {
-        return RadioError::INVALID_ARGUMENTS;
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
     }
 
 
     if (req.incrementalResults &&
             ((req.incrementalResultsPeriodicity < NetworkScanRequest::INCREMENTAL_RESULTS_PREIODICITY_RANGE_MIN) ||
             (req.incrementalResultsPeriodicity > NetworkScanRequest::INCREMENTAL_RESULTS_PREIODICITY_RANGE_MAX))) {
-        return RadioError::INVALID_ARGUMENTS;
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
     }
 
 
     if (req.specifiers.empty()) {
-        return RadioError::INVALID_ARGUMENTS;
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
     }
 
     using network::EutranBands;
@@ -1629,28 +1629,19 @@ RadioError RadioNetwork::validateNetworkScanRequest(const network::NetworkScanRe
         switch (specifier.accessNetwork) {
         case AccessNetwork::GERAN:
             if (specifier.bands.getTag() != RadioAccessSpecifierBands::geranBands) {
-                return RadioError::INVALID_ARGUMENTS;
-            }
-            if (specifier.bands.get<RadioAccessSpecifierBands::geranBands>().empty()) {
-                return RadioError::INVALID_ARGUMENTS;
+                return FAILURE(RadioError::INVALID_ARGUMENTS);
             }
             break;
 
         case AccessNetwork::UTRAN:
             if (specifier.bands.getTag() != RadioAccessSpecifierBands::utranBands) {
-                return RadioError::INVALID_ARGUMENTS;
-            }
-            if (specifier.bands.get<RadioAccessSpecifierBands::utranBands>().empty()) {
-                return RadioError::INVALID_ARGUMENTS;
+                return FAILURE(RadioError::INVALID_ARGUMENTS);
             }
             break;
 
         case AccessNetwork::EUTRAN:
             if (specifier.bands.getTag() != RadioAccessSpecifierBands::eutranBands) {
-                return RadioError::INVALID_ARGUMENTS;
-            }
-            if (specifier.bands.get<RadioAccessSpecifierBands::eutranBands>().empty()) {
-                return RadioError::INVALID_ARGUMENTS;
+                return FAILURE(RadioError::INVALID_ARGUMENTS);
             }
             for (const EutranBands band : specifier.bands.get<RadioAccessSpecifierBands::eutranBands>()) {
                 // see radio_network_test.cpp
@@ -1660,7 +1651,7 @@ RadioError RadioNetwork::validateNetworkScanRequest(const network::NetworkScanRe
                         switch (channel) {
                         case 1:
                         case 2:
-                            return RadioError::INVALID_ARGUMENTS;
+                            return FAILURE(RadioError::INVALID_ARGUMENTS);
 
                         default:
                             break;
@@ -1673,7 +1664,7 @@ RadioError RadioNetwork::validateNetworkScanRequest(const network::NetworkScanRe
                         switch (channel) {
                         case 128:
                         case 129:
-                            return RadioError::INVALID_ARGUMENTS;
+                            return FAILURE(RadioError::INVALID_ARGUMENTS);
 
                         default:
                             break;
@@ -1688,7 +1679,7 @@ RadioError RadioNetwork::validateNetworkScanRequest(const network::NetworkScanRe
             break;
 
         default:
-            return RadioError::INVALID_ARGUMENTS;
+            return FAILURE(RadioError::INVALID_ARGUMENTS);
         }
     }
 
