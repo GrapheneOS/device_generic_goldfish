@@ -89,10 +89,6 @@ PRODUCT_PACKAGES += \
     toybox_vendor \
     android.hardware.wifi-service \
     android.hardware.media.c2-service-goldfish \
-    libcodec2_goldfish_vp8dec \
-    libcodec2_goldfish_vp9dec \
-    libcodec2_goldfish_avcdec \
-    libcodec2_goldfish_hevcdec \
     sh_vendor \
     local_time.default \
     SdkSetup \

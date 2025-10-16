@@ -40,5 +40,11 @@ cc_binary {
         "-DLOG_TAG=\"android.hardware.media.c2-service-goldfish\"",
     ],
 
-    required: ["android.hardware.media.c2-default-seccomp_policy"],
+    required: [
+        "android.hardware.media.c2-default-seccomp_policy",
+        "libcodec2_goldfish_vp8dec",
+        "libcodec2_goldfish_vp9dec",
+        "libcodec2_goldfish_avcdec",
+        "libcodec2_goldfish_hevcdec",
+    ],
 }
