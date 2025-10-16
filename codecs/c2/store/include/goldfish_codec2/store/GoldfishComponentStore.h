@@ -24,54 +24,53 @@
 namespace android {
 
 class GoldfishComponentStore : public C2ComponentStore {
+    struct Private {};
+
   public:
     static std::shared_ptr<C2ComponentStore> Create();
 
-    virtual std::vector<std::shared_ptr<const C2Component::Traits>>
-    listComponents() override;
-    virtual std::shared_ptr<C2ParamReflector>
-    getParamReflector() const override;
-    virtual C2String getName() const override;
-    virtual c2_status_t querySupportedValues_sm(
-        std::vector<C2FieldSupportedValuesQuery> &fields) const override;
-    virtual c2_status_t querySupportedParams_nb(
-        std::vector<std::shared_ptr<C2ParamDescriptor>> *const params)
-        const override;
-    virtual c2_status_t query_sm(
-        const std::vector<C2Param *> &stackParams,
-        const std::vector<C2Param::Index> &heapParamIndices,
-        std::vector<std::unique_ptr<C2Param>> *const heapParams) const override;
-    virtual c2_status_t createInterface(
-        C2String name,
-        std::shared_ptr<C2ComponentInterface> *const interface) override;
-    virtual c2_status_t
-    createComponent(C2String name,
-                    std::shared_ptr<C2Component> *const component) override;
-    virtual c2_status_t
-    copyBuffer(std::shared_ptr<C2GraphicBuffer> src,
-               std::shared_ptr<C2GraphicBuffer> dst) override;
-    virtual c2_status_t config_sm(
-        const std::vector<C2Param *> &params,
-        std::vector<std::unique_ptr<C2SettingResult>> *const failures) override;
-    GoldfishComponentStore();
+    GoldfishComponentStore(Private);
 
-    virtual ~GoldfishComponentStore() override = default;
+    virtual C2String getName() const override;
+
+    virtual c2_status_t createComponent(C2String name,
+                                        std::shared_ptr<C2Component> *const component) override;
+
+    virtual c2_status_t createInterface(C2String name,
+                                        std::shared_ptr<C2ComponentInterface> *const interface) override;
+
+    virtual std::vector<std::shared_ptr<const C2Component::Traits>> listComponents() override;
+
+    virtual c2_status_t copyBuffer(std::shared_ptr<C2GraphicBuffer> src,
+                                   std::shared_ptr<C2GraphicBuffer> dst) override;
+
+
+    virtual c2_status_t query_sm(const std::vector<C2Param *> &stackParams,
+                                 const std::vector<C2Param::Index> &heapParamIndices,
+                                 std::vector<std::unique_ptr<C2Param>> *const heapParams) const override;
+
+    virtual c2_status_t config_sm(const std::vector<C2Param *> &params,
+                                  std::vector<std::unique_ptr<C2SettingResult>> *const failures) override;
+
+    virtual std::shared_ptr<C2ParamReflector> getParamReflector() const override;
+
+    virtual c2_status_t querySupportedParams_nb(std::vector<std::shared_ptr<C2ParamDescriptor>> *const params) const override;
+
+    virtual c2_status_t querySupportedValues_sm(std::vector<C2FieldSupportedValuesQuery> &fields) const override;
 
   private:
     struct ComponentModule
             : public C2ComponentFactory,
               public std::enable_shared_from_this<ComponentModule> {
-        virtual c2_status_t
-        createComponent(c2_node_id_t id,
-                        std::shared_ptr<C2Component> *component,
-                        ComponentDeleter deleter =
-                            std::default_delete<C2Component>()) override;
-        virtual c2_status_t createInterface(
-            c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *interface,
-            InterfaceDeleter deleter =
-                std::default_delete<C2ComponentInterface>()) override;
-
         c2_status_t init(const char* libPath);
+
+        virtual c2_status_t createComponent(c2_node_id_t id,
+                                            std::shared_ptr<C2Component> *component,
+                                            ComponentDeleter deleter) override;
+
+        virtual c2_status_t createInterface(c2_node_id_t id,
+                                            std::shared_ptr<C2ComponentInterface> *interface,
+                                            InterfaceDeleter deleter) override;
 
         std::shared_ptr<const C2Component::Traits> getTraits() const;
 
@@ -86,8 +85,10 @@ class GoldfishComponentStore : public C2ComponentStore {
                                 C2ComponentFactory::DestroyCodec2FactoryFunc>;
 
         c2_status_t createInterfaceImpl(
-                c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *interface,
-                InterfaceDeleter deleter, C2ComponentFactory& factory) const;
+                c2_node_id_t id,
+                std::shared_ptr<C2ComponentInterface> *interface,
+                InterfaceDeleter deleter,
+                C2ComponentFactory& factory) const;
 
         static std::pair<c2_status_t, std::shared_ptr<C2Component::Traits>>
                 buildTraits(const C2ComponentInterface& intf);
