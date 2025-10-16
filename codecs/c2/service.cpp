@@ -9,7 +9,7 @@
 #include <minijail.h>
 
 #include <debug.h>
-#include <goldfish_codec2/store/GoldfishComponentStore.h>
+#include "GoldfishComponentStore.h"
 
 // Default policy for codec2.0 service.
 static constexpr char kBaseSeccompPolicyPath[] =
@@ -30,7 +30,7 @@ int main(int /* argc */, char ** /* argv */) {
     ABinderProcess_startThreadPool();
 
     const auto cs = ndk::SharedRefBase::make<ComponentStore>(
-            android::GoldfishComponentStore::Create());
+            std::make_shared<goldfish::media::c2::GoldfishComponentStore>());
 
     {
         const std::string instance = std::string(ComponentStore::descriptor) + "/default";

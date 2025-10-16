@@ -20,14 +20,20 @@
 #include "goldfish_vpx_defs.h"
 #include <SimpleC2Component.h>
 
+#ifdef VP9
+#define C2_GOLDFISH_VPx_DEC_IMLP_TYPE C2GoldfishVp9Dec
+#else
+#define C2_GOLDFISH_VPx_DEC_IMLP_TYPE C2GoldfishVp8Dec
+#endif
+
 namespace android {
 
-struct C2GoldfishVpxDec : public SimpleC2Component {
+struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
     class IntfImpl;
 
-    C2GoldfishVpxDec(const char *name, c2_node_id_t id,
+    C2_GOLDFISH_VPx_DEC_IMLP_TYPE(const char *name, c2_node_id_t id,
                      const std::shared_ptr<IntfImpl> &intfImpl);
-    virtual ~C2GoldfishVpxDec();
+    virtual ~C2_GOLDFISH_VPx_DEC_IMLP_TYPE();
 
     // From SimpleC2Component
     c2_status_t onInit() override;
@@ -104,7 +110,7 @@ struct C2GoldfishVpxDec : public SimpleC2Component {
     bool mSignalledError{false};
     bool mFrameParallelMode{false}; // Frame parallel is only supported by VP9 decoder.
 
-    C2_DO_NOT_COPY(C2GoldfishVpxDec);
+    C2_DO_NOT_COPY(C2_GOLDFISH_VPx_DEC_IMLP_TYPE);
 };
 
 } // namespace android

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-//#define LOG_NDEBUG 0
-#define LOG_TAG "C2GoldfishHevcDec"
 #include <inttypes.h>
 #include <log/log.h>
 #include <media/stagefright/foundation/AUtils.h>
@@ -23,7 +21,6 @@
 
 #include <C2AllocatorGralloc.h>
 #include <C2PlatformSupport.h>
-//#include <android/hardware/graphics/common/1.0/types.h>
 
 #include <android/hardware/graphics/allocator/3.0/IAllocator.h>
 #include <android/hardware/graphics/mapper/3.0/IMapper.h>
@@ -35,12 +32,12 @@
 #include <C2PlatformSupport.h>
 #include <Codec2Mapper.h>
 #include <SimpleC2Interface.h>
-#include <goldfish_codec2/store/GoldfishComponentStore.h>
 #include <gralloc_cb_bp.h>
 
 #include <color_buffer_utils.h>
 
 #include "C2GoldfishHevcDec.h"
+#include "C2GoldfishHevcDecFactory.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -1079,45 +1076,27 @@ c2_status_t C2GoldfishHevcDec::drain(uint32_t drainMode,
     return drainInternal(drainMode, pool, nullptr);
 }
 
-class C2GoldfishHevcDecFactory : public C2ComponentFactory {
-  public:
-    C2GoldfishHevcDecFactory()
-        : mHelper(std::static_pointer_cast<C2ReflectorHelper>(
-              GoldfishComponentStore::Create()->getParamReflector())) {}
+std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishHevcDecFactory() {
+    struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
+        std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
+                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+            return {C2_OK, std::make_shared<C2GoldfishHevcDec>(
+                        COMPONENT_NAME, 0, std::make_shared<C2GoldfishHevcDec::IntfImpl>(reflector))};
+        }
 
-    virtual c2_status_t
-    createComponent(c2_node_id_t id,
-                    std::shared_ptr<C2Component> *const component,
-                    std::function<void(C2Component *)> /*deleter*/) override {
-        *component = std::make_shared<C2GoldfishHevcDec>(
-                COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishHevcDec::IntfImpl>(mHelper));
-        return C2_OK;
-    }
+        std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
+                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+            return {C2_OK, std::make_shared<SimpleInterface<C2GoldfishHevcDec::IntfImpl>>(
+                        COMPONENT_NAME, 0, std::make_shared<C2GoldfishHevcDec::IntfImpl>(reflector))};
+        }
 
-    virtual c2_status_t createInterface(
-        c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *const interface,
-        std::function<void(C2ComponentInterface *)> /*deleter*/) override {
-        *interface = std::make_shared<SimpleInterface<C2GoldfishHevcDec::IntfImpl>>(
-                COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishHevcDec::IntfImpl>(mHelper));
-        return C2_OK;
-    }
+        std::string_view getName() const override {
+            using namespace std::literals::string_view_literals;
+            return "hevcdec"sv;
+        }
+    };
 
-    virtual ~C2GoldfishHevcDecFactory() override = default;
-
-  private:
-    std::shared_ptr<C2ReflectorHelper> mHelper;
-};
+    return std::make_shared<ImplFactory>();
+}
 
 } // namespace android
-
-extern "C" ::C2ComponentFactory *CreateCodec2Factory() {
-    DDD("in %s", __func__);
-    return new ::android::C2GoldfishHevcDecFactory();
-}
-
-extern "C" void DestroyCodec2Factory(::C2ComponentFactory *factory) {
-    DDD("in %s", __func__);
-    delete factory;
-}
