@@ -225,27 +225,13 @@ c2_status_t GoldfishComponentStore::ComponentModule::init(const char* libPath) {
         return C2_NO_MEMORY;
     }
 
-    std::shared_ptr<C2ComponentInterface> intf;
-    c2_status_t res = createInterfaceImpl(0, &intf,
-                                          std::default_delete<C2ComponentInterface>(),
-                                          *componentFactory);
-    if (res != C2_OK) {
-        ALOGD("failed to create interface: %d", res);
-        return res;
-    }
-
-    std::tie(res, mTraits) = buildTraits(*intf);
-    if (res != C2_OK) {
-        return res;
-    }
-
     mLib = std::move(lib);
     mComponentFactory = std::move(componentFactory);
     return C2_OK;
 }
 
-std::pair<c2_status_t, std::shared_ptr<C2Component::Traits>>
-GoldfishComponentStore::ComponentModule::buildTraits(const C2ComponentInterface& intf) {
+std::shared_ptr<C2Component::Traits> GoldfishComponentStore::ComponentModule::buildTraits(
+        const C2ComponentInterface& intf) {
     const auto traits = std::make_shared<C2Component::Traits>();
     traits->name = intf.getName();
 
@@ -276,19 +262,19 @@ GoldfishComponentStore::ComponentModule::buildTraits(const C2ComponentInterface&
     res = intf.query_vb({}, {mediaTypeIndex}, C2_MAY_BLOCK, &params);
     if (res != C2_OK) {
         ALOGD("failed to query interface: %d", res);
-        return {res, {}};
+        return {};
     }
     if (params.size() != 1u) {
         ALOGD("failed to query interface: unexpected vector size: %zu",
               params.size());
-        return {C2_NO_INIT, {}};
+        return {};
     }
 
     C2PortMediaTypeSetting *mediaTypeConfig =
         C2PortMediaTypeSetting::From(params[0].get());
     if (mediaTypeConfig == nullptr) {
         ALOGD("failed to query media type");
-        return {C2_NO_INIT, {}};
+        return {};
     }
     traits->mediaType = std::string(
         mediaTypeConfig->m.value,
@@ -338,7 +324,7 @@ GoldfishComponentStore::ComponentModule::buildTraits(const C2ComponentInterface&
         }
     }
 
-    return {C2_OK, std::move(traits)};
+    return traits;
 }
 
 c2_status_t GoldfishComponentStore::ComponentModule::createInterfaceImpl(
@@ -373,7 +359,16 @@ c2_status_t GoldfishComponentStore::ComponentModule::createComponent(
 }
 
 std::shared_ptr<const C2Component::Traits> GoldfishComponentStore::ComponentModule::getTraits() const {
-    return mTraits;
+    std::shared_ptr<C2ComponentInterface> intf;
+    c2_status_t res = createInterfaceImpl(0, &intf,
+                                          std::default_delete<C2ComponentInterface>(),
+                                          *mComponentFactory);
+    if (res != C2_OK) {
+        ALOGD("failed to create interface: %d", res);
+        return {};
+    }
+
+    return buildTraits(*intf);
 }
 
 /****************************** GoldfishComponentStore::ComponentLoader ***************************/

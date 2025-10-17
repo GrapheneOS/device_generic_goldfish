@@ -90,12 +90,10 @@ class GoldfishComponentStore : public C2ComponentStore {
                 InterfaceDeleter deleter,
                 C2ComponentFactory& factory) const;
 
-        static std::pair<c2_status_t, std::shared_ptr<C2Component::Traits>>
-                buildTraits(const C2ComponentInterface& intf);
+        static std::shared_ptr<C2Component::Traits> buildTraits(const C2ComponentInterface& intf);
 
         LibHandle mLib;
         C2ComponentFactoryHandle mComponentFactory = {nullptr, nullptr};
-        std::shared_ptr<C2Component::Traits> mTraits;
     };
 
     struct ComponentLoader {
