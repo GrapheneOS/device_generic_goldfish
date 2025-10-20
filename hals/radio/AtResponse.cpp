@@ -1366,7 +1366,6 @@ AtResponsePtr AtResponse::CGDCONT::parse(const std::string_view str) {
 // 1,5,"epc.tmobile.com",10.0.2.15,10.0.2.2,10.0.2.3
 AtResponsePtr AtResponse::CGCONTRDP::parse(const std::string_view str) {
     CGCONTRDP cgcontrdp;
-    std::string_view unused;
     std::string_view localAddr;
 
     Parser parser(str);

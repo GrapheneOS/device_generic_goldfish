@@ -28,6 +28,7 @@
 
 #include <aidl/android/hardware/graphics/composer3/IComposerClient.h>
 #include <android-base/logging.h>
+#include <cutils/trace.h>
 #include <log/log.h>
 #include <utils/Trace.h>
 
@@ -77,6 +78,47 @@ inline ndk::ScopedAStatus ToBinderStatus(HWC3::Error error) {
     return ndk::ScopedAStatus::ok();
 }
 
+class TraceUtils {
+  public:
+    class TraceEnder {
+      public:
+        ~TraceEnder() { ATRACE_END(); }
+    };
+
+    static void atraceFormatBegin(const char* fmt, ...) {
+        const int BUFFER_SIZE = 256;
+        va_list ap;
+        char buf[BUFFER_SIZE];
+
+        va_start(ap, fmt);
+        vsnprintf(buf, BUFFER_SIZE, fmt, ap);
+        va_end(ap);
+
+        ATRACE_BEGIN(buf);
+    }
+
+    static void instantFormat(const char* fmt, ...) {
+        const int BUFFER_SIZE = 256;
+        va_list ap;
+        char buf[BUFFER_SIZE];
+
+        va_start(ap, fmt);
+        vsnprintf(buf, BUFFER_SIZE, fmt, ap);
+        va_end(ap);
+
+        ATRACE_INSTANT(buf);
+    }
+};
+
 }  // namespace aidl::android::hardware::graphics::composer3::impl
+
+#define ATRACE_FORMAT(fmt, ...)                                                 \
+    TraceUtils::TraceEnder traceEnder =                                         \
+            (CC_UNLIKELY(ATRACE_ENABLED()) &&                                   \
+                     (TraceUtils::atraceFormatBegin(fmt, ##__VA_ARGS__), true), \
+             TraceUtils::TraceEnder())
+
+#define ATRACE_FORMAT_INSTANT(fmt, ...) \
+    (CC_UNLIKELY(ATRACE_ENABLED()) && (TraceUtils::instantFormat(fmt, ##__VA_ARGS__), true))
 
 #endif

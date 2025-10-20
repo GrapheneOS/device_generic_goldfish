@@ -26,7 +26,7 @@ namespace hardware {
 namespace radio {
 namespace implementation {
 
-RadioIms::RadioIms(std::shared_ptr<AtChannel> atChannel) {
+RadioIms::RadioIms(std::shared_ptr<AtChannel> /*atChannel*/) {
 }
 
 ScopedAStatus RadioIms::setSrvccCallInfo(
@@ -79,7 +79,15 @@ ScopedAStatus RadioIms::updateImsCallStatus(
     return ScopedAStatus::ok();
 }
 
-void RadioIms::atResponseSink(const AtResponsePtr& response) {}
+ScopedAStatus RadioIms::updateAllowedServices(
+        const int32_t serial,
+        const std::vector<ims::ImsService>& /*imsServices*/) {
+    NOT_NULL(mRadioImsResponse)->updateAllowedServicesResponse(
+        makeRadioResponseInfoNOP(serial));
+    return ScopedAStatus::ok();
+}
+
+void RadioIms::atResponseSink(const AtResponsePtr& /*response*/) {}
 
 ScopedAStatus RadioIms::setResponseFunctions(
         const std::shared_ptr<ims::IRadioImsResponse>& radioImsResponse,

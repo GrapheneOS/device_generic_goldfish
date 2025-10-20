@@ -90,20 +90,19 @@ void AtChannel::requestLoop() {
         const Requester requester = getRequester();
         if (requester) {
             if (!requester(getHostChannelPipe())) {
-                mHostChannel.reset();
+                resetHostChannel();
             }
         } else {
             break;
         }
     }
 
-    mHostChannel.reset();
+    resetHostChannel();
 }
 
 void AtChannel::readingLoop(const int hostChannelFd) {
     std::vector<char> unconsumed;
     while (receiveResponses(hostChannelFd, &unconsumed)) {}
-    LOG_ALWAYS_FATAL("We could not parse the modem response");
 }
 
 AtChannel::Requester AtChannel::getRequester() {
@@ -132,26 +131,41 @@ void AtChannel::broadcastResponse(const AtResponsePtr& response) {
     mResponseSinks.erase(newEnd, mResponseSinks.end());
 }
 
+void AtChannel::resetHostChannel(unique_fd fd) {
+    std::lock_guard<std::mutex> lock(mHostChannelMtx);
+    mHostChannel = std::move(fd);
+}
+
+int AtChannel::getHostChannelFd() const {
+    std::lock_guard<std::mutex> lock(mHostChannelMtx);
+    return mHostChannel.get();
+}
+
 AtChannel::RequestPipe AtChannel::getHostChannelPipe() {
-    if (!mHostChannel.ok()) {
+    int hostChannelFd = getHostChannelFd();
+    if (hostChannelFd < 0) {
         if (mReaderThread.joinable()) {
             mReaderThread.join();
         }
 
-        mHostChannel = mHostChannelFactory();
-        LOG_ALWAYS_FATAL_IF(!mHostChannel.ok(),
-                            "%s:%d: Can't open the host channel", __func__, __LINE__);
+        unique_fd newHostChannel = mHostChannelFactory();
+        if (!newHostChannel.ok()) {
+            return RequestPipe(FAILURE_V(-1, "%s", "mHostChannelFactory failed"));
+        }
 
-        const int hostChannelFd = mHostChannel.get();
+        hostChannelFd = newHostChannel.get();
+        resetHostChannel(std::move(newHostChannel));
+
         mReaderThread = std::thread([this, hostChannelFd](){
             readingLoop(hostChannelFd);
+            resetHostChannel();
         });
 
         LOG_ALWAYS_FATAL_IF(!mInitSequence(RequestPipe(hostChannelFd), mConversation),
                             "%s:%d: Can't init the host channel", __func__, __LINE__);
     }
 
-    return RequestPipe(mHostChannel.get());
+    return RequestPipe(hostChannelFd);
 }
 
 bool AtChannel::receiveResponses(const int hostChannelFd,
@@ -205,6 +219,7 @@ bool AtChannel::receiveResponsesImpl(const char* begin, const char* const end,
             unconsumed->assign(begin, end);
             return true;
         } else if (next == nullptr) {
+            RLOGE("Can't parse '%*.*s'", int(end - begin), int(end - begin), begin);
             return false;
         } else {
             begin = next;

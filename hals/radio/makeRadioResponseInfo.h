@@ -30,12 +30,12 @@ RadioResponseInfo makeRadioResponseInfoUnsupported(int32_t serial,
                                                    const char* klass,
                                                    const char* method);
 
-static RadioResponseInfo makeRadioResponseInfoDeprecated(int32_t serial) {
+inline RadioResponseInfo makeRadioResponseInfoDeprecated(int32_t serial) {
     return makeRadioResponseInfo(serial, RadioError::REQUEST_NOT_SUPPORTED);
 }
 
 // the same as makeRadioResponseInfo, but allows grepping
-static RadioResponseInfo makeRadioResponseInfoNOP(int32_t serial) {
+inline RadioResponseInfo makeRadioResponseInfoNOP(int32_t serial) {
     return makeRadioResponseInfo(serial);
 }
 

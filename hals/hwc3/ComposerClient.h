@@ -131,6 +131,7 @@ class ComposerClient : public BnComposerClient {
     ndk::ScopedAStatus getLuts(int64_t displayId,
             const std::vector<Buffer>&,
             std::vector<Luts>*) override;
+    ndk::ScopedAStatus getDisplayKnownVsyncSample(int64_t displayId, VsyncSample* sample) override;
 
    protected:
     ndk::SpAIBinder createBinder() override;
@@ -148,6 +149,8 @@ class ComposerClient : public BnComposerClient {
                                                 Display& display, const std::vector<float>& matrix);
     void executeDisplayCommandSetBrightness(CommandResultWriter& commandResults, Display& display,
                                             const DisplayBrightness& brightness);
+    void executeDisplayCommandSetActiveConfig(CommandResultWriter& commandResults, Display& display,
+                                              ActiveConfigCommand activeConfig);
     void executeDisplayCommandSetClientTarget(CommandResultWriter& commandResults, Display& display,
                                               const ClientTarget& command);
     void executeDisplayCommandSetOutputBuffer(CommandResultWriter& commandResults, Display& display,

@@ -113,7 +113,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
         addParameter(
             DefineParam(mActualOutputDelay, C2_PARAMKEY_OUTPUT_DELAY)
                 .withDefault(
-                    new C2PortActualDelayTuning::output(kDefaultOutputDelay))
+                    std::make_shared<C2PortActualDelayTuning::output>(kDefaultOutputDelay))
                 .withFields({C2F(mActualOutputDelay, value)
                                  .inRange(0, kMaxOutputDelay)})
                 .withSetter(
@@ -124,14 +124,14 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
         // TODO: output latency and reordering
 
         addParameter(DefineParam(mAttrib, C2_PARAMKEY_COMPONENT_ATTRIBUTES)
-                         .withConstValue(new C2ComponentAttributesSetting(
+                         .withConstValue(std::make_shared<C2ComponentAttributesSetting>(
                              C2Component::ATTRIB_IS_TEMPORAL))
                          .build());
 
         // coded and output picture size is the same for this codec
         addParameter(
             DefineParam(mSize, C2_PARAMKEY_PICTURE_SIZE)
-                .withDefault(new C2StreamPictureSizeInfo::output(0u, 320, 240))
+                .withDefault(std::make_shared<C2StreamPictureSizeInfo::output>(0u, 320, 240))
                 .withFields({
                     C2F(mSize, width).inRange(2, 4096, 2),
                     C2F(mSize, height).inRange(2, 4096, 2),
@@ -140,7 +140,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
                 .build());
 
         addParameter(DefineParam(mMaxSize, C2_PARAMKEY_MAX_PICTURE_SIZE)
-                         .withDefault(new C2StreamMaxPictureSizeTuning::output(
+                         .withDefault(std::make_shared<C2StreamMaxPictureSizeTuning::output>(
                              0u, 320, 240))
                          .withFields({
                              C2F(mSize, width).inRange(2, 4096, 2),
@@ -151,7 +151,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
-                .withDefault(new C2StreamProfileLevelInfo::input(
+                .withDefault(std::make_shared<C2StreamProfileLevelInfo::input>(
                     0u, C2Config::PROFILE_AVC_CONSTRAINED_BASELINE,
                     C2Config::LEVEL_AVC_5_2))
                 .withFields(
@@ -178,7 +178,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mMaxInputSize, C2_PARAMKEY_INPUT_MAX_BUFFER_SIZE)
-                .withDefault(new C2StreamMaxBufferSizeInfo::input(
+                .withDefault(std::make_shared<C2StreamMaxBufferSizeInfo::input>(
                     0u, kMinInputBufferSize))
                 .withFields({
                     C2F(mMaxInputSize, value).any(),
@@ -204,7 +204,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mDefaultColorAspects, C2_PARAMKEY_DEFAULT_COLOR_ASPECTS)
-                .withDefault(new C2StreamColorAspectsTuning::output(
+                .withDefault(std::make_shared<C2StreamColorAspectsTuning::output>(
                     0u, C2Color::RANGE_UNSPECIFIED,
                     C2Color::PRIMARIES_UNSPECIFIED,
                     C2Color::TRANSFER_UNSPECIFIED, C2Color::MATRIX_UNSPECIFIED))
@@ -225,7 +225,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mCodedColorAspects, C2_PARAMKEY_VUI_COLOR_ASPECTS)
-                .withDefault(new C2StreamColorAspectsInfo::input(
+                .withDefault(std::make_shared<C2StreamColorAspectsInfo::input>(
                     0u, C2Color::RANGE_LIMITED, C2Color::PRIMARIES_UNSPECIFIED,
                     C2Color::TRANSFER_UNSPECIFIED, C2Color::MATRIX_UNSPECIFIED))
                 .withFields({C2F(mCodedColorAspects, range)
@@ -245,7 +245,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         addParameter(
             DefineParam(mColorAspects, C2_PARAMKEY_COLOR_ASPECTS)
-                .withDefault(new C2StreamColorAspectsInfo::output(
+                .withDefault(std::make_shared<C2StreamColorAspectsInfo::output>(
                     0u, C2Color::RANGE_UNSPECIFIED,
                     C2Color::PRIMARIES_UNSPECIFIED,
                     C2Color::TRANSFER_UNSPECIFIED, C2Color::MATRIX_UNSPECIFIED))
@@ -267,7 +267,7 @@ class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 
         // TODO: support more formats?
         addParameter(DefineParam(mPixelFormat, C2_PARAMKEY_PIXEL_FORMAT)
-                         .withConstValue(new C2StreamPixelFormatInfo::output(
+                         .withConstValue(std::make_shared<C2StreamPixelFormatInfo::output>(
                              0u, HAL_PIXEL_FORMAT_YCBCR_420_888))
                          .build());
     }
@@ -537,13 +537,11 @@ void C2GoldfishAvcDec::sendMetadata() {
 }
 
 status_t C2GoldfishAvcDec::createDecoder() {
-
     DDD("creating avc context now w %d h %d", mWidth, mHeight);
-    if (mEnableAndroidNativeBuffers) {
-        mContext.reset(new MediaH264Decoder(RenderMode::RENDER_BY_HOST_GPU));
-    } else {
-        mContext.reset(new MediaH264Decoder(RenderMode::RENDER_BY_GUEST_CPU));
-    }
+    mContext = std::make_unique<MediaH264Decoder>(
+            mEnableAndroidNativeBuffers ?
+                    RenderMode::RENDER_BY_HOST_GPU : RenderMode::RENDER_BY_GUEST_CPU);
+
     mContext->initH264Context(mWidth, mHeight, mWidth, mHeight,
                               MediaH264Decoder::PixelFormat::YUV420P);
     return OK;
@@ -979,7 +977,7 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
 
             bool whChanged = false;
             if (GoldfishH264Helper::isSpsFrame(mInPBuffer, mInPBufferSize)) {
-                mH264Helper.reset(new GoldfishH264Helper(mWidth, mHeight));
+                mH264Helper = std::make_unique<GoldfishH264Helper>(mWidth, mHeight);
                 whChanged = mH264Helper->decodeHeader(mInPBuffer, mInPBufferSize);
                 if (whChanged) {
                         DDD("w changed from old %d to new %d\n", mWidth, mH264Helper->getWidth());
@@ -1139,23 +1137,19 @@ class C2GoldfishAvcDecFactory : public C2ComponentFactory {
     virtual c2_status_t
     createComponent(c2_node_id_t id,
                     std::shared_ptr<C2Component> *const component,
-                    std::function<void(C2Component *)> deleter) override {
-        *component = std::shared_ptr<C2Component>(
-            new C2GoldfishAvcDec(
+                    std::function<void(C2Component *)> /*deleter*/) override {
+        *component = std::make_shared<C2GoldfishAvcDec>(
                 COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishAvcDec::IntfImpl>(mHelper)),
-            deleter);
+                std::make_shared<C2GoldfishAvcDec::IntfImpl>(mHelper));
         return C2_OK;
     }
 
     virtual c2_status_t createInterface(
         c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *const interface,
-        std::function<void(C2ComponentInterface *)> deleter) override {
-        *interface = std::shared_ptr<C2ComponentInterface>(
-            new SimpleInterface<C2GoldfishAvcDec::IntfImpl>(
+        std::function<void(C2ComponentInterface *)> /*deleter*/) override {
+        *interface = std::make_shared<SimpleInterface<C2GoldfishAvcDec::IntfImpl>>(
                 COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishAvcDec::IntfImpl>(mHelper)),
-            deleter);
+                std::make_shared<C2GoldfishAvcDec::IntfImpl>(mHelper));
         return C2_OK;
     }
 

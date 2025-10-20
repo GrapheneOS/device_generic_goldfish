@@ -25,12 +25,12 @@ namespace hardware {
 namespace radio {
 namespace implementation {
 
-Sap::Sap(std::shared_ptr<AtChannel> atChannel) {}
+Sap::Sap(std::shared_ptr<AtChannel> /*atChannel*/) {}
 
 ScopedAStatus Sap::apduReq(const int32_t serial, sap::SapApduType /*type*/,
                            const std::vector<uint8_t>& /*command*/) {
     NOT_NULL(mSapCallback)->apduResponse(
-        serial, FAILURE(sap::SapResultCode::NOT_SUPPORTED), {});
+        serial, FAILURE(sap::SapResultCode::GENERIC_FAILURE), {});
     return ScopedAStatus::ok();
 }
 
@@ -49,13 +49,13 @@ ScopedAStatus Sap::disconnectReq(const int32_t serial) {
 
 ScopedAStatus Sap::powerReq(const int32_t serial, bool /*state*/) {
     NOT_NULL(mSapCallback)->powerResponse(
-        serial, FAILURE(sap::SapResultCode::NOT_SUPPORTED));
+        serial, FAILURE(sap::SapResultCode::GENERIC_FAILURE));
     return ScopedAStatus::ok();
 }
 
 ScopedAStatus Sap::resetSimReq(const int32_t serial) {
     NOT_NULL(mSapCallback)->resetSimResponse(
-        serial, FAILURE(sap::SapResultCode::NOT_SUPPORTED));
+        serial, FAILURE(sap::SapResultCode::GENERIC_FAILURE));
     return ScopedAStatus::ok();
 }
 
@@ -68,13 +68,13 @@ ScopedAStatus Sap::setTransferProtocolReq(
 
 ScopedAStatus Sap::transferAtrReq(const int32_t serial) {
     NOT_NULL(mSapCallback)->transferAtrResponse(
-        serial, FAILURE(sap::SapResultCode::NOT_SUPPORTED), {});
+        serial, FAILURE(sap::SapResultCode::GENERIC_FAILURE), {});
     return ScopedAStatus::ok();
 }
 
 ScopedAStatus Sap::transferCardReaderStatusReq(const int32_t serial) {
     NOT_NULL(mSapCallback)->transferCardReaderStatusResponse(
-        serial, FAILURE(sap::SapResultCode::NOT_SUPPORTED), 0);
+        serial, FAILURE(sap::SapResultCode::GENERIC_FAILURE), 0);
     return ScopedAStatus::ok();
 }
 

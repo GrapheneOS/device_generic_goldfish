@@ -22,5 +22,5 @@ PRODUCT_COPY_FILES += \
     device/generic/goldfish/slim/data/etc/android.hardware.disable.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/handheld_core_hardware.xml \
     device/generic/goldfish/slim/data/etc/slim_handheld_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/slim_handheld_core_hardware.xml \
 
-PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
+PRODUCT_VENDOR_PROPERTIES += \
     debug.hwui.drawing_enabled=0

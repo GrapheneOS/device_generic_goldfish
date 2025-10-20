@@ -127,8 +127,8 @@ private:
 };
 
 static ColorBufferUtilsGlobalState* getGlobals() {
-    static ColorBufferUtilsGlobalState* globals = new ColorBufferUtilsGlobalState;
-    return globals;
+    static ColorBufferUtilsGlobalState globals;
+    return &globals;
 }
 
 uint32_t getColorBufferHandle(native_handle_t const* handle) {

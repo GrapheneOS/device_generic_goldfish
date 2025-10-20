@@ -84,8 +84,6 @@ GnssHwListener::~GnssHwListener() {
 }
 
 void GnssHwListener::consume(const char* buf, size_t sz) {
-    ALOGD("%s:%s:%d sz=%zu", "GnssHwListener", __func__, __LINE__, sz);
-
     for (; sz > 0; ++buf, --sz) {
         consume1(*buf);
     }

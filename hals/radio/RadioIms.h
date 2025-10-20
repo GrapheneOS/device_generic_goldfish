@@ -45,6 +45,8 @@ struct RadioIms : public ims::BnRadioIms {
             ims::ImsStreamDirection direction, int32_t bitsPerSecond) override;
     ScopedAStatus updateImsCallStatus(
             int32_t serial, const std::vector<ims::ImsCall>& imsCalls) override;
+    ScopedAStatus updateAllowedServices(int32_t serial,
+                                        const std::vector<ims::ImsService>& imsServices) override;
 
     void atResponseSink(const AtResponsePtr& response);
 

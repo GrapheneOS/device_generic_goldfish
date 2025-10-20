@@ -163,6 +163,8 @@ class ComposeMsg_v2 {
 }  // namespace
 
 HWC3::Error HostFrameComposer::init() {
+    ATRACE_CALL();
+
     mIsMinigbm = isMinigbmFromProperty();
 
     if (mIsMinigbm) {
@@ -198,6 +200,8 @@ HWC3::Error HostFrameComposer::unregisterOnHotplugCallback() {
 
 HWC3::Error HostFrameComposer::createHostComposerDisplayInfo(Display* display,
                                                              uint32_t hostDisplayId) {
+    ATRACE_CALL();
+
     HWC3::Error error = HWC3::Error::None;
 
     int64_t displayId = display->getId();
@@ -238,6 +242,8 @@ HWC3::Error HostFrameComposer::createHostComposerDisplayInfo(Display* display,
 }
 
 HWC3::Error HostFrameComposer::onDisplayCreate(Display* display) {
+    ATRACE_CALL();
+
     HWC3::Error error = HWC3::Error::None;
 
     const uint32_t displayId = static_cast<uint32_t>(display->getId());
@@ -332,6 +338,8 @@ HWC3::Error HostFrameComposer::onDisplayCreate(Display* display) {
 }
 
 HWC3::Error HostFrameComposer::onDisplayDestroy(Display* display) {
+    ATRACE_CALL();
+
     int64_t displayId = display->getId();
 
     auto it = mDisplayInfos.find(displayId);
@@ -355,6 +363,8 @@ HWC3::Error HostFrameComposer::onDisplayDestroy(Display* display) {
 }
 
 HWC3::Error HostFrameComposer::onDisplayClientTargetSet(Display* display) {
+    ATRACE_CALL();
+
     int64_t displayId = display->getId();
 
     auto it = mDisplayInfos.find(displayId);
@@ -382,6 +392,8 @@ HWC3::Error HostFrameComposer::onDisplayClientTargetSet(Display* display) {
 }
 
 HWC3::Error HostFrameComposer::validateDisplay(Display* display, DisplayChanges* outChanges) {
+    ATRACE_CALL();
+
     const auto& displayId = display->getId();
 
     DEFINE_AND_VALIDATE_HOST_CONNECTION
@@ -473,9 +485,10 @@ HWC3::Error HostFrameComposer::validateDisplay(Display* display, DisplayChanges*
 }
 
 HWC3::Error HostFrameComposer::presentDisplay(
-    Display* display, ::android::base::unique_fd* outDisplayFence,
-    std::unordered_map<int64_t, ::android::base::unique_fd>* outLayerFences) {
+        Display* display, ::android::base::unique_fd* outDisplayFence,
+        std::unordered_map<int64_t, ::android::base::unique_fd>* outLayerFences) {
     const uint32_t displayId = static_cast<uint32_t>(display->getId());
+    ATRACE_FORMAT("%s display:%" PRIu32, __FUNCTION__, displayId);
     DEBUG_LOG("%s display:%" PRIu32, __FUNCTION__, displayId);
     auto displayInfoIt = mDisplayInfos.find(displayId);
     if (displayInfoIt == mDisplayInfos.end()) {
@@ -502,8 +515,12 @@ HWC3::Error HostFrameComposer::presentDisplay(
         hostCompositionV1 = false;
     }
 
+
     auto compositionResult = displayInfo.swapchain->getNextImage();
-    compositionResult->wait();
+    {
+        ATRACE_FORMAT("Wait for Previous Composition");
+        compositionResult->wait();
+    }
 
     // Virtio-gpu usage is proxied by minigbm
     const bool isVirtioGPU = mIsMinigbm;
@@ -677,14 +694,18 @@ HWC3::Error HostFrameComposer::presentDisplay(
 
         if (rcEnc->hasAsyncFrameCommands()) {
             if (mIsMinigbm) {
+                ATRACE_FORMAT("rcComposeAsyncWithoutPost()");
                 rcEnc->rcComposeAsyncWithoutPost(rcEnc, bufferSize, buffer);
             } else {
+                ATRACE_FORMAT("rcComposeAsync()");
                 rcEnc->rcComposeAsync(rcEnc, bufferSize, buffer);
             }
         } else {
             if (mIsMinigbm) {
+                ATRACE_FORMAT("rcComposeWithoutPost()");
                 rcEnc->rcComposeWithoutPost(rcEnc, bufferSize, buffer);
             } else {
+                ATRACE_FORMAT("rcCompose()");
                 rcEnc->rcCompose(rcEnc, bufferSize, buffer);
             }
         }
@@ -700,6 +721,8 @@ HWC3::Error HostFrameComposer::presentDisplay(
         const bool useRcCommandToSync = !isVirtioGPU;
 
         if (useRcCommandToSync) {
+            ATRACE_FORMAT("Create Sync");
+
             hostCon->lock();
             rcEnc->rcCreateSyncKHR(rcEnc, EGL_SYNC_NATIVE_FENCE_ANDROID, attribs,
                                    2 * sizeof(EGLint), true /* destroy when signaled */,
@@ -708,10 +731,12 @@ HWC3::Error HostFrameComposer::presentDisplay(
         }
 
         if (mIsMinigbm) {
+            ATRACE_FORMAT("Flush to Display");
             auto [_, fence] =
                 mDrmClient->flushToDisplay(displayId, compositionResult->getDrmBuffer(), -1);
             retire_fd = std::move(fence);
         } else {
+            ATRACE_FORMAT("Goldfish Sync Queue Work");
             int fd;
             goldfish_sync_queue_work(mSyncDeviceFd, sync_handle, thread_handle, &fd);
             retire_fd = ::android::base::unique_fd(fd);
@@ -732,10 +757,13 @@ HWC3::Error HostFrameComposer::presentDisplay(
             hostCon->unlock();
         }
     } else {
+        ATRACE_FORMAT("Client Composition");
+
         // we set all layers Composition::CLIENT, so do nothing.
         FencedBuffer& displayClientTarget = display->getClientTarget();
         ::android::base::unique_fd displayClientTargetFence = displayClientTarget.getFence();
         if (mIsMinigbm) {
+            ATRACE_FORMAT("Flush to Display");
             auto [_, flushFence] = mDrmClient->flushToDisplay(
                 displayId, compositionResult->getDrmBuffer(), displayClientTargetFence);
             *outDisplayFence = std::move(flushFence);

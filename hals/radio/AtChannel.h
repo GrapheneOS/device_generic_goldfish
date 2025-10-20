@@ -87,6 +87,8 @@ private:
     Requester getRequester();
     void broadcastResponse(const AtResponsePtr&);
 
+    void resetHostChannel(unique_fd fd = {});
+    int getHostChannelFd() const;
     RequestPipe getHostChannelPipe();
     bool receiveResponses(int hostChannel, std::vector<char>* unconsumed);
     bool receiveResponsesImpl(const char* begin, const char* end,
@@ -105,6 +107,7 @@ private:
     std::thread mReaderThread;
     mutable std::mutex mRequestQueueMtx;
     mutable std::mutex mResponseSinksMtx;
+    mutable std::mutex mHostChannelMtx;
 };
 
 }  // namespace implementation

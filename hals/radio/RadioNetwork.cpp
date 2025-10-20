@@ -35,6 +35,7 @@ namespace hardware {
 namespace radio {
 namespace implementation {
 using network::AccessTechnologySpecificInfo;
+using network::BarringInfo;
 using network::EutranBands;
 using network::EutranRegistrationInfo;
 using network::Cdma2000RegistrationInfo;
@@ -55,6 +56,7 @@ using network::CellInfoTdscdma;
 using network::CellInfoWcdma;
 using network::CellInfoRatSpecificInfo;
 using network::NgranBands;
+using network::NrVopsInfo;
 using network::OperatorInfo;
 using network::RegStateResult;
 using network::SignalStrength;
@@ -370,16 +372,14 @@ void setAccessTechnologySpecificInfo(
         break;
 
     case RadioTechnology::NR: {
-            EutranRegistrationInfo eri = {
-                .nrIndicators = {
-                    .isNrAvailable = true,
-                    .isDcNrRestricted = false,
-                    .isEndcAvailable = false,
-                },
+            NrVopsInfo nr = {
+                .vopsSupported = NrVopsInfo::VOPS_INDICATOR_VOPS_OVER_3GPP,
+                .emcSupported = NrVopsInfo::EMC_INDICATOR_NR_CONNECTED_TO_5GCN,
+                .emfSupported = NrVopsInfo::EMF_INDICATOR_NOT_SUPPORTED,
             };
 
             accessTechnologySpecificInfo->set<
-                AccessTechnologySpecificInfo::eutranInfo>(std::move(eri));
+                AccessTechnologySpecificInfo::ngranNrVopsInfo>(std::move(nr));
         }
         break;
 
@@ -408,6 +408,30 @@ void setAccessTechnologySpecificInfo(
     default:
         break;
     }
+}
+
+std::vector<BarringInfo> getBarringInfos() {
+    BarringInfo cs = {
+        .serviceType = BarringInfo::SERVICE_TYPE_CS_SERVICE,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    BarringInfo ps = {
+        .serviceType = BarringInfo::SERVICE_TYPE_PS_SERVICE,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    BarringInfo csVoice = {
+        .serviceType = BarringInfo::SERVICE_TYPE_CS_VOICE,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    BarringInfo emergency = {
+        .serviceType = BarringInfo::SERVICE_TYPE_EMERGENCY,
+        .barringType = BarringInfo::BARRING_TYPE_NONE,
+    };
+
+    return { cs, ps, csVoice, emergency };
 }
 
 }  // namespace
@@ -481,37 +505,10 @@ ScopedAStatus RadioNetwork::getBarringInfo(const int32_t serial) {
         CellIdentityResult cellIdentityResult =
             getCellIdentityImpl(areaCode, cellId, nullptr, mAtConversation, requestPipe);
         if (cellIdentityResult.first == RadioError::NONE) {
-            using network::BarringInfo;
-
-            BarringInfo barringInfoCs = {
-                .serviceType = BarringInfo::SERVICE_TYPE_CS_SERVICE,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
-            BarringInfo barringInfoPs = {
-                .serviceType = BarringInfo::SERVICE_TYPE_PS_SERVICE,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
-            BarringInfo barringInfoCsVoice = {
-                .serviceType = BarringInfo::SERVICE_TYPE_CS_VOICE,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
-            BarringInfo barringInfoEmergency = {
-                .serviceType = BarringInfo::SERVICE_TYPE_EMERGENCY,
-                .barringType = BarringInfo::BARRING_TYPE_NONE,
-            };
-
             NOT_NULL(mRadioNetworkResponse)->getBarringInfoResponse(
                     makeRadioResponseInfo(serial),
                     std::move(cellIdentityResult.second),
-                    {
-                        std::move(barringInfoCs),
-                        std::move(barringInfoPs),
-                        std::move(barringInfoCsVoice),
-                        std::move(barringInfoEmergency),
-                    });
+                    getBarringInfos());
             return true;
         } else {
             NOT_NULL(mRadioNetworkResponse)->getBarringInfoResponse(
@@ -891,6 +888,10 @@ ScopedAStatus RadioNetwork::setAllowedNetworkTypesBitmap(const int32_t serial,
             mRadioNetworkIndication->voiceRadioTechChanged(
                 RadioIndicationType::UNSOLICITED,
                 ratUtils::currentRadioTechnology(currentTech));
+
+            std::lock_guard<std::mutex> lock(mMtx);
+            mCurrentModemTech = currentTech;
+            mBarringInfoChanged = true;
         }
         return status != RadioError::INTERNAL_ERR;
     });
@@ -984,14 +985,20 @@ ScopedAStatus RadioNetwork::setIndicationFilter(const int32_t serial,
 
 ScopedAStatus RadioNetwork::setLinkCapacityReportingCriteria(const int32_t serial,
                                                              const int32_t /*hysteresisMs*/,
-                                                             const int32_t /*hysteresisDlKbps*/,
-                                                             const int32_t /*hysteresisUlKbps*/,
+                                                             const int32_t hysteresisDlKbps,
+                                                             const int32_t hysteresisUlKbps,
                                                              const std::vector<int32_t>& /*thresholdsDownlinkKbps*/,
                                                              const std::vector<int32_t>& /*thresholdsUplinkKbps*/,
                                                              const AccessNetwork /*accessNetwork*/) {
-    NOT_NULL(mRadioNetworkResponse)->setLinkCapacityReportingCriteriaResponse(
-            makeRadioResponseInfoNOP(serial));
+    RadioError result = RadioError::NONE;
 
+    // This is what the previous HAL implementation did.
+    if ((hysteresisDlKbps >= 5000) || (hysteresisUlKbps >= 1000)) {
+        result = RadioError::INVALID_ARGUMENTS;
+    }
+
+    NOT_NULL(mRadioNetworkResponse)->setLinkCapacityReportingCriteriaResponse(
+            makeRadioResponseInfo(serial, result));
     return ScopedAStatus::ok();
 }
 
@@ -1061,9 +1068,25 @@ ScopedAStatus RadioNetwork::setNetworkSelectionModeManual(const int32_t serial,
             response->unexpected(FAILURE_DEBUG_PREFIX, kFunc);
         }
 
+        const RadioError responseStatus = (status == RadioError::NO_NETWORK_FOUND) ?
+                RadioError::INVALID_ARGUMENTS : status;
         NOT_NULL(mRadioNetworkResponse)->setNetworkSelectionModeManualResponse(
-            makeRadioResponseInfo(serial, status));
-        return status != RadioError::INTERNAL_ERR;
+            makeRadioResponseInfo(serial, responseStatus));
+
+        using namespace std::chrono_literals;
+
+        switch (status) {
+        case RadioError::NO_NETWORK_FOUND:
+            // Put the modem back to automatic, VtsHalRadioTargetTest is not happy otherwise.
+            requestPipe("AT+COPS=0");
+            [[fallthrough]];
+
+        case RadioError::INTERNAL_ERR:
+            return false;
+
+        default:
+            return true;
+        }
     });
 
     return ScopedAStatus::ok();
@@ -1083,9 +1106,10 @@ ScopedAStatus RadioNetwork::setNrDualConnectivityState(const int32_t serial,
 }
 
 ScopedAStatus RadioNetwork::setSignalStrengthReportingCriteria(const int32_t serial,
-                                                               const std::vector<network::SignalThresholdInfo>& /*signalThresholdInfos*/) {
+                                                               const std::vector<network::SignalThresholdInfo>& signalThresholdInfos) {
     NOT_NULL(mRadioNetworkResponse)->setSignalStrengthReportingCriteriaResponse(
-            makeRadioResponseInfoNOP(serial));
+            makeRadioResponseInfo(serial,
+                                  validateSignalStrengthReportingCriteria(signalThresholdInfos)));
     return ScopedAStatus::ok();
 }
 
@@ -1128,12 +1152,14 @@ ScopedAStatus RadioNetwork::setSystemSelectionChannels(const int32_t serial,
 }
 
 ScopedAStatus RadioNetwork::startNetworkScan(const int32_t serial,
-                                             const network::NetworkScanRequest& /*request*/) {
+                                             const network::NetworkScanRequest& request) {
     using network::NetworkScanResult;
 
+    const RadioError result = validateNetworkScanRequest(request);
+
     NOT_NULL(mRadioNetworkResponse)->startNetworkScanResponse(
-        makeRadioResponseInfoNOP(serial));
-    if (mRadioNetworkIndication) {
+        makeRadioResponseInfo(serial, result));
+    if ((result == RadioError::NONE) && mRadioNetworkIndication) {
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(2000ms);
 
@@ -1158,16 +1184,30 @@ ScopedAStatus RadioNetwork::supplyNetworkDepersonalization(const int32_t serial,
 }
 
 ScopedAStatus RadioNetwork::setUsageSetting(const int32_t serial,
-                                            const network::UsageSetting /*usageSetting*/) {
+                                            const network::UsageSetting usageSetting) {
+    using network::UsageSetting;
+
+    RadioError result;
+    switch (usageSetting) {
+    case UsageSetting::VOICE_CENTRIC:
+    case UsageSetting::DATA_CENTRIC:
+        mUsageSetting = usageSetting;
+        result = RadioError::NONE;
+        break;
+
+    default:
+        result = RadioError::INVALID_ARGUMENTS;
+        break;
+    }
+
     NOT_NULL(mRadioNetworkResponse)->setUsageSettingResponse(
-            makeRadioResponseInfoNOP(serial));
+            makeRadioResponseInfo(serial, result));
     return ScopedAStatus::ok();
 }
 
 ScopedAStatus RadioNetwork::getUsageSetting(const int32_t serial) {
     NOT_NULL(mRadioNetworkResponse)->getUsageSettingResponse(
-            makeRadioResponseInfo(serial),
-            network::UsageSetting::VOICE_CENTRIC);
+            makeRadioResponseInfo(serial), mUsageSetting);
     return ScopedAStatus::ok();
 }
 
@@ -1372,18 +1412,21 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
     SignalStrength signalStrength;
     std::vector<CellInfo> cellInfos;
 
+    CellIdentity cellIdentity;
     bool poweredOn;
+    bool barringInfoChanged;
+
     {
         std::lock_guard<std::mutex> lock(mMtx);
         mCsq = csq;
         poweredOn = (mRadioState == modem::RadioState::ON);
+        barringInfoChanged = std::exchange(mBarringInfoChanged, false);
 
         if (poweredOn) {
             signalStrength = csq.toSignalStrength();
 
             if (mCurrentOperator && mCurrentModemTech) {
                 RadioError status;
-                CellIdentity cellIdentity;
                 std::tie(status, cellIdentity) =
                     getCellIdentityImpl(toOperatorInfo(mCurrentOperator.value()),
                                         mCurrentModemTech.value(),
@@ -1395,8 +1438,7 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
 
                     CellInfo cellinfo;
                     std::tie(status, cellinfo) =
-                        buildCellInfo(registered, std::move(cellIdentity),
-                                      signalStrength);
+                        buildCellInfo(registered, cellIdentity, signalStrength);
                     if (status == RadioError::NONE) {
                         cellInfos.push_back(std::move(cellinfo));
                     }
@@ -1412,6 +1454,11 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
         if (!cellInfos.empty()) {
             mRadioNetworkIndication->cellInfoList(
                 RadioIndicationType::UNSOLICITED, std::move(cellInfos));
+        }
+
+        if (barringInfoChanged) {
+            mRadioNetworkIndication->barringInfoChanged(
+                RadioIndicationType::UNSOLICITED, std::move(cellIdentity), getBarringInfos());
         }
     }
 }
@@ -1537,6 +1584,120 @@ ScopedAStatus RadioNetwork::setResponseFunctions(
     }
 
     return ScopedAStatus::ok();
+}
+
+RadioError RadioNetwork::validateNetworkScanRequest(const network::NetworkScanRequest& req) {
+    using network::NetworkScanRequest;
+
+    switch (req.type) {
+    case NetworkScanRequest::SCAN_TYPE_ONE_SHOT:
+        break;
+
+    case NetworkScanRequest::SCAN_TYPE_PERIODIC:
+        if ((req.interval < NetworkScanRequest::SCAN_INTERVAL_RANGE_MIN) ||
+                (req.interval > NetworkScanRequest::SCAN_INTERVAL_RANGE_MAX)) {
+            return FAILURE(RadioError::INVALID_ARGUMENTS);
+        }
+        break;
+
+    default:
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
+    }
+
+    if ((req.maxSearchTime < NetworkScanRequest::MAX_SEARCH_TIME_RANGE_MIN) ||
+            (req.maxSearchTime > NetworkScanRequest::MAX_SEARCH_TIME_RANGE_MAX)) {
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
+    }
+
+
+    if (req.incrementalResults &&
+            ((req.incrementalResultsPeriodicity < NetworkScanRequest::INCREMENTAL_RESULTS_PREIODICITY_RANGE_MIN) ||
+            (req.incrementalResultsPeriodicity > NetworkScanRequest::INCREMENTAL_RESULTS_PREIODICITY_RANGE_MAX))) {
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
+    }
+
+
+    if (req.specifiers.empty()) {
+        return FAILURE(RadioError::INVALID_ARGUMENTS);
+    }
+
+    using network::EutranBands;
+    using network::RadioAccessSpecifier;
+    using network::RadioAccessSpecifierBands;
+
+    for (const RadioAccessSpecifier& specifier : req.specifiers) {
+        switch (specifier.accessNetwork) {
+        case AccessNetwork::GERAN:
+            if (specifier.bands.getTag() != RadioAccessSpecifierBands::geranBands) {
+                return FAILURE(RadioError::INVALID_ARGUMENTS);
+            }
+            break;
+
+        case AccessNetwork::UTRAN:
+            if (specifier.bands.getTag() != RadioAccessSpecifierBands::utranBands) {
+                return FAILURE(RadioError::INVALID_ARGUMENTS);
+            }
+            break;
+
+        case AccessNetwork::EUTRAN:
+            if (specifier.bands.getTag() != RadioAccessSpecifierBands::eutranBands) {
+                return FAILURE(RadioError::INVALID_ARGUMENTS);
+            }
+            for (const EutranBands band : specifier.bands.get<RadioAccessSpecifierBands::eutranBands>()) {
+                // see radio_network_test.cpp
+                switch (band) {
+                case EutranBands::BAND_17:
+                    for (const int channel : specifier.channels) {
+                        switch (channel) {
+                        case 1:
+                        case 2:
+                            return FAILURE(RadioError::INVALID_ARGUMENTS);
+
+                        default:
+                            break;
+                        }
+                    }
+                    break;
+
+                case EutranBands::BAND_20:
+                    for (const int channel : specifier.channels) {
+                        switch (channel) {
+                        case 128:
+                        case 129:
+                            return FAILURE(RadioError::INVALID_ARGUMENTS);
+
+                        default:
+                            break;
+                        }
+                    }
+                    break;
+
+                default:
+                    break;
+                }
+            }
+            break;
+
+        default:
+            return FAILURE(RadioError::INVALID_ARGUMENTS);
+        }
+    }
+
+    return RadioError::NONE;
+}
+
+RadioError RadioNetwork::validateSignalStrengthReportingCriteria(
+        const std::vector<network::SignalThresholdInfo>& signalThresholdInfos) {
+    using network::SignalThresholdInfo;
+
+    for (const SignalThresholdInfo& sti : signalThresholdInfos) {
+        // This is what the previous HAL implementation did.
+        if (sti.hysteresisDb >= 10) {
+            return RadioError::INVALID_ARGUMENTS;
+        }
+    }
+
+    return RadioError::NONE;
 }
 
 /************************* deprecated *************************/

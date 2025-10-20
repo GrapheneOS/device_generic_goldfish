@@ -16,6 +16,8 @@
 
 #include <chrono>
 #include <aidl/android/hardware/gnss/IGnss.h>
+#include <utils/SystemClock.h>
+
 #include <debug.h>
 #include "GnssMeasurementInterface.h"
 
@@ -27,19 +29,22 @@ namespace implementation {
 namespace {
 using Clock = std::chrono::steady_clock;
 
-void initGnssData(GnssData& data,
-                  const int64_t elapsedRealtimeNs,
-                  const int64_t timeNs,
-                  const int64_t fullBiasNs,
-                  const double biasUncertaintyNs,
-                  const size_t nMeasurements) {
-    data.elapsedRealtime.flags = ElapsedRealtime::HAS_TIMESTAMP_NS;
-    data.elapsedRealtime.timestampNs = elapsedRealtimeNs;
+void updateGnssDataTime(GnssData& data) {
+    using namespace std::chrono;
+
+    const int64_t nowNs = time_point_cast<nanoseconds>(
+            system_clock::now()).time_since_epoch().count();
+    const int64_t fullBiasNs = (nowNs % 15331) * ((nowNs & 1) ? -1 : 1);
+
+    data.elapsedRealtime.flags = ElapsedRealtime::HAS_TIMESTAMP_NS |
+                                 ElapsedRealtime::HAS_TIME_UNCERTAINTY_NS;
+    data.elapsedRealtime.timestampNs = ::android::elapsedRealtimeNano();
+    data.elapsedRealtime.timeUncertaintyNs = 1000000.0;
+
     data.clock.gnssClockFlags = GnssClock::HAS_FULL_BIAS;
-    data.clock.timeNs = timeNs;
+    data.clock.timeNs = nowNs + fullBiasNs;
     data.clock.fullBiasNs = fullBiasNs;
-    data.clock.biasUncertaintyNs = biasUncertaintyNs;
-    data.measurements.resize(nMeasurements);
+    data.clock.biasUncertaintyNs = 5.26068202130163;
 }
 
 GnssMeasurement makeGnssMeasurement(const bool enableCorrVecOutputs,
@@ -153,8 +158,7 @@ ndk::ScopedAStatus GnssMeasurementInterface::setCallbackImpl(
     }
 
     mGnssData.resize(1);
-
-    initGnssData(mGnssData[0], 139287, 116834000000, -1189181444165780000, 5.26068202130163, 7);
+    mGnssData[0].measurements.resize(7);
     mGnssData[0].measurements[0] = makeGnssMeasurement(enableCorrVecOutputs, 22,  47, 3927349114,      29, 29.9917297363281,  245.509362821673,  0.148940800975766, 1,  6620.74237064615,  0.00271145859733223, 0, 1);
     mGnssData[0].measurements[1] = makeGnssMeasurement(enableCorrVecOutputs, 23,  47, 3920005435,      14, 36.063377380371,  -731.947951627658, 0.0769754027959242, 1,  -23229.096048105,  0.00142954161856323, 0, 1);
     mGnssData[0].measurements[2] = makeGnssMeasurement(enableCorrVecOutputs, 25,  47, 3923720994,      56, 24.5171585083007, -329.789995021822,  0.277918601850871, 1, -15511.1976492851,  0.00509250536561012, 0, 1);
@@ -183,7 +187,9 @@ ndk::ScopedAStatus GnssMeasurementInterface::setCallbackImpl(
                 return;
             }
 
-            callback->gnssMeasurementCb(mGnssData[gnssDataIndex]);
+            GnssData& data = mGnssData[gnssDataIndex];
+            updateGnssDataTime(data);
+            callback->gnssMeasurementCb(data);
         }
     });
 

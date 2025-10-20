@@ -701,6 +701,15 @@ ndk::ScopedAStatus ComposerClient::getLuts(int64_t displayId,
     return ToBinderStatus(HWC3::Error::Unsupported);
 }
 
+ndk::ScopedAStatus ComposerClient::getDisplayKnownVsyncSample(
+        int64_t displayId, VsyncSample* /*sample*/) {
+    DEBUG_LOG("%s", __FUNCTION__);
+
+    GET_DISPLAY_OR_RETURN_ERROR();
+
+    return ToBinderStatus(HWC3::Error::Unsupported);
+}
+
 ndk::SpAIBinder ComposerClient::createBinder() {
     auto binder = BnComposerClient::createBinder();
     AIBinder_setInheritRt(binder.get(), true);
@@ -770,6 +779,8 @@ void ComposerClient::executeDisplayCommand(CommandResultWriter& commandResults,
     DISPATCH_DISPLAY_COMMAND(displayCommand, commandResults, *display, colorTransformMatrix,
                              SetColorTransform);
     DISPATCH_DISPLAY_COMMAND(displayCommand, commandResults, *display, brightness, SetBrightness);
+    DISPATCH_DISPLAY_COMMAND(displayCommand, commandResults, *display,
+                             activeConfig, SetActiveConfig);
     DISPATCH_DISPLAY_COMMAND(displayCommand, commandResults, *display, clientTarget,
                              SetClientTarget);
     DISPATCH_DISPLAY_COMMAND(displayCommand, commandResults, *display, virtualDisplayOutputBuffer,
@@ -845,6 +856,21 @@ void ComposerClient::executeDisplayCommandSetBrightness(CommandResultWriter& com
         commandResults.addError(error);
     }
 }
+
+
+void ComposerClient::executeDisplayCommandSetActiveConfig(
+    CommandResultWriter& commandResults, Display& display,
+    ActiveConfigCommand activeConfig) {
+  DEBUG_LOG("%s display:%" PRIu64 " config:%" PRIu32, __FUNCTION__,
+            display.getId(), activeConfig->configId);
+
+  auto error = display.setActiveConfig(activeConfig.configId);
+  if (error != HWC3::Error::None) {
+    LOG_DISPLAY_COMMAND_ERROR(display, error);
+    commandResults.addError(error);
+  }
+}
+
 
 void ComposerClient::executeDisplayCommandSetClientTarget(CommandResultWriter& commandResults,
                                                           Display& display,

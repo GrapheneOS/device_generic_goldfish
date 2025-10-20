@@ -119,6 +119,8 @@ private:
     std::mutex mMtx;
     std::optional<AtResponse::CUSATP> mStkUnsolResponse;
     modem::RadioState mRadioState = modem::RadioState::OFF;
+    // The modem simulator does not support SIM card power modes.
+    sim::CardPowerState mCardPowerState = sim::CardPowerState::POWER_UP;
     bool mUiccApplicationsEnabled = true;
     bool mStkServiceRunning = false;
 };

@@ -2,15 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-//#define LOG_NDEBUG 0
-#define LOG_TAG "android.hardware.media.c2@1.0-service-goldfish"
-
-#include <C2Component.h>
-#include <codec2/hidl/1.0/ComponentStore.h>
-#include <hidl/HidlTransportSupport.h>
+#include <android/binder_manager.h>
+#include <android/binder_process.h>
+#include <codec2/aidl/ComponentStore.h>
 #include <log/log.h>
 #include <minijail.h>
 
+#include <debug.h>
 #include <goldfish_codec2/store/GoldfishComponentStore.h>
 
 // Default policy for codec2.0 service.
@@ -23,30 +21,27 @@ static constexpr char kExtSeccompPolicyPath[] =
     "/vendor/etc/seccomp_policy/codec2.vendor.ext.policy";
 
 int main(int /* argc */, char ** /* argv */) {
-    ALOGD("Goldfish C2 Service starting...");
+    using aidl::android::hardware::media::c2::utils::ComponentStore;
 
     signal(SIGPIPE, SIG_IGN);
     android::SetUpMinijail(kBaseSeccompPolicyPath, kExtSeccompPolicyPath);
 
-    android::hardware::configureRpcThreadpool(8, true /* callerWillJoin */);
+    ABinderProcess_setThreadPoolMaxThreadCount(4);
+    ABinderProcess_startThreadPool();
 
-    // Create IComponentStore service.
+    const auto cs = ndk::SharedRefBase::make<ComponentStore>(
+            android::GoldfishComponentStore::Create());
+
     {
-        using namespace ::android::hardware::media::c2::V1_0;
+        const std::string instance = std::string(ComponentStore::descriptor) + "/default";
 
-        ALOGD("Instantiating Codec2's Goldfish IComponentStore service...");
-        android::sp<IComponentStore> store(new utils::ComponentStore(
-            android::GoldfishComponentStore::Create()));
-        if (store == nullptr) {
-            ALOGE("Cannot create Codec2's Goldfish IComponentStore service.");
-        } else if (store->registerAsService("default") != android::OK) {
-            ALOGE("Cannot register Codec2's IComponentStore service.");
-        } else {
-            ALOGI("Codec2's IComponentStore service created.");
+        if (AServiceManager_addService(cs->asBinder().get(),
+                                       instance.c_str()) != STATUS_OK) {
+            return FAILURE_V(android::NO_INIT,
+                             "Could not register '%s'", instance.c_str());
         }
     }
 
-    android::hardware::joinRpcThreadpool();
-    ALOGD("Service shutdown.");
-    return 0;
+    ABinderProcess_joinThreadPool();
+    return EXIT_FAILURE;  // never exits
 }

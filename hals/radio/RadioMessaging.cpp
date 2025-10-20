@@ -57,7 +57,6 @@ ScopedAStatus RadioMessaging::acknowledgeLastIncomingCdmaSms(const int32_t seria
 ScopedAStatus RadioMessaging::acknowledgeLastIncomingGsmSms(const int32_t serial,
                                                             const bool success,
                                                             const messaging::SmsAcknowledgeFailCause /*cause*/) {
-    static const char* const kFunc = __func__;
     mAtChannel->queueRequester([this, serial, success]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
         RadioError status = RadioError::NONE;
@@ -172,7 +171,6 @@ ScopedAStatus RadioMessaging::getSmscAddress(const int32_t serial) {
     static const char* const kFunc = __func__;
     mAtChannel->queueRequester([this, serial](const AtChannel::RequestPipe requestPipe) -> bool {
         using CSCA = AtResponse::CSCA;
-        RadioError status = RadioError::NONE;
         std::string smscAddress;
 
         AtResponsePtr response =
@@ -427,7 +425,6 @@ ScopedAStatus RadioMessaging::writeSmsToRuim(const int32_t serial,
 
 ScopedAStatus RadioMessaging::writeSmsToSim(const int32_t serial,
                                             const messaging::SmsWriteArgs& smsWriteArgs) {
-    static const char* const kFunc = __func__;
     mAtChannel->queueRequester([this, serial, smsWriteArgs]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
         using SmsPrompt = AtResponse::SmsPrompt;

@@ -308,33 +308,26 @@ void Gnss::onGnssNmeaCb(const int64_t timestampMs, std::string nmea) {
 }
 
 void Gnss::onGnssLocationCb(GnssLocation location) {
-    ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
-
     std::lock_guard<std::mutex> lock(mMtx);
     if (!mCallback) {
-        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
         return;
     }
 
     const auto now = Clock::now();
     if (!isWarmedUpLocked(now) || (now < mFirstFix) || (now < (mLastFix + mMinInterval))) {
-        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
         return;
     }
 
     switch (mSessionState) {
     case SessionState::STARTING:
-        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
         mCallback->gnssStatusCb(IGnssCallback::GnssStatusValue::SESSION_BEGIN);
         mSessionState = SessionState::STARTED;
         break;
 
     case SessionState::STARTED:
-        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
         break;  // do nothing
 
     default:
-        ALOGD("%s:%s:%d", "Gnss", __func__, __LINE__);
         return;
     }
 

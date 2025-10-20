@@ -92,6 +92,12 @@
         <item>network</item>
     </string-array>
 
+    <string-array name="config_perDeviceStateRotationLockDefaults" translatable="false">
+        <item>0:1</item> <!-- CLOSED -> LOCKED -->
+        <item>2:0:1</item> <!-- HALF_OPENED -> IGNORED and fallback to device state OPENED -->
+        <item>1:2</item> <!-- OPENED -> UNLOCKED -->
+    </string-array>
+
     <bool name="config_supportMicNearUltrasound">true</bool>
     <bool name="config_supportSpeakerNearUltrasound">true</bool>
 

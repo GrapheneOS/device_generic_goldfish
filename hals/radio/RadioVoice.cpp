@@ -479,7 +479,6 @@ ScopedAStatus RadioVoice::handleStkCallSetupRequestFromSim(const int32_t serial,
 
 ScopedAStatus RadioVoice::hangup(const int32_t serial,
                                  const int32_t gsmIndex) {
-    static const char* const kFunc = __func__;
     mAtChannel->queueRequester([this, serial, gsmIndex]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
         requestPipe(std::format("AT+CHLD=1{0:d}", gsmIndex));
@@ -555,7 +554,6 @@ ScopedAStatus RadioVoice::sendCdmaFeatureCode(const int32_t serial,
 
 ScopedAStatus RadioVoice::sendDtmf(const int32_t serial,
                                    const std::string& s) {
-    static const char* const kFunc = __func__;
     mAtChannel->queueRequester([this, serial, s]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
         requestPipe(std::format("AT+VTS={0:s}", s));
@@ -569,7 +567,6 @@ ScopedAStatus RadioVoice::sendDtmf(const int32_t serial,
 
 ScopedAStatus RadioVoice::sendUssd(const int32_t serial,
                                    const std::string& ussd) {
-    static const char* const kFunc = __func__;
     mAtChannel->queueRequester([this, serial, ussd]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
         requestPipe(std::format("AT+CUSD=1,\"%s\"", ussd));
@@ -583,7 +580,6 @@ ScopedAStatus RadioVoice::sendUssd(const int32_t serial,
 
 ScopedAStatus RadioVoice::separateConnection(const int32_t serial,
                                              const int32_t gsmIndex) {
-    static const char* const kFunc = __func__;
     mAtChannel->queueRequester([this, serial, gsmIndex]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
         if ((gsmIndex > 0) && (gsmIndex < 10)) {

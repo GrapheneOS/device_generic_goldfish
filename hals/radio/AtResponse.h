@@ -608,9 +608,7 @@ struct AtResponse {
     static ParseResult parse(std::string_view str);
 
     template <class T> static AtResponsePtr make(T v) {
-        const auto r = std::make_shared<AtResponse>(std::move(v));
-        const auto w = r->what();
-        return r;
+        return std::make_shared<AtResponse>(std::move(v));
     }
 
     template <class T> static AtResponsePtr makeParseErrorFor() {
