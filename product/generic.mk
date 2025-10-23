@@ -214,7 +214,8 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     emu_camera_back.json \
     emu_camera_front.json \
-    emu_camera_depth.json
+    emu_camera_depth.json \
+    emu_camera_main.json
 endif
 
 ifneq ($(EMULATOR_VENDOR_NO_SOUND),true)
