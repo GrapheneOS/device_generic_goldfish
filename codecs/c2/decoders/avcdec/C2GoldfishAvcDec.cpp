@@ -750,7 +750,7 @@ void C2GoldfishAvcDec::checkMode(const std::shared_ptr<C2BlockPool> &pool) {
     const bool isGraphic = (pool->getAllocatorId() & C2Allocator::GRAPHIC);
     DDD("buffer pool allocator id %x",  (int)(pool->getAllocatorId()));
     if (isGraphic) {
-        uint64_t client_usage = getClientUsage(pool);
+        uint64_t client_usage = getClientUsage(*pool);
         DDD("client has usage as 0x%llx", client_usage);
         if (client_usage & BufferUsage::CPU_READ_MASK) {
             DDD("decoding to guest byte buffer as client has read usage");

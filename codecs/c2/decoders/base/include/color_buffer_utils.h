@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <cutils/native_handle.h>
-#include <SimpleC2Interface.h>
+#include <C2Buffer.h>
 
 uint32_t getColorBufferHandle(native_handle_t const* handle);
-uint64_t getClientUsage(const std::shared_ptr<C2BlockPool> &pool);
+uint64_t getClientUsage(C2BlockPool& pool);
