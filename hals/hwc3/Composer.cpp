@@ -97,6 +97,7 @@ ndk::ScopedAStatus Composer::getCapabilities(std::vector<Capability>* caps) {
     caps->clear();
     caps->emplace_back(Capability::PRESENT_FENCE_IS_NOT_RELIABLE);
     caps->emplace_back(Capability::BOOT_DISPLAY_CONFIG);
+    caps->emplace_back(Capability::DISPLAY_COMMAND_CONFIG_CHANGE);
 
     return ndk::ScopedAStatus::ok();
 }
