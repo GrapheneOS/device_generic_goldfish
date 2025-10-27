@@ -9,47 +9,38 @@ package {
     default_applicable_licenses: ["device_generic_goldfish_license"],
 }
 
-cc_library_shared {
+cc_library {
     name: "libcodec2_goldfish_common",
     defaults: ["libcodec2-impl-defaults"],
     vendor: true,
-
     srcs: [
         "SimpleC2Component.cpp",
         "SimpleC2Interface.cpp",
         "goldfish_media_utils.cpp",
         "color_buffer_utils.cpp",
     ],
-
     export_include_dirs: [
         "include",
     ],
-
     export_shared_lib_headers: [
         "libsfplugin_ccodec_utils",
-        "libgoldfish_codec2_store", // for goldfish store
     ],
-
-    shared_libs: [
-        "libcutils", // for properties
-        "liblog",    // for ALOG
-        "libdrm",    // for ALOG
-        "libbase",   // for properties, parseint
-        "libsfplugin_ccodec_utils", // for ImageCopy
-        "libstagefright_foundation", // for Mutexed
-        "libgoldfish_codec2_store", // for goldfish store
-    ],
-
-    static_libs: [
+    whole_static_libs: [
         "mesa_platform_virtgpu",
         "mesa_goldfish_address_space",
         "mesa_util",
     ],
-
+    shared_libs: [
+        "libbase",
+        "libcutils",
+        "libdrm",
+        "liblog",
+        "libsfplugin_ccodec_utils", // for ImageCopy
+        "libstagefright_foundation", // for Mutexed
+    ],
     header_libs: [
         "libgralloc_cb.ranchu",
     ],
-
     sanitize: {
         misc_undefined: [
             "unsigned-integer-overflow",
@@ -57,32 +48,4 @@ cc_library_shared {
         ],
         cfi: true,
     },
-
-
-    ldflags: ["-Wl,-Bsymbolic"],
-}
-
-// public dependency for software codec implementation
-// to be used by code under media/codecs/* only as its stability is not guaranteed
-cc_defaults {
-    name: "libcodec2_goldfish-defaults",
-    defaults: ["libcodec2-impl-defaults"],
-    export_shared_lib_headers: [
-        "libsfplugin_ccodec_utils",
-    ],
-
-    shared_libs: [
-        "libcodec2_goldfish_common",
-        "libcutils", // for properties
-        "liblog", // for ALOG
-        "libsfplugin_ccodec_utils", // for ImageCopy
-        "libstagefright_foundation", // for ColorUtils and MIME
-    ],
-
-    cflags: [
-        "-Wall",
-        "-Werror",
-    ],
-
-    ldflags: ["-Wl,-Bsymbolic"],
 }

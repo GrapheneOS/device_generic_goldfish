@@ -7,28 +7,32 @@ package {
     default_applicable_licenses: ["device_generic_goldfish_license"],
 }
 
-cc_library_shared {
+cc_library {
     name: "libcodec2_goldfish_avcdec",
-    vendor: true,
     defaults: [
-        "libcodec2_goldfish-defaults",
+        "libcodec2-impl-defaults",
     ],
-
-    srcs: ["C2GoldfishAvcDec.cpp",
+    vendor: true,
+    srcs: [
+        "C2GoldfishAvcDec.cpp",
         "GoldfishH264Helper.cpp",
         "MediaH264Decoder.cpp",
     ],
-
+    export_include_dirs: [
+        "include",
+    ],
+    whole_static_libs: [
+        "libavcdec",
+        "libcodec2_goldfish_common",
+    ],
     shared_libs: [
-	    "android.hardware.graphics.allocator@3.0",
-		"android.hardware.graphics.mapper@3.0",
-        "libgoldfish_codec2_store",
+        "android.hardware.graphics.allocator@3.0",
+        "android.hardware.graphics.mapper@3.0",
+        "libsfplugin_ccodec_utils", // for ImageCopy
+        "libstagefright_foundation", // for ColorUtils and MIME
     ],
-
-   header_libs: [
-    "libgralloc_cb.ranchu",
+    header_libs: [
+        "GoldfishComponentStoreFactory",
+        "libgralloc_cb.ranchu",
     ],
-
-   static_libs: ["libavcdec",
-   ],
 }
