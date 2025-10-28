@@ -512,39 +512,10 @@ class C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl : public SimpleInterface<void>::Ba
 #endif
 };
 
-C2_GOLDFISH_VPx_DEC_IMLP_TYPE::ConverterThread::ConverterThread(
-    const std::shared_ptr<Mutexed<ConversionQueue>> &queue)
-    : Thread(false), mQueue(queue) {}
-
-bool C2_GOLDFISH_VPx_DEC_IMLP_TYPE::ConverterThread::threadLoop() {
-    Mutexed<ConversionQueue>::Locked queue(*mQueue);
-    if (queue->entries.empty()) {
-        queue.waitForCondition(queue->cond);
-        if (queue->entries.empty()) {
-            return true;
-        }
-    }
-    std::function<void()> convert = queue->entries.front();
-    queue->entries.pop_front();
-    if (!queue->entries.empty()) {
-        queue->cond.signal();
-    }
-    queue.unlock();
-
-    convert();
-
-    queue.lock();
-    if (--queue->numPending == 0u) {
-        queue->cond.broadcast();
-    }
-    return true;
-}
-
 C2_GOLDFISH_VPx_DEC_IMLP_TYPE::C2_GOLDFISH_VPx_DEC_IMLP_TYPE(const char *name, c2_node_id_t id,
                                                              const std::shared_ptr<IntfImpl> &intfImpl)
     : SimpleC2Component(
-          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)),
-      mIntf(intfImpl), mQueue(std::make_shared<Mutexed<ConversionQueue>>()) {}
+          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)), mIntf(intfImpl) {}
 
 C2_GOLDFISH_VPx_DEC_IMLP_TYPE::~C2_GOLDFISH_VPx_DEC_IMLP_TYPE() { onRelease(); }
 

@@ -47,25 +47,6 @@ struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
                       const std::shared_ptr<C2BlockPool> &pool) override;
 
   private:
-    struct ConversionQueue;
-
-    class ConverterThread : public Thread {
-      public:
-        explicit ConverterThread(
-            const std::shared_ptr<Mutexed<ConversionQueue>> &queue);
-        ~ConverterThread() override = default;
-        bool threadLoop() override;
-
-      private:
-        std::shared_ptr<Mutexed<ConversionQueue>> mQueue;
-    };
-
-    struct ConversionQueue {
-        std::list<std::function<void()>> entries;
-        Condition cond;
-        size_t numPending{0u};
-    };
-
     // create context that talks to host decoder: it needs to use
     // pool to decide whether decoding to host color buffer ot
     // decode to guest bytebuffer when pool cannot fetch valid host
@@ -88,8 +69,6 @@ struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
 
     std::shared_ptr<C2StreamColorAspectsTuning::output> mColorAspects;
     std::shared_ptr<IntfImpl> mIntf;
-    std::shared_ptr<Mutexed<ConversionQueue>> mQueue;
-    std::vector<sp<ConverterThread>> mConverterThreads;
     vpx_codec_ctx_t *mCtx{nullptr};
     vpx_image_t *mImg{nullptr};
 
