@@ -86,6 +86,9 @@ on boot
     # Create an unused USB gadget to allow sysfs testing
     mkdir /config/usb_gadget/g1 0770 root root
 
+on sys-boot-completed-set
+    start ranchu-adb-start
+
 service vendor.dlkm_loader /vendor/bin/dlkm_loader
     class main
     user root
@@ -99,6 +102,12 @@ service ranchu-adb-setup /system_ext/bin/init.adb-setup.ranchu.sh
     stdio_to_kmsg
     disabled
     oneshot
+
+service ranchu-adb-start /system_ext/bin/init.adb-start.ranchu.sh
+    user root
+    group shell
+    oneshot
+    disabled
 
 service ranchu-device-state /vendor/bin/init.device-state.ranchu.sh
     user root
@@ -130,7 +139,6 @@ on property:dev.bootcomplete=1 && property:vendor.qemu.dev.bootcomplete=0
     setprop vendor.qemu.dev.bootcomplete 1
     start qemu-props-bootcomplete
     start ranchu-setup
-    start ranchu-adb-setup
 
 on post-fs-data && property:ro.boot.qemu.virtiowifi=1
     start ranchu-net

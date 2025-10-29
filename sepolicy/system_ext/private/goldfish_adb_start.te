@@ -1,0 +1,11 @@
+type goldfish_adb_start, coredomain, domain;
+type goldfish_adb_start_exec, exec_type, system_file_type, file_type;
+
+init_daemon_domain(goldfish_adb_start)
+
+allow goldfish_adb_start shell_exec:file rx_file_perms;
+allow goldfish_adb_start system_file:file execute_no_trans;
+allow goldfish_adb_start servicemanager:binder call;
+allow goldfish_adb_start settings_service:service_manager find;
+allow goldfish_adb_start system_server:binder { call transfer };
+allow system_server goldfish_adb_start:binder call;
