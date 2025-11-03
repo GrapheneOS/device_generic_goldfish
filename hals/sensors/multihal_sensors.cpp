@@ -230,6 +230,10 @@ Event MultihalSensors::activationOnChangeSensorEvent(const int32_t sensorHandle,
         }
         break;
 
+    case SensorType::LOW_LATENCY_OFFBODY_DETECT:
+        payload->scalar = m_protocolState.lastLowLatencyOffBodyDetectValue;
+        break;
+
     default:
         LOG_ALWAYS_FATAL("%s:%d: unexpected sensor type: %u",
                          __func__, __LINE__, static_cast<unsigned>(sensor.type));
