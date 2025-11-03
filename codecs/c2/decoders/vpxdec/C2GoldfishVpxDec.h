@@ -20,14 +20,20 @@
 #include "goldfish_vpx_defs.h"
 #include <SimpleC2Component.h>
 
+#ifdef VP9
+#define C2_GOLDFISH_VPx_DEC_IMLP_TYPE C2GoldfishVp9Dec
+#else
+#define C2_GOLDFISH_VPx_DEC_IMLP_TYPE C2GoldfishVp8Dec
+#endif
+
 namespace android {
 
-struct C2GoldfishVpxDec : public SimpleC2Component {
+struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
     class IntfImpl;
 
-    C2GoldfishVpxDec(const char *name, c2_node_id_t id,
+    C2_GOLDFISH_VPx_DEC_IMLP_TYPE(const char *name, c2_node_id_t id,
                      const std::shared_ptr<IntfImpl> &intfImpl);
-    virtual ~C2GoldfishVpxDec();
+    virtual ~C2_GOLDFISH_VPx_DEC_IMLP_TYPE();
 
     // From SimpleC2Component
     c2_status_t onInit() override;
@@ -41,25 +47,6 @@ struct C2GoldfishVpxDec : public SimpleC2Component {
                       const std::shared_ptr<C2BlockPool> &pool) override;
 
   private:
-    struct ConversionQueue;
-
-    class ConverterThread : public Thread {
-      public:
-        explicit ConverterThread(
-            const std::shared_ptr<Mutexed<ConversionQueue>> &queue);
-        ~ConverterThread() override = default;
-        bool threadLoop() override;
-
-      private:
-        std::shared_ptr<Mutexed<ConversionQueue>> mQueue;
-    };
-
-    struct ConversionQueue {
-        std::list<std::function<void()>> entries;
-        Condition cond;
-        size_t numPending{0u};
-    };
-
     // create context that talks to host decoder: it needs to use
     // pool to decide whether decoding to host color buffer ot
     // decode to guest bytebuffer when pool cannot fetch valid host
@@ -82,8 +69,6 @@ struct C2GoldfishVpxDec : public SimpleC2Component {
 
     std::shared_ptr<C2StreamColorAspectsTuning::output> mColorAspects;
     std::shared_ptr<IntfImpl> mIntf;
-    std::shared_ptr<Mutexed<ConversionQueue>> mQueue;
-    std::vector<sp<ConverterThread>> mConverterThreads;
     vpx_codec_ctx_t *mCtx{nullptr};
     vpx_image_t *mImg{nullptr};
 
@@ -104,7 +89,7 @@ struct C2GoldfishVpxDec : public SimpleC2Component {
     bool mSignalledError{false};
     bool mFrameParallelMode{false}; // Frame parallel is only supported by VP9 decoder.
 
-    C2_DO_NOT_COPY(C2GoldfishVpxDec);
+    C2_DO_NOT_COPY(C2_GOLDFISH_VPx_DEC_IMLP_TYPE);
 };
 
 } // namespace android

@@ -7,44 +7,57 @@ package {
     default_applicable_licenses: ["device_generic_goldfish_license"],
 }
 
+cc_library_headers {
+    name: "GoldfishComponentStoreFactory",
+    vendor_available: true,
+    export_include_dirs: ["include"],
+    defaults: [
+        "libcodec2-impl-defaults",
+    ],
+}
+
 cc_binary {
     name: "android.hardware.media.c2-service-goldfish",
-
     defaults: [
         "libcodec2-aidl-defaults",
+        "libcodec2-impl-defaults",
     ],
     vendor: true,
     relative_install_path: "hw",
-
     srcs: [
+        "GoldfishComponentStore.cpp",
         "service.cpp",
     ],
-
     init_rc: ["android.hardware.media.c2-service-goldfish.rc"],
     vintf_fragments: ["android.hardware.media.c2-service-goldfish.xml"],
-
-    shared_libs: [
-        "libgoldfish_codec2_store",
-        "libavservices_minijail",
-        "libcutils",
-        "libhidlbase",
-        "liblog",
-        "libutils",
+    static_libs: [
+        "libcodec2_goldfish_common",
+        "libcodec2_goldfish_avcdec",
+        "libcodec2_goldfish_hevcdec",
+        "libcodec2_goldfish_vp8dec",
+        "libcodec2_goldfish_vp9dec",
     ],
-
+    shared_libs: [
+        "android.hardware.graphics.allocator@3.0",
+        "android.hardware.graphics.mapper@3.0",
+        "libavservices_minijail",
+        "libbase",
+        "libcutils",
+        "libdrm",
+        "liblog",
+        "libsfplugin_ccodec_utils",
+        "libstagefright_foundation",
+        "libutils",
+        "libvpx",
+    ],
     header_libs: [
+        "GoldfishComponentStoreFactory",
         "libdebug.ranchu",
     ],
-
     cflags: [
         "-DLOG_TAG=\"android.hardware.media.c2-service-goldfish\"",
     ],
-
     required: [
         "android.hardware.media.c2-default-seccomp_policy",
-        "libcodec2_goldfish_vp8dec",
-        "libcodec2_goldfish_vp9dec",
-        "libcodec2_goldfish_avcdec",
-        "libcodec2_goldfish_hevcdec",
     ],
 }

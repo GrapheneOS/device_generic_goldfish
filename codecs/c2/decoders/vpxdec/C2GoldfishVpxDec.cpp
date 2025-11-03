@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-//#define LOG_NDEBUG 0
-#define LOG_TAG "C2GoldfishVpxDec"
 #include <log/log.h>
 
 #include <algorithm>
@@ -31,13 +29,13 @@
 #include <C2Debug.h>
 #include <C2PlatformSupport.h>
 #include <SimpleC2Interface.h>
-#include <goldfish_codec2/store/GoldfishComponentStore.h>
 
 #include <gralloc_cb_bp.h>
 
 #include <color_buffer_utils.h>
 
 #include "C2GoldfishVpxDec.h"
+#include "C2GoldfishVpxDecFactory.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -49,6 +47,7 @@
 using aidl::android::hardware::graphics::common::BufferUsage;
 
 namespace android {
+namespace {
 constexpr size_t kMinInputBufferSize = 6 * 1024 * 1024;
 #ifdef VP9
 constexpr char COMPONENT_NAME[] = "c2.goldfish.vp9.decoder";
@@ -56,7 +55,49 @@ constexpr char COMPONENT_NAME[] = "c2.goldfish.vp9.decoder";
 constexpr char COMPONENT_NAME[] = "c2.goldfish.vp8.decoder";
 #endif
 
-class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
+void fillEmptyWork(const std::unique_ptr<C2Work> &work) {
+    uint32_t flags = 0;
+    if (work->input.flags & C2FrameData::FLAG_END_OF_STREAM) {
+        flags |= C2FrameData::FLAG_END_OF_STREAM;
+        DDD("signalling eos");
+    }
+    work->worklets.front()->output.flags = (C2FrameData::flags_t)flags;
+    work->worklets.front()->output.buffers.clear();
+    work->worklets.front()->output.ordinal = work->input.ordinal;
+    work->workletsProcessed = 1u;
+}
+
+void copyOutputBufferToYuvPlanarFrame(
+    uint8_t *dst, const uint8_t *srcY, const uint8_t *srcU, const uint8_t *srcV,
+    size_t srcYStride, size_t srcUStride, size_t srcVStride, size_t dstYStride,
+    size_t dstUVStride, uint32_t width, uint32_t height) {
+    uint8_t *dstStart = dst;
+
+    for (size_t i = 0; i < height; ++i) {
+        memcpy(dst, srcY, width);
+        srcY += srcYStride;
+        dst += dstYStride;
+    }
+
+    dst = dstStart + dstYStride * height;
+    for (size_t i = 0; i < height / 2; ++i) {
+        memcpy(dst, srcV, width / 2);
+        srcV += srcVStride;
+        dst += dstUVStride;
+    }
+
+    dst = dstStart + (dstYStride * height) + (dstUVStride * height / 2);
+    for (size_t i = 0; i < height / 2; ++i) {
+        memcpy(dst, srcU, width / 2);
+        srcU += srcUStride;
+        dst += dstUVStride;
+    }
+}
+
+}  // namespace
+
+
+class C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl : public SimpleInterface<void>::BaseParams {
   public:
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
         : SimpleInterface<void>::BaseParams(helper, COMPONENT_NAME,
@@ -418,8 +459,8 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
         (void)me; // TODO: validate
         return C2R::Ok();
     }
-    std::shared_ptr<C2StreamColorAspectsTuning::output>
-    getDefaultColorAspects_l() {
+
+    std::shared_ptr<C2StreamColorAspectsTuning::output> getDefaultColorAspects_l() {
         return mDefaultColorAspects;
     }
 
@@ -471,55 +512,26 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 #endif
 };
 
-C2GoldfishVpxDec::ConverterThread::ConverterThread(
-    const std::shared_ptr<Mutexed<ConversionQueue>> &queue)
-    : Thread(false), mQueue(queue) {}
-
-bool C2GoldfishVpxDec::ConverterThread::threadLoop() {
-    Mutexed<ConversionQueue>::Locked queue(*mQueue);
-    if (queue->entries.empty()) {
-        queue.waitForCondition(queue->cond);
-        if (queue->entries.empty()) {
-            return true;
-        }
-    }
-    std::function<void()> convert = queue->entries.front();
-    queue->entries.pop_front();
-    if (!queue->entries.empty()) {
-        queue->cond.signal();
-    }
-    queue.unlock();
-
-    convert();
-
-    queue.lock();
-    if (--queue->numPending == 0u) {
-        queue->cond.broadcast();
-    }
-    return true;
-}
-
-C2GoldfishVpxDec::C2GoldfishVpxDec(const char *name, c2_node_id_t id,
-                                   const std::shared_ptr<IntfImpl> &intfImpl)
+C2_GOLDFISH_VPx_DEC_IMLP_TYPE::C2_GOLDFISH_VPx_DEC_IMLP_TYPE(const char *name, c2_node_id_t id,
+                                                             const std::shared_ptr<IntfImpl> &intfImpl)
     : SimpleC2Component(
-          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)),
-      mIntf(intfImpl), mQueue(std::make_shared<Mutexed<ConversionQueue>>()) {}
+          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)), mIntf(intfImpl) {}
 
-C2GoldfishVpxDec::~C2GoldfishVpxDec() { onRelease(); }
+C2_GOLDFISH_VPx_DEC_IMLP_TYPE::~C2_GOLDFISH_VPx_DEC_IMLP_TYPE() { onRelease(); }
 
-c2_status_t C2GoldfishVpxDec::onInit() {
+c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onInit() {
     status_t err = initDecoder();
     return err == OK ? C2_OK : C2_CORRUPTED;
 }
 
-c2_status_t C2GoldfishVpxDec::onStop() {
+c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onStop() {
     mSignalledError = false;
     mSignalledOutputEos = false;
 
     return C2_OK;
 }
 
-void C2GoldfishVpxDec::onReset() {
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onReset() {
     (void)onStop();
     c2_status_t err = onFlush_sm();
     if (err != C2_OK) {
@@ -529,9 +541,9 @@ void C2GoldfishVpxDec::onReset() {
     }
 }
 
-void C2GoldfishVpxDec::onRelease() { destroyDecoder(); }
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onRelease() { destroyDecoder(); }
 
-void C2GoldfishVpxDec::sendMetadata() {
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::sendMetadata() {
     // compare and send if changed
     MetaDataColorAspects currentMetaData = {1, 0, 0, 0};
     currentMetaData.primaries = mIntf->primaries();
@@ -555,7 +567,7 @@ void C2GoldfishVpxDec::sendMetadata() {
     vpx_codec_send_metadata(mCtx, &(mSentMetadata));
 }
 
-c2_status_t C2GoldfishVpxDec::onFlush_sm() {
+c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onFlush_sm() {
     if (mFrameParallelMode) {
         // Flush decoder by passing nullptr data ptr and 0 size.
         // Ideally, this should never fail.
@@ -577,7 +589,7 @@ c2_status_t C2GoldfishVpxDec::onFlush_sm() {
     return C2_OK;
 }
 
-status_t C2GoldfishVpxDec::initDecoder() {
+status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::initDecoder() {
     ALOGI("calling init GoldfishVPX");
     mWidth = 320;
     mHeight = 240;
@@ -588,7 +600,7 @@ status_t C2GoldfishVpxDec::initDecoder() {
     return OK;
 }
 
-void C2GoldfishVpxDec::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
     if (mCtx)
         return;
 
@@ -606,7 +618,7 @@ void C2GoldfishVpxDec::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
     const bool isGraphic = (pool->getAllocatorId() & C2Allocator::GRAPHIC);
     DDD("buffer pool allocator id %x",  (int)(pool->getAllocatorId()));
     if (isGraphic) {
-        uint64_t client_usage = getClientUsage(pool);
+        uint64_t client_usage = getClientUsage(*pool);
         DDD("client has usage as 0x%llx", client_usage);
         if (client_usage & static_cast<uint32_t>(BufferUsage::CPU_READ_MASK)) {
             DDD("decoding to guest byte buffer as client has read usage");
@@ -630,7 +642,7 @@ void C2GoldfishVpxDec::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
     }
 }
 
-status_t C2GoldfishVpxDec::destroyDecoder() {
+status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::destroyDecoder() {
     if (mCtx) {
         ALOGI("calling destroying GoldfishVPX ctx %p", mCtx);
         vpx_codec_destroy(mCtx);
@@ -641,19 +653,7 @@ status_t C2GoldfishVpxDec::destroyDecoder() {
     return OK;
 }
 
-void fillEmptyWork(const std::unique_ptr<C2Work> &work) {
-    uint32_t flags = 0;
-    if (work->input.flags & C2FrameData::FLAG_END_OF_STREAM) {
-        flags |= C2FrameData::FLAG_END_OF_STREAM;
-        DDD("signalling eos");
-    }
-    work->worklets.front()->output.flags = (C2FrameData::flags_t)flags;
-    work->worklets.front()->output.buffers.clear();
-    work->worklets.front()->output.ordinal = work->input.ordinal;
-    work->workletsProcessed = 1u;
-}
-
-void C2GoldfishVpxDec::finishWork(
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::finishWork(
     uint64_t index, const std::unique_ptr<C2Work> &work,
     const std::shared_ptr<C2GraphicBlock> &block) {
     std::shared_ptr<C2Buffer> buffer =
@@ -720,8 +720,8 @@ void C2GoldfishVpxDec::finishWork(
     }
 }
 
-void C2GoldfishVpxDec::process(const std::unique_ptr<C2Work> &work,
-                               const std::shared_ptr<C2BlockPool> &pool) {
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
+                                            const std::shared_ptr<C2BlockPool> &pool) {
     DDD("%s %d doing work now", __func__, __LINE__);
     // Initialize output work
     work->result = C2_OK;
@@ -849,35 +849,8 @@ void C2GoldfishVpxDec::process(const std::unique_ptr<C2Work> &work,
     }
 }
 
-static void copyOutputBufferToYuvPlanarFrame(
-    uint8_t *dst, const uint8_t *srcY, const uint8_t *srcU, const uint8_t *srcV,
-    size_t srcYStride, size_t srcUStride, size_t srcVStride, size_t dstYStride,
-    size_t dstUVStride, uint32_t width, uint32_t height) {
-    uint8_t *dstStart = dst;
-
-    for (size_t i = 0; i < height; ++i) {
-        memcpy(dst, srcY, width);
-        srcY += srcYStride;
-        dst += dstYStride;
-    }
-
-    dst = dstStart + dstYStride * height;
-    for (size_t i = 0; i < height / 2; ++i) {
-        memcpy(dst, srcV, width / 2);
-        srcV += srcVStride;
-        dst += dstUVStride;
-    }
-
-    dst = dstStart + (dstYStride * height) + (dstUVStride * height / 2);
-    for (size_t i = 0; i < height / 2; ++i) {
-        memcpy(dst, srcU, width / 2);
-        srcU += srcUStride;
-        dst += dstUVStride;
-    }
-}
-
-void C2GoldfishVpxDec::setup_ctx_parameters(vpx_codec_ctx_t *ctx,
-                                            int hostColorBufferId) {
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::setup_ctx_parameters(vpx_codec_ctx_t *ctx,
+                                                         int hostColorBufferId) {
     ctx->width = mWidth;
     ctx->height = mHeight;
     ctx->hostColorBufferId = hostColorBufferId;
@@ -886,9 +859,8 @@ void C2GoldfishVpxDec::setup_ctx_parameters(vpx_codec_ctx_t *ctx,
     ctx->bpp = 1;
 }
 
-status_t
-C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
-                               const std::unique_ptr<C2Work> &work) {
+status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
+                                                     const std::unique_ptr<C2Work> &work) {
     if (!(work && pool))
         return BAD_VALUE;
 
@@ -1027,10 +999,9 @@ C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
     return OK;
 }
 
-c2_status_t
-C2GoldfishVpxDec::drainInternal(uint32_t drainMode,
-                                const std::shared_ptr<C2BlockPool> &pool,
-                                const std::unique_ptr<C2Work> &work) {
+c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::drainInternal(uint32_t drainMode,
+                                                         const std::shared_ptr<C2BlockPool> &pool,
+                                                         const std::unique_ptr<C2Work> &work) {
     if (drainMode == NO_DRAIN) {
         ALOGW("drain with NO_DRAIN: no-op");
         return C2_OK;
@@ -1050,55 +1021,44 @@ C2GoldfishVpxDec::drainInternal(uint32_t drainMode,
 
     return C2_OK;
 }
-c2_status_t C2GoldfishVpxDec::drain(uint32_t drainMode,
-                                    const std::shared_ptr<C2BlockPool> &pool) {
+
+c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::drain(uint32_t drainMode,
+                                                 const std::shared_ptr<C2BlockPool> &pool) {
     return drainInternal(drainMode, pool, nullptr);
 }
 
-class C2GoldfishVpxFactory : public C2ComponentFactory {
-  public:
-    C2GoldfishVpxFactory()
-        : mHelper(std::static_pointer_cast<C2ReflectorHelper>(
-              GoldfishComponentStore::Create()->getParamReflector())) {
+#ifdef VP9
+#define GET_C2_GOLDFISH_VPx_DEC_FACTORY getC2GoldfishVp9DecFactory
+#else
+#define GET_C2_GOLDFISH_VPx_DEC_FACTORY getC2GoldfishVp8DecFactory
+#endif
 
-        ALOGI("platform store is %p, reflector is %p",
-              GetCodec2PlatformComponentStore().get(),
-              GetCodec2PlatformComponentStore()->getParamReflector().get());
-    }
+std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> GET_C2_GOLDFISH_VPx_DEC_FACTORY() {
+    struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
+        std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
+                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+            return {C2_OK, std::make_shared<C2_GOLDFISH_VPx_DEC_IMLP_TYPE>(
+                        COMPONENT_NAME, 0, std::make_shared<C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl>(reflector))};
+        }
 
-    virtual c2_status_t
-    createComponent(c2_node_id_t id,
-                    std::shared_ptr<C2Component> *const component,
-                    std::function<void(C2Component *)> /*deleter*/) override {
-        *component = std::make_shared<C2GoldfishVpxDec>(
-                COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishVpxDec::IntfImpl>(mHelper));
-        return C2_OK;
-    }
+        std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
+                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+            return {C2_OK, std::make_shared<SimpleInterface<C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl>>(
+                        COMPONENT_NAME, 0, std::make_shared<C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl>(reflector))};
+        }
 
-    virtual c2_status_t createInterface(
-        c2_node_id_t id, std::shared_ptr<C2ComponentInterface> *const interface,
-        std::function<void(C2ComponentInterface *)> /*deleter*/) override {
-        *interface = std::make_shared<SimpleInterface<C2GoldfishVpxDec::IntfImpl>>(
-                COMPONENT_NAME, id,
-                std::make_shared<C2GoldfishVpxDec::IntfImpl>(mHelper));
-        return C2_OK;
-    }
+        std::string_view getName() const override {
+            using namespace std::literals::string_view_literals;
+#ifdef VP9
+            return "vp9dec"sv;
+#else
+            return "vp8dec"sv;
+#endif
+        }
+    };
 
-    virtual ~C2GoldfishVpxFactory() override = default;
+    return std::make_shared<ImplFactory>();
+}
 
-  private:
-    std::shared_ptr<C2ReflectorHelper> mHelper;
-};
 
 } // namespace android
-
-extern "C" ::C2ComponentFactory *CreateCodec2Factory() {
-    DDD("in %s", __func__);
-    return new ::android::C2GoldfishVpxFactory();
-}
-
-extern "C" void DestroyCodec2Factory(::C2ComponentFactory *factory) {
-    DDD("in %s", __func__);
-    delete factory;
-}
