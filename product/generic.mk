@@ -45,6 +45,11 @@ PRODUCT_PACKAGES += \
     hwservicemanager \
     android.hidl.allocator@1.0-service
 
+# `ro.adb.has_usb=0` disables starting adbd on userdebug builds very-very early (it is flaky
+# that early because emulators don't have USB). We will start adbd on our side "over USB" later
+# (see `ranchu-adb-start` in `init/init.ranchu.rc`).
+# The right way to configure adbd on emulators is through vsock (b/402444824).
+PRODUCT_SYSTEM_EXT_PROPERTIES += ro.adb.has_usb=0
 
 PRODUCT_VENDOR_PROPERTIES += \
     ro.control_privapp_permissions=enforce \
