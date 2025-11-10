@@ -48,6 +48,7 @@ using ::aidl::android::hardware::graphics::allocator::AllocationResult;
 using ::aidl::android::hardware::graphics::allocator::BnAllocator;
 using ::aidl::android::hardware::graphics::allocator::BufferDescriptorInfo;
 using ::aidl::android::hardware::graphics::common::BufferUsage;
+using ::aidl::android::hardware::graphics::common::ExtendableType;
 using ::aidl::android::hardware::graphics::common::PixelFormat;
 using ::aidl::android::hardware::graphics::common::PlaneLayoutComponentType;
 
@@ -179,10 +180,18 @@ struct GoldfishAllocator : public BnAllocator {
                                             "%s: reservedSize=%" PRId64, "BAD_DESCRIPTOR",
                                             desc.reservedSize));
         }
-        if (!desc.additionalOptions.empty()) {
-            return toBinderStatus(FAILURE_V(
-                AllocationError::BAD_DESCRIPTOR, "%s: %s", "BAD_DESCRIPTOR",
-                "'BufferDescriptorInfo::additionalOptions' are not supported"));
+        for (const ExtendableType& et : desc.additionalOptions) {
+            using namespace std::string_view_literals;
+
+            const std::string& name = et.name;
+            if (name == "android.hardware.graphics.common.Dataspace"sv) {
+                ALOGW("Ignoring the `Dataspace` option with value of 0x%" PRIx64, uint64_t(et.value));
+            } else {
+                return toBinderStatus(FAILURE_V(
+                    AllocationError::BAD_DESCRIPTOR, "%s: '%s' in "
+                        "BufferDescriptorInfo::additionalOptions is not supported",
+                        "BAD_DESCRIPTOR", name.c_str()));
+            }
         }
 
         const uint64_t usage = toUsage64(desc.usage);
