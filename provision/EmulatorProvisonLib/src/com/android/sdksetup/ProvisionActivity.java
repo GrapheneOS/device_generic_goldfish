@@ -102,7 +102,13 @@ public abstract class ProvisionActivity extends Activity {
 
     protected void doProvision() {
         provisionWifi("AndroidWifi");
-        provisionKeyboard("qwerty2", SystemProperties.get("vendor.qemu.keyboard_layout"));
+        // qemu2 hardcodes the keyboard device as "qwerty2", and qemu-next defines a boot-property
+        // for the keyboard name.
+        final String keyboardName = SystemProperties.get("ro.boot.qemu.keyboard_device", "qwerty2");
+        // We need to fallback to a layout that works (qwerty2) in case no layout was specified.
+        provisionKeyboard(
+                keyboardName,
+                SystemProperties.get("vendor.qemu.keyboard_layout", "keyboard_layout_english_us"));
         provisionDisplay();
         provisionTelephony();
         provisionLocation();
