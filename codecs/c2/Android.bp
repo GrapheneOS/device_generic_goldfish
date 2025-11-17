@@ -19,7 +19,7 @@ cc_library_headers {
 cc_binary {
     name: "android.hardware.media.c2-service-goldfish",
     defaults: [
-        "libcodec2-aidl-V2-defaults",
+        "libcodec2-aidl-defaults",
         "libcodec2-impl-defaults",
     ],
     vendor: true,
