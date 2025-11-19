@@ -130,6 +130,8 @@ struct RectAreaComparator {
 
 } // namespace
 
+constexpr uint16_t kDefaultCameraSensorOrientation = 90;
+
 bool listQemuCameras(const std::function<void(HwCameraFactory)>& cameraSink) {
     using namespace std::literals;
     static const char kListQuery[] = "list";
@@ -168,6 +170,20 @@ bool listQemuCameras(const std::function<void(HwCameraFactory)>& cameraSink) {
         if (!findToken(line, "framedims"sv, &framedims)) { return FAILURE(false); }
 
         QemuCamera::Parameters params;
+        std::string_view orientation;
+
+        if (!findToken(line, "sensor_orientation"sv, &orientation)) {
+            params.sensorOrientation = kDefaultCameraSensorOrientation;
+        } else {
+            const char* first = orientation.data();
+            const char* last = orientation.data() + orientation.size();
+            std::from_chars_result r =  std::from_chars(first, last, params.sensorOrientation, 10);
+            if (r.ec != std::errc() || r.ptr != last || (params.sensorOrientation % 90 != 0) || params.sensorOrientation > 270) {
+                ALOGE("Invalid sensor orientation (%.*s) provided for %.*s", int(orientation.size()), orientation.data(), int(name.size()), name.data());
+                return FAILURE(false);
+            }
+        }
+
         if (!parseResolutions(framedims, &params.supportedResolutions)) {
             return FAILURE(false);
         }
@@ -230,11 +246,12 @@ bool listQemuCameras(const std::function<void(HwCameraFactory)>& cameraSink) {
             params.availableThumbnailResolutions = std::move(thumbnailResolutions);
         }
 
-        ALOGD("%s:%d found a '%.*s' QEMU camera, dir=%.*s framedims=%.*s",
+        ALOGD("%s:%d found a '%.*s' QEMU camera, dir=%.*s framedims=%.*s sensor_orientation=%.*s",
               __func__, __LINE__,
               int(name.size()), name.data(),
               int(dir.size()), dir.data(),
-              int(framedims.size()), framedims.data());
+              int(framedims.size()), framedims.data(),
+              int(orientation.size()), orientation.data());
 
         params.name = std::string(name.begin(), name.end());
 

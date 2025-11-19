@@ -35,6 +35,7 @@ struct BaseQemuCamera : public HwCamera {
         std::vector<Rect<uint16_t>> availableThumbnailResolutions;
         Rect<uint16_t> sensorSize;
         bool isBackFacing;
+        uint16_t sensorOrientation;
     };
 
     std::tuple<PixelFormat, BufferUsage, Dataspace, int32_t>
@@ -51,6 +52,7 @@ struct BaseQemuCamera : public HwCamera {
     Span<const Rect<uint16_t>> getSupportedResolutions() const override;
     int64_t getMinFrameDurationNs() const override;
     Rect<uint16_t> getSensorSize() const override;
+    int32_t getSensorOrientation() const override;
     uint8_t getSensorColorFilterArrangement() const override;
     std::pair<int32_t, int32_t> getSensorSensitivityRange() const override;
     std::pair<int64_t, int64_t> getSensorExposureTimeRange() const override;
