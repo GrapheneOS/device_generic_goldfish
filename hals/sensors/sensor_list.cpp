@@ -42,6 +42,7 @@ const char* const kQemuSensorName[] = {
     "wrist-tilt",
     "acceleration-uncalibrated",
     "heading",
+    "low-latency-off-body-detect"
 };
 
 const SensorInfo kAllSensors[] = {
@@ -377,6 +378,25 @@ const SensorInfo kAllSensors[] = {
         .maxDelay = 500000,
         .flags = SensorFlagBits::DATA_INJECTION |
                  SensorFlagBits::CONTINUOUS_MODE
+    },
+    {
+            .sensorHandle = kSensorHandleLowLatencyOffBodyDetect,
+            .name = "Low Latency Off-body Detect Sensor",
+            .vendor = kAospVendor,
+            .version = 1,
+            .type = static_cast<SensorType>(34),  // sensors/aidl/android/hardware/sensors/SensorType.aidl#LOW_LATENCY_OFFBODY_DETECT
+            .typeAsString = "android.sensor.low_latency_off_body_detect",
+            .maxRange = 5.0,
+            .resolution = 1.0,
+            .power = 0.01,
+            .minDelay = 200000,
+            .fifoReservedEventCount = 0,
+            .fifoMaxEventCount = 0,
+            .requiredPermission = "",
+            .maxDelay = 10000000,
+            .flags = SensorFlagBits::DATA_INJECTION |
+                    SensorFlagBits::WAKE_UP |
+                    SensorFlagBits::ON_CHANGE_MODE
     },
 };
 
