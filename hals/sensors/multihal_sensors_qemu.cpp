@@ -355,6 +355,18 @@ void MultihalSensors::parseQemuSensorEventLocked(QemuSensorsProtocolState* state
         }
     } else if (testPrefix(buf, end, "sync", ':')) {
         parsed = true;
+    } else if (const char* values = testPrefix(buf, end, "low-latency-off-body-detect", ':')) {
+      if (sscanf(values, "%f", &payload->scalar) == 1){
+        if (!approximatelyEqual(state->lastLowLatencyOffBodyDetectValue,
+                                payload->scalar, 0.001)) {
+          event.timestamp = nowNs + state->timeBiasNs;
+          event.sensorHandle = kSensorHandleLowLatencyOffBodyDetect;
+          event.sensorType = SensorType::LOW_LATENCY_OFFBODY_DETECT;
+          postSensorEventLocked(event);
+          state->lastLowLatencyOffBodyDetectValue = payload->scalar;
+        }
+        parsed = true;
+      }
     }
 
     if (!parsed) {
