@@ -1361,6 +1361,12 @@ ScopedAStatus RadioNetwork::isSatelliteEnabledForCarrier(int32_t serial) {
     return ScopedAStatus::ok();
 }
 
+ScopedAStatus RadioNetwork::getSupportedNetworkAlertCategories(int32_t serial) {
+    NOT_NULL(mRadioNetworkResponse)->getSupportedNetworkAlertCategoriesResponse(
+        makeRadioResponseInfo(serial), {});
+    return ScopedAStatus::ok();
+}
+
 ScopedAStatus RadioNetwork::responseAcknowledgement() {
     return ScopedAStatus::ok();
 }
