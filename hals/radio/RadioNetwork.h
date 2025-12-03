@@ -99,7 +99,6 @@ struct RadioNetwork : public network::BnRadioNetwork {
     ScopedAStatus setSatellitePlmn(int32_t serial, const std::vector<std::string>& carrierPlmnArray, const std::vector<std::string>& allSatellitePlmnArray) override;
     ScopedAStatus setSatelliteEnabledForCarrier(int32_t serial, bool satelliteEnabled) override;
     ScopedAStatus isSatelliteEnabledForCarrier(int32_t serial) override;
-    ScopedAStatus getSupportedNetworkAlertCategories(int32_t serial) override;
 
     void atResponseSink(const AtResponsePtr& response);
     void handleUnsolicited(const AtResponse::CFUN&);
