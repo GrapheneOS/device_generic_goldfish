@@ -17,9 +17,10 @@
 package com.android.emulator.multidisplay;
 
 import android.app.Service;
+import android.content.Intent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
-import android.content.Intent;
+import android.hardware.display.VirtualDisplayConfig;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Messenger;
@@ -30,10 +31,8 @@ import android.util.DebugUtils;
 import android.util.Log;
 import android.view.Surface;
 
-import java.lang.Thread;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -325,13 +324,16 @@ public final class MultiDisplayService extends Service {
 
     private void createVirtualDisplay(int displayId, int w, int h, int dpi, int flag) {
         mMultiDisplay[displayId].surface = nativeCreateSurface(displayId, w, h);
-        mMultiDisplay[displayId].virtualDisplay = mDisplayManager.createVirtualDisplay(
-                                          null /* projection */,
-                                          DISPLAY_NAME, w, h, dpi,
-                                          mMultiDisplay[displayId].surface, flag,
-                                          null /* callback */,
-                                          null /* handler */,
-                                          UNIQUE_DISPLAY_ID[displayId]);
+        mMultiDisplay[displayId].virtualDisplay =
+                mDisplayManager.createVirtualDisplay(
+                        new VirtualDisplayConfig.Builder(DISPLAY_NAME, w, h, dpi)
+                                .setSurface(mMultiDisplay[displayId].surface)
+                                .setFlags(flag)
+                                .setUniqueId(UNIQUE_DISPLAY_ID[displayId])
+                                .build());
+        if (mMultiDisplay[displayId].virtualDisplay == null) {
+            throw new RuntimeException("Failed to create virtual display");
+        }
         mMultiDisplay[displayId].set(w, h, dpi, flag);
     }
 
