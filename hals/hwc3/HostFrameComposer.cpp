@@ -232,6 +232,7 @@ HWC3::Error HostFrameComposer::createHostComposerDisplayInfo(Display* display,
     displayInfo.hostDisplayId = hostDisplayId;
     displayInfo.swapchain = DrmSwapchain::create(
         static_cast<uint32_t>(displayWidth), static_cast<uint32_t>(displayHeight),
+        GetHostDisplayPixelFormat(),
         ::android::GraphicBuffer::USAGE_HW_COMPOSER | ::android::GraphicBuffer::USAGE_HW_RENDER,
         mDrmClient ? &mDrmClient.value() : nullptr);
     if (!displayInfo.swapchain) {

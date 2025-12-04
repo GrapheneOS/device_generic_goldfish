@@ -54,6 +54,8 @@ bool IsInGem5DisplayFinderMode();
 bool IsInNoOpDisplayFinderMode();
 bool IsInDrmDisplayFinderMode();
 
+common::PixelFormat GetHostDisplayPixelFormat();
+
 namespace HWC3 {
 enum class Error : int32_t {
     None = 0,

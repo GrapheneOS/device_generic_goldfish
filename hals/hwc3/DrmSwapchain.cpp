@@ -22,6 +22,7 @@
 
 namespace aidl::android::hardware::graphics::composer3::impl {
 
+
 DrmSwapchain::Image::Image(const native_handle_t* buffer, std::shared_ptr<DrmBuffer> drmBuffer)
     : mBuffer(buffer), mDrmBuffer(drmBuffer) {}
 
@@ -61,17 +62,20 @@ const native_handle_t* DrmSwapchain::Image::getBuffer() { return mBuffer; }
 
 const std::shared_ptr<DrmBuffer> DrmSwapchain::Image::getDrmBuffer() { return mDrmBuffer; }
 
-std::unique_ptr<DrmSwapchain> DrmSwapchain::create(uint32_t width, uint32_t height, uint32_t usage,
+std::unique_ptr<DrmSwapchain> DrmSwapchain::create(uint32_t width, uint32_t height,
+                                                   common::PixelFormat format, uint32_t usage,
                                                    DrmClient* client, uint32_t numImages) {
-    DEBUG_LOG("%s: creating swapchain w:%" PRIu32 " h:%" PRIu32 " usage:%" PRIu32 " count:%" PRIu32,
-              __FUNCTION__, width, height, usage, numImages);
+    DEBUG_LOG("%s: creating swapchain w:%" PRIu32 " h:%" PRIu32 " format:%" PRIx32 " usage:%" PRIu32
+              " count:%" PRIu32,
+              __FUNCTION__, width, height, format, usage, numImages);
+
     std::vector<Image> images;
     for (uint32_t i = 0; i < numImages; i++) {
         const uint32_t layerCount = 1;
         buffer_handle_t handle;
         uint32_t stride;
         if (::android::GraphicBufferAllocator::get().allocate(
-                width, height, ::android::PIXEL_FORMAT_RGBA_8888, layerCount, usage, &handle,
+                width, height, static_cast<int>(format), layerCount, usage, &handle,
                 &stride, "RanchuHwc") != ::android::OK) {
             ALOGE("%s: Failed to allocate drm ahb", __FUNCTION__);
             return nullptr;
