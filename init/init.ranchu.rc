@@ -16,6 +16,8 @@ on early-init
     setprop ro.cpuvulkan.version ${ro.boot.qemu.cpuvulkan.version}
     setprop ro.hardware.egl ${ro.boot.hardwareegl:-emulation}
     setprop ro.hardware.vulkan ${ro.boot.hardware.vulkan}
+    # gralloc could be minigbm, default ranchu
+    setprop ro.hardware.gralloc ${ro.boot.hardware.gralloc:-ranchu}
     setprop ro.opengles.version ${ro.boot.opengles.version}
     setprop dalvik.vm.heapsize ${ro.boot.dalvik.vm.heapsize:-192m}
     setprop dalvik.vm.checkjni ${ro.boot.dalvik.vm.checkjni}
@@ -154,6 +156,38 @@ service qemu-props /vendor/bin/qemu-props
     group root
     oneshot
     disabled
+
+service vendor.graphics.allocator /vendor/bin/hw/android.hardware.graphics.allocator-service.minigbm
+    override
+    class hal animation
+    user system
+    group graphics drmrpc
+    capabilities SYS_NICE
+    onrestart restart surfaceflinger
+    task_profiles ServiceCapacityLow
+    disabled
+
+service vendor.graphics.allocator.ranchu /vendor/bin/hw/android.hardware.graphics.allocator-service.ranchu
+    override
+    class hal animation
+    user system
+    group graphics drmrpc
+    capabilities SYS_NICE
+    onrestart restart surfaceflinger
+    task_profiles ServiceCapacityLow
+    disabled
+
+on property:ro.hardware.gralloc=minigbm
+    start vendor.graphics.allocator
+    start vendor.camera-provider-ranchu.minigbm
+
+on property:ro.hardware.gralloc=ranchu
+    start vendor.graphics.allocator.ranchu
+    start vendor.camera-provider-ranchu
+
+on property:ro.hardware.gralloc=
+    start vendor.graphics.allocator.ranchu
+    start vendor.camera-provider-ranchu
 
 service qemu-props-bootcomplete /vendor/bin/qemu-props "bootcomplete"
     user root
