@@ -1,4 +1,4 @@
-service vendor.graphics.allocator /vendor/bin/hw/android.hardware.graphics.allocator-service.ranchu
+service vendor.graphics.allocator.ranchu /vendor/bin/hw/android.hardware.graphics.allocator-service.ranchu
     class hal animation
     user system
     group graphics drmrpc

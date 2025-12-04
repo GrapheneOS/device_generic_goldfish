@@ -4,4 +4,5 @@ service vendor.camera-provider-ranchu /vendor/bin/hw/android.hardware.camera.pro
     group system
     capabilities SYS_NICE
     rlimit rtprio 10 10
+    disabled
     task_profiles CameraServiceCapacity CameraServicePerformance

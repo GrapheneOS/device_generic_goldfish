@@ -73,7 +73,7 @@ cc_binary {
     defaults: ["gralloc_defaults"],
     srcs: ["allocator.cpp"],
     init_rc: ["android.hardware.graphics.allocator-service.ranchu.rc"],
-    vintf_fragments: ["android.hardware.graphics.gralloc.ranchu.xml"],
+    vintf_fragments: ["mapper.ranchu.xml"],
     shared_libs: [
         "libbinder_ndk",
         "libqemupipe.ranchu",

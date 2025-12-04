@@ -102,13 +102,14 @@ PRODUCT_PACKAGES += \
     libGoldfishProfiler \
     dlkm_loader
 
-ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
-PRODUCT_VENDOR_PROPERTIES += ro.hardware.gralloc=minigbm
+# include minigbm regardless
 PRODUCT_PACKAGES += \
     android.hardware.graphics.allocator-service.minigbm \
     mapper.minigbm
+
+ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
+PRODUCT_VENDOR_PROPERTIES += ro.hardware.gralloc=minigbm
 else
-PRODUCT_VENDOR_PROPERTIES += ro.hardware.gralloc=ranchu
 PRODUCT_PACKAGES += android.hardware.graphics.allocator-service.ranchu
 endif
 
@@ -201,9 +202,8 @@ ifneq ($(EMULATOR_VENDOR_NO_CAMERA),true)
 PRODUCT_SOONG_NAMESPACES += \
     hardware/google/camera/devices/EmulatedCamera \
 
-ifneq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
 PRODUCT_PACKAGES += android.hardware.camera.provider.ranchu_minigbm
-else
+ifeq ($(filter %_minigbm, $(TARGET_PRODUCT)),)
 PRODUCT_PACKAGES += android.hardware.camera.provider.ranchu
 endif
 
