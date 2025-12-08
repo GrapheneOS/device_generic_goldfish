@@ -862,7 +862,7 @@ void ComposerClient::executeDisplayCommandSetActiveConfig(
     CommandResultWriter& commandResults, Display& display,
     ActiveConfigCommand activeConfig) {
   DEBUG_LOG("%s display:%" PRIu64 " config:%" PRIu32, __FUNCTION__,
-            display.getId(), activeConfig->configId);
+            display.getId(), activeConfig.configId);
 
   auto error = display.setActiveConfig(activeConfig.configId);
   if (error != HWC3::Error::None) {

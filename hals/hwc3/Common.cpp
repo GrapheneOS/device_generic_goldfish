@@ -93,4 +93,23 @@ std::string toString(HWC3::Error error) {
     }
 }
 
+common::PixelFormat GetHostDisplayPixelFormat() {
+    // The virtio gpu kernel module only supports the BGRA and BGRX formats
+    // (see drivers/gpu/drm/virtio/virtgpu_display.c). Historically, Cuttlefish
+    // maintained an out of tree patch (aosp/1106608) to allow using RGBA and
+    // the Cuttlefish webrtc server treated all buffers as RGBA. In order to
+    // not break older guests and to not break Goldfish which may not yet be
+    // on virtio gpu, the format is configurable here.
+
+    const std::string framebufferFormat =
+        ::android::base::GetProperty(
+            "ro.vendor.hwcomposer.display_framebuffer_format", "");
+
+    if (framebufferFormat == "bgra") {
+        return common::PixelFormat::BGRA_8888;
+    }
+
+    return common::PixelFormat::RGBA_8888;
+}
+
 }  // namespace aidl::android::hardware::graphics::composer3::impl

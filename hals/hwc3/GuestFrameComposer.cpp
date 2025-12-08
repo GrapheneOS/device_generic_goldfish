@@ -547,6 +547,7 @@ HWC3::Error GuestFrameComposer::onDisplayCreate(Display* display) {
 
     displayInfo.swapchain = DrmSwapchain::create(static_cast<uint32_t>(displayWidth),
                                                  static_cast<uint32_t>(displayHeight),
+                                                 GetHostDisplayPixelFormat(),
                                                  ::android::GraphicBuffer::USAGE_HW_COMPOSER |
                                                      ::android::GraphicBuffer::USAGE_SW_READ_OFTEN |
                                                      ::android::GraphicBuffer::USAGE_SW_WRITE_OFTEN,

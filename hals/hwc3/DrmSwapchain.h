@@ -44,7 +44,8 @@ class DrmSwapchain {
         friend class DrmSwapchain;
     };
 
-    static std::unique_ptr<DrmSwapchain> create(uint32_t width, uint32_t height, uint32_t usage,
+    static std::unique_ptr<DrmSwapchain> create(uint32_t width, uint32_t height,
+                                                common::PixelFormat format, uint32_t usage,
                                                 DrmClient* client, uint32_t numImages = 3);
     Image* getNextImage();
 
