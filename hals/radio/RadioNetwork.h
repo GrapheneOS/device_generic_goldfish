@@ -101,6 +101,10 @@ struct RadioNetwork : public network::BnRadioNetwork {
     ScopedAStatus isSatelliteEnabledForCarrier(int32_t serial) override;
     ScopedAStatus getSupportedNetworkAlertCategories(int32_t serial) override;
 
+    ScopedAStatus setSatelliteNetworkInfo(int32_t serial, const network::SatelliteNetworkInfo& satelliteNetworkInfo) override;
+    ScopedAStatus enablePrioritizedNetworkScan(int32_t serial, const network::PrioritizedNetworkScanRequest& scanRequest) override;
+    ScopedAStatus disablePrioritizedNetworkScan(int32_t serial) override;
+
     void atResponseSink(const AtResponsePtr& response);
     void handleUnsolicited(const AtResponse::CFUN&);
     void handleUnsolicited(const AtResponse::CREG&);

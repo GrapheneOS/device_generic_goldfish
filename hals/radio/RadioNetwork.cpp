@@ -1361,6 +1361,28 @@ ScopedAStatus RadioNetwork::isSatelliteEnabledForCarrier(int32_t serial) {
     return ScopedAStatus::ok();
 }
 
+ScopedAStatus RadioNetwork::setSatelliteNetworkInfo(int32_t serial,
+                                                    const network::SatelliteNetworkInfo & /*satelliteNetworkInfo*/) {
+    NOT_NULL(mRadioNetworkResponse)->setSatelliteNetworkInfoResponse(
+            makeRadioResponseInfo(serial));
+    return ScopedAStatus::ok();
+}
+
+ScopedAStatus RadioNetwork::enablePrioritizedNetworkScan(int32_t serial,
+                                                         const network::PrioritizedNetworkScanRequest & /*scanRequest*/) {
+    NOT_NULL(mRadioNetworkResponse)->enablePrioritizedNetworkScanResponse(
+            makeRadioResponseInfoUnsupported(serial, FAILURE_DEBUG_PREFIX,
+                                             __func__));
+    return ScopedAStatus::ok();
+}
+
+ScopedAStatus RadioNetwork::disablePrioritizedNetworkScan(int32_t serial) {
+    NOT_NULL(mRadioNetworkResponse)->disablePrioritizedNetworkScanResponse(
+            makeRadioResponseInfoUnsupported(serial, FAILURE_DEBUG_PREFIX,
+                                             __func__));
+    return ScopedAStatus::ok();
+}
+
 ScopedAStatus RadioNetwork::getSupportedNetworkAlertCategories(int32_t serial) {
     NOT_NULL(mRadioNetworkResponse)->getSupportedNetworkAlertCategoriesResponse(
         makeRadioResponseInfo(serial), {});
