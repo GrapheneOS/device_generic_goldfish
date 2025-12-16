@@ -211,12 +211,6 @@ ScopedAStatus RadioConfig::setResponseFunctions(
     return ScopedAStatus::ok();
 }
 
-ScopedAStatus RadioConfig::rebootModem(int32_t serial) {
-    NOT_NULL(mRadioConfigResponse)->rebootModemResponse(
-            makeRadioResponseInfoUnsupported(serial, FAILURE_DEBUG_PREFIX, __func__));
-    return ScopedAStatus::ok();
-}
-
 }  // namespace implementation
 }  // namespace radio
 }  // namespace hardware
