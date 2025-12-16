@@ -44,7 +44,6 @@ struct RadioConfig : public config::BnRadioConfig {
             int32_t serial, const std::vector<config::SlotPortMapping>& slotMap) override;
     ScopedAStatus getSimTypeInfo(int32_t serial) override;
     ScopedAStatus setSimType(int32_t serial, const std::vector<config::SimType>& simTypes) override;
-    ScopedAStatus rebootModem(int32_t serial) override;
 
     void atResponseSink(const AtResponsePtr& response);
     template <class IGNORE> void handleUnsolicited(const IGNORE&) {}
