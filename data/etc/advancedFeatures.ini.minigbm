@@ -31,3 +31,4 @@ DeviceKeyboardHasAssistKey = on
 Uwb = on
 Minigbm = on
 VulkanVirtualQueue = on
+QemuCameraSensorOrientation = on

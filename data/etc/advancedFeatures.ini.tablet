@@ -30,3 +30,4 @@ VirtioSndCard = on
 DeviceKeyboardHasAssistKey = on
 Uwb = on
 VulkanVirtualQueue = on
+QemuCameraSensorOrientation = on

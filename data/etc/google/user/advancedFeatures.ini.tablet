@@ -32,3 +32,4 @@ DeviceKeyboardHasAssistKey = on
 AndroidVirtualizationFramework = on
 Uwb = on
 VulkanVirtualQueue = on
+QemuCameraSensorOrientation = on
