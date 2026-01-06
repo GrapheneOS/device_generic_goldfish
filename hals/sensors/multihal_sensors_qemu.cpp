@@ -117,7 +117,9 @@ void MultihalSensors::parseQemuSensorEventLocked(QemuSensorsProtocolState* state
     const int len = m_sensorsTransport->Receive(DATA, buf, sizeof(buf) - 1);
     if (len < 0) {
         ALOGE("%s:%d: receive for %s failed", __func__, __LINE__, m_sensorsTransport->Name());
+        return;
     }
+
     const int64_t nowNs = ::android::elapsedRealtimeNano();
     buf[len] = 0;
     const char* end = buf + len;
