@@ -340,9 +340,18 @@ void MultihalSensors::parseQemuSensorEventLocked(QemuSensorsProtocolState* state
     } else if (const char* values = testPrefix(buf, end, "heading", ':')) {
         float azimuthRad;
         if (sscanf(values, "%f", &azimuthRad) == 1) {
-            const int azimuthDeg = int(azimuthRad / M_PI * 180.0 + 0.5f);
-            payload->data[0] = float((azimuthDeg + 360) % 360);
-            payload->data[1] = 10.0f; // precision
+            const int azimuthDeg = (int(azimuthRad / M_PI * 180.0 + 0.5f) + 360) % 360;
+            if (azimuthDeg != state->headingAzimuthDeg) {
+                payload->data[0] = float(azimuthDeg);
+                payload->data[1] = 10.0f; // precision
+
+                event.timestamp = nowNs + state->timeBiasNs;
+                event.sensorHandle = kSensorHandleHeading;
+                event.sensorType = static_cast<SensorType>(42);
+                postSensorEventLocked(event);
+                state->headingAzimuthDeg = azimuthDeg;
+            }
+
             parsed = true;
         }
     } else if (const char* values = testPrefix(buf, end, "guest-sync", ':')) {
