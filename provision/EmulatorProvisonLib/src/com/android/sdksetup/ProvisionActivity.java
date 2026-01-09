@@ -21,6 +21,8 @@ import android.app.ActivityManager;
 import android.app.StatusBarManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.om.IOverlayManager;
+import android.content.om.OverlayInfo;
 import android.content.pm.PackageManager;
 import android.hardware.input.InputManager;
 import android.hardware.input.InputManagerGlobal;
@@ -113,6 +115,7 @@ public abstract class ProvisionActivity extends Activity {
         provisionTelephony();
         provisionLocation();
         provisionAdb();
+        provisionSkin();
 
         Settings.Secure.putInt(getContentResolver(), Settings.Secure.INSTALL_NON_MARKET_APPS, 1);
     }
@@ -248,6 +251,25 @@ public abstract class ProvisionActivity extends Activity {
 
     protected void provisionAdb() {
         Settings.Global.putInt(getContentResolver(), Settings.Global.PACKAGE_VERIFIER_INCLUDE_ADB, 0);
+    }
+
+    protected void provisionSkin() {
+        final IOverlayManager om = IOverlayManager.Stub.asInterface(
+                ServiceManager.getService(Context.OVERLAY_SERVICE));
+        final String skin = SystemProperties.get("ro.boot.qemu.skin");
+        if (skin != null && !skin.isEmpty()) {
+            final int CURRENT_USER = -2;
+            try {
+                om.setEnabledExclusiveInCategory("com.android.systemui.emulation."
+                        + skin, CURRENT_USER);
+                om.setEnabledExclusiveInCategory("com.android.internal.emulation."
+                        + skin, CURRENT_USER);
+                Log.i(TAG(), "Skin set to " + skin);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG(), "Failed to set skin to " + skin);
+            }
+        }
     }
 
     protected boolean provisionRequired() {
