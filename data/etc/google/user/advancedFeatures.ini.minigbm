@@ -34,3 +34,4 @@ Uwb = on
 Minigbm = on
 AndroidVirtualizationFramework = on
 VulkanVirtualQueue = on
+QemuCameraSensorOrientation = on

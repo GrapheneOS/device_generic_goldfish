@@ -349,6 +349,10 @@ Rect<uint16_t> BaseQemuCamera::getSensorSize() const {
     return mParams.sensorSize;
 }
 
+int32_t BaseQemuCamera::getSensorOrientation() const {
+    return mParams.sensorOrientation;
+}
+
 uint8_t BaseQemuCamera::getSensorColorFilterArrangement() const {
     return ANDROID_SENSOR_INFO_COLOR_FILTER_ARRANGEMENT_RGGB;
 }
