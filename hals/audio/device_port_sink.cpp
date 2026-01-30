@@ -16,9 +16,13 @@
 
 #include PATH(APM_XSD_ENUMS_H_FILENAME)
 #include <android-base/properties.h>
+#include <android-base/unique_fd.h>
+#include <algorithm>
 #include <chrono>
 #include <thread>
 #include <log/log.h>
+#include <poll.h>
+#include <sys/eventfd.h>
 #include <utils/Mutex.h>
 #include <utils/Timers.h>
 #include <utils/ThreadDefs.h>
@@ -50,10 +54,11 @@ struct TinyalsaSink : public DevicePortSink {
                  const AudioConfig &cfg,
                  uint64_t initialFrames)
             : mStartNs(systemTime(SYSTEM_TIME_MONOTONIC))
+            , mInitialFrames(initialFrames)
             , mSampleRateHz(cfg.base.sampleRateHz)
             , mFrameSize(util::countChannels(cfg.base.channelMask) * sizeof(int16_t))
             , mWriteSizeFrames(cfg.frameCount)
-            , mInitialFrames(initialFrames)
+            , mExitRequestFd(::eventfd(0, EFD_NONBLOCK))
             , mFrames(initialFrames)
             , mRingBuffer(mFrameSize * cfg.frameCount * 3)
             , mMixer(pcmCard)
@@ -62,7 +67,7 @@ struct TinyalsaSink : public DevicePortSink {
                                   cfg.base.sampleRateHz,
                                   cfg.frameCount,
                                   true /* isOut */)) {
-        if (mPcm) {
+        if (mExitRequestFd.ok() && mPcm) {
             mConsumeThread = std::thread(&TinyalsaSink::consumeThread, this);
         } else {
             mConsumeThread = std::thread([](){});
@@ -70,9 +75,14 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     ~TinyalsaSink() {
-        mConsumeThreadRunning = false;
+        if (mExitRequestFd.ok()) {
+            uint64_t u = 1;
+            ::write(mExitRequestFd.get(), &u, sizeof(u));
+        }
+
         ALOGD("%s: joining consumeThread", __func__);
         mConsumeThread.join();
+
         if (mPcm) {
             ALOGD("%s: stopping PCM stream", __func__);
             LOG_ALWAYS_FATAL_IF(pcm_stop(mPcm.get()) != 0);
@@ -164,7 +174,7 @@ struct TinyalsaSink : public DevicePortSink {
                 mReceivedFrames += szFrames;
                 bytesToWrite -= szBytes;
             } else {
-                ALOGV("TinyalsaSink::%s:%d pcm_writei was late reading "
+                ALOGV("TinyalsaSink::%s:%d consumeThread was late reading "
                       "frames, dropping %zu us of audio",
                       __func__, __LINE__,
                       size_t(1000000 * bytesToWrite / mFrameSize / mSampleRateHz));
@@ -196,38 +206,78 @@ struct TinyalsaSink : public DevicePortSink {
     }
 
     void consumeThread() {
+        struct pollfd fds[] = {
+            {
+                .fd = ::pcm_get_poll_fd(mPcm.get()),
+                .events = POLLOUT,
+                .revents = 0,
+            },
+            {
+                .fd = mExitRequestFd.get(),
+                .events = POLLIN,
+                .revents = 0,
+            },
+        };
+
+        const unsigned silenceFrames = std::max(mWriteSizeFrames / 2U, 1U);
+        const std::vector<char> silence(silenceFrames * mFrameSize);
+
         util::setThreadPriority(SP_AUDIO_SYS, PRIORITY_AUDIO);
-        std::vector<uint8_t> writeBuffer(mWriteSizeFrames * mFrameSize);
-
-        while (mConsumeThreadRunning) {
-            if (mRingBuffer.waitForConsumeAvailable(
-                    std::chrono::high_resolution_clock::now()
-                    + std::chrono::microseconds(100000))) {
-                size_t szBytes;
-                {
-                    auto chunk = mRingBuffer.getConsumeChunk();
-                    szBytes = std::min(writeBuffer.size(), chunk.size);
-                    // We have to memcpy because the consumer holds the lock
-                    // into RingBuffer and pcm_write takes too long to hold
-                    // this lock.
-                    memcpy(writeBuffer.data(), chunk.data, szBytes);
-                    LOG_ALWAYS_FATAL_IF(mRingBuffer.consume(chunk, szBytes) < szBytes);
-                }
-
-                const uint8_t *data8 = writeBuffer.data();
-                while (szBytes > 0) {
-                    const int n = talsa::pcmWrite(mPcm.get(), data8, szBytes, mFrameSize);
-                    if (n < 0) {
-                        break;
-                    }
-                    LOG_ALWAYS_FATAL_IF(static_cast<size_t>(n) > szBytes,
-                                        "n=%d szBytes=%zu mFrameSize=%u",
-                                        n, szBytes, mFrameSize);
-                    data8 += n;
-                    szBytes -= n;
+        while (true) {
+            if (::poll(fds, 2, 3000) < 0) {
+                if (errno == EINTR) {
+                    continue;
+                } else {
+                    ALOGE("%s: poll failed with %s (%d)", __func__, ::strerror(errno), errno);
+                    break;
                 }
             }
+
+            if (fds[0].revents & POLLOUT) {
+                auto chunk = mRingBuffer.getConsumeChunk();
+                if (chunk.size > 0) {
+                    const int framesWritten = ::pcm_writei(mPcm.get(), chunk.data,
+                                                           chunk.size / mFrameSize);
+                    if (framesWritten >= 0) {
+                        mRingBuffer.consume(chunk, size_t(framesWritten) * mFrameSize);
+                    } else if (framesWritten == -EPIPE) {
+                        if (const int err = ::pcm_prepare(mPcm.get())) {
+                            ALOGE("%s: pcm_prepare failed with '%s' (%d)", __func__,
+                                ::pcm_get_error(mPcm.get()), err);
+                            break;
+                        }
+                    } else if (framesWritten != -EAGAIN) {
+                        ALOGE("%s: pcm_writei failed with '%s' (%d)",
+                              __func__, ::pcm_get_error(mPcm.get()), framesWritten);
+                        break;
+                    }
+                } else {
+                    const int framesWritten = ::pcm_writei(mPcm.get(), silence.data(),
+                                                           silenceFrames);
+                    if (framesWritten >= 0) {
+                        // Good, do nothing.
+                        ALOGD("%d frames of silence written", framesWritten);
+                    } else if (framesWritten == -EPIPE) {
+                        if (const int err = ::pcm_prepare(mPcm.get())) {
+                            ALOGE("%s: pcm_prepare failed with '%s' (%d)", __func__,
+                                ::pcm_get_error(mPcm.get()), err);
+                            break;
+                        }
+                    } else if (framesWritten != -EAGAIN) {
+                        ALOGE("%s: pcm_writei failed with '%s' (%d)",
+                              __func__, ::pcm_get_error(mPcm.get()), framesWritten);
+                        break;
+                    }
+                }
+            }
+
+            if (fds[1].revents & POLLIN) {
+                uint64_t val;
+                ::read(fds[1].fd, &val, sizeof(val));  // clear the event
+                break;
+            }
         }
+
         ALOGD("%s: exiting", __func__);
     }
 
@@ -248,10 +298,11 @@ struct TinyalsaSink : public DevicePortSink {
 
 private:
     const nsecs_t mStartNs;
+    const uint64_t mInitialFrames;
     const unsigned mSampleRateHz;
     const unsigned mFrameSize;
     const unsigned mWriteSizeFrames;
-    const uint64_t mInitialFrames;
+    const base::unique_fd mExitRequestFd;
     uint64_t mFrames GUARDED_BY(mFrameCountersMutex);
     uint64_t mMissedFrames GUARDED_BY(mFrameCountersMutex) = 0;
     uint64_t mReceivedFrames GUARDED_BY(mFrameCountersMutex) = 0;
@@ -259,7 +310,6 @@ private:
     talsa::Mixer mMixer;
     talsa::PcmPtr mPcm;
     std::thread mConsumeThread;
-    std::atomic<bool> mConsumeThreadRunning = true;
     mutable Mutex mFrameCountersMutex;
 };
 

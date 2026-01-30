@@ -158,7 +158,7 @@ PcmPtr pcmOpen(const unsigned int dev,
     }
 
     pcm_t *pcmRaw = ::pcm_open(dev, card,
-                               (isOut ? PCM_OUT : PCM_IN) | PCM_MONOTONIC,
+                               (isOut ? PCM_OUT : PCM_IN) | PCM_MONOTONIC | PCM_NONBLOCK,
                                &pcm_config);
     if (!pcmRaw) {
         ALOGE("%s:%d pcm_open returned nullptr for nChannels=%u sampleRateHz=%zu "
@@ -185,82 +185,6 @@ PcmPtr pcmOpen(const unsigned int dev,
     }
 
     return pcm;
-}
-
-int pcmRead(pcm_t *pcm, void *data, const int szBytes,
-             const unsigned int frameSize) {
-    LOG_ALWAYS_FATAL_IF(frameSize == 0);
-    LOG_ALWAYS_FATAL_IF(szBytes < 0, "szBytes=%d", szBytes);
-    LOG_ALWAYS_FATAL_IF((szBytes % frameSize) != 0, "szBytes=%d frameSize=%u",
-                        szBytes, frameSize);
-    if (!pcm) {
-        return FAILURE(-1);
-    }
-
-    const int szFrames = szBytes / frameSize;
-    int tries = 3;
-    while (true) {
-        const int framesRead = ::pcm_readi(pcm, data, szFrames);
-        if (framesRead > 0) {
-            LOG_ALWAYS_FATAL_IF(framesRead > szFrames,
-                                "framesRead=%d szFrames=%d szBytes=%u frameSize=%u",
-                                framesRead, szFrames, szBytes, frameSize);
-            return framesRead * frameSize;
-        } else {
-            --tries;
-            switch (-framesRead) {
-            case EIO:
-            case EAGAIN:
-                if (tries > 0) {
-                    break;
-                }
-                [[fallthrough]];
-
-            default:
-                ALOGW("%s:%d pcm_readi failed with '%s' (%d)",
-                      __func__, __LINE__, ::pcm_get_error(pcm), framesRead);
-                return FAILURE(-1);
-            }
-        }
-    }
-}
-
-int pcmWrite(pcm_t *pcm, const void *data, const int szBytes,
-              const unsigned int frameSize) {
-    LOG_ALWAYS_FATAL_IF(frameSize == 0);
-    LOG_ALWAYS_FATAL_IF(szBytes < 0, "szBytes=%d", szBytes);
-    LOG_ALWAYS_FATAL_IF((szBytes % frameSize) != 0, "szBytes=%d frameSize=%u",
-                        szBytes, frameSize);
-    if (!pcm) {
-        return FAILURE(-1);
-    }
-
-    const int szFrames = szBytes / frameSize;
-    int tries = 3;
-    while (true) {
-        const int framesWritten = ::pcm_writei(pcm, data, szFrames);
-        if (framesWritten > 0) {
-            LOG_ALWAYS_FATAL_IF(framesWritten > szFrames,
-                                "framesWritten=%d szFrames=%d szBytes=%u frameSize=%u",
-                                framesWritten, szFrames, szBytes, frameSize);
-            return framesWritten * frameSize;
-        } else {
-            --tries;
-            switch (-framesWritten) {
-            case EIO:
-            case EAGAIN:
-                if (tries > 0) {
-                    break;
-                }
-                [[fallthrough]];
-
-            default:
-                ALOGW("%s:%d pcm_writei failed with '%s' (%d)",
-                      __func__, __LINE__, ::pcm_get_error(pcm), framesWritten);
-                return FAILURE(-1);
-            }
-        }
-    }
 }
 
 Mixer::Mixer(unsigned card): mMixer(mixerGetOrOpen(card)) {}
