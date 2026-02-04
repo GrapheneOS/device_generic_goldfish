@@ -72,6 +72,7 @@ cc_defaults {
     ],
     cflags: [
         "-include common/all-versions/VersionMacro.h",
+        "-DANDROID_BASE_UNIQUE_FD_DISABLE_IMPLICIT_CONVERSION",
     ],
 }
 

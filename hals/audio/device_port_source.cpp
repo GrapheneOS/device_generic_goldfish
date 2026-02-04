@@ -15,9 +15,12 @@
  */
 
 #include <android-base/properties.h>
+#include <android-base/unique_fd.h>
 #include <cmath>
 #include <chrono>
 #include <thread>
+#include <poll.h>
+#include <sys/eventfd.h>
 #include <unistd.h>
 #include <audio_utils/channels.h>
 #include <audio_utils/format.h>
@@ -56,6 +59,7 @@ struct TinyalsaSource : public DevicePortSource {
             , mSampleRateHz(cfg.base.sampleRateHz)
             , mFrameSize(util::countChannels(cfg.base.channelMask) * sizeof(int16_t))
             , mReadSizeFrames(cfg.frameCount)
+            , mExitRequestFd(::eventfd(0, EFD_NONBLOCK))
             , mFrames(frames)
             , mRingBuffer(mFrameSize * cfg.frameCount * 3)
             , mMixer(pcmCard)
@@ -64,7 +68,7 @@ struct TinyalsaSource : public DevicePortSource {
                                   cfg.base.sampleRateHz,
                                   cfg.frameCount,
                                   false /* isOut */)) {
-        if (mPcm) {
+        if (mExitRequestFd.ok() && mPcm) {
             mProduceThread = std::thread(&TinyalsaSource::producerThread, this);
         } else {
             mProduceThread = std::thread([](){});
@@ -72,7 +76,11 @@ struct TinyalsaSource : public DevicePortSource {
     }
 
     ~TinyalsaSource() {
-        mProduceThreadRunning = false;
+        if (mExitRequestFd.ok()) {
+            uint64_t u = 1;
+            ::write(mExitRequestFd.get(), &u, sizeof(u));
+        }
+
         ALOGD("%s: joining producerThread", __func__);
         mProduceThread.join();
         if (mPcm) {
@@ -143,7 +151,7 @@ struct TinyalsaSource : public DevicePortSource {
                 bytesToRead -= writeBufSzBytes;
                 mSentFrames += writeBufSzBytes / mFrameSize;
             } else {
-                ALOGD("TinyalsaSource::%s:%d pcm_readi was late delivering "
+                ALOGD("TinyalsaSource::%s:%d producerThread was late delivering "
                       "frames, inserting %zu us of silence",
                       __func__, __LINE__,
                       size_t(1000000 * bytesToRead / mFrameSize / mSampleRateHz));
@@ -167,38 +175,72 @@ struct TinyalsaSource : public DevicePortSource {
     }
 
     void producerThread() {
+        struct pollfd fds[] = {
+            {
+                .fd = ::pcm_get_poll_fd(mPcm.get()),
+                .events = POLLIN,
+                .revents = 0,
+            },
+            {
+                .fd = mExitRequestFd.get(),
+                .events = POLLIN,
+                .revents = 0,
+            },
+        };
+
+        const size_t periodBytes = mReadSizeFrames * mFrameSize;
+
         util::setThreadPriority(SP_AUDIO_SYS, PRIORITY_AUDIO);
-        std::vector<uint8_t> readBuf(mReadSizeFrames * mFrameSize);
+        if (const int err = ::pcm_start(mPcm.get())) {
+            ALOGE("%s: pcm_start failed with '%s' (%d)", __func__,
+                  ::pcm_get_error(mPcm.get()), err);
+            return;
+        }
 
-        while (mProduceThreadRunning) {
-            const size_t bytesLost = mRingBuffer.makeRoomForProduce(readBuf.size());
-            mFramesLost += bytesLost / mFrameSize;
-
-            auto produceChunk = mRingBuffer.getProduceChunk();
-            if (produceChunk.size < readBuf.size()) {
-                const size_t sz = doRead(readBuf.data(), readBuf.size());
-                if (sz > 0) {
-                    LOG_ALWAYS_FATAL_IF(mRingBuffer.produce(readBuf.data(), sz) < sz);
-                }
-            } else {
-                const size_t sz = doRead(produceChunk.data, readBuf.size());
-                if (sz > 0) {
-                    LOG_ALWAYS_FATAL_IF(mRingBuffer.produce(readBuf.size()) < sz);
+        while (true) {
+            if (::poll(fds, 2, 3000) < 0) {
+                if (errno == EINTR) {
+                    continue;
+                } else {
+                    ALOGE("%s: poll failed with %s (%d)", __func__, ::strerror(errno), errno);
+                    break;
                 }
             }
-        }
-        ALOGD("%s: exiting", __func__);
-    }
 
-    size_t doRead(void *dst, size_t sz) {
-        const int n = talsa::pcmRead(mPcm.get(), dst, sz, mFrameSize);
-        if (n > 0) {
-            LOG_ALWAYS_FATAL_IF(static_cast<size_t>(n) > sz,
-                                "n=%d sz=%zu mFrameSize=%u", n, sz, mFrameSize);
-            return n;
-        } else {
-            return 0;
+            if (fds[0].revents & POLLIN) {
+                mFramesLost += mRingBuffer.makeRoomForProduce(periodBytes) / mFrameSize;
+
+                auto chunk = mRingBuffer.getProduceChunk();
+                const int framesRead = ::pcm_readi(mPcm.get(), chunk.data,
+                                                   chunk.size / mFrameSize);
+                if (framesRead >= 0) {
+                    mRingBuffer.produce(size_t(framesRead) * mFrameSize);
+                } else if (framesRead == -EPIPE) {
+                    if (const int err = ::pcm_prepare(mPcm.get())) {
+                        ALOGE("%s: pcm_prepare failed with '%s' (%d)", __func__,
+                            ::pcm_get_error(mPcm.get()), err);
+                        break;
+                    }
+                    if (const int err = ::pcm_start(mPcm.get())) {
+                        ALOGE("%s: pcm_start failed with '%s' (%d)", __func__,
+                            ::pcm_get_error(mPcm.get()), err);
+                        break;
+                    }
+                } else if (framesRead != -EAGAIN) {
+                    ALOGE("%s: pcm_readi failed with '%s' (%d)",
+                          __func__, ::pcm_get_error(mPcm.get()), framesRead);
+                    break;
+                }
+            }
+
+            if (fds[1].revents & POLLIN) {
+                uint64_t val;
+                ::read(fds[1].fd, &val, sizeof(val));  // clear the event
+                break;
+            }
         }
+
+        ALOGD("%s: exiting", __func__);
     }
 
     static std::unique_ptr<TinyalsaSource> create(unsigned pcmCard,
@@ -222,6 +264,7 @@ private:
     const unsigned mSampleRateHz;
     const unsigned mFrameSize;
     const unsigned mReadSizeFrames;
+    const base::unique_fd mExitRequestFd;
     uint64_t &mFrames GUARDED_BY(mFrameCountersMutex);
     uint64_t mPreviousFrames GUARDED_BY(mFrameCountersMutex) = 0;
     uint64_t mSentFrames GUARDED_BY(mFrameCountersMutex) = 0;
@@ -230,7 +273,6 @@ private:
     talsa::Mixer mMixer;
     talsa::PcmPtr mPcm;
     std::thread mProduceThread;
-    std::atomic<bool> mProduceThreadRunning = true;
     mutable Mutex mFrameCountersMutex;
 };
 
