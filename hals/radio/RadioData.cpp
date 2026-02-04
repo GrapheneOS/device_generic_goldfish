@@ -19,6 +19,8 @@
 #include <format>
 #include <string_view>
 
+#include <android-base/properties.h>
+
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netinet/in.h>
@@ -41,10 +43,26 @@ using data::SetupDataCallResult;
 
 namespace {
 #ifdef ON_CUTTLEFISH
-constexpr char kInterfaceName[] = "buried_eth0";
+const std::string kInterfaceNameTemplate = "buried_eth0";
 #else
-constexpr char kInterfaceName[] = "eth0";
+const std::string kInterfaceNameTemplate =
+        ::android::base::GetProperty("ro.boot.qemu.radio.data_interface_name",
+                                     "eth0");
 #endif
+
+bool isSharedInterface() {
+    return kInterfaceNameTemplate.empty() ||
+            kInterfaceNameTemplate.back() != '%';
+}
+
+std::string getInterfaceName(const int id) {
+    if (isSharedInterface()) {
+        return kInterfaceNameTemplate;
+    } else {
+        return kInterfaceNameTemplate.substr(
+                0, kInterfaceNameTemplate.size() - 1) + std::to_string(id - 1);
+    }
+}
 
 std::string_view getProtocolStr(const PdpProtocolType p) {
     using namespace std::literals;
@@ -79,7 +97,9 @@ formatCGDCONT(const int cid,
             std::format("AT+CGDCONT={0:d},\"{1:s}\",\"{2:s}\",,0,0", cid, protocolStr, apn)};
 }
 
-bool setInterfaceState(const char* interfaceName, const bool on) {
+bool setInterfaceState(const int interfaceIndex, const bool on) {
+    const std::string interfaceName = getInterfaceName(interfaceIndex);
+
     const int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (sock < 0) {
         return FAILURE_V(false, "Failed to open interface socket: %s (%d)",
@@ -88,13 +108,13 @@ bool setInterfaceState(const char* interfaceName, const bool on) {
 
     struct ifreq request;
     memset(&request, 0, sizeof(request));
-    strncpy(request.ifr_name, interfaceName, sizeof(request.ifr_name));
+    strncpy(request.ifr_name, interfaceName.c_str(), sizeof(request.ifr_name));
     request.ifr_name[sizeof(request.ifr_name) - 1] = '\0';
 
     if (ioctl(sock, SIOCGIFFLAGS, &request)) {
         ::close(sock);
         return FAILURE_V(false, "Failed to get interface flags for %s: %s (%d)",
-                         interfaceName, strerror(errno), errno);
+                         interfaceName.c_str(), strerror(errno), errno);
     }
 
     if (((request.ifr_flags & IFF_UP) != 0) == on) {
@@ -106,7 +126,7 @@ bool setInterfaceState(const char* interfaceName, const bool on) {
     if (ioctl(sock, SIOCSIFFLAGS, &request)) {
         ::close(sock);
         return FAILURE_V(false, "Failed to set interface flags for %s: %s (%d)",
-                         interfaceName, strerror(errno), errno);
+                         interfaceName.c_str(), strerror(errno), errno);
     }
 
     ::close(sock);
@@ -286,19 +306,19 @@ ScopedAStatus RadioData::setupDataCall(const int32_t serial,
                                        const int32_t pduSessionId,
                                        const std::optional<data::SliceInfo>& /*sliceInfo*/,
                                        const bool /*matchAllRuleAllowed*/) {
-    if (!setInterfaceState(kInterfaceName, true)) {
+    const int32_t cid = allocateId(mCallIdAllocator);
+    if (!setInterfaceState(cid, true)) {
+        releaseId(mCallIdAllocator, cid);
         NOT_NULL(mRadioDataResponse)->setupDataCallResponse(
                 makeRadioResponseInfo(serial, FAILURE(RadioError::GENERIC_FAILURE)), {});
         return ScopedAStatus::ok();
     }
 
     static const char* const kFunc = __func__;
-    mAtChannel->queueRequester([this, serial, dataProfileInfo, pduSessionId]
+    mAtChannel->queueRequester([this, serial, cid, dataProfileInfo, pduSessionId]
                                (const AtChannel::RequestPipe requestPipe) -> bool {
         using CmeError = AtResponse::CmeError;
         using CGCONTRDP = AtResponse::CGCONTRDP;
-
-        const int32_t cid = allocateId();
         RadioError status;
 
         SetupDataCallResult setupDataCallResult = {
@@ -306,7 +326,7 @@ ScopedAStatus RadioData::setupDataCall(const int32_t serial,
             .cid = cid,
             .active = SetupDataCallResult::DATA_CONNECTION_STATUS_ACTIVE,
             .type = dataProfileInfo.protocol,
-            .ifname = kInterfaceName,
+            .ifname = getInterfaceName(cid),
             .mtuV4 = 1500,
             .mtuV6 = 1500,
             .handoverFailureMode = SetupDataCallResult::HANDOVER_FAILURE_MODE_LEGACY,
@@ -319,7 +339,7 @@ ScopedAStatus RadioData::setupDataCall(const int32_t serial,
         if (setupDataCallResult.cause != DataCallFailCause::NONE) {
             status = RadioError::INVALID_ARGUMENTS;
 
-failed:     releaseId(cid);
+failed:     releaseId(mCallIdAllocator, cid);
             if (setupDataCallResult.cause == DataCallFailCause::NONE) {
                 setupDataCallResult.cause = toDataCallFailCause(status);
             }
@@ -416,7 +436,7 @@ ScopedAStatus RadioData::deactivateDataCall(
         const auto i = mDataCalls.find(cid);
         if (i != mDataCalls.end()) {
             mDataCalls.erase(i);
-            mIdAllocator.put(cid);
+            mCallIdAllocator.put(cid);
             removed = true;
         } else {
             removed = false;
@@ -424,8 +444,8 @@ ScopedAStatus RadioData::deactivateDataCall(
         empty = mDataCalls.empty();
     }
 
-    if (empty) {
-        setInterfaceState(kInterfaceName, false);
+    if (!isSharedInterface() || empty) {
+        setInterfaceState(cid, false);
     }
 
     if (removed) {
@@ -473,10 +493,11 @@ ScopedAStatus RadioData::startKeepalive(const int32_t serial,
         return ScopedAStatus::ok();
     }
 
-    const int32_t sessionHandle = allocateId();
+    int32_t sessionHandle;
 
     {
         std::lock_guard<std::mutex> lock(mMtx);
+        sessionHandle = mSessionIdAllocator.get();
         mKeepAliveSessions.insert(sessionHandle);
     }
 
@@ -497,11 +518,12 @@ ScopedAStatus RadioData::stopKeepalive(const int32_t serial,
     bool removed;
     {
         std::lock_guard<std::mutex> lock(mMtx);
-        removed = mKeepAliveSessions.erase(sessionHandle) > 0;
-    }
-
-    if (removed) {
-        releaseId(sessionHandle);
+        if (mKeepAliveSessions.erase(sessionHandle) > 0) {
+            mSessionIdAllocator.put(sessionHandle);
+            removed = true;
+        } else {
+            removed = false;
+        }
     }
 
     NOT_NULL(mRadioDataResponse)->stopKeepaliveResponse(
@@ -547,14 +569,14 @@ ScopedAStatus RadioData::setResponseFunctions(
     return ScopedAStatus::ok();
 }
 
-int32_t RadioData::allocateId() {
+int32_t RadioData::allocateId(IdAllocator& allocator) {
     std::lock_guard<std::mutex> lock(mMtx);
-    return mIdAllocator.get();
+    return allocator.get();
 }
 
-void RadioData::releaseId(const int32_t cid) {
+void RadioData::releaseId(IdAllocator& allocator, const int32_t cid) {
     std::lock_guard<std::mutex> lock(mMtx);
-    mIdAllocator.put(cid);
+    allocator.put(cid);
 }
 
 RadioError RadioData::validateKeepaliveRequest(const data::KeepaliveRequest& keepaliveReq) const {
