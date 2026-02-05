@@ -53,14 +53,16 @@ struct CbExternalMetadata {
     uint32_t    reservedRegionSize;
     int32_t     dataspace;
     int32_t     blendMode;
+    uint16_t    smpte2094_50Size;
 
     uint8_t     planeLayoutSize;
     uint8_t     nameSize;
+    char        smpte2094_50[10240];
     bool        has_smpte2086;
     bool        has_cta861_3;
 
     char        name[127];
-    char        unused[9];
+    char        unused[1];
 };
 
 static_assert((sizeof(CbExternalMetadata) % 16) == 0);
