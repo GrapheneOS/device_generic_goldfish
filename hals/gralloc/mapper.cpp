@@ -880,10 +880,19 @@ private:
             }
             break;
 
-        default:
-            return -FAILURE_V(AIMAPPER_ERROR_UNSUPPORTED,
-                              "%s: id=%" PRIu64 ": unexpected standardMetadataType=%" PRId64,
-                              "UNSUPPORTED", metadata.bufferID, static_cast<int64_t>(standardMetadataType));
+        default: {
+                const int64_t rawId = static_cast<int64_t>(standardMetadataType);
+                if ((rawId >= 0) && (rawId < sizeof(mMetadataLogSuppressedBitmask) * CHAR_BIT)) {
+                    const auto b = MetadataLogSuppressedBitmask(1U) << unsigned(rawId);
+                    if (mMetadataLogSuppressedBitmask.fetch_or(b) & b) {
+                        return -AIMAPPER_ERROR_UNSUPPORTED;  // already suppressed
+                    }
+                }
+
+                return -FAILURE_V(AIMAPPER_ERROR_UNSUPPORTED,
+                                "%s: id=%" PRIu64 ": unexpected standardMetadataType=%" PRId64,
+                                "UNSUPPORTED", metadata.bufferID, rawId);
+            }
         }
 
         return writer.desiredSize();
@@ -1085,10 +1094,14 @@ retryWithLargerBuffer:
         return mPhysAddrToOffset + offset;
     }
 
+    using MetadataLogSuppressedBitmask = uint64_t;
+
     AIMapper mMapper;
     const std::unique_ptr<HostConnection> mHostConn;
     std::unordered_set<const cb_handle_t*> mImportedBuffers;
     uint64_t mPhysAddrToOffset;
+    // Log unsupported metadata once (per process)
+    mutable std::atomic<MetadataLogSuppressedBitmask> mMetadataLogSuppressedBitmask = 0U;
     mutable std::mutex mImportedBuffersMtx;
     const DebugLevel mDebugLevel;
 };
