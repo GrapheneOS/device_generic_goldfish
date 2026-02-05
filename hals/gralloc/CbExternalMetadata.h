@@ -17,7 +17,7 @@
 #pragma once
 #include "PlaneLayout.h"
 
-struct CbExternalMetadata {
+struct alignas(16) CbExternalMetadata {
     static constexpr uint64_t kMagicValue = 0x247439A87E42E932LLU;
 
     struct Smpte2086 {
@@ -62,7 +62,4 @@ struct CbExternalMetadata {
     bool        has_cta861_3;
 
     char        name[127];
-    char        unused[1];
 };
-
-static_assert((sizeof(CbExternalMetadata) % 16) == 0);
