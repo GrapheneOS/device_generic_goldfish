@@ -564,14 +564,14 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::sendMetadata() {
     }
     std::swap(mSentMetadata, currentMetaData);
 
-    vpx_codec_send_metadata(mCtx, &(mSentMetadata));
+    mCtx->sendMetadata(mSentMetadata);
 }
 
 c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onFlush_sm() {
     if (mFrameParallelMode) {
         // Flush decoder by passing nullptr data ptr and 0 size.
         // Ideally, this should never fail.
-        if (vpx_codec_flush(mCtx)) {
+        if (mCtx->flush()) {
             ALOGE("Failed to flush on2 decoder.");
             return C2_CORRUPTED;
         }
@@ -579,9 +579,8 @@ c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onFlush_sm() {
 
     // Drop all the decoded frames in decoder.
     if (mCtx) {
-        setup_ctx_parameters(mCtx);
-        while ((mImg = vpx_codec_get_frame(mCtx))) {
-        }
+        setup_ctx_parameters();
+        while (mCtx->getFrame()) {}
     }
 
     mSignalledError = false;
@@ -607,14 +606,7 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::checkContext(const std::shared_ptr<C2BlockPo
     mWidth = mIntf->width();
     mHeight = mIntf->height();
     ALOGI("created decoder context w %d h %d", mWidth, mHeight);
-    mCtx = new vpx_codec_ctx_t;
-#ifdef VP9
-    mCtx->vpversion = 9;
-#else
-    mCtx->vpversion = 8;
-#endif
 
-    //const bool isGraphic = (pool->getLocalId() == C2PlatformAllocatorStore::GRALLOC);
     const bool isGraphic = (pool->getAllocatorId() & C2Allocator::GRAPHIC);
     DDD("buffer pool allocator id %x",  (int)(pool->getAllocatorId()));
     if (isGraphic) {
@@ -632,24 +624,21 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::checkContext(const std::shared_ptr<C2BlockPo
         mEnableAndroidNativeBuffers = false;
     }
 
-    mCtx->version = mEnableAndroidNativeBuffers ? 200 : 100;
-
-    int vpx_err = 0;
-    if ((vpx_err = vpx_codec_dec_init(mCtx))) {
-        ALOGE("vpx decoder failed to initialize. (%d)", vpx_err);
-        delete mCtx;
-        mCtx = NULL;
+#ifdef VP9
+    const uint8_t vpVersion = 9;
+#else
+    const uint8_t vpVersion = 8;
+#endif
+    auto ctx = std::make_unique<VpxCodecCtx>(vpVersion, mEnableAndroidNativeBuffers ? 200 : 100);
+    if (const int err = mCtx->init()) {
+        ALOGE("vpx decoder failed to initialize. (%d)", err);
+    } else {
+        mCtx = std::move(ctx);
     }
 }
 
 status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::destroyDecoder() {
-    if (mCtx) {
-        ALOGI("calling destroying GoldfishVPX ctx %p", mCtx);
-        vpx_codec_destroy(mCtx);
-        delete mCtx;
-        mCtx = NULL;
-    }
-
+    mCtx.reset();
     return OK;
 }
 
@@ -815,8 +804,8 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
 
     if (inSize) {
         uint8_t *bitstream = const_cast<uint8_t *>(rView.data() + inOffset);
-        vpx_codec_err_t err = vpx_codec_decode(
-            mCtx, bitstream, inSize, &work->input.ordinal.frameIndex, 0);
+        vpx_codec_err_t err = mCtx->decode(bitstream, inSize,
+                                           &work->input.ordinal.frameIndex, 0);
         if (err != 0) {
             ALOGE("on2 decoder failed to decode frame. err: ");
             mSignalledError = true;
@@ -849,14 +838,8 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
     }
 }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::setup_ctx_parameters(vpx_codec_ctx_t *ctx,
-                                                         int hostColorBufferId) {
-    ctx->width = mWidth;
-    ctx->height = mHeight;
-    ctx->hostColorBufferId = hostColorBufferId;
-    ctx->outputBufferWidth = mWidth;
-    ctx->outputBufferHeight = mHeight;
-    ctx->bpp = 1;
+void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::setup_ctx_parameters(const int hostColorBufferId) {
+    mCtx->setupParameters(mWidth, mHeight, hostColorBufferId, mWidth, mHeight, 1);
 }
 
 status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
@@ -895,10 +878,9 @@ status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::outputBuffer(const std::shared_ptr<C2Blo
             hostColorBufferId = -1;
         }
     }
-    setup_ctx_parameters(mCtx, hostColorBufferId);
+    setup_ctx_parameters(hostColorBufferId);
 
-    vpx_image_t *img = vpx_codec_get_frame(mCtx);
-
+    const vpx_image_t *img = mCtx->getFrame();
     if (!img)
         return NOT_ENOUGH_DATA;
 
@@ -980,7 +962,7 @@ status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::outputBuffer(const std::shared_ptr<C2Blo
         if (img->fmt == VPX_IMG_FMT_I42016) {
             ALOGW("WARNING: not I42016 is not supported !!!");
         } else if (1) {
-            const uint8_t *srcY = (const uint8_t *)mCtx->dst;
+            const uint8_t *srcY = mCtx->getDst();
             const uint8_t *srcV = srcY + mWidth * mHeight;
             const uint8_t *srcU = srcV + mWidth * mHeight / 4;
             // TODO: the following crashes

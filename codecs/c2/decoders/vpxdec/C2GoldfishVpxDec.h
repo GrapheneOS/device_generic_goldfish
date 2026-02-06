@@ -53,7 +53,7 @@ struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
     // color buffer id
     void checkContext(const std::shared_ptr<C2BlockPool> &pool);
 
-    void setup_ctx_parameters(vpx_codec_ctx_t *ctx, int hostColorBufferId = -1);
+    void setup_ctx_parameters(int hostColorBufferId = -1);
 
     status_t initDecoder();
     status_t destroyDecoder();
@@ -69,8 +69,7 @@ struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
 
     std::shared_ptr<C2StreamColorAspectsTuning::output> mColorAspects;
     std::shared_ptr<IntfImpl> mIntf;
-    vpx_codec_ctx_t *mCtx{nullptr};
-    vpx_image_t *mImg{nullptr};
+    std::unique_ptr<VpxCodecCtx> mCtx;
 
 #ifndef VP9
     uint64_t mLastPts { 0 };
