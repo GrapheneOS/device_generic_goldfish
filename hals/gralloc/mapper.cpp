@@ -292,6 +292,14 @@ const AIMapper_MetadataTypeDescription kMetadataTypeDescriptionList[] = {
         .isGettable = true,
         .isSettable = false,
     },
+    {
+        .metadataType = {
+            .name = kStandardMetadataTypeStr,
+            .value = static_cast<int64_t>(StandardMetadataType::SMPTE2094_50),
+        },
+        .isGettable = true,
+        .isSettable = true,
+    },
 };
 
 struct GoldfishMapper {
@@ -880,6 +888,11 @@ private:
             }
             break;
 
+        case StandardMetadataType::SMPTE2094_50:
+            putMetadataHeader(writer, standardMetadataType)
+                .write(std::string_view(metadata.smpte2094_50, metadata.smpte2094_50Size));
+            break;
+
         default: {
                 const int64_t rawId = static_cast<int64_t>(standardMetadataType);
                 if ((rawId >= 0) && (rawId < sizeof(mMetadataLogSuppressedBitmask) * CHAR_BIT)) {
@@ -983,6 +996,27 @@ private:
                 }
             } else {
                 metadata.has_cta861_3 = false;
+            }
+            break;
+
+        case StandardMetadataType::SMPTE2094_50:
+            if (reader.remaining() > 0) {
+                if (!checkMetadataHeader(reader, standardMetadataType)) {
+                    return FAILURE_V(AIMAPPER_ERROR_BAD_VALUE, "%s: id=%" PRIu64 ": %s",
+                                     "BAD_VALUE", metadata.bufferID, "SMPTE2094_50");
+                }
+
+                const std::string_view value = reader.readString();
+                if (value.size() > sizeof(metadata.smpte2094_50)) {
+                    return FAILURE_V(AIMAPPER_ERROR_BAD_VALUE, "%s: id=%" PRIu64
+                                     ": SMPTE2094_50 value is too long (%zu)",
+                                     "BAD_VALUE", metadata.bufferID, value.size());
+                }
+
+                ::memcpy(metadata.smpte2094_50, value.data(), value.size());
+                metadata.smpte2094_50Size = value.size();
+            } else {
+                metadata.smpte2094_50Size = 0;
             }
             break;
 

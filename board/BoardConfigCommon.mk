@@ -33,6 +33,7 @@ USE_OPENGL_RENDERER := true
 
 # Emulator doesn't support sparse image format.
 TARGET_USERIMAGES_SPARSE_EXT_DISABLED := true
+TARGET_USERIMAGES_SPARSE_F2FS_DISABLED := true
 
 # emulator is Non-A/B device
 AB_OTA_UPDATER := none

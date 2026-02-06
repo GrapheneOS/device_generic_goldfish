@@ -89,8 +89,8 @@ struct RadioData : public data::BnRadioData {
             const std::shared_ptr<data::IRadioDataIndication>& radioDataIndication) override;
 
 private:
-    int32_t allocateId();
-    void releaseId(int32_t cid);
+    int32_t allocateId(IdAllocator&);
+    void releaseId(IdAllocator&, int32_t cid);
     RadioError validateKeepaliveRequest(const data::KeepaliveRequest& keepaliveReq) const;
 
     std::vector<data::SetupDataCallResult> getDataCalls() const;
@@ -101,7 +101,8 @@ private:
     std::shared_ptr<data::IRadioDataIndication> mRadioDataIndication;
     std::unordered_map<int32_t, data::SetupDataCallResult> mDataCalls;
     std::unordered_set<int32_t> mKeepAliveSessions;
-    IdAllocator mIdAllocator;
+    IdAllocator mCallIdAllocator;
+    IdAllocator mSessionIdAllocator;
     mutable std::mutex mMtx;
 };
 
