@@ -1,7 +1,8 @@
-#ifndef MY_VPX_DEFS_H_
-#define MY_VPX_DEFS_H_
+#pragma once
 
 #include <cstdint>
+
+#include "goldfish_media_utils.h"
 
 #define VPX_IMG_FMT_PLANAR 0x100       /**< Image is a planar format. */
 #define VPX_IMG_FMT_UV_FLIP 0x200      /**< V plane precedes U in memory. */
@@ -38,32 +39,41 @@ struct vpx_image_t {
 
 #define VPX_CODEC_OK 0
 
-struct vpx_codec_ctx_t {
-    vpx_image_t myImg;
-    uint8_t *data;
-    uint8_t *dst;
-    uint64_t address_offset = 0;
-    uint64_t id; // >= 1, unique
+class VpxCodecCtx {
+public:
+    VpxCodecCtx(uint8_t mVpVersion, int version);
+    ~VpxCodecCtx();
 
-    uint32_t outputBufferWidth;
-    uint32_t outputBufferHeight;
-    uint32_t width;
-    uint32_t height;
+    int init();
+    void setupParameters(uint32_t width, uint32_t height,
+                         int hostColorBufferId,
+                         uint32_t outputBufferWidth, uint32_t mOutputBufferHeight,
+                         uint8_t bpp);
 
-    int hostColorBufferId;
-    int memory_slot;
-    int version;        // 100: return decoded frame to guest; 200: render on host
-    uint8_t vpversion;  // 8: vp8 or 9: vp9
-    uint8_t bpp;
+    const vpx_image_t* getFrame(int hostColorBufferId = -1);
+    const uint8_t* getDst() const;
+    void sendMetadata(const MetaDataColorAspects& meta) const;
+    int decode(const uint8_t *data, size_t dataSz,
+               void *userPriv, long deadline);
+    int flush();
+
+private:
+    void sendOperation(MediaOperation) const;
+
+    vpx_image_t mImg;
+    uint8_t *mData = nullptr;
+    uint8_t *mDst = nullptr;
+    uint64_t mAddressOffset = 0;
+    uint64_t mId = 0;           // >= 1, unique
+
+    uint32_t mOutputBufferWidth = 0;
+    uint32_t mOutputBufferHeight = 0;
+    uint32_t mWidth = 0;
+    uint32_t mHeight = 0;
+
+    int mHostColorBufferId = -1;
+    int mMemorySlot = -1;
+    int mVersion = 0;           // 100: return decoded frame to guest; 200: render on host
+    const uint8_t mVpVersion;   // 8: vp8 or 9: vp9
+    uint8_t mBpp = 0;
 };
-
-int vpx_codec_destroy(vpx_codec_ctx_t *);
-int vpx_codec_dec_init(vpx_codec_ctx_t *);
-vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *, int hostColorBufferId = -1);
-int vpx_codec_flush(vpx_codec_ctx_t *ctx);
-int vpx_codec_decode(vpx_codec_ctx_t *ctx, const uint8_t *data,
-                     unsigned int data_sz, void *user_priv, long deadline);
-
-void vpx_codec_send_metadata(vpx_codec_ctx_t *ctx, void*ptr);
-
-#endif // MY_VPX_DEFS_H_
