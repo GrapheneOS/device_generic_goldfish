@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma once
+
 #include <linux/types.h>
 #include <stdint.h>
-
-#ifndef GOLDFISH_COMMON_GOLDFISH_DEFS_H
-#define GOLDFISH_COMMON_GOLDFISH_DEFS_H
 
 enum class MediaCodecType : __u8 {
     VP8Codec = 0,
@@ -106,5 +105,3 @@ class GoldfishMediaTransport {
 };
 
 __u64 goldfish_create_media_metadata(MediaCodecType codecType, __u64 metadata);
-
-#endif

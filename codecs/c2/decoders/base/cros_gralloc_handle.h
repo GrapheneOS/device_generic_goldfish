@@ -4,8 +4,7 @@
  * found in the LICENSE file.
  */
 
-#ifndef CROS_GRALLOC_HANDLE_H
-#define CROS_GRALLOC_HANDLE_H
+#pragma once
 
 #include <cstdint>
 #include <cutils/native_handle.h>
@@ -47,5 +46,3 @@ struct cros_gralloc_handle : public native_handle_t {
 } __attribute__((packed));
 
 typedef const struct cros_gralloc_handle *cros_gralloc_handle_t;
-
-#endif

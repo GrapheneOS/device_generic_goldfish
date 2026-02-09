@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef ANDROID_C2_SOFT_AVC_DEC_H_
-#define ANDROID_C2_SOFT_AVC_DEC_H_
+#pragma once
 
 #include <sys/time.h>
 
@@ -164,5 +163,3 @@ class C2GoldfishAvcDec : public SimpleC2Component {
 };
 
 } // namespace android
-
-#endif // ANDROID_C2_SOFT_AVC_DEC_H_

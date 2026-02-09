@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef ANDROID_SIMPLE_C2_INTERFACE_H_
-#define ANDROID_SIMPLE_C2_INTERFACE_H_
+#pragma once
 
 #include <C2Component.h>
 #include <C2Config.h>
@@ -242,5 +241,3 @@ template <typename T> struct Setter {
 };
 
 } // namespace android
-
-#endif // ANDROID_SIMPLE_C2_INTERFACE_H_

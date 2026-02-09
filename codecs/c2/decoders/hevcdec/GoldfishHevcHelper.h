@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef GOLDFISH_HEVC_HELPER_H_
-#define GOLDFISH_HEVC_HELPER_H_
+#pragma once
 
 #include <inttypes.h>
 #include "ihevc_typedefs.h"
@@ -63,4 +62,3 @@ class GoldfishHevcHelper {
 };
 
 } // namespace android
-#endif

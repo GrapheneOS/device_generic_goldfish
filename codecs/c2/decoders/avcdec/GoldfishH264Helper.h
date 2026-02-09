@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef GOLDFISH_H264_HELPER_H_
-#define GOLDFISH_H264_HELPER_H_
+#pragma once
 
 #include <inttypes.h>
 #include "ih264_typedefs.h"
@@ -63,4 +62,3 @@ class GoldfishH264Helper {
 };
 
 } // namespace android
-#endif

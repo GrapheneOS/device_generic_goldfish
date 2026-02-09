@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef ANDROID_C2_SOFT_HEVC_DEC_H_
-#define ANDROID_C2_SOFT_HEVC_DEC_H_
+#pragma once
 
 #include <sys/time.h>
 
@@ -164,5 +163,3 @@ class C2GoldfishHevcDec : public SimpleC2Component {
 };
 
 } // namespace android
-
-#endif // ANDROID_C2_SOFT_HEVC_DEC_H_

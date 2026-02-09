@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef GOLDFISH_MEDIA_H264_DEC_H_
-#define GOLDFISH_MEDIA_H264_DEC_H_
+#pragma once
 
 #include "goldfish_media_utils.h"
 
@@ -101,4 +100,3 @@ class MediaH264Decoder {
 
     void sendMetadata(MetaDataColorAspects *ptr);
 };
-#endif
