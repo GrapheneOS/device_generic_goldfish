@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include <sys/time.h>
-
-#include <media/stagefright/foundation/ColorUtils.h>
-
-#include "MediaHevcDecoder.h"
-#include "GoldfishHevcHelper.h"
-#include <SimpleC2Component.h>
 #include <atomic>
 #include <map>
+#include <sys/time.h>
+
+#include <SimpleC2Component.h>
+#include <media/stagefright/foundation/ColorUtils.h>
+
+#include "GoldfishHevcHelper.h"
+#include "MediaHevcDecoder.h"
 
 namespace android {
 

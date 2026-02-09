@@ -973,9 +973,16 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
             }
 
             bool whChanged = false;
-            if (GoldfishH264Helper::isSpsFrame(mInPBuffer, mInPBufferSize)) {
+            if (GoldfishH264Helper::isKeyFrame(mInPBuffer, mInPBufferSize)) {
                 mH264Helper = std::make_unique<GoldfishH264Helper>(mWidth, mHeight);
-                whChanged = mH264Helper->decodeHeader(mInPBuffer, mInPBufferSize);
+                bool headerStatus = true;
+                whChanged = mH264Helper->decodeHeader(mInPBuffer, mInPBufferSize, headerStatus);
+                if (!headerStatus) {
+                    mSignalledError = true;
+                    work->workletsProcessed = 1u;
+                    work->result = C2_CORRUPTED;
+                    return;
+                }
                 if (whChanged) {
                         DDD("w changed from old %d to new %d\n", mWidth, mH264Helper->getWidth());
                         DDD("h changed from old %d to new %d\n", mHeight, mH264Helper->getHeight());
@@ -1010,7 +1017,7 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
                         }
                         continue;
                 } // end of whChanged
-            } // end of isSpsFrame
+            } // end of isKeyFrame
 
             sendMetadata();
 
