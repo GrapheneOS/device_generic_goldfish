@@ -59,21 +59,28 @@ GoldfishComponentStore::GoldfishComponentStore()
         factories.push_back(android::getC2GoldfishVp9DecFactory());
     }
 
+    auto* componentFactories = &mComponentFactories;
+    const auto insertFactory = [componentFactories](
+                const C2String& name,
+                const std::shared_ptr<const IComponentFactory>& factory){
+        const auto [it, ok] = componentFactories->insert({name, factory});
+        if (!ok) {
+            const std::string_view insertedName = it->second->getName();
+            ALOGE("Could not insert '%s' because it is "
+                    "already occupied by '%*.*s'", name.c_str(),
+                    int(insertedName.size()), int(insertedName.size()), insertedName.data());
+        }
+    };
+
     for (const auto& factory : factories) {
         const auto [res, interface] = factory->createInterface(mReflector);
         if ((res == C2_OK) && interface) {
             if (std::shared_ptr<const C2Component::Traits> traits = buildTraits(*interface)) {
                 mAllComponentTraits.push_back(traits);
 
+                insertFactory(traits->name, factory);
                 for (const C2String &alias : traits->aliases) {
-                    const auto [it, ok] = mComponentFactories.insert({alias, factory});
-                    if (!ok) {
-                        const std::string_view insertedName = it->second->getName();
-
-                        ALOGE("Could not insert '%s' alias because it is "
-                              "already occupied by '%*.*s'", alias.c_str(),
-                              int(insertedName.size()), int(insertedName.size()), insertedName.data());
-                    }
+                    insertFactory(alias, factory);
                 }
             } else {
                 ALOGE("The '%s' interface does not have traits", interface->getName().c_str());
