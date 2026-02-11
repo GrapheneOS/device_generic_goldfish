@@ -29,10 +29,6 @@
 namespace android {
 
 #define ALIGN2(x) ((((x) + 1) >> 1) << 1)
-#define GETTIME(a, b) gettimeofday(a, b);
-#define TIME_DIFF(start, end, diff)                                            \
-    diff = (((end).tv_sec - (start).tv_sec) * 1000000) +                       \
-           ((end).tv_usec - (start).tv_usec);
 
 class C2GoldfishHevcDec : public SimpleC2Component {
   public:
@@ -139,8 +135,6 @@ class C2GoldfishHevcDec : public SimpleC2Component {
     uint32_t mInPBufferSize = 0;
     uint32_t mInTsMarker = 0;
 
-    // size_t mNumCores;
-    // uint32_t mOutputDelay;
     uint32_t mWidth = 0;
     uint32_t mHeight = 0;
     uint32_t mStride = 0;
@@ -151,13 +145,6 @@ class C2GoldfishHevcDec : public SimpleC2Component {
     bool mSignalledOutputEos{false};
     bool mSignalledError{false};
     bool mHeaderDecoded{false};
-
-    // profile
-    struct timeval mTimeStart;
-    struct timeval mTimeEnd;
-#ifdef FILE_DUMP_ENABLE
-    char mInFile[200];
-#endif /* FILE_DUMP_ENABLE */
 
     C2_DO_NOT_COPY(C2GoldfishHevcDec);
 };
