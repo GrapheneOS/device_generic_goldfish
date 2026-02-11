@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef ANDROID_C2_SOFT_HEVC_DEC_H_
-#define ANDROID_C2_SOFT_HEVC_DEC_H_
+#pragma once
 
 #include <sys/time.h>
 
@@ -30,11 +29,6 @@
 namespace android {
 
 #define ALIGN2(x) ((((x) + 1) >> 1) << 1)
-#define ALIGN8(x) ((((x) + 7) >> 3) << 3)
-#define ALIGN16(x) ((((x) + 15) >> 4) << 4)
-#define ALIGN32(x) ((((x) + 31) >> 5) << 5)
-#define MAX_NUM_CORES 4
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define GETTIME(a, b) gettimeofday(a, b);
 #define TIME_DIFF(start, end, diff)                                            \
     diff = (((end).tv_sec - (start).tv_sec) * 1000000) +                       \
@@ -169,5 +163,3 @@ class C2GoldfishHevcDec : public SimpleC2Component {
 };
 
 } // namespace android
-
-#endif // ANDROID_C2_SOFT_HEVC_DEC_H_

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef GOLDFISH_MEDIA_Hevc_DEC_H_
-#define GOLDFISH_MEDIA_Hevc_DEC_H_
+#pragma once
 
 #include "goldfish_media_utils.h"
 
@@ -94,4 +93,3 @@ class MediaHevcDecoder {
     RenderMode mRenderMode = RenderMode::RENDER_BY_GUEST_CPU;
     bool mHasAddressSpaceMemory = false;
 };
-#endif

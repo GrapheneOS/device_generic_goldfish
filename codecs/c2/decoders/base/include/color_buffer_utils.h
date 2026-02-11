@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cutils/native_handle.h>
 #include <C2Buffer.h>
 

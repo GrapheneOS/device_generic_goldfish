@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SIMPLE_C2_COMPONENT_H_
-#define SIMPLE_C2_COMPONENT_H_
+#pragma once
 
 #include <list>
 #include <unordered_map>
@@ -250,5 +249,3 @@ class SimpleC2Component
 };
 
 } // namespace android
-
-#endif // SIMPLE_C2_COMPONENT_H_
