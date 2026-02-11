@@ -351,8 +351,8 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.software.verified_boot.xml:${TARGET_COPY_OUT_PRODUCT}/etc/permissions/android.software.verified_boot.xml \
     device/generic/goldfish/data/etc/permissions/privapp-permissions-goldfish.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/permissions/privapp-permissions-goldfish.xml \
 
-# change to false to make it faster on 16k image
-PRODUCT_ENABLE_UFFD_GC := false
+# Goldfish uses 6.X kernels.
+PRODUCT_ENABLE_UFFD_GC := true
 
 PRODUCT_ENFORCE_SELINUX_TREBLE_LABELING := true
 
