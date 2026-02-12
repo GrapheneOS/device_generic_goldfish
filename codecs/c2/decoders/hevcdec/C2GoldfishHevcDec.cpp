@@ -915,7 +915,7 @@ void C2GoldfishHevcDec::process(const std::unique_ptr<C2Work> &work,
             }
 
             bool whChanged = false;
-            if (GoldfishHevcHelper::isVpsFrame(mInPBuffer, mInPBufferSize)) {
+            if (GoldfishHevcHelper::isKeyFrame(mInPBuffer, mInPBufferSize)) {
                 mHevcHelper = std::make_unique<GoldfishHevcHelper>(mWidth, mHeight);
                 bool headerStatus = true;
                 whChanged = mHevcHelper->decodeHeader(
@@ -960,7 +960,7 @@ void C2GoldfishHevcDec::process(const std::unique_ptr<C2Work> &work,
                         }
                         continue;//return;
                 } // end of whChanged
-            } // end of isVpsFrame
+            } // end of isKeyFrame
 
             sendMetadata();
 
