@@ -20,7 +20,6 @@
 
 namespace android {
 
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishVp8DecFactory();
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishVp9DecFactory();
+std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishVpxDecFactory(bool isVp9);
 
 }  // namespace android

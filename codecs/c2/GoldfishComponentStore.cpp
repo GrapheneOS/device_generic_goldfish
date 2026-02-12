@@ -55,8 +55,8 @@ GoldfishComponentStore::GoldfishComponentStore()
     }
 
     if (useAndroidGoldfishComponentInstance("vpxdec")) {
-        factories.push_back(android::getC2GoldfishVp8DecFactory());
-        factories.push_back(android::getC2GoldfishVp9DecFactory());
+        factories.push_back(android::getC2GoldfishVpxDecFactory(false));
+        factories.push_back(android::getC2GoldfishVpxDecFactory(true));
     }
 
     auto* componentFactories = &mComponentFactories;

@@ -21,8 +21,8 @@ cc_library {
     ],
 }
 
-cc_defaults {
-    name: "libcodec2_goldfish_vpXdec_defaults",
+cc_library {
+    name: "libcodec2_goldfish_vpxdec",
     defaults: [
         "android.hardware.graphics.common-ndk_static",
         "libcodec2-impl-defaults",
@@ -44,22 +44,5 @@ cc_defaults {
         "libsfplugin_ccodec_utils", // for ImageCopy
         "libstagefright_foundation", // for ColorUtils and MIME
         "libvpx",
-    ],
-}
-
-cc_library {
-    name: "libcodec2_goldfish_vp8dec",
-    defaults: [
-        "libcodec2_goldfish_vpXdec_defaults",
-    ],
-}
-
-cc_library {
-    name: "libcodec2_goldfish_vp9dec",
-    defaults: [
-        "libcodec2_goldfish_vpXdec_defaults",
-    ],
-    cflags: [
-        "-DVP9",
     ],
 }

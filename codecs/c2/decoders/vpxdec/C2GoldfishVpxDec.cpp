@@ -49,11 +49,8 @@ using aidl::android::hardware::graphics::common::BufferUsage;
 namespace android {
 namespace {
 constexpr size_t kMinInputBufferSize = 6 * 1024 * 1024;
-#ifdef VP9
-constexpr char COMPONENT_NAME[] = "c2.goldfish.vp9.decoder";
-#else
-constexpr char COMPONENT_NAME[] = "c2.goldfish.vp8.decoder";
-#endif
+constexpr char COMPONENT_NAME_VP9[] = "c2.goldfish.vp9.decoder";
+constexpr char COMPONENT_NAME_VP8[] = "c2.goldfish.vp8.decoder";
 
 void fillEmptyWork(const std::unique_ptr<C2Work> &work) {
     uint32_t flags = 0;
@@ -97,18 +94,13 @@ void copyOutputBufferToYuvPlanarFrame(
 }  // namespace
 
 
-class C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl : public SimpleInterface<void>::BaseParams {
+class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
   public:
-    explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
-        : SimpleInterface<void>::BaseParams(helper, COMPONENT_NAME,
+    explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper, bool isVp9)
+        : SimpleInterface<void>::BaseParams(helper, isVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8,
                                             C2Component::KIND_DECODER,
                                             C2Component::DOMAIN_VIDEO,
-#ifdef VP9
-                                            MEDIA_MIMETYPE_VIDEO_VP9
-#else
-                                            MEDIA_MIMETYPE_VIDEO_VP8
-#endif
-          ) {
+                                            isVp9 ? MEDIA_MIMETYPE_VIDEO_VP9 : MEDIA_MIMETYPE_VIDEO_VP8) {
         DDD("calling IntfImpl now helper %p", helper.get());
         noPrivateBuffers(); // TODO: account for our buffers here
         noInputReferences();
@@ -133,56 +125,56 @@ class C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl : public SimpleInterface<void>::Ba
                 .withSetter(SizeSetter)
                 .build());
 
-#ifdef VP9
-        // TODO: Add C2Config::PROFILE_VP9_2HDR ??
-        addParameter(
-            DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
-                .withDefault(std::make_shared<C2StreamProfileLevelInfo::input>(
-                    0u, C2Config::PROFILE_VP9_0, C2Config::LEVEL_VP9_5))
-                .withFields({C2F(mProfileLevel, profile)
-                                 .oneOf({C2Config::PROFILE_VP9_0,
-                                         C2Config::PROFILE_VP9_2}),
-                             C2F(mProfileLevel, level)
-                                 .oneOf({
-                                     C2Config::LEVEL_VP9_1,
-                                     C2Config::LEVEL_VP9_1_1,
-                                     C2Config::LEVEL_VP9_2,
-                                     C2Config::LEVEL_VP9_2_1,
-                                     C2Config::LEVEL_VP9_3,
-                                     C2Config::LEVEL_VP9_3_1,
-                                     C2Config::LEVEL_VP9_4,
-                                     C2Config::LEVEL_VP9_4_1,
-                                     C2Config::LEVEL_VP9_5,
-                                 })})
-                .withSetter(ProfileLevelSetter, mSize)
-                .build());
+        if (isVp9) {
+            // TODO: Add C2Config::PROFILE_VP9_2HDR ??
+            addParameter(
+                DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
+                    .withDefault(std::make_shared<C2StreamProfileLevelInfo::input>(
+                        0u, C2Config::PROFILE_VP9_0, C2Config::LEVEL_VP9_5))
+                    .withFields({C2F(mProfileLevel, profile)
+                                     .oneOf({C2Config::PROFILE_VP9_0,
+                                             C2Config::PROFILE_VP9_2}),
+                                 C2F(mProfileLevel, level)
+                                     .oneOf({
+                                         C2Config::LEVEL_VP9_1,
+                                         C2Config::LEVEL_VP9_1_1,
+                                         C2Config::LEVEL_VP9_2,
+                                         C2Config::LEVEL_VP9_2_1,
+                                         C2Config::LEVEL_VP9_3,
+                                         C2Config::LEVEL_VP9_3_1,
+                                         C2Config::LEVEL_VP9_4,
+                                         C2Config::LEVEL_VP9_4_1,
+                                         C2Config::LEVEL_VP9_5,
+                                     })})
+                    .withSetter(ProfileLevelSetter, mSize)
+                    .build());
 
-        mHdr10PlusInfoInput = C2StreamHdr10PlusInfo::input::AllocShared(0);
-        addParameter(
-            DefineParam(mHdr10PlusInfoInput, C2_PARAMKEY_INPUT_HDR10_PLUS_INFO)
-                .withDefault(mHdr10PlusInfoInput)
-                .withFields({
-                    C2F(mHdr10PlusInfoInput, m.value).any(),
-                })
-                .withSetter(Hdr10PlusInfoInputSetter)
-                .build());
+            mHdr10PlusInfoInput = C2StreamHdr10PlusInfo::input::AllocShared(0);
+            addParameter(
+                DefineParam(mHdr10PlusInfoInput, C2_PARAMKEY_INPUT_HDR10_PLUS_INFO)
+                    .withDefault(mHdr10PlusInfoInput)
+                    .withFields({
+                        C2F(mHdr10PlusInfoInput, m.value).any(),
+                    })
+                    .withSetter(Hdr10PlusInfoInputSetter)
+                    .build());
 
-        mHdr10PlusInfoOutput = C2StreamHdr10PlusInfo::output::AllocShared(0);
-        addParameter(DefineParam(mHdr10PlusInfoOutput,
-                                 C2_PARAMKEY_OUTPUT_HDR10_PLUS_INFO)
-                         .withDefault(mHdr10PlusInfoOutput)
-                         .withFields({
-                             C2F(mHdr10PlusInfoOutput, m.value).any(),
-                         })
-                         .withSetter(Hdr10PlusInfoOutputSetter)
-                         .build());
-#else
-        addParameter(
-            DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
-                .withConstValue(std::make_shared<C2StreamProfileLevelInfo::input>(
-                    0u, C2Config::PROFILE_UNUSED, C2Config::LEVEL_UNUSED))
-                .build());
-#endif
+            mHdr10PlusInfoOutput = C2StreamHdr10PlusInfo::output::AllocShared(0);
+            addParameter(DefineParam(mHdr10PlusInfoOutput,
+                                     C2_PARAMKEY_OUTPUT_HDR10_PLUS_INFO)
+                             .withDefault(mHdr10PlusInfoOutput)
+                             .withFields({
+                                 C2F(mHdr10PlusInfoOutput, m.value).any(),
+                             })
+                             .withSetter(Hdr10PlusInfoOutputSetter)
+                             .build());
+        } else {
+            addParameter(
+                DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
+                    .withConstValue(std::make_shared<C2StreamProfileLevelInfo::input>(
+                        0u, C2Config::PROFILE_UNUSED, C2Config::LEVEL_UNUSED))
+                    .build());
+        }
 
         addParameter(DefineParam(mMaxSize, C2_PARAMKEY_MAX_PICTURE_SIZE)
                          .withDefault(std::make_shared<C2StreamMaxPictureSizeTuning::output>(
@@ -475,32 +467,30 @@ class C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl : public SimpleInterface<void>::Ba
     std::shared_ptr<C2StreamColorAspectsTuning::output> mDefaultColorAspects;
     std::shared_ptr<C2StreamColorAspectsInfo::input> mCodedColorAspects;
     std::shared_ptr<C2StreamColorAspectsInfo::output> mColorAspects;
-#ifdef VP9
     std::shared_ptr<C2StreamHdr10PlusInfo::input> mHdr10PlusInfoInput;
     std::shared_ptr<C2StreamHdr10PlusInfo::output> mHdr10PlusInfoOutput;
-#endif
 };
 
-C2_GOLDFISH_VPx_DEC_IMLP_TYPE::C2_GOLDFISH_VPx_DEC_IMLP_TYPE(const char *name, c2_node_id_t id,
-                                                             const std::shared_ptr<IntfImpl> &intfImpl)
+C2GoldfishVpxDec::C2GoldfishVpxDec(const char *name, c2_node_id_t id,
+                                   const std::shared_ptr<IntfImpl> &intfImpl, bool isVp9)
     : SimpleC2Component(
-          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)), mIntf(intfImpl) {}
+          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)), mIntf(intfImpl), mIsVp9(isVp9) {}
 
-C2_GOLDFISH_VPx_DEC_IMLP_TYPE::~C2_GOLDFISH_VPx_DEC_IMLP_TYPE() { onRelease(); }
+C2GoldfishVpxDec::~C2GoldfishVpxDec() { onRelease(); }
 
-c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onInit() {
+c2_status_t C2GoldfishVpxDec::onInit() {
     status_t err = initDecoder();
     return err == OK ? C2_OK : C2_CORRUPTED;
 }
 
-c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onStop() {
+c2_status_t C2GoldfishVpxDec::onStop() {
     mSignalledError = false;
     mSignalledOutputEos = false;
 
     return C2_OK;
 }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onReset() {
+void C2GoldfishVpxDec::onReset() {
     (void)onStop();
     c2_status_t err = onFlush_sm();
     if (err != C2_OK) {
@@ -510,9 +500,9 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onReset() {
     }
 }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onRelease() { destroyDecoder(); }
+void C2GoldfishVpxDec::onRelease() { destroyDecoder(); }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::sendMetadata() {
+void C2GoldfishVpxDec::sendMetadata() {
     // compare and send if changed
     MetaDataColorAspects currentMetaData = {1, 0, 0, 0};
     currentMetaData.primaries = mIntf->primaries();
@@ -536,7 +526,7 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::sendMetadata() {
     mCtx->sendMetadata(mSentMetadata);
 }
 
-c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onFlush_sm() {
+c2_status_t C2GoldfishVpxDec::onFlush_sm() {
     if (mFrameParallelMode) {
         // Flush decoder by passing nullptr data ptr and 0 size.
         // Ideally, this should never fail.
@@ -557,7 +547,7 @@ c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::onFlush_sm() {
     return C2_OK;
 }
 
-status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::initDecoder() {
+status_t C2GoldfishVpxDec::initDecoder() {
     ALOGI("calling init GoldfishVPX");
     mWidth = 320;
     mHeight = 240;
@@ -568,7 +558,7 @@ status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::initDecoder() {
     return OK;
 }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
+void C2GoldfishVpxDec::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
     if (mCtx)
         return;
 
@@ -593,11 +583,7 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::checkContext(const std::shared_ptr<C2BlockPo
         mEnableAndroidNativeBuffers = false;
     }
 
-#ifdef VP9
-    const uint8_t vpVersion = 9;
-#else
-    const uint8_t vpVersion = 8;
-#endif
+    const uint8_t vpVersion = mIsVp9 ? 9 : 8;
     auto ctx = std::make_unique<VpxCodecCtx>(vpVersion, mEnableAndroidNativeBuffers ? 200 : 100);
     if (const int err = ctx->init()) {
         ALOGE("vpx decoder failed to initialize. (%d)", err);
@@ -606,33 +592,33 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::checkContext(const std::shared_ptr<C2BlockPo
     }
 }
 
-status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::destroyDecoder() {
+status_t C2GoldfishVpxDec::destroyDecoder() {
     mCtx.reset();
     return OK;
 }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::finishWork(
+void C2GoldfishVpxDec::finishWork(
     uint64_t index, const std::unique_ptr<C2Work> &work,
     const std::shared_ptr<C2GraphicBlock> &block) {
     std::shared_ptr<C2Buffer> buffer =
         createGraphicBuffer(block, C2Rect(mWidth, mHeight));
     {
         IntfImpl::Lock lock = mIntf->lock();
-#ifdef VP9
-        buffer->setInfo(mIntf->getColorAspects_l());
-#else
-        std::shared_ptr<C2StreamColorAspectsInfo::output> tColorAspects =
-            std::make_shared<C2StreamColorAspectsInfo::output>
-            (C2StreamColorAspectsInfo::output(0u, m_range,
-                m_primaries, m_transfer,
-                m_matrix));
-        DDD("%s %d setting to index %d range %d primaries %d transfer %d",
-                __func__, __LINE__, (int)index,
-                (int)tColorAspects->range,
-                (int)tColorAspects->primaries,
-                (int)tColorAspects->transfer);
-        buffer->setInfo(tColorAspects);
-#endif
+        if (mIsVp9) {
+            buffer->setInfo(mIntf->getColorAspects_l());
+        } else {
+            std::shared_ptr<C2StreamColorAspectsInfo::output> tColorAspects =
+                std::make_shared<C2StreamColorAspectsInfo::output>
+                (C2StreamColorAspectsInfo::output(0u, m_range,
+                    m_primaries, m_transfer,
+                    m_matrix));
+            DDD("%s %d setting to index %d range %d primaries %d transfer %d",
+                    __func__, __LINE__, (int)index,
+                    (int)tColorAspects->range,
+                    (int)tColorAspects->primaries,
+                    (int)tColorAspects->transfer);
+            buffer->setInfo(tColorAspects);
+        }
     }
 
     auto fillWork = [buffer, index,
@@ -678,7 +664,7 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::finishWork(
     }
 }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
+void C2GoldfishVpxDec::process(const std::unique_ptr<C2Work> &work,
                                             const std::shared_ptr<C2BlockPool> &pool) {
     DDD("%s %d doing work now", __func__, __LINE__);
     // Initialize output work
@@ -716,8 +702,7 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
         (int)work->input.ordinal.timestamp.peeku(),
         (int)work->input.ordinal.frameIndex.peeku(), work->input.flags);
 
-#ifndef VP9
-    {
+    if (!mIsVp9) {
         constexpr uint64_t ONE_SECOND_IN_MICRO_SECOND = 1000 * 1000;
         // bug: 349159609
         // note, vp8 does not have the FLAG_CODEC_CONFIG and the test
@@ -747,7 +732,6 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
             m_matrix = defaultColorAspects->matrix;
         }
     }
-#endif  // #ifndef VP9
 
     if (codecConfig) {
         {
@@ -763,10 +747,11 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
         }
 
         DDD("%s %d updated coloraspect due to codec config", __func__, __LINE__);
-#ifdef VP9
-        fillEmptyWork(work);
-        return;
-#endif
+
+        if (mIsVp9) {
+            fillEmptyWork(work);
+            return;
+        }
     }
 
     sendMetadata();
@@ -807,11 +792,11 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::process(const std::unique_ptr<C2Work> &work,
     }
 }
 
-void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::setup_ctx_parameters(const int hostColorBufferId) {
+void C2GoldfishVpxDec::setup_ctx_parameters(const int hostColorBufferId) {
     mCtx->setupParameters(mWidth, mHeight, hostColorBufferId, mWidth, mHeight, 1);
 }
 
-status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
+status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
                                                      const std::unique_ptr<C2Work> &work) {
     if (!(work && pool))
         return BAD_VALUE;
@@ -950,7 +935,7 @@ status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::outputBuffer(const std::shared_ptr<C2Blo
     return OK;
 }
 
-c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::drainInternal(uint32_t drainMode,
+c2_status_t C2GoldfishVpxDec::drainInternal(uint32_t drainMode,
                                                          const std::shared_ptr<C2BlockPool> &pool,
                                                          const std::unique_ptr<C2Work> &work) {
     if (drainMode == NO_DRAIN) {
@@ -973,42 +958,47 @@ c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::drainInternal(uint32_t drainMode,
     return C2_OK;
 }
 
-c2_status_t C2_GOLDFISH_VPx_DEC_IMLP_TYPE::drain(uint32_t drainMode,
+c2_status_t C2GoldfishVpxDec::drain(uint32_t drainMode,
                                                  const std::shared_ptr<C2BlockPool> &pool) {
     return drainInternal(drainMode, pool, nullptr);
 }
 
-#ifdef VP9
-#define GET_C2_GOLDFISH_VPx_DEC_FACTORY getC2GoldfishVp9DecFactory
-#else
-#define GET_C2_GOLDFISH_VPx_DEC_FACTORY getC2GoldfishVp8DecFactory
-#endif
+namespace {
 
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> GET_C2_GOLDFISH_VPx_DEC_FACTORY() {
-    struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
-        std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
-                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
-            return {C2_OK, std::make_shared<C2_GOLDFISH_VPx_DEC_IMLP_TYPE>(
-                        COMPONENT_NAME, 0, std::make_shared<C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl>(reflector))};
-        }
+struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
+    explicit ImplFactory(bool isVp9) : mIsVp9(isVp9) {}
 
-        std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
-                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
-            return {C2_OK, std::make_shared<SimpleInterface<C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl>>(
-                        COMPONENT_NAME, 0, std::make_shared<C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl>(reflector))};
-        }
+    std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
+            const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+        const char* name = mIsVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8;
+        return {C2_OK, std::make_shared<C2GoldfishVpxDec>(
+                    name, 0, std::make_shared<C2GoldfishVpxDec::IntfImpl>(reflector, mIsVp9), mIsVp9)};
+    }
 
-        std::string_view getName() const override {
-            using namespace std::literals::string_view_literals;
-#ifdef VP9
+    std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
+            const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+        const char* name = mIsVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8;
+        return {C2_OK, std::make_shared<SimpleInterface<C2GoldfishVpxDec::IntfImpl>>(
+                    name, 0, std::make_shared<C2GoldfishVpxDec::IntfImpl>(reflector, mIsVp9))};
+    }
+
+    std::string_view getName() const override {
+        using namespace std::literals::string_view_literals;
+        if (mIsVp9) {
             return "vp9dec"sv;
-#else
+        } else {
             return "vp8dec"sv;
-#endif
         }
-    };
+    }
 
-    return std::make_shared<ImplFactory>();
+private:
+    const bool mIsVp9;
+};
+
+} // namespace
+
+std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishVpxDecFactory(bool isVp9) {
+    return std::make_shared<ImplFactory>(isVp9);
 }
 
 
