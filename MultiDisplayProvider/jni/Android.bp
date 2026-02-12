@@ -32,12 +32,19 @@ cc_library_shared {
         "libcutils",
         "libutils",
         "liblog",
+        "libbase",
         "libui",
+        "libnativewindow",
+        "libsync",
         "libgui",
     ],
 
     static_libs: [
         "libqemupipe.ranchu",
+        "libdrm",
+        "mesa_gfxstream_guest_android",
+        "mesa_platform_virtgpu",
+        "mesa_util",
     ],
 
     header_libs: [
