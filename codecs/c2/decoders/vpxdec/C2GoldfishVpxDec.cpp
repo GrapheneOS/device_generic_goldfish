@@ -630,7 +630,7 @@ void C2_GOLDFISH_VPx_DEC_IMLP_TYPE::checkContext(const std::shared_ptr<C2BlockPo
     const uint8_t vpVersion = 8;
 #endif
     auto ctx = std::make_unique<VpxCodecCtx>(vpVersion, mEnableAndroidNativeBuffers ? 200 : 100);
-    if (const int err = mCtx->init()) {
+    if (const int err = ctx->init()) {
         ALOGE("vpx decoder failed to initialize. (%d)", err);
     } else {
         mCtx = std::move(ctx);
