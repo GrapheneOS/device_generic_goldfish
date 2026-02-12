@@ -1,5 +1,4 @@
-#
-# Copyright (C) 2023 The Android Open Source Project
+# Copyright (C) 2026 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +13,6 @@
 # limitations under the License.
 #
 
-include device/generic/goldfish/board/kernel/x86_64_16k.mk
-
-
-PRODUCT_COPY_FILES += \
-    $(EMULATOR_KERNEL_FILE):kernel-ranchu \
-    device/generic/goldfish/board/fstab/x86:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/first_stage_ramdisk/fstab.ranchu \
-    device/generic/goldfish/board/fstab/x86:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu \
-
-$(call inherit-product, device/generic/goldfish/board/16k_x86_64.mk)
+# A workaround for incomplete 16K emulation on x86_64.
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.dalvik.vm.force_cmc_stw_compaction=true
