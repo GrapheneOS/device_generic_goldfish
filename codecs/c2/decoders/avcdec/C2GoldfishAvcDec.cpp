@@ -615,8 +615,6 @@ status_t C2GoldfishAvcDec::resetDecoder() {
 
 void C2GoldfishAvcDec::resetPlugin() {
     mSignalledOutputEos = false;
-    gettimeofday(&mTimeStart, nullptr);
-    gettimeofday(&mTimeEnd, nullptr);
     if (mOutBlock) {
         mOutBlock.reset();
     }
@@ -975,9 +973,16 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
             }
 
             bool whChanged = false;
-            if (GoldfishH264Helper::isSpsFrame(mInPBuffer, mInPBufferSize)) {
+            if (GoldfishH264Helper::isKeyFrame(mInPBuffer, mInPBufferSize)) {
                 mH264Helper = std::make_unique<GoldfishH264Helper>(mWidth, mHeight);
-                whChanged = mH264Helper->decodeHeader(mInPBuffer, mInPBufferSize);
+                bool headerStatus = true;
+                whChanged = mH264Helper->decodeHeader(mInPBuffer, mInPBufferSize, headerStatus);
+                if (!headerStatus) {
+                    mSignalledError = true;
+                    work->workletsProcessed = 1u;
+                    work->result = C2_CORRUPTED;
+                    return;
+                }
                 if (whChanged) {
                         DDD("w changed from old %d to new %d\n", mWidth, mH264Helper->getWidth());
                         DDD("h changed from old %d to new %d\n", mHeight, mH264Helper->getHeight());
@@ -1012,14 +1017,10 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
                         }
                         continue;
                 } // end of whChanged
-            } // end of isSpsFrame
+            } // end of isKeyFrame
 
             sendMetadata();
 
-            uint32_t delay;
-            GETTIME(&mTimeStart, nullptr);
-            TIME_DIFF(mTimeEnd, mTimeStart, delay);
-            (void)delay;
             //(void) ivdec_api_function(mDecHandle, &s_decode_ip, &s_decode_op);
             DDD("decoding");
             h264_result_t h264Res =
@@ -1033,10 +1034,6 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
             } else {
                 mImg = mContext->getImage();
             }
-            uint32_t decodeTime;
-            GETTIME(&mTimeEnd, nullptr);
-            TIME_DIFF(mTimeStart, mTimeEnd, decodeTime);
-            (void)decodeTime;
         }
 
         if (mImg.data != nullptr) {

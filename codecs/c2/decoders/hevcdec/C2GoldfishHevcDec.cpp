@@ -558,8 +558,6 @@ status_t C2GoldfishHevcDec::resetDecoder() {
 
 void C2GoldfishHevcDec::resetPlugin() {
     mSignalledOutputEos = false;
-    gettimeofday(&mTimeStart, nullptr);
-    gettimeofday(&mTimeEnd, nullptr);
     if (mOutBlock) {
         mOutBlock.reset();
     }
@@ -917,7 +915,7 @@ void C2GoldfishHevcDec::process(const std::unique_ptr<C2Work> &work,
             }
 
             bool whChanged = false;
-            if (GoldfishHevcHelper::isVpsFrame(mInPBuffer, mInPBufferSize)) {
+            if (GoldfishHevcHelper::isKeyFrame(mInPBuffer, mInPBufferSize)) {
                 mHevcHelper = std::make_unique<GoldfishHevcHelper>(mWidth, mHeight);
                 bool headerStatus = true;
                 whChanged = mHevcHelper->decodeHeader(
@@ -962,14 +960,10 @@ void C2GoldfishHevcDec::process(const std::unique_ptr<C2Work> &work,
                         }
                         continue;//return;
                 } // end of whChanged
-            } // end of isVpsFrame
+            } // end of isKeyFrame
 
             sendMetadata();
 
-            uint32_t delay;
-            GETTIME(&mTimeStart, nullptr);
-            TIME_DIFF(mTimeEnd, mTimeStart, delay);
-            (void)delay;
             //(void) ivdec_api_function(mDecHandle, &s_decode_ip, &s_decode_op);
             DDD("decoding");
             hevc_result_t hevcRes =
@@ -983,10 +977,6 @@ void C2GoldfishHevcDec::process(const std::unique_ptr<C2Work> &work,
             } else {
                 mImg = mContext->getImage();
             }
-            uint32_t decodeTime;
-            GETTIME(&mTimeEnd, nullptr);
-            TIME_DIFF(mTimeStart, mTimeEnd, decodeTime);
-            (void)decodeTime;
         }
         if (mImg.data != nullptr) {
             DDD("got data %" PRIu64 " with pts %" PRIu64,  getWorkIndex(mImg.pts), mImg.pts);

@@ -16,49 +16,28 @@
 
 #pragma once
 
-#include <inttypes.h>
+#include <cstdint>
+
 #include "ih264_typedefs.h"
 #include "ih264d.h"
-
+#include "GoldfishDecHelper.h"
 
 namespace android {
 
-// this class is just to provide some functions to decode header
-// so that we know w/h of each sps
-class GoldfishH264Helper {
-  public:
-    GoldfishH264Helper(int w, int h);
-    ~GoldfishH264Helper();
+struct H264Traits {
+    using DecodeIp = ih264d_video_decode_ip_t;
+    using DecodeOp = ih264d_video_decode_op_t;
 
-    // check whether the frame is sps; typical h264 will have
-    // a frame that is sps/pps together
-    static bool isSpsFrame(const uint8_t* frame, int inSize);
-  public:
-    // return true if decoding finds out w/h changed;
-    // otherwise false
-    bool decodeHeader(const uint8_t *frame, int inSize);
-    int getWidth() const { return mWidth; }
-    int getHeight() const { return mHeight; }
-
-  private:
-    void createDecoder();
-    void destroyDecoder();
-    void resetDecoder();
-    void setNumCores();
-    void setParams(size_t stride, IVD_VIDEO_DECODE_MODE_T dec_mode);
-    bool setDecodeArgs(ivd_video_decode_ip_t *ps_decode_ip,
-                       ivd_video_decode_op_t *ps_decode_op,
-                       const uint8_t *inBuffer, uint32_t displayStride,
-                       size_t inOffset, size_t inSize, uint32_t tsMarker);
-
-  private:
-    iv_obj_t *mDecHandle = nullptr;
-    int mWidth = 320;
-    int mHeight = 240;
-    int mNumCores = 1;
-    int mStride = 16;
-    int mOutputDelay = 8; // default
-    IV_COLOR_FORMAT_T mIvColorformat = IV_YUV_420P;
+    static void createDecoder(iv_obj_t *&decHandle, IV_COLOR_FORMAT_T colorFormat, int numCores, int &stride);
+    static void destroyDecoder(iv_obj_t *decHandle);
+    static void setParams(iv_obj_t *decHandle, size_t stride, IVD_VIDEO_DECODE_MODE_T dec_mode);
+    static void resetDecoder(iv_obj_t *decHandle);
+    static void setNumCores(iv_obj_t *decHandle, int numCores);
+    static IV_API_CALL_STATUS_T callApi(iv_obj_t *decHandle, void *ip, void *op);
+    static bool isKeyFrame(const uint8_t *frame, int inSize);
+    static bool shouldIgnoreApiError() { return true; }
 };
+
+using GoldfishH264Helper = GoldfishDecHelper<H264Traits>;
 
 } // namespace android

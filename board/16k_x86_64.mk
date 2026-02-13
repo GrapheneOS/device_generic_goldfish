@@ -1,5 +1,4 @@
-#
-# Copyright (C) 2024 The Android Open Source Project
+# Copyright (C) 2026 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +13,6 @@
 # limitations under the License.
 #
 
-# Enable large page size support
-PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384
-PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true
-
-# Verify all prebuilts are compatible with 16 KB mode as well
-PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := true
+# A workaround for incomplete 16K emulation on x86_64.
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.dalvik.vm.force_cmc_stw_compaction=true
