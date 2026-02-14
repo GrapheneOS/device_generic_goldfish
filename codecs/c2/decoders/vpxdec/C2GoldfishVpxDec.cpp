@@ -176,34 +176,6 @@ class C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl : public SimpleInterface<void>::Ba
                          })
                          .withSetter(Hdr10PlusInfoOutputSetter)
                          .build());
-
-#if 0
-        // sample BT.2020 static info
-        mHdrStaticInfo = std::make_shared<C2StreamHdrStaticInfo::output>();
-        mHdrStaticInfo->mastering = {
-            .red   = { .x = 0.708,  .y = 0.292 },
-            .green = { .x = 0.170,  .y = 0.797 },
-            .blue  = { .x = 0.131,  .y = 0.046 },
-            .white = { .x = 0.3127, .y = 0.3290 },
-            .maxLuminance = 1000,
-            .minLuminance = 0.1,
-        };
-        mHdrStaticInfo->maxCll = 1000;
-        mHdrStaticInfo->maxFall = 120;
-
-        mHdrStaticInfo->maxLuminance = 0; // disable static info
-
-        helper->addStructDescriptors<C2MasteringDisplayColorVolumeStruct, C2ColorXyStruct>();
-        addParameter(
-                DefineParam(mHdrStaticInfo, C2_PARAMKEY_HDR_STATIC_INFO)
-                .withDefault(mHdrStaticInfo)
-                .withFields({
-                    C2F(mHdrStaticInfo, mastering.red.x).inRange(0, 1),
-                    // TODO
-                })
-                .withSetter(HdrStaticInfoSetter)
-                .build());
-#endif
 #else
         addParameter(
             DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
@@ -504,9 +476,6 @@ class C2_GOLDFISH_VPx_DEC_IMLP_TYPE::IntfImpl : public SimpleInterface<void>::Ba
     std::shared_ptr<C2StreamColorAspectsInfo::input> mCodedColorAspects;
     std::shared_ptr<C2StreamColorAspectsInfo::output> mColorAspects;
 #ifdef VP9
-#if 0
-    std::shared_ptr<C2StreamHdrStaticInfo::output> mHdrStaticInfo;
-#endif
     std::shared_ptr<C2StreamHdr10PlusInfo::input> mHdr10PlusInfoInput;
     std::shared_ptr<C2StreamHdr10PlusInfo::output> mHdr10PlusInfoOutput;
 #endif
