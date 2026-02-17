@@ -1029,18 +1029,6 @@ C2GoldfishHevcDec::drainInternal(uint32_t drainMode,
             work->result = C2_CORRUPTED;
             return C2_CORRUPTED;
         }
-        /*
-        C2GraphicView wView = mOutBlock->map().get();
-        if (wView.error()) {
-            ALOGE("graphic view map failed %d", wView.error());
-            return C2_CORRUPTED;
-        }
-        if (!setDecodeArgs(nullptr, &wView, 0, 0, 0)) {
-            mSignalledError = true;
-            work->workletsProcessed = 1u;
-            return C2_CORRUPTED;
-        }
-        */
 
         if (mHostColorBufferId > 0) {
             mImg = mContext->renderOnHostAndReturnImageMetadata(

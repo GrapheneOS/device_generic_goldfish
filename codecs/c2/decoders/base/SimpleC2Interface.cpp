@@ -48,15 +48,6 @@ SimpleInterface<void>::BaseParams::BaseParams(
     : C2InterfaceHelper(reflector) {
     setDerivedInstance(this);
 
-    /*
-    addParameter(
-        DefineParam(mApiFeatures, C2_PARAMKEY_API_FEATURES)
-            .withConstValue(std::make_shared<C2ApiFeaturesSetting>(C2Config::api_feature_t(
-                API_REFLECTION | API_VALUES | API_CURRENT_VALUES |
-                API_DEPENDENCY | API_SAME_INPUT_BUFFER)))
-            .build());
-*/
-
     addParameter(DefineParam(mName, C2_PARAMKEY_COMPONENT_NAME)
                      .withConstValue(AllocSharedString<C2ComponentNameSetting>(
                          name.c_str()))
@@ -210,47 +201,6 @@ SimpleInterface<void>::BaseParams::BaseParams(
                          C2F(mSubscribedParamIndices, m.values).any()})
             .withSetter(SubscribedParamIndicesSetter)
             .build());
-
-    /* TODO
-
-    addParameter(
-            DefineParam(mCurrentWorkOrdinal, C2_PARAMKEY_CURRENT_WORK)
-            .withDefault(std::make_shared<C2CurrentWorkTuning>())
-            .withFields({ C2F(mCurrentWorkOrdinal, m.timeStamp).any(),
-                          C2F(mCurrentWorkOrdinal, m.frameIndex).any(),
-                          C2F(mCurrentWorkOrdinal, m.customOrdinal).any() })
-            .withSetter(Setter<C2CurrentWorkTuning>::NonStrictValuesWithNoDeps)
-            .build());
-
-    addParameter(
-            DefineParam(mLastInputQueuedWorkOrdinal,
-    C2_PARAMKEY_LAST_INPUT_QUEUED).withDefault(std::make_shared<C2LastWorkQueuedTuning::input>())
-                                  .withFields({
-    C2F(mLastInputQueuedWorkOrdinal, m.timeStamp).any(),
-                          C2F(mLastInputQueuedWorkOrdinal, m.frameIndex).any(),
-                          C2F(mLastInputQueuedWorkOrdinal,
-    m.customOrdinal).any() })
-            .withSetter(Setter<C2LastWorkQueuedTuning::input>::NonStrictValuesWithNoDeps)
-            .build());
-
-    addParameter(
-            DefineParam(mLastOutputQueuedWorkOrdinal,
-    C2_PARAMKEY_LAST_OUTPUT_QUEUED).withDefault(std::make_shared<C2LastWorkQueuedTuning::output>())
-                                   .withFields({
-    C2F(mLastOutputQueuedWorkOrdinal, m.timeStamp).any(),
-                          C2F(mLastOutputQueuedWorkOrdinal, m.frameIndex).any(),
-                          C2F(mLastOutputQueuedWorkOrdinal,
-    m.customOrdinal).any() })
-            .withSetter(Setter<C2LastWorkQueuedTuning::output>::NonStrictValuesWithNoDeps)
-            .build());
-
-    std::shared_ptr<C2OutOfMemoryTuning> mOutOfMemory;
-
-    std::shared_ptr<C2PortConfigCounterTuning::input> mInputConfigCounter;
-    std::shared_ptr<C2PortConfigCounterTuning::output> mOutputConfigCounter;
-    std::shared_ptr<C2ConfigCounterTuning> mDirectConfigCounter;
-
-    */
 }
 
 void SimpleInterface<void>::BaseParams::noInputLatency() {
@@ -334,20 +284,5 @@ void SimpleInterface<void>::BaseParams::noTimeStretch() {
                      .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
                      .build());
 }
-
-/*
-    Clients need to handle the following base params due to custom dependency.
-
-    std::shared_ptr<C2ApiLevelSetting> mApiLevel;
-    std::shared_ptr<C2ComponentAttributesSetting> mAttrib;
-
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::input>
-   mSuggestedInputBufferCount;
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::output>
-   mSuggestedOutputBufferCount;
-
-    std::shared_ptr<C2TrippedTuning> mTripped;
-
-*/
 
 }  // namespace goldfish::media::c2
