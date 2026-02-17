@@ -18,8 +18,8 @@
 
 #include <goldfish/media/c2/IComponentFactory.h>
 
-namespace android {
+namespace goldfish::media::c2 {
 
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishHevcDecFactory();
+std::shared_ptr<const IComponentFactory> getC2GoldfishHevcDecFactory();
 
-}  // namespace android
+}  // namespace goldfish::media::c2

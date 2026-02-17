@@ -25,7 +25,7 @@
  * and potentially contain different definitions of the types referred here.
  */
 
-namespace android {
+namespace goldfish::media::c2 {
 
 template <typename Traits>
 class GoldfishDecHelper {
@@ -147,4 +147,4 @@ class GoldfishDecHelper {
     IV_COLOR_FORMAT_T mIvColorformat = IV_YUV_420P;
 };
 
-} // namespace android
+} // namespace goldfish::media::c2

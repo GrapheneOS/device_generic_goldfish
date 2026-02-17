@@ -35,7 +35,9 @@
 #define DDD(...) ((void)0)
 #endif
 
-namespace android {
+namespace goldfish::media::c2 {
+
+using ::android::GetCodec2BlockPool;
 
 std::unique_ptr<C2Work> SimpleC2Component::WorkQueue::pop_front() {
     std::unique_ptr<C2Work> work = std::move(mQueue.front().work);
@@ -624,4 +626,4 @@ std::shared_ptr<C2Buffer> SimpleC2Component::createGraphicBuffer(
     return C2Buffer::CreateGraphicBuffer(block->share(crop, ::C2Fence()));
 }
 
-} // namespace android
+} // namespace goldfish::media::c2

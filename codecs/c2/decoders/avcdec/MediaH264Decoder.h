@@ -18,6 +18,8 @@
 
 #include "goldfish_media_utils.h"
 
+namespace goldfish::media::c2 {
+
 struct h264_init_result_t {
     uint64_t host_handle;
     int ret;
@@ -100,3 +102,5 @@ class MediaH264Decoder {
 
     void sendMetadata(MetaDataColorAspects *ptr);
 };
+
+}  // namespace goldfish::media::c2

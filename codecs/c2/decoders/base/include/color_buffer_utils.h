@@ -19,5 +19,9 @@
 #include <cutils/native_handle.h>
 #include <C2Buffer.h>
 
+namespace goldfish::media::c2 {
+
 uint32_t getColorBufferHandle(native_handle_t const* handle);
 uint64_t getClientUsage(C2BlockPool& pool);
+
+}  // namespace goldfish::media::c2

@@ -46,10 +46,15 @@
 #define DDD(...) ((void)0)
 #endif
 
+namespace goldfish::media::c2 {
+
 using ::android::hardware::graphics::common::V1_0::BufferUsage;
 using ::android::hardware::graphics::common::V1_2::PixelFormat;
 
-namespace android {
+using ::android::C2Mapper;
+using ::android::ColorAspects;
+using ::android::ColorUtils;
+using ::android::UnwrapNativeCodec2GrallocHandle;
 
 namespace {
 constexpr size_t kMinInputBufferSize = 6 * 1024 * 1024;
@@ -63,7 +68,7 @@ class C2GoldfishHevcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
         : SimpleInterface<void>::BaseParams(
               helper, COMPONENT_NAME, C2Component::KIND_DECODER,
-              C2Component::DOMAIN_VIDEO, MEDIA_MIMETYPE_VIDEO_HEVC) {
+              C2Component::DOMAIN_VIDEO, ::android::MEDIA_MIMETYPE_VIDEO_HEVC) {
         noPrivateBuffers(); // TODO: account for our buffers here
         noInputReferences();
         noOutputReferences();
@@ -388,11 +393,11 @@ C2GoldfishHevcDec::~C2GoldfishHevcDec() { onRelease(); }
 
 c2_status_t C2GoldfishHevcDec::onInit() {
     status_t err = initDecoder();
-    return err == OK ? C2_OK : C2_CORRUPTED;
+    return err == ::android::OK ? C2_OK : C2_CORRUPTED;
 }
 
 c2_status_t C2GoldfishHevcDec::onStop() {
-    if (OK != resetDecoder())
+    if (::android::OK != resetDecoder())
         return C2_CORRUPTED;
     resetPlugin();
     return C2_OK;
@@ -417,7 +422,7 @@ void C2GoldfishHevcDec::decodeHeaderAfterFlush() {
 }
 
 c2_status_t C2GoldfishHevcDec::onFlush_sm() {
-    if (OK != setFlushMode())
+    if (::android::OK != setFlushMode())
         return C2_CORRUPTED;
 
     if (!mContext) {
@@ -485,12 +490,12 @@ status_t C2GoldfishHevcDec::createDecoder() {
 
     mContext->initHevcContext(mWidth, mHeight, mWidth, mHeight,
                               MediaHevcDecoder::PixelFormat::YUV420P);
-    return OK;
+    return ::android::OK;
 }
 
 status_t C2GoldfishHevcDec::setParams(size_t stride) {
     (void)stride;
-    return OK;
+    return ::android::OK;
 }
 
 status_t C2GoldfishHevcDec::initDecoder() {
@@ -499,7 +504,7 @@ status_t C2GoldfishHevcDec::initDecoder() {
     mSignalledError = false;
     resetPlugin();
 
-    return OK;
+    return ::android::OK;
 }
 
 bool C2GoldfishHevcDec::setDecodeArgs(C2ReadView *inBuffer,
@@ -532,7 +537,7 @@ bool C2GoldfishHevcDec::setDecodeArgs(C2ReadView *inBuffer,
 
     if (mStride != displayStride) {
         mStride = displayStride;
-        if (OK != setParams(mStride))
+        if (::android::OK != setParams(mStride))
             return false;
     }
 
@@ -544,7 +549,7 @@ status_t C2GoldfishHevcDec::setFlushMode() {
         mContext->flush();
     }
     mHeaderDecoded = false;
-    return OK;
+    return ::android::OK;
 }
 
 status_t C2GoldfishHevcDec::resetDecoder() {
@@ -553,7 +558,7 @@ status_t C2GoldfishHevcDec::resetDecoder() {
     mHeaderDecoded = false;
     deleteContext();
 
-    return OK;
+    return ::android::OK;
 }
 
 void C2GoldfishHevcDec::resetPlugin() {
@@ -941,7 +946,7 @@ void C2GoldfishHevcDec::process(const std::unique_ptr<C2Work> &work,
                             C2StreamPictureSizeInfo::output size(0u, mWidth, mHeight);
                             std::vector<std::unique_ptr<C2SettingResult>> failures;
                             c2_status_t err = mIntf->config({&size}, C2_MAY_BLOCK, &failures);
-                            if (err == OK) {
+                            if (err == ::android::OK) {
                                 work->worklets.front()->output.configUpdate.push_back(
                                         C2Param::Copy(size));
                                 ensureDecoderState(pool);
@@ -1015,7 +1020,7 @@ C2GoldfishHevcDec::drainInternal(uint32_t drainMode,
         return C2_OMITTED;
     }
 
-    if (OK != setFlushMode())
+    if (::android::OK != setFlushMode())
         return C2_CORRUPTED;
     while (true) {
         if (C2_OK != ensureDecoderState(pool)) {
@@ -1089,4 +1094,4 @@ std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishHev
     return std::make_shared<ImplFactory>();
 }
 
-} // namespace android
+} // namespace goldfish::media::c2

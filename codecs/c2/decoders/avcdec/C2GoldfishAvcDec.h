@@ -26,9 +26,11 @@
 #include "GoldfishH264Helper.h"
 #include "MediaH264Decoder.h"
 
-namespace android {
-
 #define ALIGN2(x) ((((x) + 1) >> 1) << 1)
+
+namespace goldfish::media::c2 {
+
+using ::android::status_t;
 
 class C2GoldfishAvcDec : public SimpleC2Component {
   public:
@@ -149,4 +151,4 @@ class C2GoldfishAvcDec : public SimpleC2Component {
     C2_DO_NOT_COPY(C2GoldfishAvcDec);
 };
 
-} // namespace android
+} // namespace goldfish::media::c2

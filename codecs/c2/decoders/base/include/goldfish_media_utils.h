@@ -17,6 +17,8 @@
 #include <linux/types.h>
 #include <stdint.h>
 
+namespace goldfish::media::c2 {
+
 enum class MediaCodecType : __u8 {
     VP8Codec = 0,
     VP9Codec = 1,
@@ -105,3 +107,5 @@ class GoldfishMediaTransport {
 };
 
 __u64 goldfish_create_media_metadata(MediaCodecType codecType, __u64 metadata);
+
+}  // namespace goldfish::media::c2

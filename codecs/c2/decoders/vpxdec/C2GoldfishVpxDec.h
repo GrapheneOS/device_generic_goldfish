@@ -20,7 +20,9 @@
 #include "goldfish_vpx_defs.h"
 #include <SimpleC2Component.h>
 
-namespace android {
+namespace goldfish::media::c2 {
+
+using android::status_t;
 
 struct C2GoldfishVpxDec : public SimpleC2Component {
     class IntfImpl;
@@ -85,4 +87,4 @@ struct C2GoldfishVpxDec : public SimpleC2Component {
     C2_DO_NOT_COPY(C2GoldfishVpxDec);
 };
 
-} // namespace android
+} // namespace goldfish::media::c2

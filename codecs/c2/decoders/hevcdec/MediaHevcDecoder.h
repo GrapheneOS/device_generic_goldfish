@@ -18,6 +18,8 @@
 
 #include "goldfish_media_utils.h"
 
+namespace goldfish::media::c2 {
+
 struct hevc_init_result_t {
     uint64_t host_handle;
     int ret;
@@ -93,3 +95,5 @@ class MediaHevcDecoder {
     RenderMode mRenderMode = RenderMode::RENDER_BY_GUEST_CPU;
     bool mHasAddressSpaceMemory = false;
 };
+
+}  // namespace goldfish::media::c2

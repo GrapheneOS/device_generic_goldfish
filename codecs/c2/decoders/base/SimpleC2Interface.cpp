@@ -25,17 +25,21 @@
 #include <C2PlatformSupport.h>
 #include <SimpleC2Interface.h>
 
-namespace android {
+namespace goldfish::media::c2 {
 
-/* SimpleInterface */
+using ::android::C2PlatformAllocatorStore;
+using ::android::GetCodec2PoolMask;
+using ::android::GetPreferredLinearAllocatorId;
 
-static C2R SubscribedParamIndicesSetter(
+namespace {
+C2R SubscribedParamIndicesSetter(
         bool mayBlock, C2InterfaceHelper::C2P<C2SubscribedParamIndicesTuning> &me) {
     (void)mayBlock;
     (void)me;
 
     return C2R::Ok();
 }
+}  // namespace
 
 SimpleInterface<void>::BaseParams::BaseParams(
     const std::shared_ptr<C2ReflectorHelper> &reflector, C2String name,
@@ -112,13 +116,13 @@ SimpleInterface<void>::BaseParams::BaseParams(
         // TODO: should we define raw image? The only difference is timestamp
         // handling
         rawBufferType = C2BufferData::GRAPHIC;
-        rawMediaType = MEDIA_MIMETYPE_VIDEO_RAW;
+        rawMediaType = ::android::MEDIA_MIMETYPE_VIDEO_RAW;
         rawAllocator = C2PlatformAllocatorStore::GRALLOC;
         rawPoolId = C2BlockPool::BASIC_GRAPHIC;
         break;
     case C2Component::DOMAIN_AUDIO:
         rawBufferType = C2BufferData::LINEAR;
-        rawMediaType = MEDIA_MIMETYPE_AUDIO_RAW;
+        rawMediaType = ::android::MEDIA_MIMETYPE_AUDIO_RAW;
         rawAllocator = preferredLinearId;
         rawPoolId = C2BlockPool::BASIC_LINEAR;
         break;
@@ -346,4 +350,4 @@ void SimpleInterface<void>::BaseParams::noTimeStretch() {
 
 */
 
-} // namespace android
+}  // namespace goldfish::media::c2

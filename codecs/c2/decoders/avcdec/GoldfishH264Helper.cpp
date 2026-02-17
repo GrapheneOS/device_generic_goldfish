@@ -33,7 +33,7 @@
 #define IVDEXT_CMD_CTL_SET_NUM_CORES    \
         (IVD_CONTROL_API_COMMAND_TYPE_T)IH264D_CMD_CTL_SET_NUM_CORES
 
-namespace android {
+namespace goldfish::media::c2 {
 
 static void *ivd_aligned_malloc(void *ctxt, WORD32 alignment, WORD32 size) {
     (void) ctxt;
@@ -142,4 +142,4 @@ bool H264Traits::isKeyFrame(const uint8_t *frame, int inSize) {
     return false;
 }
 
-} // namespace android
+} // namespace goldfish::media::c2

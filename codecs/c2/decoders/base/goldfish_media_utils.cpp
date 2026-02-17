@@ -14,9 +14,14 @@
 
 #include "goldfish_media_utils.h"
 
-#include "goldfish_address_space.h"
+#include <memory>
+#include <mutex>
+#include <vector>
 
 #include <log/log.h>
+
+#include "goldfish_address_space.h"
+
 
 #define DEBUG 0
 #if DEBUG
@@ -25,12 +30,12 @@
 #define DDD(...) ((void)0)
 #endif
 
-#include <memory>
-#include <mutex>
-#include <vector>
 
+namespace goldfish::media::c2 {
+namespace {
 std::mutex sSingletonMutex;
 std::unique_ptr<GoldfishMediaTransport> sTransport;
+}  // namespace
 
 class GoldfishMediaTransportImpl : public GoldfishMediaTransport {
   public:
@@ -225,3 +230,5 @@ bool GoldfishMediaTransportImpl::sendOperation(MediaCodecType type,
 
     return true;
 }
+
+}  // namespace goldfish::media::c2

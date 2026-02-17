@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "MediaH264Decoder.h"
+
+#include <string.h>
 #include <utils/Log.h>
 
 #define DEBUG 0
@@ -23,9 +26,7 @@
 #define DDD(...) ((void)0)
 #endif
 
-#include "MediaH264Decoder.h"
-#include "goldfish_media_utils.h"
-#include <string.h>
+namespace goldfish::media::c2 {
 
 MediaH264Decoder::MediaH264Decoder(RenderMode renderMode)
     : mRenderMode(renderMode) {
@@ -227,3 +228,5 @@ MediaH264Decoder::renderOnHostAndReturnImageMetadata(int hostColorBufferId) {
     }
     return res;
 }
+
+}  // namespace goldfish::media::c2

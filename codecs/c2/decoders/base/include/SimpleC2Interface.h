@@ -20,7 +20,7 @@
 #include <C2Config.h>
 #include <util/C2InterfaceHelper.h>
 
-namespace android {
+namespace goldfish::media::c2 {
 
 /**
  * Wrap a common interface object (such as Codec2Client::Interface, or
@@ -240,4 +240,4 @@ template <typename T> struct Setter {
     }
 };
 
-} // namespace android
+}  // namespace goldfish::media::c2

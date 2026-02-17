@@ -44,9 +44,13 @@
 #define DDD(...) ((void)0)
 #endif
 
-using aidl::android::hardware::graphics::common::BufferUsage;
+namespace goldfish::media::c2 {
 
-namespace android {
+using ::aidl::android::hardware::graphics::common::BufferUsage;
+using ::android::UnwrapNativeCodec2GrallocHandle;
+using ::android::MEDIA_MIMETYPE_VIDEO_VP8;
+using ::android::MEDIA_MIMETYPE_VIDEO_VP9;
+
 namespace {
 constexpr size_t kMinInputBufferSize = 6 * 1024 * 1024;
 constexpr char COMPONENT_NAME_VP9[] = "c2.goldfish.vp9.decoder";
@@ -480,7 +484,7 @@ C2GoldfishVpxDec::~C2GoldfishVpxDec() { onRelease(); }
 
 c2_status_t C2GoldfishVpxDec::onInit() {
     status_t err = initDecoder();
-    return err == OK ? C2_OK : C2_CORRUPTED;
+    return err == android::OK ? C2_OK : C2_CORRUPTED;
 }
 
 c2_status_t C2GoldfishVpxDec::onStop() {
@@ -555,7 +559,7 @@ status_t C2GoldfishVpxDec::initDecoder() {
     mSignalledOutputEos = false;
     mSignalledError = false;
 
-    return OK;
+    return android::OK;
 }
 
 void C2GoldfishVpxDec::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
@@ -594,7 +598,7 @@ void C2GoldfishVpxDec::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
 
 status_t C2GoldfishVpxDec::destroyDecoder() {
     mCtx.reset();
-    return OK;
+    return android::OK;
 }
 
 void C2GoldfishVpxDec::finishWork(
@@ -770,14 +774,14 @@ void C2GoldfishVpxDec::process(const std::unique_ptr<C2Work> &work,
     }
 
     status_t err = outputBuffer(pool, work);
-    if (err == NOT_ENOUGH_DATA) {
+    if (err == android::NOT_ENOUGH_DATA) {
         if (inSize > 0) {
             DDD("Maybe non-display frame at %lld.",
                 work->input.ordinal.frameIndex.peekll());
             // send the work back with empty buffer.
             inSize = 0;
         }
-    } else if (err != OK) {
+    } else if (err != android::OK) {
         ALOGD("Error while getting the output frame out");
         // work->result would be already filled; do fillEmptyWork() below to
         // send the work back.
@@ -799,7 +803,7 @@ void C2GoldfishVpxDec::setup_ctx_parameters(const int hostColorBufferId) {
 status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
                                                      const std::unique_ptr<C2Work> &work) {
     if (!(work && pool))
-        return BAD_VALUE;
+        return android::BAD_VALUE;
 
     // now get the block
     std::shared_ptr<C2GraphicBlock> block;
@@ -812,7 +816,7 @@ status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool
     if (err != C2_OK) {
         ALOGE("fetchGraphicBlock for Output failed with status %d", err);
         work->result = err;
-        return UNKNOWN_ERROR;
+        return android::UNKNOWN_ERROR;
     }
 
     int hostColorBufferId = -1;
@@ -836,7 +840,7 @@ status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool
 
     const vpx_image_t *img = mCtx->getFrame();
     if (!img)
-        return NOT_ENOUGH_DATA;
+        return android::NOT_ENOUGH_DATA;
 
     if (img->d_w != mWidth || img->d_h != mHeight) {
         DDD("updating w %d h %d to w %d h %d", mWidth, mHeight, img->d_w,
@@ -853,7 +857,7 @@ status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool
                 ALOGE("fetchGraphicBlock for Output failed with status %d",
                       err);
                 work->result = err;
-                return UNKNOWN_ERROR;
+                return android::UNKNOWN_ERROR;
             }
         }
 
@@ -868,7 +872,7 @@ status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool
             mSignalledError = true;
             work->workletsProcessed = 1u;
             work->result = C2_CORRUPTED;
-            return UNKNOWN_ERROR;
+            return android::UNKNOWN_ERROR;
         }
     }
     if (img->fmt != VPX_IMG_FMT_I420 && img->fmt != VPX_IMG_FMT_I42016) {
@@ -897,7 +901,7 @@ status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool
         if (wView.error()) {
             ALOGE("graphic view map failed %d", wView.error());
             work->result = C2_CORRUPTED;
-            return UNKNOWN_ERROR;
+            return android::UNKNOWN_ERROR;
         }
 
         DDD("provided (%dx%d) required (%dx%d), out frameindex %lld",
@@ -932,7 +936,7 @@ status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool
 
     finishWork(((c2_cntr64_t *)img->user_priv)->peekull(), work,
                std::move(block));
-    return OK;
+    return android::OK;
 }
 
 c2_status_t C2GoldfishVpxDec::drainInternal(uint32_t drainMode,
@@ -947,7 +951,7 @@ c2_status_t C2GoldfishVpxDec::drainInternal(uint32_t drainMode,
         return C2_OMITTED;
     }
 
-    while (outputBuffer(pool, work) == OK) {
+    while (outputBuffer(pool, work) == android::OK) {
     }
 
     if (drainMode == DRAIN_COMPONENT_WITH_EOS && work &&
@@ -1002,4 +1006,4 @@ std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishVpx
 }
 
 
-} // namespace android
+} // namespace goldfish::media::c2

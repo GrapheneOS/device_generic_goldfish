@@ -22,7 +22,7 @@
 #include "ih264d.h"
 #include "GoldfishDecHelper.h"
 
-namespace android {
+namespace goldfish::media::c2 {
 
 struct H264Traits {
     using DecodeIp = ih264d_video_decode_ip_t;
@@ -40,4 +40,4 @@ struct H264Traits {
 
 using GoldfishH264Helper = GoldfishDecHelper<H264Traits>;
 
-} // namespace android
+} // namespace goldfish::media::c2

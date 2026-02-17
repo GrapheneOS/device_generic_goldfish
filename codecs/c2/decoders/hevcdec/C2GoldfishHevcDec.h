@@ -26,9 +26,11 @@
 #include "GoldfishHevcHelper.h"
 #include "MediaHevcDecoder.h"
 
-namespace android {
-
 #define ALIGN2(x) ((((x) + 1) >> 1) << 1)
+
+namespace goldfish::media::c2 {
+
+using ::android::status_t;
 
 class C2GoldfishHevcDec : public SimpleC2Component {
   public:
@@ -81,9 +83,6 @@ class C2GoldfishHevcDec : public SimpleC2Component {
 
     void getVuiParams(hevc_image_t &img);
     void copyImageData(hevc_image_t &img);
-
-
-
 
     // Color aspects. These are ISO values and are meant to detect changes in
     // aspects to avoid converting them to C2 values for each frame
@@ -149,4 +148,4 @@ class C2GoldfishHevcDec : public SimpleC2Component {
     C2_DO_NOT_COPY(C2GoldfishHevcDec);
 };
 
-} // namespace android
+} // namespace goldfish::media::c2

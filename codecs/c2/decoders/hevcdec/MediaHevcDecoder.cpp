@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "MediaHevcDecoder.h"
+
+#include <string.h>
 #include <utils/Log.h>
 
 #define DEBUG 0
@@ -23,9 +26,7 @@
 #define DDD(...) ((void)0)
 #endif
 
-#include "MediaHevcDecoder.h"
-#include "goldfish_media_utils.h"
-#include <string.h>
+namespace goldfish::media::c2 {
 
 MediaHevcDecoder::MediaHevcDecoder(RenderMode renderMode)
     : mRenderMode(renderMode) {
@@ -227,3 +228,5 @@ MediaHevcDecoder::renderOnHostAndReturnImageMetadata(int hostColorBufferId) {
     }
     return res;
 }
+
+}  // namespace goldfish::media::c2
