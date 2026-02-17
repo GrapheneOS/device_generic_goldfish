@@ -82,26 +82,8 @@ class C2GoldfishAvcDec : public SimpleC2Component {
         kPreferContainer,
     };
 
-    // Color aspects. These are ISO values and are meant to detect changes in
-    // aspects to avoid converting them to C2 values for each frame
-    struct VuiColorAspects {
-        uint8_t primaries;
-        uint8_t transfer;
-        uint8_t coeffs;
-        uint8_t fullRange;
-
-        // default color aspects
-        VuiColorAspects()
-            : primaries(2), transfer(2), coeffs(2), fullRange(0) {}
-
-        bool operator==(const VuiColorAspects &o) const {
-            return primaries == o.primaries && transfer == o.transfer &&
-                   coeffs == o.coeffs && fullRange == o.fullRange;
-        }
-    };
-
-    void getVuiParams(h264_image_t &img);
-    void copyImageData(h264_image_t &img);
+    void getVuiParams(GfImage &img);
+    void copyImageData(GfImage &img);
 
     void sendMetadata();
 
@@ -127,7 +109,7 @@ class C2GoldfishAvcDec : public SimpleC2Component {
     std::atomic_uint64_t mOutIndex;
     uint64_t  mPts {0};
 
-    h264_image_t mImg{};
+    GfImage mImg{};
     VuiColorAspects mBitstreamColorAspects;
     MetaDataColorAspects mSentMetadata = {1, 0, 0, 0};
 

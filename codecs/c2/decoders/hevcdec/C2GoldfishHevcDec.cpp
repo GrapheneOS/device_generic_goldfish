@@ -711,8 +711,7 @@ void C2GoldfishHevcDec::checkMode(const std::shared_ptr<C2BlockPool> &pool) {
     }
 }
 
-void C2GoldfishHevcDec::getVuiParams(hevc_image_t &img) {
-
+void C2GoldfishHevcDec::getVuiParams(GfImage &img) {
     VuiColorAspects vuiColorAspects;
     vuiColorAspects.primaries = img.color_primaries;
     vuiColorAspects.transfer = img.color_trc;
@@ -744,7 +743,7 @@ void C2GoldfishHevcDec::getVuiParams(hevc_image_t &img) {
     }
 }
 
-void C2GoldfishHevcDec::copyImageData(hevc_image_t &img) {
+void C2GoldfishHevcDec::copyImageData(GfImage &img) {
     getVuiParams(img);
     if (mEnableAndroidNativeBuffers)
         return;
@@ -971,8 +970,7 @@ void C2GoldfishHevcDec::process(const std::unique_ptr<C2Work> &work,
 
             //(void) ivdec_api_function(mDecHandle, &s_decode_ip, &s_decode_op);
             DDD("decoding");
-            hevc_result_t hevcRes =
-                mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
+            GfResult hevcRes = mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
             mConsumedBytes = hevcRes.bytesProcessed;
             DDD("decoding consumed %d", (int)mConsumedBytes);
 
