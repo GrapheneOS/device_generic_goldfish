@@ -1118,8 +1118,8 @@ c2_status_t C2GoldfishAvcDec::drain(uint32_t drainMode,
     return drainInternal(drainMode, pool, nullptr);
 }
 
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishAvcDecFactory() {
-    struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
+std::shared_ptr<const IComponentFactory> getC2GoldfishAvcDecFactory() {
+    struct ImplFactory : public IComponentFactory {
         std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
                 const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
             return {C2_OK, std::make_shared<C2GoldfishAvcDec>(
