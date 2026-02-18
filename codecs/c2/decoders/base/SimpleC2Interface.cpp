@@ -41,11 +41,13 @@ C2R SubscribedParamIndicesSetter(
 }
 }  // namespace
 
-SimpleC2Interface<void>::BaseParams::BaseParams(
-    const std::shared_ptr<C2ReflectorHelper> &reflector, C2String name,
-    C2Component::kind_t kind, C2Component::domain_t domain, C2String mediaType,
-    std::vector<C2String> aliases)
-    : C2InterfaceHelper(reflector) {
+C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
+                           const C2String& name,
+                           C2Component::kind_t kind,
+                           C2Component::domain_t domain,
+                           const C2String& mediaType,
+                           const std::vector<C2String>& aliases)
+        : C2InterfaceHelper(reflector) {
     setDerivedInstance(this);
 
     addParameter(DefineParam(mName, C2_PARAMKEY_COMPONENT_NAME)
@@ -203,7 +205,7 @@ SimpleC2Interface<void>::BaseParams::BaseParams(
             .build());
 }
 
-void SimpleC2Interface<void>::BaseParams::noInputLatency() {
+void C2BaseParams::noInputLatency() {
     addParameter(
         DefineParam(mRequestedInputDelay, C2_PARAMKEY_INPUT_DELAY_REQUEST)
             .withConstValue(std::make_shared<C2PortRequestedDelayTuning::input>(0u))
@@ -214,7 +216,7 @@ void SimpleC2Interface<void>::BaseParams::noInputLatency() {
                      .build());
 }
 
-void SimpleC2Interface<void>::BaseParams::noOutputLatency() {
+void C2BaseParams::noOutputLatency() {
     addParameter(
         DefineParam(mRequestedOutputDelay, C2_PARAMKEY_OUTPUT_DELAY_REQUEST)
             .withConstValue(std::make_shared<C2PortRequestedDelayTuning::output>(0u))
@@ -225,7 +227,7 @@ void SimpleC2Interface<void>::BaseParams::noOutputLatency() {
                      .build());
 }
 
-void SimpleC2Interface<void>::BaseParams::noPipelineLatency() {
+void C2BaseParams::noPipelineLatency() {
     addParameter(
         DefineParam(mRequestedPipelineDelay, C2_PARAMKEY_PIPELINE_DELAY_REQUEST)
             .withConstValue(std::make_shared<C2RequestedPipelineDelayTuning>(0u))
@@ -236,7 +238,7 @@ void SimpleC2Interface<void>::BaseParams::noPipelineLatency() {
                      .build());
 }
 
-void SimpleC2Interface<void>::BaseParams::noPrivateBuffers() {
+void C2BaseParams::noPrivateBuffers() {
     addParameter(DefineParam(mPrivateAllocators, C2_PARAMKEY_PRIVATE_ALLOCATORS)
                      .withConstValue(C2PrivateAllocatorsTuning::AllocShared(0u))
                      .build());
@@ -252,7 +254,7 @@ void SimpleC2Interface<void>::BaseParams::noPrivateBuffers() {
                      .build());
 }
 
-void SimpleC2Interface<void>::BaseParams::noInputReferences() {
+void C2BaseParams::noInputReferences() {
     addParameter(
         DefineParam(mMaxInputReferenceAge, C2_PARAMKEY_INPUT_MAX_REFERENCE_AGE)
             .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::input>(0u))
@@ -265,7 +267,7 @@ void SimpleC2Interface<void>::BaseParams::noInputReferences() {
             .build());
 }
 
-void SimpleC2Interface<void>::BaseParams::noOutputReferences() {
+void C2BaseParams::noOutputReferences() {
     addParameter(
         DefineParam(mMaxOutputReferenceAge,
                     C2_PARAMKEY_OUTPUT_MAX_REFERENCE_AGE)
@@ -279,7 +281,7 @@ void SimpleC2Interface<void>::BaseParams::noOutputReferences() {
             .build());
 }
 
-void SimpleC2Interface<void>::BaseParams::noTimeStretch() {
+void C2BaseParams::noTimeStretch() {
     addParameter(DefineParam(mTimeStretch, C2_PARAMKEY_TIME_STRETCH)
                      .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
                      .build());

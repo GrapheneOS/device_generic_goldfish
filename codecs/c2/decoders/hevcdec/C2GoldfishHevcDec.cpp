@@ -63,12 +63,11 @@ constexpr uint32_t kDefaultOutputDelay = 8;
 constexpr uint32_t kMaxOutputDelay = 16;
 } // namespace
 
-class C2GoldfishHevcDec::IntfImpl : public SimpleC2Interface<void>::BaseParams {
+class C2GoldfishHevcDec::IntfImpl : public C2BaseParams {
   public:
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
-        : SimpleC2Interface<void>::BaseParams(
-              helper, COMPONENT_NAME, C2Component::KIND_DECODER,
-              C2Component::DOMAIN_VIDEO, ::android::MEDIA_MIMETYPE_VIDEO_HEVC) {
+        : C2BaseParams(helper, COMPONENT_NAME, C2Component::KIND_DECODER,
+                       C2Component::DOMAIN_VIDEO, ::android::MEDIA_MIMETYPE_VIDEO_HEVC) {
         noPrivateBuffers(); // TODO: account for our buffers here
         noInputReferences();
         noOutputReferences();

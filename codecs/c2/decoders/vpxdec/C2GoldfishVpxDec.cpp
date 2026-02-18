@@ -98,13 +98,12 @@ void copyOutputBufferToYuvPlanarFrame(
 }  // namespace
 
 
-class C2GoldfishVpxDec::IntfImpl : public SimpleC2Interface<void>::BaseParams {
+class C2GoldfishVpxDec::IntfImpl : public C2BaseParams {
   public:
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper, bool isVp9)
-        : SimpleC2Interface<void>::BaseParams(helper, isVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8,
-                                            C2Component::KIND_DECODER,
-                                            C2Component::DOMAIN_VIDEO,
-                                            isVp9 ? MEDIA_MIMETYPE_VIDEO_VP9 : MEDIA_MIMETYPE_VIDEO_VP8) {
+        : C2BaseParams(helper, isVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8,
+                       C2Component::KIND_DECODER, C2Component::DOMAIN_VIDEO,
+                       isVp9 ? MEDIA_MIMETYPE_VIDEO_VP9 : MEDIA_MIMETYPE_VIDEO_VP8) {
         DDD("calling IntfImpl now helper %p", helper.get());
         noPrivateBuffers(); // TODO: account for our buffers here
         noInputReferences();

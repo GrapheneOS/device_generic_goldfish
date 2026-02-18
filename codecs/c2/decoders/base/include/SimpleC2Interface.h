@@ -73,123 +73,119 @@ template <typename T> class SimpleC2Interface : public C2ComponentInterface {
 };
 
 /**
- * Utility classes for common interfaces.
+ * Base Codec 2.0 parameters required for all components.
  */
-template <> class SimpleC2Interface<void> {
-  public:
-    /**
-     * Base Codec 2.0 parameters required for all components.
-     */
-    struct BaseParams : C2InterfaceHelper {
-        explicit BaseParams(
-            const std::shared_ptr<C2ReflectorHelper> &helper, C2String name,
-            C2Component::kind_t kind, C2Component::domain_t domain,
-            C2String mediaType,
-            std::vector<C2String> aliases = std::vector<C2String>());
+struct C2BaseParams : public C2InterfaceHelper {
+    C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &helper,
+                 const C2String& name,
+                 C2Component::kind_t kind,
+                 C2Component::domain_t domain,
+                 const C2String& mediaType,
+                 const std::vector<C2String>& aliases = {});
 
-        /// Marks that this component has no input latency. Otherwise, component
-        /// must add support for C2PortRequestedDelayTuning::input and
-        /// C2PortActualDelayTuning::input.
-        void noInputLatency();
+    /// Marks that this component has no input latency. Otherwise, component
+    /// must add support for C2PortRequestedDelayTuning::input and
+    /// C2PortActualDelayTuning::input.
+    void noInputLatency();
 
-        /// Marks that this component has no output latency. Otherwise,
-        /// component must add support for C2PortRequestedDelayTuning::output
-        /// and C2PortActualDelayTuning::output.
-        void noOutputLatency();
+    /// Marks that this component has no output latency. Otherwise,
+    /// component must add support for C2PortRequestedDelayTuning::output
+    /// and C2PortActualDelayTuning::output.
+    void noOutputLatency();
 
-        /// Marks that this component has no pipeline latency. Otherwise,
-        /// component must add support for C2RequestedPipelineDelayTuning and
-        /// C2ActualPipelineDelayTuning.
-        void noPipelineLatency();
+    /// Marks that this component has no pipeline latency. Otherwise,
+    /// component must add support for C2RequestedPipelineDelayTuning and
+    /// C2ActualPipelineDelayTuning.
+    void noPipelineLatency();
 
-        /// Marks that this component has no need for private buffers.
-        /// Otherwise, component must add support for
-        /// C2MaxPrivateBufferCountTuning, C2PrivateAllocatorsTuning and
-        /// C2PrivateBlockPoolsTuning.
-        void noPrivateBuffers();
+    /// Marks that this component has no need for private buffers.
+    /// Otherwise, component must add support for
+    /// C2MaxPrivateBufferCountTuning, C2PrivateAllocatorsTuning and
+    /// C2PrivateBlockPoolsTuning.
+    void noPrivateBuffers();
 
-        /// Marks that this component holds no references to input buffers.
-        /// Otherwise, component must add support for
-        /// C2StreamMaxReferenceAgeTuning::input and
-        /// C2StreamMaxReferenceCountTuning::input.
-        void noInputReferences();
+    /// Marks that this component holds no references to input buffers.
+    /// Otherwise, component must add support for
+    /// C2StreamMaxReferenceAgeTuning::input and
+    /// C2StreamMaxReferenceCountTuning::input.
+    void noInputReferences();
 
-        /// Marks that this component holds no references to output buffers.
-        /// Otherwise, component must add support for
-        /// C2StreamMaxReferenceAgeTuning::output and
-        /// C2StreamMaxReferenceCountTuning::output.
-        void noOutputReferences();
+    /// Marks that this component holds no references to output buffers.
+    /// Otherwise, component must add support for
+    /// C2StreamMaxReferenceAgeTuning::output and
+    /// C2StreamMaxReferenceCountTuning::output.
+    void noOutputReferences();
 
-        /// Marks that this component does not stretch time. Otherwise,
-        /// component must add support for C2ComponentTimeStretchTuning.
-        void noTimeStretch();
+    /// Marks that this component does not stretch time. Otherwise,
+    /// component must add support for C2ComponentTimeStretchTuning.
+    void noTimeStretch();
 
-        std::shared_ptr<C2ApiLevelSetting> mApiLevel;
-        std::shared_ptr<C2ApiFeaturesSetting> mApiFeatures;
+    std::shared_ptr<C2ApiLevelSetting> mApiLevel;
+    std::shared_ptr<C2ApiFeaturesSetting> mApiFeatures;
 
-        std::shared_ptr<C2PlatformLevelSetting> mPlatformLevel;
-        std::shared_ptr<C2PlatformFeaturesSetting> mPlatformFeatures;
+    std::shared_ptr<C2PlatformLevelSetting> mPlatformLevel;
+    std::shared_ptr<C2PlatformFeaturesSetting> mPlatformFeatures;
 
-        std::shared_ptr<C2ComponentNameSetting> mName;
-        std::shared_ptr<C2ComponentAliasesSetting> mAliases;
-        std::shared_ptr<C2ComponentKindSetting> mKind;
-        std::shared_ptr<C2ComponentDomainSetting> mDomain;
-        std::shared_ptr<C2ComponentAttributesSetting> mAttrib;
-        std::shared_ptr<C2ComponentTimeStretchTuning> mTimeStretch;
+    std::shared_ptr<C2ComponentNameSetting> mName;
+    std::shared_ptr<C2ComponentAliasesSetting> mAliases;
+    std::shared_ptr<C2ComponentKindSetting> mKind;
+    std::shared_ptr<C2ComponentDomainSetting> mDomain;
+    std::shared_ptr<C2ComponentAttributesSetting> mAttrib;
+    std::shared_ptr<C2ComponentTimeStretchTuning> mTimeStretch;
 
-        std::shared_ptr<C2PortMediaTypeSetting::input> mInputMediaType;
-        std::shared_ptr<C2PortMediaTypeSetting::output> mOutputMediaType;
-        std::shared_ptr<C2StreamBufferTypeSetting::input> mInputFormat;
-        std::shared_ptr<C2StreamBufferTypeSetting::output> mOutputFormat;
+    std::shared_ptr<C2PortMediaTypeSetting::input> mInputMediaType;
+    std::shared_ptr<C2PortMediaTypeSetting::output> mOutputMediaType;
+    std::shared_ptr<C2StreamBufferTypeSetting::input> mInputFormat;
+    std::shared_ptr<C2StreamBufferTypeSetting::output> mOutputFormat;
 
-        std::shared_ptr<C2PortRequestedDelayTuning::input> mRequestedInputDelay;
-        std::shared_ptr<C2PortRequestedDelayTuning::output>
-            mRequestedOutputDelay;
-        std::shared_ptr<C2RequestedPipelineDelayTuning> mRequestedPipelineDelay;
+    std::shared_ptr<C2PortRequestedDelayTuning::input> mRequestedInputDelay;
+    std::shared_ptr<C2PortRequestedDelayTuning::output>
+        mRequestedOutputDelay;
+    std::shared_ptr<C2RequestedPipelineDelayTuning> mRequestedPipelineDelay;
 
-        std::shared_ptr<C2PortActualDelayTuning::input> mActualInputDelay;
-        std::shared_ptr<C2PortActualDelayTuning::output> mActualOutputDelay;
-        std::shared_ptr<C2ActualPipelineDelayTuning> mActualPipelineDelay;
+    std::shared_ptr<C2PortActualDelayTuning::input> mActualInputDelay;
+    std::shared_ptr<C2PortActualDelayTuning::output> mActualOutputDelay;
+    std::shared_ptr<C2ActualPipelineDelayTuning> mActualPipelineDelay;
 
-        std::shared_ptr<C2StreamMaxReferenceAgeTuning::input>
-            mMaxInputReferenceAge;
-        std::shared_ptr<C2StreamMaxReferenceCountTuning::input>
-            mMaxInputReferenceCount;
-        std::shared_ptr<C2StreamMaxReferenceAgeTuning::output>
-            mMaxOutputReferenceAge;
-        std::shared_ptr<C2StreamMaxReferenceCountTuning::output>
-            mMaxOutputReferenceCount;
-        std::shared_ptr<C2MaxPrivateBufferCountTuning> mMaxPrivateBufferCount;
+    std::shared_ptr<C2StreamMaxReferenceAgeTuning::input>
+        mMaxInputReferenceAge;
+    std::shared_ptr<C2StreamMaxReferenceCountTuning::input>
+        mMaxInputReferenceCount;
+    std::shared_ptr<C2StreamMaxReferenceAgeTuning::output>
+        mMaxOutputReferenceAge;
+    std::shared_ptr<C2StreamMaxReferenceCountTuning::output>
+        mMaxOutputReferenceCount;
+    std::shared_ptr<C2MaxPrivateBufferCountTuning> mMaxPrivateBufferCount;
 
-        std::shared_ptr<C2PortStreamCountTuning::input> mInputStreamCount;
-        std::shared_ptr<C2PortStreamCountTuning::output> mOutputStreamCount;
+    std::shared_ptr<C2PortStreamCountTuning::input> mInputStreamCount;
+    std::shared_ptr<C2PortStreamCountTuning::output> mOutputStreamCount;
 
-        std::shared_ptr<C2SubscribedParamIndicesTuning> mSubscribedParamIndices;
-        std::shared_ptr<C2PortSuggestedBufferCountTuning::input>
-            mSuggestedInputBufferCount;
-        std::shared_ptr<C2PortSuggestedBufferCountTuning::output>
-            mSuggestedOutputBufferCount;
+    std::shared_ptr<C2SubscribedParamIndicesTuning> mSubscribedParamIndices;
+    std::shared_ptr<C2PortSuggestedBufferCountTuning::input>
+        mSuggestedInputBufferCount;
+    std::shared_ptr<C2PortSuggestedBufferCountTuning::output>
+        mSuggestedOutputBufferCount;
 
-        std::shared_ptr<C2CurrentWorkTuning> mCurrentWorkOrdinal;
-        std::shared_ptr<C2LastWorkQueuedTuning::input>
-            mLastInputQueuedWorkOrdinal;
-        std::shared_ptr<C2LastWorkQueuedTuning::output>
-            mLastOutputQueuedWorkOrdinal;
+    std::shared_ptr<C2CurrentWorkTuning> mCurrentWorkOrdinal;
+    std::shared_ptr<C2LastWorkQueuedTuning::input>
+        mLastInputQueuedWorkOrdinal;
+    std::shared_ptr<C2LastWorkQueuedTuning::output>
+        mLastOutputQueuedWorkOrdinal;
 
-        std::shared_ptr<C2PortAllocatorsTuning::input> mInputAllocators;
-        std::shared_ptr<C2PortAllocatorsTuning::output> mOutputAllocators;
-        std::shared_ptr<C2PrivateAllocatorsTuning> mPrivateAllocators;
-        std::shared_ptr<C2PortBlockPoolsTuning::output> mOutputPoolIds;
-        std::shared_ptr<C2PrivateBlockPoolsTuning> mPrivatePoolIds;
+    std::shared_ptr<C2PortAllocatorsTuning::input> mInputAllocators;
+    std::shared_ptr<C2PortAllocatorsTuning::output> mOutputAllocators;
+    std::shared_ptr<C2PrivateAllocatorsTuning> mPrivateAllocators;
+    std::shared_ptr<C2PortBlockPoolsTuning::output> mOutputPoolIds;
+    std::shared_ptr<C2PrivateBlockPoolsTuning> mPrivatePoolIds;
 
-        std::shared_ptr<C2TrippedTuning> mTripped;
-        std::shared_ptr<C2OutOfMemoryTuning> mOutOfMemory;
+    std::shared_ptr<C2TrippedTuning> mTripped;
+    std::shared_ptr<C2OutOfMemoryTuning> mOutOfMemory;
 
-        std::shared_ptr<C2PortConfigCounterTuning::input> mInputConfigCounter;
-        std::shared_ptr<C2PortConfigCounterTuning::output> mOutputConfigCounter;
-        std::shared_ptr<C2ConfigCounterTuning> mDirectConfigCounter;
-    };
+    std::shared_ptr<C2PortConfigCounterTuning::input> mInputConfigCounter;
+    std::shared_ptr<C2PortConfigCounterTuning::output> mOutputConfigCounter;
+    std::shared_ptr<C2ConfigCounterTuning> mDirectConfigCounter;
 };
+
 
 template <typename T, typename... Args>
 std::shared_ptr<T> AllocSharedString(const Args(&...args), const char *str) {

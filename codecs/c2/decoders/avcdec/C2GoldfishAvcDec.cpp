@@ -102,12 +102,11 @@ bool deAllocateDecoderId() {
 
 } // namespace
 
-class C2GoldfishAvcDec::IntfImpl : public SimpleC2Interface<void>::BaseParams {
+class C2GoldfishAvcDec::IntfImpl : public C2BaseParams {
   public:
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
-        : SimpleC2Interface<void>::BaseParams(
-              helper, COMPONENT_NAME, C2Component::KIND_DECODER,
-              C2Component::DOMAIN_VIDEO, MEDIA_MIMETYPE_VIDEO_AVC) {
+        : C2BaseParams(helper, COMPONENT_NAME, C2Component::KIND_DECODER,
+                       C2Component::DOMAIN_VIDEO, MEDIA_MIMETYPE_VIDEO_AVC) {
         noPrivateBuffers(); // TODO: account for our buffers here
         noInputReferences();
         noOutputReferences();
