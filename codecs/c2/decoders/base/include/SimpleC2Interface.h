@@ -110,12 +110,6 @@ struct C2BaseParams : public C2InterfaceHelper {
     /// component must add support for C2ComponentTimeStretchTuning.
     void noTimeStretch();
 
-    std::shared_ptr<C2ApiLevelSetting> mApiLevel;
-    std::shared_ptr<C2ApiFeaturesSetting> mApiFeatures;
-
-    std::shared_ptr<C2PlatformLevelSetting> mPlatformLevel;
-    std::shared_ptr<C2PlatformFeaturesSetting> mPlatformFeatures;
-
     std::shared_ptr<C2ComponentNameSetting> mName;
     std::shared_ptr<C2ComponentAliasesSetting> mAliases;
     std::shared_ptr<C2ComponentKindSetting> mKind;
@@ -129,8 +123,6 @@ struct C2BaseParams : public C2InterfaceHelper {
     std::shared_ptr<C2StreamBufferTypeSetting::output> mOutputFormat;
 
     std::shared_ptr<C2PortRequestedDelayTuning::input> mRequestedInputDelay;
-    std::shared_ptr<C2PortRequestedDelayTuning::output>
-        mRequestedOutputDelay;
     std::shared_ptr<C2RequestedPipelineDelayTuning> mRequestedPipelineDelay;
 
     std::shared_ptr<C2PortActualDelayTuning::input> mActualInputDelay;
@@ -151,29 +143,12 @@ struct C2BaseParams : public C2InterfaceHelper {
     std::shared_ptr<C2PortStreamCountTuning::output> mOutputStreamCount;
 
     std::shared_ptr<C2SubscribedParamIndicesTuning> mSubscribedParamIndices;
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::input>
-        mSuggestedInputBufferCount;
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::output>
-        mSuggestedOutputBufferCount;
-
-    std::shared_ptr<C2CurrentWorkTuning> mCurrentWorkOrdinal;
-    std::shared_ptr<C2LastWorkQueuedTuning::input>
-        mLastInputQueuedWorkOrdinal;
-    std::shared_ptr<C2LastWorkQueuedTuning::output>
-        mLastOutputQueuedWorkOrdinal;
 
     std::shared_ptr<C2PortAllocatorsTuning::input> mInputAllocators;
     std::shared_ptr<C2PortAllocatorsTuning::output> mOutputAllocators;
     std::shared_ptr<C2PrivateAllocatorsTuning> mPrivateAllocators;
     std::shared_ptr<C2PortBlockPoolsTuning::output> mOutputPoolIds;
     std::shared_ptr<C2PrivateBlockPoolsTuning> mPrivatePoolIds;
-
-    std::shared_ptr<C2TrippedTuning> mTripped;
-    std::shared_ptr<C2OutOfMemoryTuning> mOutOfMemory;
-
-    std::shared_ptr<C2PortConfigCounterTuning::input> mInputConfigCounter;
-    std::shared_ptr<C2PortConfigCounterTuning::output> mOutputConfigCounter;
-    std::shared_ptr<C2ConfigCounterTuning> mDirectConfigCounter;
 };
 
 
