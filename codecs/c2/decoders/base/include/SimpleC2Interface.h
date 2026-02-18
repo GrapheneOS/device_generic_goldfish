@@ -88,16 +88,6 @@ struct C2BaseParams : public C2InterfaceHelper {
     /// C2PortActualDelayTuning::input.
     void noInputLatency();
 
-    /// Marks that this component has no output latency. Otherwise,
-    /// component must add support for C2PortRequestedDelayTuning::output
-    /// and C2PortActualDelayTuning::output.
-    void noOutputLatency();
-
-    /// Marks that this component has no pipeline latency. Otherwise,
-    /// component must add support for C2RequestedPipelineDelayTuning and
-    /// C2ActualPipelineDelayTuning.
-    void noPipelineLatency();
-
     /// Marks that this component has no need for private buffers.
     /// Otherwise, component must add support for
     /// C2MaxPrivateBufferCountTuning, C2PrivateAllocatorsTuning and

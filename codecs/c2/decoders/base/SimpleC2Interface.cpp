@@ -216,28 +216,6 @@ void C2BaseParams::noInputLatency() {
                      .build());
 }
 
-void C2BaseParams::noOutputLatency() {
-    addParameter(
-        DefineParam(mRequestedOutputDelay, C2_PARAMKEY_OUTPUT_DELAY_REQUEST)
-            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::output>(0u))
-            .build());
-
-    addParameter(DefineParam(mActualOutputDelay, C2_PARAMKEY_OUTPUT_DELAY)
-                     .withConstValue(std::make_shared<C2PortActualDelayTuning::output>(0u))
-                     .build());
-}
-
-void C2BaseParams::noPipelineLatency() {
-    addParameter(
-        DefineParam(mRequestedPipelineDelay, C2_PARAMKEY_PIPELINE_DELAY_REQUEST)
-            .withConstValue(std::make_shared<C2RequestedPipelineDelayTuning>(0u))
-            .build());
-
-    addParameter(DefineParam(mActualPipelineDelay, C2_PARAMKEY_PIPELINE_DELAY)
-                     .withConstValue(std::make_shared<C2ActualPipelineDelayTuning>(0u))
-                     .build());
-}
-
 void C2BaseParams::noPrivateBuffers() {
     addParameter(DefineParam(mPrivateAllocators, C2_PARAMKEY_PRIVATE_ALLOCATORS)
                      .withConstValue(C2PrivateAllocatorsTuning::AllocShared(0u))
