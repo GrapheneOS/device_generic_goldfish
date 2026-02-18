@@ -105,11 +105,7 @@ class C2GoldfishVpxDec::IntfImpl : public C2BaseParams {
                        C2Component::KIND_DECODER, C2Component::DOMAIN_VIDEO,
                        isVp9 ? MEDIA_MIMETYPE_VIDEO_VP9 : MEDIA_MIMETYPE_VIDEO_VP8) {
         DDD("calling IntfImpl now helper %p", helper.get());
-        noPrivateBuffers(); // TODO: account for our buffers here
-        noInputReferences();
-        noOutputReferences();
-        noInputLatency();
-        noTimeStretch();
+
 
         // TODO: output latency and reordering
 

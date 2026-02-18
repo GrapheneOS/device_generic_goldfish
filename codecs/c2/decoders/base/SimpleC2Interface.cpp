@@ -51,8 +51,7 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
     setDerivedInstance(this);
 
     addParameter(DefineParam(mName, C2_PARAMKEY_COMPONENT_NAME)
-                     .withConstValue(AllocSharedString<C2ComponentNameSetting>(
-                         name.c_str()))
+                     .withConstValue(AllocSharedString<C2ComponentNameSetting>(name))
                      .build());
 
     if (aliases.size()) {
@@ -65,8 +64,7 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
         }
         addParameter(
             DefineParam(mAliases, C2_PARAMKEY_COMPONENT_ALIASES)
-                .withConstValue(AllocSharedString<C2ComponentAliasesSetting>(
-                    joined.c_str()))
+                .withConstValue(AllocSharedString<C2ComponentAliasesSetting>(joined))
                 .build());
     }
 
@@ -88,7 +86,55 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
             .withConstValue(std::make_shared<C2PortStreamCountTuning::output>(1))
             .build());
 
-    // set up buffer formats and allocators
+    addParameter(
+        DefineParam(mRequestedInputDelay, C2_PARAMKEY_INPUT_DELAY_REQUEST)
+            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mActualInputDelay, C2_PARAMKEY_INPUT_DELAY)
+            .withConstValue(std::make_shared<C2PortActualDelayTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxInputReferenceAge, C2_PARAMKEY_INPUT_MAX_REFERENCE_AGE)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxInputReferenceCount, C2_PARAMKEY_INPUT_MAX_REFERENCE_COUNT)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxOutputReferenceAge, C2_PARAMKEY_OUTPUT_MAX_REFERENCE_AGE)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::output>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxOutputReferenceCount, C2_PARAMKEY_OUTPUT_MAX_REFERENCE_COUNT)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::output>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mPrivateAllocators, C2_PARAMKEY_PRIVATE_ALLOCATORS)
+            .withConstValue(C2PrivateAllocatorsTuning::AllocShared(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxPrivateBufferCount, C2_PARAMKEY_MAX_PRIVATE_BUFFER_COUNT)
+            .withConstValue(C2MaxPrivateBufferCountTuning::AllocShared(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mPrivatePoolIds, C2_PARAMKEY_PRIVATE_BLOCK_POOLS)
+            .withConstValue(C2PrivateBlockPoolsTuning::AllocShared(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mTimeStretch, C2_PARAMKEY_TIME_STRETCH)
+            .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
+            .build());
 
     // default to linear buffers and no media type
     C2BufferData::type_t rawBufferType = C2BufferData::LINEAR;
@@ -203,66 +249,6 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
                          C2F(mSubscribedParamIndices, m.values).any()})
             .withSetter(SubscribedParamIndicesSetter)
             .build());
-}
-
-void C2BaseParams::noInputLatency() {
-    addParameter(
-        DefineParam(mRequestedInputDelay, C2_PARAMKEY_INPUT_DELAY_REQUEST)
-            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::input>(0u))
-            .build());
-
-    addParameter(DefineParam(mActualInputDelay, C2_PARAMKEY_INPUT_DELAY)
-                     .withConstValue(std::make_shared<C2PortActualDelayTuning::input>(0u))
-                     .build());
-}
-
-void C2BaseParams::noPrivateBuffers() {
-    addParameter(DefineParam(mPrivateAllocators, C2_PARAMKEY_PRIVATE_ALLOCATORS)
-                     .withConstValue(C2PrivateAllocatorsTuning::AllocShared(0u))
-                     .build());
-
-    addParameter(
-        DefineParam(mMaxPrivateBufferCount,
-                    C2_PARAMKEY_MAX_PRIVATE_BUFFER_COUNT)
-            .withConstValue(C2MaxPrivateBufferCountTuning::AllocShared(0u))
-            .build());
-
-    addParameter(DefineParam(mPrivatePoolIds, C2_PARAMKEY_PRIVATE_BLOCK_POOLS)
-                     .withConstValue(C2PrivateBlockPoolsTuning::AllocShared(0u))
-                     .build());
-}
-
-void C2BaseParams::noInputReferences() {
-    addParameter(
-        DefineParam(mMaxInputReferenceAge, C2_PARAMKEY_INPUT_MAX_REFERENCE_AGE)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::input>(0u))
-            .build());
-
-    addParameter(
-        DefineParam(mMaxInputReferenceCount,
-                    C2_PARAMKEY_INPUT_MAX_REFERENCE_COUNT)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::input>(0u))
-            .build());
-}
-
-void C2BaseParams::noOutputReferences() {
-    addParameter(
-        DefineParam(mMaxOutputReferenceAge,
-                    C2_PARAMKEY_OUTPUT_MAX_REFERENCE_AGE)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::output>(0u))
-            .build());
-
-    addParameter(
-        DefineParam(mMaxOutputReferenceCount,
-                    C2_PARAMKEY_OUTPUT_MAX_REFERENCE_COUNT)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::output>(0u))
-            .build());
-}
-
-void C2BaseParams::noTimeStretch() {
-    addParameter(DefineParam(mTimeStretch, C2_PARAMKEY_TIME_STRETCH)
-                     .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
-                     .build());
 }
 
 }  // namespace goldfish::media::c2

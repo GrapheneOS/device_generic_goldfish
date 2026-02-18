@@ -68,12 +68,6 @@ class C2GoldfishHevcDec::IntfImpl : public C2BaseParams {
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
         : C2BaseParams(helper, COMPONENT_NAME, C2Component::KIND_DECODER,
                        C2Component::DOMAIN_VIDEO, ::android::MEDIA_MIMETYPE_VIDEO_HEVC) {
-        noPrivateBuffers(); // TODO: account for our buffers here
-        noInputReferences();
-        noOutputReferences();
-        noInputLatency();
-        noTimeStretch();
-
         // TODO: Proper support for reorder depth.
         addParameter(
             DefineParam(mActualOutputDelay, C2_PARAMKEY_OUTPUT_DELAY)

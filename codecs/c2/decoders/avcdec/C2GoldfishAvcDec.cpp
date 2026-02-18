@@ -107,12 +107,6 @@ class C2GoldfishAvcDec::IntfImpl : public C2BaseParams {
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
         : C2BaseParams(helper, COMPONENT_NAME, C2Component::KIND_DECODER,
                        C2Component::DOMAIN_VIDEO, MEDIA_MIMETYPE_VIDEO_AVC) {
-        noPrivateBuffers(); // TODO: account for our buffers here
-        noInputReferences();
-        noOutputReferences();
-        noInputLatency();
-        noTimeStretch();
-
         // TODO: Proper support for reorder depth.
         addParameter(
             DefineParam(mActualOutputDelay, C2_PARAMKEY_OUTPUT_DELAY)

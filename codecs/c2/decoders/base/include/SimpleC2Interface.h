@@ -83,33 +83,6 @@ struct C2BaseParams : public C2InterfaceHelper {
                  const C2String& mediaType,
                  const std::vector<C2String>& aliases = {});
 
-    /// Marks that this component has no input latency. Otherwise, component
-    /// must add support for C2PortRequestedDelayTuning::input and
-    /// C2PortActualDelayTuning::input.
-    void noInputLatency();
-
-    /// Marks that this component has no need for private buffers.
-    /// Otherwise, component must add support for
-    /// C2MaxPrivateBufferCountTuning, C2PrivateAllocatorsTuning and
-    /// C2PrivateBlockPoolsTuning.
-    void noPrivateBuffers();
-
-    /// Marks that this component holds no references to input buffers.
-    /// Otherwise, component must add support for
-    /// C2StreamMaxReferenceAgeTuning::input and
-    /// C2StreamMaxReferenceCountTuning::input.
-    void noInputReferences();
-
-    /// Marks that this component holds no references to output buffers.
-    /// Otherwise, component must add support for
-    /// C2StreamMaxReferenceAgeTuning::output and
-    /// C2StreamMaxReferenceCountTuning::output.
-    void noOutputReferences();
-
-    /// Marks that this component does not stretch time. Otherwise,
-    /// component must add support for C2ComponentTimeStretchTuning.
-    void noTimeStretch();
-
     std::shared_ptr<C2ComponentNameSetting> mName;
     std::shared_ptr<C2ComponentAliasesSetting> mAliases;
     std::shared_ptr<C2ComponentKindSetting> mKind;
