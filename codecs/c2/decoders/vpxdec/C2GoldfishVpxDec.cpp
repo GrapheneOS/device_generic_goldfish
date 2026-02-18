@@ -98,10 +98,10 @@ void copyOutputBufferToYuvPlanarFrame(
 }  // namespace
 
 
-class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
+class C2GoldfishVpxDec::IntfImpl : public SimpleC2Interface<void>::BaseParams {
   public:
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper, bool isVp9)
-        : SimpleInterface<void>::BaseParams(helper, isVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8,
+        : SimpleC2Interface<void>::BaseParams(helper, isVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8,
                                             C2Component::KIND_DECODER,
                                             C2Component::DOMAIN_VIDEO,
                                             isVp9 ? MEDIA_MIMETYPE_VIDEO_VP9 : MEDIA_MIMETYPE_VIDEO_VP8) {
@@ -478,7 +478,7 @@ class C2GoldfishVpxDec::IntfImpl : public SimpleInterface<void>::BaseParams {
 C2GoldfishVpxDec::C2GoldfishVpxDec(const char *name, c2_node_id_t id,
                                    const std::shared_ptr<IntfImpl> &intfImpl, bool isVp9)
     : SimpleC2Component(
-          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)), mIntf(intfImpl), mIsVp9(isVp9) {}
+          std::make_shared<SimpleC2Interface<IntfImpl>>(name, id, intfImpl)), mIntf(intfImpl), mIsVp9(isVp9) {}
 
 C2GoldfishVpxDec::~C2GoldfishVpxDec() { onRelease(); }
 
@@ -982,7 +982,7 @@ struct ImplFactory : public IComponentFactory {
     std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
             const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
         const char* name = mIsVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8;
-        return {C2_OK, std::make_shared<SimpleInterface<C2GoldfishVpxDec::IntfImpl>>(
+        return {C2_OK, std::make_shared<SimpleC2Interface<C2GoldfishVpxDec::IntfImpl>>(
                     name, 0, std::make_shared<C2GoldfishVpxDec::IntfImpl>(reflector, mIsVp9))};
     }
 

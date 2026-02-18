@@ -191,8 +191,6 @@ template <> class SimpleC2Interface<void> {
     };
 };
 
-template <typename T> using SimpleInterface = SimpleC2Interface<T>;
-
 template <typename T, typename... Args>
 std::shared_ptr<T> AllocSharedString(const Args(&...args), const char *str) {
     size_t len = strlen(str) + 1;

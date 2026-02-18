@@ -102,10 +102,10 @@ bool deAllocateDecoderId() {
 
 } // namespace
 
-class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
+class C2GoldfishAvcDec::IntfImpl : public SimpleC2Interface<void>::BaseParams {
   public:
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
-        : SimpleInterface<void>::BaseParams(
+        : SimpleC2Interface<void>::BaseParams(
               helper, COMPONENT_NAME, C2Component::KIND_DECODER,
               C2Component::DOMAIN_VIDEO, MEDIA_MIMETYPE_VIDEO_AVC) {
         noPrivateBuffers(); // TODO: account for our buffers here
@@ -433,7 +433,7 @@ static void ivd_aligned_free(void *ctxt, void *mem) {
 C2GoldfishAvcDec::C2GoldfishAvcDec(const char *name, c2_node_id_t id,
                                    const std::shared_ptr<IntfImpl> &intfImpl)
     : SimpleC2Component(
-          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)),
+          std::make_shared<SimpleC2Interface<IntfImpl>>(name, id, intfImpl)),
       mIntf(intfImpl), mOutBufferFlush(nullptr), mOutIndex(0u),
       mWidth(1920), mHeight(1080), mHeaderDecoded(false) {
     mWidth = mIntf->width();
@@ -1127,7 +1127,7 @@ std::shared_ptr<const IComponentFactory> getC2GoldfishAvcDecFactory() {
 
         std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
                 const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
-            return {C2_OK, std::make_shared<SimpleInterface<C2GoldfishAvcDec::IntfImpl>>(
+            return {C2_OK, std::make_shared<SimpleC2Interface<C2GoldfishAvcDec::IntfImpl>>(
                         COMPONENT_NAME, 0, std::make_shared<C2GoldfishAvcDec::IntfImpl>(reflector))};
         }
 
