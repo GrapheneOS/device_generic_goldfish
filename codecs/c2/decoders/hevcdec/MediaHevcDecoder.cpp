@@ -98,10 +98,9 @@ void MediaHevcDecoder::destroyHevcContext() {
     mHasAddressSpaceMemory = false;
 }
 
-hevc_result_t MediaHevcDecoder::decodeFrame(uint8_t *img, size_t szBytes,
-                                            uint64_t pts) {
+GfResult MediaHevcDecoder::decodeFrame(uint8_t *img, size_t szBytes, uint64_t pts) {
     DDD("decode frame: use handle to host %lld", mHostHandle);
-    hevc_result_t res = {0, 0};
+    GfResult res = {0, 0};
     if (!mHasAddressSpaceMemory) {
         ALOGE("%s no address space memory", __func__);
         return res;
@@ -155,9 +154,9 @@ void MediaHevcDecoder::flush() {
                              mAddressOffSet);
 }
 
-hevc_image_t MediaHevcDecoder::getImage() {
+GfImage MediaHevcDecoder::getImage() {
     DDD("getImage: use handle to host %lld", mHostHandle);
-    hevc_image_t res{};
+    GfImage res{};
     if (!mHasAddressSpaceMemory) {
         ALOGE("%s no address space memory", __func__);
         return res;
@@ -189,10 +188,10 @@ hevc_image_t MediaHevcDecoder::getImage() {
     return res;
 }
 
-hevc_image_t
+GfImage
 MediaHevcDecoder::renderOnHostAndReturnImageMetadata(int hostColorBufferId) {
     DDD("%s: use handle to host %lld", __func__, mHostHandle);
-    hevc_image_t res{};
+    GfImage res{};
     if (hostColorBufferId < 0) {
         ALOGE("%s negative color buffer id %d", __func__, hostColorBufferId);
         return res;

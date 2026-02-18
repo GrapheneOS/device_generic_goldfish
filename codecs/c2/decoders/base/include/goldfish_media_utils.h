@@ -45,6 +45,49 @@ enum class MediaOperation : __u8 {
     Max = 7,
 };
 
+enum class RenderMode : uint8_t {
+    RENDER_BY_HOST_GPU = 1,
+    RENDER_BY_GUEST_CPU = 2,
+};
+
+// Color aspects. These are ISO values and are meant to detect changes in
+// aspects to avoid converting them to C2 values for each frame
+struct VuiColorAspects {
+    uint8_t primaries = 2;
+    uint8_t transfer = 2;
+    uint8_t coeffs = 2;
+    uint8_t fullRange = 0;
+
+    bool operator==(const VuiColorAspects &o) const {
+        return primaries == o.primaries && transfer == o.transfer &&
+                coeffs == o.coeffs && fullRange == o.fullRange;
+    }
+};
+
+struct GfInitResult {
+    uint64_t host_handle;
+    int ret;
+};
+
+struct GfResult {
+    int ret;
+    uint64_t bytesProcessed;
+};
+
+struct GfImage {
+    const uint8_t *data;
+    uint32_t width;
+    uint32_t height;
+    uint64_t pts; // presentation time stamp
+    uint64_t color_primaries;
+    uint64_t color_range;
+    uint64_t color_trc;
+    uint64_t colorspace;
+    // on success, |ret| will indicate the size of |data|.
+    // If failed, |ret| will contain some negative error code.
+    int ret;
+};
+
 // This class will abstract away the knowledge required to send media codec data
 // to the host. The implementation should only need the following information to
 // properly send the data:

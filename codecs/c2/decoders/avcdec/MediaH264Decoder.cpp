@@ -98,10 +98,9 @@ void MediaH264Decoder::destroyH264Context() {
     mHasAddressSpaceMemory = false;
 }
 
-h264_result_t MediaH264Decoder::decodeFrame(uint8_t *img, size_t szBytes,
-                                            uint64_t pts) {
+GfResult MediaH264Decoder::decodeFrame(uint8_t *img, size_t szBytes, uint64_t pts) {
     DDD("decode frame: use handle to host %lu", mHostHandle);
-    h264_result_t res = {0, 0};
+    GfResult res = {0, 0};
     if (!mHasAddressSpaceMemory) {
         ALOGE("%s no address space memory", __func__);
         return res;
@@ -155,9 +154,9 @@ void MediaH264Decoder::flush() {
                              mAddressOffSet);
 }
 
-h264_image_t MediaH264Decoder::getImage() {
+GfImage MediaH264Decoder::getImage() {
     DDD("getImage: use handle to host %lu", mHostHandle);
-    h264_image_t res{};
+    GfImage res{};
     if (!mHasAddressSpaceMemory) {
         ALOGE("%s no address space memory", __func__);
         return res;
@@ -189,10 +188,10 @@ h264_image_t MediaH264Decoder::getImage() {
     return res;
 }
 
-h264_image_t
+GfImage
 MediaH264Decoder::renderOnHostAndReturnImageMetadata(int hostColorBufferId) {
     DDD("%s: use handle to host %lu", __func__, mHostHandle);
-    h264_image_t res{};
+    GfImage res{};
     if (hostColorBufferId < 0) {
         ALOGE("%s negative color buffer id %d", __func__, hostColorBufferId);
         return res;

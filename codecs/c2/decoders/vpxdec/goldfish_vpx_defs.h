@@ -13,11 +13,6 @@ namespace goldfish::media::c2 {
 
 typedef int vpx_codec_err_t;
 
-enum class RenderMode {
-    RENDER_BY_HOST_GPU = 1,
-    RENDER_BY_GUEST_CPU = 2,
-};
-
 enum vpx_img_fmt_t {
     VPX_IMG_FMT_NONE,
     VPX_IMG_FMT_YV12 =

@@ -969,7 +969,7 @@ c2_status_t C2GoldfishVpxDec::drain(uint32_t drainMode,
 
 namespace {
 
-struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
+struct ImplFactory : public IComponentFactory {
     explicit ImplFactory(bool isVp9) : mIsVp9(isVp9) {}
 
     std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
@@ -1001,7 +1001,7 @@ private:
 
 } // namespace
 
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishVpxDecFactory(bool isVp9) {
+std::shared_ptr<const IComponentFactory> getC2GoldfishVpxDecFactory(bool isVp9) {
     return std::make_shared<ImplFactory>(isVp9);
 }
 

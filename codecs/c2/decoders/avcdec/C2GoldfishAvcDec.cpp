@@ -769,7 +769,7 @@ void C2GoldfishAvcDec::checkMode(const std::shared_ptr<C2BlockPool> &pool) {
     }
 }
 
-void C2GoldfishAvcDec::getVuiParams(h264_image_t &img) {
+void C2GoldfishAvcDec::getVuiParams(GfImage &img) {
     VuiColorAspects vuiColorAspects;
     vuiColorAspects.primaries = img.color_primaries;
     vuiColorAspects.transfer = img.color_trc;
@@ -801,7 +801,7 @@ void C2GoldfishAvcDec::getVuiParams(h264_image_t &img) {
     }
 }
 
-void C2GoldfishAvcDec::copyImageData(h264_image_t &img) {
+void C2GoldfishAvcDec::copyImageData(GfImage &img) {
     getVuiParams(img);
     if (mEnableAndroidNativeBuffers)
         return;
@@ -1029,8 +1029,7 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
 
             //(void) ivdec_api_function(mDecHandle, &s_decode_ip, &s_decode_op);
             DDD("decoding");
-            h264_result_t h264Res =
-                mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
+            GfResult h264Res = mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
             mConsumedBytes = h264Res.bytesProcessed;
             DDD("decoding consumed %d", (int)mConsumedBytes);
 
@@ -1118,8 +1117,8 @@ c2_status_t C2GoldfishAvcDec::drain(uint32_t drainMode,
     return drainInternal(drainMode, pool, nullptr);
 }
 
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishAvcDecFactory() {
-    struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
+std::shared_ptr<const IComponentFactory> getC2GoldfishAvcDecFactory() {
+    struct ImplFactory : public IComponentFactory {
         std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
                 const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
             return {C2_OK, std::make_shared<C2GoldfishAvcDec>(
