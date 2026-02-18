@@ -83,6 +83,30 @@ struct C2BaseParams : public C2InterfaceHelper {
                  const C2String& mediaType,
                  const std::vector<C2String>& aliases = {});
 
+    std::shared_ptr<C2StreamColorAspectsTuning::output> getDefaultColorAspects_l() {
+        return mDefaultColorAspects;
+    }
+
+    std::shared_ptr<C2StreamColorAspectsInfo::output> getColorAspects_l() {
+        return mColorAspects;
+    }
+
+    int width() const { return mSize->width; }
+    int height() const { return mSize->height; }
+    int primaries() const { return mColorAspects->primaries; }
+    int range() const { return mColorAspects->range; }
+    int transfer() const { return mColorAspects->transfer; }
+
+    static C2R
+    ProfileLevelSetter(bool /*mayBlock*/,
+                       C2P<C2StreamProfileLevelInfo::input>& /*me*/,
+                       const C2P<C2StreamPictureSizeInfo::output>& /*size*/) {
+        return C2R::Ok();
+    }
+
+    // The codec specific part
+    std::shared_ptr<C2StreamProfileLevelInfo::input> mProfileLevel;
+
     std::shared_ptr<C2ComponentNameSetting> mName;
     std::shared_ptr<C2ComponentAliasesSetting> mAliases;
     std::shared_ptr<C2ComponentKindSetting> mKind;
@@ -95,7 +119,18 @@ struct C2BaseParams : public C2InterfaceHelper {
     std::shared_ptr<C2StreamBufferTypeSetting::input> mInputFormat;
     std::shared_ptr<C2StreamBufferTypeSetting::output> mOutputFormat;
 
+    std::shared_ptr<C2StreamColorInfo::output> mColorInfo;
+    std::shared_ptr<C2StreamColorAspectsInfo::input> mCodedColorAspects;
+    std::shared_ptr<C2StreamColorAspectsTuning::output> mDefaultColorAspects;
+    std::shared_ptr<C2StreamColorAspectsInfo::output> mColorAspects;
+    std::shared_ptr<C2StreamPixelFormatInfo::output> mPixelFormat;
+
+    std::shared_ptr<C2StreamPictureSizeInfo::output> mSize;
+    std::shared_ptr<C2StreamMaxPictureSizeTuning::output> mMaxSize;
+    std::shared_ptr<C2StreamMaxBufferSizeInfo::input> mMaxInputSize;
+
     std::shared_ptr<C2PortRequestedDelayTuning::input> mRequestedInputDelay;
+    std::shared_ptr<C2PortRequestedDelayTuning::output> mRequestedOutputDelay;
     std::shared_ptr<C2RequestedPipelineDelayTuning> mRequestedPipelineDelay;
 
     std::shared_ptr<C2PortActualDelayTuning::input> mActualInputDelay;
