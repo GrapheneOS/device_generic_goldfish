@@ -21,14 +21,6 @@
 namespace goldfish::media::c2 {
 
 class MediaH264Decoder {
-    uint64_t mHostHandle = 0;
-    uint32_t mVersion = 100;
-    RenderMode mRenderMode = RenderMode::RENDER_BY_GUEST_CPU;
-
-    bool mHasAddressSpaceMemory = false;
-    uint64_t mAddressOffSet = 0;
-    int mSlot = -1;
-
   public:
     MediaH264Decoder(RenderMode renderMode);
     virtual ~MediaH264Decoder() = default;
@@ -72,6 +64,13 @@ class MediaH264Decoder {
     // it; unrecognized typeid will be discarded by host side.
 
     void sendMetadata(MetaDataColorAspects *ptr);
+
+  private:
+    uint64_t mHostHandle = 0;
+    uint64_t mAddressOffSet = 0;
+    uint32_t mVersion = 100;
+    int mSlot = -1;
+    bool mHasAddressSpaceMemory = false;
 };
 
 }  // namespace goldfish::media::c2

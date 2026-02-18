@@ -28,12 +28,16 @@
 
 namespace goldfish::media::c2 {
 
-MediaH264Decoder::MediaH264Decoder(RenderMode renderMode)
-    : mRenderMode(renderMode) {
-    if (renderMode == RenderMode::RENDER_BY_HOST_GPU) {
+MediaH264Decoder::MediaH264Decoder(RenderMode renderMode) {
+    switch (renderMode) {
+    case RenderMode::RENDER_BY_HOST_GPU:
         mVersion = 200;
-    } else if (renderMode == RenderMode::RENDER_BY_GUEST_CPU) {
+        break;
+
+    default:
+    case RenderMode::RENDER_BY_GUEST_CPU:
         mVersion = 100;
+        break;
     }
 }
 

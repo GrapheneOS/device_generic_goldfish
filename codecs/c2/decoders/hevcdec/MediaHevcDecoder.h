@@ -63,7 +63,6 @@ class MediaHevcDecoder {
     uint64_t mAddressOffSet = 0;
     uint32_t mVersion = 100;
     int mSlot = -1;
-    RenderMode mRenderMode = RenderMode::RENDER_BY_GUEST_CPU;
     bool mHasAddressSpaceMemory = false;
 };
 
