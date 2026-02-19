@@ -135,6 +135,16 @@ C2R ColorAspectsSetter(bool /*mayBlock*/,
     return C2R::Ok();
 }
 
+C2R Hdr10PlusInfoInputSetter(bool /*mayBlock*/,
+                             C2P<C2StreamHdr10PlusInfo::input>& /*me*/) {
+    return C2R::Ok();
+}
+
+C2R Hdr10PlusInfoOutputSetter(bool /*mayBlock*/,
+                              C2P<C2StreamHdr10PlusInfo::output>& /*me*/) {
+    return C2R::Ok();
+}
+
 }  // namespace
 
 C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
@@ -350,6 +360,24 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
                     0u,
                     8u /* bitDepth */,
                     C2Color::YUV_420))
+            .build());
+
+    addParameter(
+        DefineParam(mHdr10PlusInfoInput, C2_PARAMKEY_INPUT_HDR10_PLUS_INFO)
+            .withDefault(C2StreamHdr10PlusInfo::input::AllocShared(0))
+            .withFields({
+                C2F(mHdr10PlusInfoInput, m.value).any(),
+            })
+            .withSetter(Hdr10PlusInfoInputSetter)
+            .build());
+
+    addParameter(
+        DefineParam(mHdr10PlusInfoOutput, C2_PARAMKEY_OUTPUT_HDR10_PLUS_INFO)
+            .withDefault(C2StreamHdr10PlusInfo::output::AllocShared(0))
+            .withFields({
+                C2F(mHdr10PlusInfoOutput, m.value).any(),
+            })
+            .withSetter(Hdr10PlusInfoOutputSetter)
             .build());
 
     // default to linear buffers and no media type
