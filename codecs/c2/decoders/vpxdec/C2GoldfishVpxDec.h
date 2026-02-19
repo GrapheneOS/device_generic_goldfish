@@ -20,20 +20,16 @@
 #include "goldfish_vpx_defs.h"
 #include <SimpleC2Component.h>
 
-#ifdef VP9
-#define C2_GOLDFISH_VPx_DEC_IMLP_TYPE C2GoldfishVp9Dec
-#else
-#define C2_GOLDFISH_VPx_DEC_IMLP_TYPE C2GoldfishVp8Dec
-#endif
+namespace goldfish::media::c2 {
 
-namespace android {
+using android::status_t;
 
-struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
+struct C2GoldfishVpxDec : public SimpleC2Component {
     class IntfImpl;
 
-    C2_GOLDFISH_VPx_DEC_IMLP_TYPE(const char *name, c2_node_id_t id,
-                     const std::shared_ptr<IntfImpl> &intfImpl);
-    virtual ~C2_GOLDFISH_VPx_DEC_IMLP_TYPE();
+    C2GoldfishVpxDec(const char *name, c2_node_id_t id,
+                     const std::shared_ptr<IntfImpl> &intfImpl, bool isVp9);
+    virtual ~C2GoldfishVpxDec();
 
     // From SimpleC2Component
     c2_status_t onInit() override;
@@ -71,13 +67,11 @@ struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
     std::shared_ptr<IntfImpl> mIntf;
     std::unique_ptr<VpxCodecCtx> mCtx;
 
-#ifndef VP9
     uint64_t mLastPts { 0 };
     C2Color::range_t m_range;
     C2Color::primaries_t m_primaries;
     C2Color::transfer_t m_transfer;
     C2Color::matrix_t m_matrix;
-#endif
 
     MetaDataColorAspects mSentMetadata = {1, 0, 0, 0};
 
@@ -88,7 +82,9 @@ struct C2_GOLDFISH_VPx_DEC_IMLP_TYPE : public SimpleC2Component {
     bool mSignalledError{false};
     bool mFrameParallelMode{false}; // Frame parallel is only supported by VP9 decoder.
 
-    C2_DO_NOT_COPY(C2_GOLDFISH_VPx_DEC_IMLP_TYPE);
+    bool mIsVp9;
+
+    C2_DO_NOT_COPY(C2GoldfishVpxDec);
 };
 
-} // namespace android
+} // namespace goldfish::media::c2

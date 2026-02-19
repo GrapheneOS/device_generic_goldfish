@@ -18,6 +18,8 @@
 #include <mutex>
 #include <vector>
 
+namespace goldfish::media::c2 {
+
 namespace {
 uint64_t s_CtxId = 0;
 std::mutex sCtxidMutex;
@@ -156,3 +158,5 @@ void VpxCodecCtx::sendOperation(const MediaOperation op) const {
                                                 : MediaCodecType::VP8Codec),
                              op, mAddressOffset);
 }
+
+}  // namespace goldfish::media::c2

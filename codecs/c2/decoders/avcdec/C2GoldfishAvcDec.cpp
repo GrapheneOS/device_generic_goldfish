@@ -50,10 +50,16 @@
 #define DDD(...) ((void)0)
 #endif
 
+namespace goldfish::media::c2 {
+
 using ::android::hardware::graphics::common::V1_0::BufferUsage;
 using ::android::hardware::graphics::common::V1_2::PixelFormat;
 
-namespace android {
+using ::android::C2Mapper;
+using ::android::ColorAspects;
+using ::android::ColorUtils;
+using ::android::UnwrapNativeCodec2GrallocHandle;
+using ::android::MEDIA_MIMETYPE_VIDEO_AVC;
 
 namespace {
 constexpr size_t kMinInputBufferSize = 6 * 1024 * 1024;
@@ -96,12 +102,11 @@ bool deAllocateDecoderId() {
 
 } // namespace
 
-class C2GoldfishAvcDec::IntfImpl : public SimpleInterface<void>::BaseParams {
+class C2GoldfishAvcDec::IntfImpl : public C2BaseParams {
   public:
     explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper)
-        : SimpleInterface<void>::BaseParams(
-              helper, COMPONENT_NAME, C2Component::KIND_DECODER,
-              C2Component::DOMAIN_VIDEO, MEDIA_MIMETYPE_VIDEO_AVC) {
+        : C2BaseParams(helper, COMPONENT_NAME, C2Component::KIND_DECODER,
+                       C2Component::DOMAIN_VIDEO, MEDIA_MIMETYPE_VIDEO_AVC) {
         noPrivateBuffers(); // TODO: account for our buffers here
         noInputReferences();
         noOutputReferences();
@@ -427,7 +432,7 @@ static void ivd_aligned_free(void *ctxt, void *mem) {
 C2GoldfishAvcDec::C2GoldfishAvcDec(const char *name, c2_node_id_t id,
                                    const std::shared_ptr<IntfImpl> &intfImpl)
     : SimpleC2Component(
-          std::make_shared<SimpleInterface<IntfImpl>>(name, id, intfImpl)),
+          std::make_shared<SimpleC2Interface<IntfImpl>>(name, id, intfImpl)),
       mIntf(intfImpl), mOutBufferFlush(nullptr), mOutIndex(0u),
       mWidth(1920), mHeight(1080), mHeaderDecoded(false) {
     mWidth = mIntf->width();
@@ -442,11 +447,11 @@ c2_status_t C2GoldfishAvcDec::onInit() {
     mId = allocateDecoderId();
     if (mId <= 0) return C2_NO_MEMORY;
     status_t err = initDecoder();
-    return err == OK ? C2_OK : C2_CORRUPTED;
+    return err == ::android::OK ? C2_OK : C2_CORRUPTED;
 }
 
 c2_status_t C2GoldfishAvcDec::onStop() {
-    if (OK != resetDecoder())
+    if (::android::OK != resetDecoder())
         return C2_CORRUPTED;
     resetPlugin();
     return C2_OK;
@@ -475,7 +480,7 @@ void C2GoldfishAvcDec::decodeHeaderAfterFlush() {
 }
 
 c2_status_t C2GoldfishAvcDec::onFlush_sm() {
-    if (OK != setFlushMode())
+    if (::android::OK != setFlushMode())
         return C2_CORRUPTED;
 
     if (!mContext) {
@@ -543,12 +548,12 @@ status_t C2GoldfishAvcDec::createDecoder() {
 
     mContext->initH264Context(mWidth, mHeight, mWidth, mHeight,
                               MediaH264Decoder::PixelFormat::YUV420P);
-    return OK;
+    return ::android::OK;
 }
 
 status_t C2GoldfishAvcDec::setParams(size_t stride) {
     (void)stride;
-    return OK;
+    return ::android::OK;
 }
 
 status_t C2GoldfishAvcDec::initDecoder() {
@@ -556,7 +561,7 @@ status_t C2GoldfishAvcDec::initDecoder() {
     mSignalledError = false;
     resetPlugin();
 
-    return OK;
+    return ::android::OK;
 }
 
 bool C2GoldfishAvcDec::setDecodeArgs(C2ReadView *inBuffer,
@@ -589,7 +594,7 @@ bool C2GoldfishAvcDec::setDecodeArgs(C2ReadView *inBuffer,
 
     if (mStride != displayStride) {
         mStride = displayStride;
-        if (OK != setParams(mStride))
+        if (::android::OK != setParams(mStride))
             return false;
     }
 
@@ -601,7 +606,7 @@ status_t C2GoldfishAvcDec::setFlushMode() {
         mContext->flush();
     }
     mHeaderDecoded = false;
-    return OK;
+    return ::android::OK;
 }
 
 status_t C2GoldfishAvcDec::resetDecoder() {
@@ -610,7 +615,7 @@ status_t C2GoldfishAvcDec::resetDecoder() {
     mHeaderDecoded = false;
     deleteContext();
 
-    return OK;
+    return ::android::OK;
 }
 
 void C2GoldfishAvcDec::resetPlugin() {
@@ -763,7 +768,7 @@ void C2GoldfishAvcDec::checkMode(const std::shared_ptr<C2BlockPool> &pool) {
     }
 }
 
-void C2GoldfishAvcDec::getVuiParams(h264_image_t &img) {
+void C2GoldfishAvcDec::getVuiParams(GfImage &img) {
     VuiColorAspects vuiColorAspects;
     vuiColorAspects.primaries = img.color_primaries;
     vuiColorAspects.transfer = img.color_trc;
@@ -795,7 +800,7 @@ void C2GoldfishAvcDec::getVuiParams(h264_image_t &img) {
     }
 }
 
-void C2GoldfishAvcDec::copyImageData(h264_image_t &img) {
+void C2GoldfishAvcDec::copyImageData(GfImage &img) {
     getVuiParams(img);
     if (mEnableAndroidNativeBuffers)
         return;
@@ -998,7 +1003,7 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
                             C2StreamPictureSizeInfo::output size(0u, mWidth, mHeight);
                             std::vector<std::unique_ptr<C2SettingResult>> failures;
                             c2_status_t err = mIntf->config({&size}, C2_MAY_BLOCK, &failures);
-                            if (err == OK) {
+                            if (err == ::android::OK) {
                                 work->worklets.front()->output.configUpdate.push_back(
                                         C2Param::Copy(size));
                                 ensureDecoderState(pool);
@@ -1023,8 +1028,7 @@ void C2GoldfishAvcDec::process(const std::unique_ptr<C2Work> &work,
 
             //(void) ivdec_api_function(mDecHandle, &s_decode_ip, &s_decode_op);
             DDD("decoding");
-            h264_result_t h264Res =
-                mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
+            GfResult h264Res = mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
             mConsumedBytes = h264Res.bytesProcessed;
             DDD("decoding consumed %d", (int)mConsumedBytes);
 
@@ -1073,7 +1077,7 @@ C2GoldfishAvcDec::drainInternal(uint32_t drainMode,
         return C2_OMITTED;
     }
 
-    if (OK != setFlushMode())
+    if (::android::OK != setFlushMode())
         return C2_CORRUPTED;
     while (true) {
         if (C2_OK != ensureDecoderState(pool)) {
@@ -1082,18 +1086,6 @@ C2GoldfishAvcDec::drainInternal(uint32_t drainMode,
             work->result = C2_CORRUPTED;
             return C2_CORRUPTED;
         }
-        /*
-        C2GraphicView wView = mOutBlock->map().get();
-        if (wView.error()) {
-            ALOGE("graphic view map failed %d", wView.error());
-            return C2_CORRUPTED;
-        }
-        if (!setDecodeArgs(nullptr, &wView, 0, 0, 0)) {
-            mSignalledError = true;
-            work->workletsProcessed = 1u;
-            return C2_CORRUPTED;
-        }
-        */
 
         if (mHostColorBufferId > 0) {
             mImg = mContext->renderOnHostAndReturnImageMetadata(
@@ -1124,8 +1116,8 @@ c2_status_t C2GoldfishAvcDec::drain(uint32_t drainMode,
     return drainInternal(drainMode, pool, nullptr);
 }
 
-std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishAvcDecFactory() {
-    struct ImplFactory : public ::goldfish::media::c2::IComponentFactory {
+std::shared_ptr<const IComponentFactory> getC2GoldfishAvcDecFactory() {
+    struct ImplFactory : public IComponentFactory {
         std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
                 const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
             return {C2_OK, std::make_shared<C2GoldfishAvcDec>(
@@ -1134,7 +1126,7 @@ std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishAvc
 
         std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
                 const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
-            return {C2_OK, std::make_shared<SimpleInterface<C2GoldfishAvcDec::IntfImpl>>(
+            return {C2_OK, std::make_shared<SimpleC2Interface<C2GoldfishAvcDec::IntfImpl>>(
                         COMPONENT_NAME, 0, std::make_shared<C2GoldfishAvcDec::IntfImpl>(reflector))};
         }
 
@@ -1147,4 +1139,4 @@ std::shared_ptr<const ::goldfish::media::c2::IComponentFactory> getC2GoldfishAvc
     return std::make_shared<ImplFactory>();
 }
 
-} // namespace android
+} // namespace goldfish::media::c2

@@ -25,33 +25,30 @@
 #include <C2PlatformSupport.h>
 #include <SimpleC2Interface.h>
 
-namespace android {
+namespace goldfish::media::c2 {
 
-/* SimpleInterface */
+using ::android::C2PlatformAllocatorStore;
+using ::android::GetCodec2PoolMask;
+using ::android::GetPreferredLinearAllocatorId;
 
-static C2R SubscribedParamIndicesSetter(
+namespace {
+C2R SubscribedParamIndicesSetter(
         bool mayBlock, C2InterfaceHelper::C2P<C2SubscribedParamIndicesTuning> &me) {
     (void)mayBlock;
     (void)me;
 
     return C2R::Ok();
 }
+}  // namespace
 
-SimpleInterface<void>::BaseParams::BaseParams(
-    const std::shared_ptr<C2ReflectorHelper> &reflector, C2String name,
-    C2Component::kind_t kind, C2Component::domain_t domain, C2String mediaType,
-    std::vector<C2String> aliases)
-    : C2InterfaceHelper(reflector) {
+C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
+                           const C2String& name,
+                           C2Component::kind_t kind,
+                           C2Component::domain_t domain,
+                           const C2String& mediaType,
+                           const std::vector<C2String>& aliases)
+        : C2InterfaceHelper(reflector) {
     setDerivedInstance(this);
-
-    /*
-    addParameter(
-        DefineParam(mApiFeatures, C2_PARAMKEY_API_FEATURES)
-            .withConstValue(std::make_shared<C2ApiFeaturesSetting>(C2Config::api_feature_t(
-                API_REFLECTION | API_VALUES | API_CURRENT_VALUES |
-                API_DEPENDENCY | API_SAME_INPUT_BUFFER)))
-            .build());
-*/
 
     addParameter(DefineParam(mName, C2_PARAMKEY_COMPONENT_NAME)
                      .withConstValue(AllocSharedString<C2ComponentNameSetting>(
@@ -112,13 +109,13 @@ SimpleInterface<void>::BaseParams::BaseParams(
         // TODO: should we define raw image? The only difference is timestamp
         // handling
         rawBufferType = C2BufferData::GRAPHIC;
-        rawMediaType = MEDIA_MIMETYPE_VIDEO_RAW;
+        rawMediaType = ::android::MEDIA_MIMETYPE_VIDEO_RAW;
         rawAllocator = C2PlatformAllocatorStore::GRALLOC;
         rawPoolId = C2BlockPool::BASIC_GRAPHIC;
         break;
     case C2Component::DOMAIN_AUDIO:
         rawBufferType = C2BufferData::LINEAR;
-        rawMediaType = MEDIA_MIMETYPE_AUDIO_RAW;
+        rawMediaType = ::android::MEDIA_MIMETYPE_AUDIO_RAW;
         rawAllocator = preferredLinearId;
         rawPoolId = C2BlockPool::BASIC_LINEAR;
         break;
@@ -206,50 +203,9 @@ SimpleInterface<void>::BaseParams::BaseParams(
                          C2F(mSubscribedParamIndices, m.values).any()})
             .withSetter(SubscribedParamIndicesSetter)
             .build());
-
-    /* TODO
-
-    addParameter(
-            DefineParam(mCurrentWorkOrdinal, C2_PARAMKEY_CURRENT_WORK)
-            .withDefault(std::make_shared<C2CurrentWorkTuning>())
-            .withFields({ C2F(mCurrentWorkOrdinal, m.timeStamp).any(),
-                          C2F(mCurrentWorkOrdinal, m.frameIndex).any(),
-                          C2F(mCurrentWorkOrdinal, m.customOrdinal).any() })
-            .withSetter(Setter<C2CurrentWorkTuning>::NonStrictValuesWithNoDeps)
-            .build());
-
-    addParameter(
-            DefineParam(mLastInputQueuedWorkOrdinal,
-    C2_PARAMKEY_LAST_INPUT_QUEUED).withDefault(std::make_shared<C2LastWorkQueuedTuning::input>())
-                                  .withFields({
-    C2F(mLastInputQueuedWorkOrdinal, m.timeStamp).any(),
-                          C2F(mLastInputQueuedWorkOrdinal, m.frameIndex).any(),
-                          C2F(mLastInputQueuedWorkOrdinal,
-    m.customOrdinal).any() })
-            .withSetter(Setter<C2LastWorkQueuedTuning::input>::NonStrictValuesWithNoDeps)
-            .build());
-
-    addParameter(
-            DefineParam(mLastOutputQueuedWorkOrdinal,
-    C2_PARAMKEY_LAST_OUTPUT_QUEUED).withDefault(std::make_shared<C2LastWorkQueuedTuning::output>())
-                                   .withFields({
-    C2F(mLastOutputQueuedWorkOrdinal, m.timeStamp).any(),
-                          C2F(mLastOutputQueuedWorkOrdinal, m.frameIndex).any(),
-                          C2F(mLastOutputQueuedWorkOrdinal,
-    m.customOrdinal).any() })
-            .withSetter(Setter<C2LastWorkQueuedTuning::output>::NonStrictValuesWithNoDeps)
-            .build());
-
-    std::shared_ptr<C2OutOfMemoryTuning> mOutOfMemory;
-
-    std::shared_ptr<C2PortConfigCounterTuning::input> mInputConfigCounter;
-    std::shared_ptr<C2PortConfigCounterTuning::output> mOutputConfigCounter;
-    std::shared_ptr<C2ConfigCounterTuning> mDirectConfigCounter;
-
-    */
 }
 
-void SimpleInterface<void>::BaseParams::noInputLatency() {
+void C2BaseParams::noInputLatency() {
     addParameter(
         DefineParam(mRequestedInputDelay, C2_PARAMKEY_INPUT_DELAY_REQUEST)
             .withConstValue(std::make_shared<C2PortRequestedDelayTuning::input>(0u))
@@ -260,29 +216,7 @@ void SimpleInterface<void>::BaseParams::noInputLatency() {
                      .build());
 }
 
-void SimpleInterface<void>::BaseParams::noOutputLatency() {
-    addParameter(
-        DefineParam(mRequestedOutputDelay, C2_PARAMKEY_OUTPUT_DELAY_REQUEST)
-            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::output>(0u))
-            .build());
-
-    addParameter(DefineParam(mActualOutputDelay, C2_PARAMKEY_OUTPUT_DELAY)
-                     .withConstValue(std::make_shared<C2PortActualDelayTuning::output>(0u))
-                     .build());
-}
-
-void SimpleInterface<void>::BaseParams::noPipelineLatency() {
-    addParameter(
-        DefineParam(mRequestedPipelineDelay, C2_PARAMKEY_PIPELINE_DELAY_REQUEST)
-            .withConstValue(std::make_shared<C2RequestedPipelineDelayTuning>(0u))
-            .build());
-
-    addParameter(DefineParam(mActualPipelineDelay, C2_PARAMKEY_PIPELINE_DELAY)
-                     .withConstValue(std::make_shared<C2ActualPipelineDelayTuning>(0u))
-                     .build());
-}
-
-void SimpleInterface<void>::BaseParams::noPrivateBuffers() {
+void C2BaseParams::noPrivateBuffers() {
     addParameter(DefineParam(mPrivateAllocators, C2_PARAMKEY_PRIVATE_ALLOCATORS)
                      .withConstValue(C2PrivateAllocatorsTuning::AllocShared(0u))
                      .build());
@@ -298,7 +232,7 @@ void SimpleInterface<void>::BaseParams::noPrivateBuffers() {
                      .build());
 }
 
-void SimpleInterface<void>::BaseParams::noInputReferences() {
+void C2BaseParams::noInputReferences() {
     addParameter(
         DefineParam(mMaxInputReferenceAge, C2_PARAMKEY_INPUT_MAX_REFERENCE_AGE)
             .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::input>(0u))
@@ -311,7 +245,7 @@ void SimpleInterface<void>::BaseParams::noInputReferences() {
             .build());
 }
 
-void SimpleInterface<void>::BaseParams::noOutputReferences() {
+void C2BaseParams::noOutputReferences() {
     addParameter(
         DefineParam(mMaxOutputReferenceAge,
                     C2_PARAMKEY_OUTPUT_MAX_REFERENCE_AGE)
@@ -325,25 +259,10 @@ void SimpleInterface<void>::BaseParams::noOutputReferences() {
             .build());
 }
 
-void SimpleInterface<void>::BaseParams::noTimeStretch() {
+void C2BaseParams::noTimeStretch() {
     addParameter(DefineParam(mTimeStretch, C2_PARAMKEY_TIME_STRETCH)
                      .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
                      .build());
 }
 
-/*
-    Clients need to handle the following base params due to custom dependency.
-
-    std::shared_ptr<C2ApiLevelSetting> mApiLevel;
-    std::shared_ptr<C2ComponentAttributesSetting> mAttrib;
-
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::input>
-   mSuggestedInputBufferCount;
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::output>
-   mSuggestedOutputBufferCount;
-
-    std::shared_ptr<C2TrippedTuning> mTripped;
-
-*/
-
-} // namespace android
+}  // namespace goldfish::media::c2

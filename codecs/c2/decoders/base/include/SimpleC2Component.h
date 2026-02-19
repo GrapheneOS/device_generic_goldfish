@@ -25,7 +25,13 @@
 #include <media/stagefright/foundation/ALooper.h>
 #include <media/stagefright/foundation/Mutexed.h>
 
-namespace android {
+namespace goldfish::media::c2 {
+
+using ::android::sp;
+using ::android::ALooper;
+using ::android::AMessage;
+using ::android::AReplyToken;
+using ::android::Mutexed;
 
 class SimpleC2Component
     : public C2Component,
@@ -162,7 +168,7 @@ class SimpleC2Component
   private:
     const std::shared_ptr<C2ComponentInterface> mIntf;
 
-    class WorkHandler : public AHandler {
+    class WorkHandler : public ::android::AHandler {
       public:
         enum {
             kWhatProcess,
@@ -248,4 +254,4 @@ class SimpleC2Component
     SimpleC2Component() = delete;
 };
 
-} // namespace android
+}  // namespace goldfish::media::c2

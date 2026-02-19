@@ -22,7 +22,7 @@
 #include "ihevcd_cxa.h"
 #include "GoldfishDecHelper.h"
 
-namespace android {
+namespace goldfish::media::c2 {
 
 struct HevcTraits {
     using DecodeIp = ihevcd_cxa_video_decode_ip_t;
@@ -40,4 +40,4 @@ struct HevcTraits {
 
 using GoldfishHevcHelper = GoldfishDecHelper<HevcTraits>;
 
-} // namespace android
+} // namespace goldfish::media::c2

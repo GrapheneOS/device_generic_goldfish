@@ -4,17 +4,14 @@
 
 #include "goldfish_media_utils.h"
 
+namespace goldfish::media::c2 {
+
 #define VPX_IMG_FMT_PLANAR 0x100       /**< Image is a planar format. */
 #define VPX_IMG_FMT_UV_FLIP 0x200      /**< V plane precedes U in memory. */
 #define VPX_IMG_FMT_HAS_ALPHA 0x400    /**< Image has an alpha channel. */
 #define VPX_IMG_FMT_HIGHBITDEPTH 0x800 /**< Image uses 16bit framebuffer. */
 
 typedef int vpx_codec_err_t;
-
-enum class RenderMode {
-    RENDER_BY_HOST_GPU = 1,
-    RENDER_BY_GUEST_CPU = 2,
-};
 
 enum vpx_img_fmt_t {
     VPX_IMG_FMT_NONE,
@@ -77,3 +74,5 @@ private:
     const uint8_t mVpVersion;   // 8: vp8 or 9: vp9
     uint8_t mBpp = 0;
 };
+
+}  // namespace goldfish::media::c2

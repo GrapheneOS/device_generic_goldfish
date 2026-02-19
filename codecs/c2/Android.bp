@@ -34,8 +34,7 @@ cc_binary {
         "libcodec2_goldfish_common",
         "libcodec2_goldfish_avcdec",
         "libcodec2_goldfish_hevcdec",
-        "libcodec2_goldfish_vp8dec",
-        "libcodec2_goldfish_vp9dec",
+        "libcodec2_goldfish_vpxdec",
     ],
     shared_libs: [
         "android.hardware.graphics.allocator@3.0",

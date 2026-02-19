@@ -47,16 +47,16 @@ GoldfishComponentStore::GoldfishComponentStore()
     std::vector<std::shared_ptr<const IComponentFactory>> factories;
 
     if (useAndroidGoldfishComponentInstance("avcdec")) {
-        factories.push_back(android::getC2GoldfishAvcDecFactory());
+        factories.push_back(getC2GoldfishAvcDecFactory());
     }
 
     if (useAndroidGoldfishComponentInstance("hevcdec")) {
-        factories.push_back(android::getC2GoldfishHevcDecFactory());
+        factories.push_back(getC2GoldfishHevcDecFactory());
     }
 
     if (useAndroidGoldfishComponentInstance("vpxdec")) {
-        factories.push_back(android::getC2GoldfishVp8DecFactory());
-        factories.push_back(android::getC2GoldfishVp9DecFactory());
+        factories.push_back(getC2GoldfishVpxDecFactory(false));
+        factories.push_back(getC2GoldfishVpxDecFactory(true));
     }
 
     auto* componentFactories = &mComponentFactories;

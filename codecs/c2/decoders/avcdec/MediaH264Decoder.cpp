@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "MediaH264Decoder.h"
+
+#include <string.h>
 #include <utils/Log.h>
 
 #define DEBUG 0
@@ -23,16 +26,18 @@
 #define DDD(...) ((void)0)
 #endif
 
-#include "MediaH264Decoder.h"
-#include "goldfish_media_utils.h"
-#include <string.h>
+namespace goldfish::media::c2 {
 
-MediaH264Decoder::MediaH264Decoder(RenderMode renderMode)
-    : mRenderMode(renderMode) {
-    if (renderMode == RenderMode::RENDER_BY_HOST_GPU) {
+MediaH264Decoder::MediaH264Decoder(RenderMode renderMode) {
+    switch (renderMode) {
+    case RenderMode::RENDER_BY_HOST_GPU:
         mVersion = 200;
-    } else if (renderMode == RenderMode::RENDER_BY_GUEST_CPU) {
+        break;
+
+    default:
+    case RenderMode::RENDER_BY_GUEST_CPU:
         mVersion = 100;
+        break;
     }
 }
 
@@ -97,10 +102,9 @@ void MediaH264Decoder::destroyH264Context() {
     mHasAddressSpaceMemory = false;
 }
 
-h264_result_t MediaH264Decoder::decodeFrame(uint8_t *img, size_t szBytes,
-                                            uint64_t pts) {
+GfResult MediaH264Decoder::decodeFrame(uint8_t *img, size_t szBytes, uint64_t pts) {
     DDD("decode frame: use handle to host %lu", mHostHandle);
-    h264_result_t res = {0, 0};
+    GfResult res = {0, 0};
     if (!mHasAddressSpaceMemory) {
         ALOGE("%s no address space memory", __func__);
         return res;
@@ -154,9 +158,9 @@ void MediaH264Decoder::flush() {
                              mAddressOffSet);
 }
 
-h264_image_t MediaH264Decoder::getImage() {
+GfImage MediaH264Decoder::getImage() {
     DDD("getImage: use handle to host %lu", mHostHandle);
-    h264_image_t res{};
+    GfImage res{};
     if (!mHasAddressSpaceMemory) {
         ALOGE("%s no address space memory", __func__);
         return res;
@@ -188,10 +192,10 @@ h264_image_t MediaH264Decoder::getImage() {
     return res;
 }
 
-h264_image_t
+GfImage
 MediaH264Decoder::renderOnHostAndReturnImageMetadata(int hostColorBufferId) {
     DDD("%s: use handle to host %lu", __func__, mHostHandle);
-    h264_image_t res{};
+    GfImage res{};
     if (hostColorBufferId < 0) {
         ALOGE("%s negative color buffer id %d", __func__, hostColorBufferId);
         return res;
@@ -227,3 +231,5 @@ MediaH264Decoder::renderOnHostAndReturnImageMetadata(int hostColorBufferId) {
     }
     return res;
 }
+
+}  // namespace goldfish::media::c2

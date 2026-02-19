@@ -18,44 +18,9 @@
 
 #include "goldfish_media_utils.h"
 
-struct h264_init_result_t {
-    uint64_t host_handle;
-    int ret;
-};
-
-struct h264_result_t {
-    int ret;
-    uint64_t bytesProcessed;
-};
-
-struct h264_image_t {
-    const uint8_t *data;
-    uint32_t width;
-    uint32_t height;
-    uint64_t pts; // presentation time stamp
-    uint64_t color_primaries;
-    uint64_t color_range;
-    uint64_t color_trc;
-    uint64_t colorspace;
-    // on success, |ret| will indicate the size of |data|.
-    // If failed, |ret| will contain some negative error code.
-    int ret;
-};
-
-enum class RenderMode {
-    RENDER_BY_HOST_GPU = 1,
-    RENDER_BY_GUEST_CPU = 2,
-};
+namespace goldfish::media::c2 {
 
 class MediaH264Decoder {
-    uint64_t mHostHandle = 0;
-    uint32_t mVersion = 100;
-    RenderMode mRenderMode = RenderMode::RENDER_BY_GUEST_CPU;
-
-    bool mHasAddressSpaceMemory = false;
-    uint64_t mAddressOffSet = 0;
-    int mSlot = -1;
-
   public:
     MediaH264Decoder(RenderMode renderMode);
     virtual ~MediaH264Decoder() = default;
@@ -82,14 +47,14 @@ class MediaH264Decoder {
                           unsigned int outWidth, unsigned int outHeight,
                           PixelFormat pixFmt);
     void destroyH264Context();
-    h264_result_t decodeFrame(uint8_t *img, size_t szBytes, uint64_t pts);
+    GfResult decodeFrame(uint8_t *img, size_t szBytes, uint64_t pts);
     void flush();
     // ask host to copy image data back to guest, with image metadata
     // to guest as well
-    h264_image_t getImage();
+    GfImage getImage();
     // ask host to render to hostColorBufferId, return only image metadata back
     // to guest
-    h264_image_t renderOnHostAndReturnImageMetadata(int hostColorBufferId);
+    GfImage renderOnHostAndReturnImageMetadata(int hostColorBufferId);
 
     // send metadata about the bitstream to host, such as color aspects that
     // are set by the framework, e.g., color primaries (601, 709 etc), range
@@ -99,4 +64,13 @@ class MediaH264Decoder {
     // it; unrecognized typeid will be discarded by host side.
 
     void sendMetadata(MetaDataColorAspects *ptr);
+
+  private:
+    uint64_t mHostHandle = 0;
+    uint64_t mAddressOffSet = 0;
+    uint32_t mVersion = 100;
+    int mSlot = -1;
+    bool mHasAddressSpaceMemory = false;
 };
+
+}  // namespace goldfish::media::c2

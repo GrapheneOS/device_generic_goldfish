@@ -26,6 +26,8 @@
 #include "cros_gralloc_handle.h"
 #include "virtgpu_drm.h"
 
+namespace goldfish::media::c2 {
+
 namespace {
 using android::base::unique_fd;
 
@@ -143,3 +145,4 @@ uint64_t getClientUsage(C2BlockPool& pool) {
     return getGlobals().getClientUsage(pool);
 }
 
+}  // namespace goldfish::media::c2
