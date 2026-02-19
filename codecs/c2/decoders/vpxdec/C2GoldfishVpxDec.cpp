@@ -127,26 +127,6 @@ class C2GoldfishVpxDec::IntfImpl : public C2BaseParams {
                                      })})
                     .withSetter(ProfileLevelSetter, mSize)
                     .build());
-
-            mHdr10PlusInfoInput = C2StreamHdr10PlusInfo::input::AllocShared(0);
-            addParameter(
-                DefineParam(mHdr10PlusInfoInput, C2_PARAMKEY_INPUT_HDR10_PLUS_INFO)
-                    .withDefault(mHdr10PlusInfoInput)
-                    .withFields({
-                        C2F(mHdr10PlusInfoInput, m.value).any(),
-                    })
-                    .withSetter(Hdr10PlusInfoInputSetter)
-                    .build());
-
-            mHdr10PlusInfoOutput = C2StreamHdr10PlusInfo::output::AllocShared(0);
-            addParameter(DefineParam(mHdr10PlusInfoOutput,
-                                     C2_PARAMKEY_OUTPUT_HDR10_PLUS_INFO)
-                             .withDefault(mHdr10PlusInfoOutput)
-                             .withFields({
-                                 C2F(mHdr10PlusInfoOutput, m.value).any(),
-                             })
-                             .withSetter(Hdr10PlusInfoOutputSetter)
-                             .build());
         } else {
             addParameter(
                 DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
@@ -155,25 +135,6 @@ class C2GoldfishVpxDec::IntfImpl : public C2BaseParams {
                     .build());
         }
     }
-
-    static C2R Hdr10PlusInfoInputSetter(bool mayBlock,
-                                        C2P<C2StreamHdr10PlusInfo::input> &me) {
-        (void)mayBlock;
-        (void)me; // TODO: validate
-        return C2R::Ok();
-    }
-
-    static C2R
-    Hdr10PlusInfoOutputSetter(bool mayBlock,
-                              C2P<C2StreamHdr10PlusInfo::output> &me) {
-        (void)mayBlock;
-        (void)me; // TODO: validate
-        return C2R::Ok();
-    }
-
-  private:
-    std::shared_ptr<C2StreamHdr10PlusInfo::input> mHdr10PlusInfoInput;
-    std::shared_ptr<C2StreamHdr10PlusInfo::output> mHdr10PlusInfoOutput;
 };
 
 C2GoldfishVpxDec::C2GoldfishVpxDec(const char *name, c2_node_id_t id,
