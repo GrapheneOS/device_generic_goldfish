@@ -78,34 +78,6 @@ constexpr char COMPONENT_NAME[] = "c2.goldfish.h264.decoder";
    So total maximum output delay is 34 */
 constexpr uint32_t kMinInputBytes = 4;
 
-static std::mutex s_decoder_count_mutex;
-static int s_decoder_count = 0;
-
-int allocateDecoderId() {
-  DDD("calling %s", __func__);
-  std::lock_guard<std::mutex> lock(s_decoder_count_mutex);
-  if (s_decoder_count >= 32 || s_decoder_count < 0) {
-    ALOGE("calling %s failed", __func__);
-    return -1;
-  }
-  ++ s_decoder_count;
-  DDD("calling %s success total decoder %d", __func__, s_decoder_count);
-  return s_decoder_count;;
-}
-
-bool deAllocateDecoderId() {
-  DDD("calling %s", __func__);
-  std::lock_guard<std::mutex> lock(s_decoder_count_mutex);
-  if (s_decoder_count < 1) {
-    ALOGE("calling %s failed ", __func__);
-    return false;
-  }
-  -- s_decoder_count;
-  DDD("calling %s success total decoder %d", __func__, s_decoder_count);
-  return true;
-}
-
-
 void fillEmptyWork(const std::unique_ptr<C2Work> &work) {
     uint32_t flags = 0;
     if (work->input.flags & C2FrameData::FLAG_END_OF_STREAM) {
@@ -143,8 +115,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     c2_status_t onInit() override {
         ALOGD("calling onInit");
-        mId = allocateDecoderId();
-        if (mId <= 0) return C2_NO_MEMORY;
         status_t err = initDecoder();
         return err == ::android::OK ? C2_OK : C2_CORRUPTED;
     }
@@ -162,13 +132,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     void onRelease() override {
         DDD("calling onRelease");
-        if (mId > 0) {
-            deAllocateDecoderId();
-            mId = -1;
-        }
-
         deleteContext();
-
         if (mOutBlock) {
             mOutBlock.reset();
         }
@@ -825,7 +789,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     uint32_t mStride{0};
 
     int mHostColorBufferId{-1};
-    int mId = -1;
 
     bool mEnableAndroidNativeBuffers{true};
     bool mSignalledOutputEos{false};
