@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <string_view>
 #include <log/log.h>
 
 #include <algorithm>
@@ -34,8 +35,11 @@
 
 #include <color_buffer_utils.h>
 
-#include "C2GoldfishVpxDec.h"
 #include "C2GoldfishVpxDecFactory.h"
+#include "goldfish_media_utils.h"
+#include "goldfish_vpx_defs.h"
+#include <SimpleC2Component.h>
+
 
 #define DEBUG 0
 #if DEBUG
@@ -50,6 +54,7 @@ using ::aidl::android::hardware::graphics::common::BufferUsage;
 using ::android::UnwrapNativeCodec2GrallocHandle;
 using ::android::MEDIA_MIMETYPE_VIDEO_VP8;
 using ::android::MEDIA_MIMETYPE_VIDEO_VP9;
+using android::status_t;
 
 namespace {
 constexpr size_t kMinInputBufferSize = 6 * 1024 * 1024;
@@ -95,575 +100,605 @@ void copyOutputBufferToYuvPlanarFrame(
     }
 }
 
-}  // namespace
-
-
-class C2GoldfishVpxDec::IntfImpl : public C2BaseParams {
-  public:
-    explicit IntfImpl(const std::shared_ptr<C2ReflectorHelper> &helper, bool isVp9)
-        : C2BaseParams(helper, isVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8,
-                       C2Component::KIND_DECODER, C2Component::DOMAIN_VIDEO,
-                       isVp9 ? MEDIA_MIMETYPE_VIDEO_VP9 : MEDIA_MIMETYPE_VIDEO_VP8) {
-        if (isVp9) {
-            // TODO: Add C2Config::PROFILE_VP9_2HDR ??
-            addParameter(
-                DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
-                    .withDefault(std::make_shared<C2StreamProfileLevelInfo::input>(
-                        0u, C2Config::PROFILE_VP9_0, C2Config::LEVEL_VP9_5))
-                    .withFields({C2F(mProfileLevel, profile)
-                                     .oneOf({C2Config::PROFILE_VP9_0,
-                                             C2Config::PROFILE_VP9_2}),
-                                 C2F(mProfileLevel, level)
-                                     .oneOf({
-                                         C2Config::LEVEL_VP9_1,
-                                         C2Config::LEVEL_VP9_1_1,
-                                         C2Config::LEVEL_VP9_2,
-                                         C2Config::LEVEL_VP9_2_1,
-                                         C2Config::LEVEL_VP9_3,
-                                         C2Config::LEVEL_VP9_3_1,
-                                         C2Config::LEVEL_VP9_4,
-                                         C2Config::LEVEL_VP9_4_1,
-                                         C2Config::LEVEL_VP9_5,
-                                     })})
-                    .withSetter(ProfileLevelSetter, mSize)
-                    .build());
-        } else {
-            addParameter(
-                DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
-                    .withConstValue(std::make_shared<C2StreamProfileLevelInfo::input>(
-                        0u, C2Config::PROFILE_UNUSED, C2Config::LEVEL_UNUSED))
-                    .build());
-        }
+struct C2GoldfishVpxDec : public SimpleC2Component {
+    C2GoldfishVpxDec(const char *name, c2_node_id_t id,
+                     const std::shared_ptr<C2BaseParams> &params, bool isVp9)
+            : SimpleC2Component(std::make_shared<SimpleC2Interface<C2BaseParams>>(name, id, params))
+            , mParams(params)
+            , mIsVp9(isVp9) {
     }
-};
 
-C2GoldfishVpxDec::C2GoldfishVpxDec(const char *name, c2_node_id_t id,
-                                   const std::shared_ptr<IntfImpl> &intfImpl, bool isVp9)
-    : SimpleC2Component(
-          std::make_shared<SimpleC2Interface<IntfImpl>>(name, id, intfImpl)), mIntf(intfImpl), mIsVp9(isVp9) {}
+    virtual ~C2GoldfishVpxDec() { onRelease(); }
 
-C2GoldfishVpxDec::~C2GoldfishVpxDec() { onRelease(); }
-
-c2_status_t C2GoldfishVpxDec::onInit() {
-    status_t err = initDecoder();
-    return err == android::OK ? C2_OK : C2_CORRUPTED;
-}
-
-c2_status_t C2GoldfishVpxDec::onStop() {
-    mSignalledError = false;
-    mSignalledOutputEos = false;
-
-    return C2_OK;
-}
-
-void C2GoldfishVpxDec::onReset() {
-    (void)onStop();
-    c2_status_t err = onFlush_sm();
-    if (err != C2_OK) {
-        ALOGW("Failed to flush decoder. Try to hard reset decoder");
-        destroyDecoder();
-        (void)initDecoder();
+    c2_status_t onInit() override {
+        status_t err = initDecoder();
+        return err == android::OK ? C2_OK : C2_CORRUPTED;
     }
-}
 
-void C2GoldfishVpxDec::onRelease() { destroyDecoder(); }
+    c2_status_t onStop() override {
+        mSignalledError = false;
+        mSignalledOutputEos = false;
 
-void C2GoldfishVpxDec::sendMetadata() {
-    // compare and send if changed
-    MetaDataColorAspects currentMetaData = {1, 0, 0, 0};
-    currentMetaData.primaries = mIntf->primaries();
-    currentMetaData.range = mIntf->range();
-    currentMetaData.transfer = mIntf->transfer();
-
-    DDD("metadata primaries %d range %d transfer %d",
-            (int)(currentMetaData.primaries),
-            (int)(currentMetaData.range),
-            (int)(currentMetaData.transfer)
-       );
-
-    if (mSentMetadata.primaries == currentMetaData.primaries &&
-        mSentMetadata.range == currentMetaData.range &&
-        mSentMetadata.transfer == currentMetaData.transfer) {
-        DDD("metadata is the same, no need to update");
-        return;
+        return C2_OK;
     }
-    std::swap(mSentMetadata, currentMetaData);
 
-    mCtx->sendMetadata(mSentMetadata);
-}
-
-c2_status_t C2GoldfishVpxDec::onFlush_sm() {
-    if (mFrameParallelMode) {
-        // Flush decoder by passing nullptr data ptr and 0 size.
-        // Ideally, this should never fail.
-        if (mCtx->flush()) {
-            ALOGE("Failed to flush on2 decoder.");
-            return C2_CORRUPTED;
+    void onReset() override {
+        (void)onStop();
+        c2_status_t err = onFlush_sm();
+        if (err != C2_OK) {
+            ALOGW("Failed to flush decoder. Try to hard reset decoder");
+            destroyDecoder();
+            (void)initDecoder();
         }
     }
 
-    // Drop all the decoded frames in decoder.
-    if (mCtx) {
-        setup_ctx_parameters();
-        while (mCtx->getFrame()) {}
-    }
+    void onRelease() override { destroyDecoder(); }
 
-    mSignalledError = false;
-    mSignalledOutputEos = false;
-    return C2_OK;
-}
-
-status_t C2GoldfishVpxDec::initDecoder() {
-    ALOGI("calling init GoldfishVPX");
-    mWidth = 320;
-    mHeight = 240;
-    mFrameParallelMode = false;
-    mSignalledOutputEos = false;
-    mSignalledError = false;
-
-    return android::OK;
-}
-
-void C2GoldfishVpxDec::checkContext(const std::shared_ptr<C2BlockPool> &pool) {
-    if (mCtx)
-        return;
-
-    mWidth = mIntf->width();
-    mHeight = mIntf->height();
-    ALOGI("created decoder context w %d h %d", mWidth, mHeight);
-
-    const bool isGraphic = (pool->getAllocatorId() & C2Allocator::GRAPHIC);
-    DDD("buffer pool allocator id %x",  (int)(pool->getAllocatorId()));
-    if (isGraphic) {
-        uint64_t client_usage = getClientUsage(*pool);
-        DDD("client has usage as 0x%llx", client_usage);
-        if (client_usage & static_cast<uint32_t>(BufferUsage::CPU_READ_MASK)) {
-            DDD("decoding to guest byte buffer as client has read usage");
-            mEnableAndroidNativeBuffers = false;
-        } else {
-            DDD("decoding to host color buffer");
-            mEnableAndroidNativeBuffers = true;
-        }
-    } else {
-        DDD("decoding to guest byte buffer");
-        mEnableAndroidNativeBuffers = false;
-    }
-
-    const uint8_t vpVersion = mIsVp9 ? 9 : 8;
-    auto ctx = std::make_unique<VpxCodecCtx>(vpVersion, mEnableAndroidNativeBuffers ? 200 : 100);
-    if (const int err = ctx->init()) {
-        ALOGE("vpx decoder failed to initialize. (%d)", err);
-    } else {
-        mCtx = std::move(ctx);
-    }
-}
-
-status_t C2GoldfishVpxDec::destroyDecoder() {
-    mCtx.reset();
-    return android::OK;
-}
-
-void C2GoldfishVpxDec::finishWork(
-    uint64_t index, const std::unique_ptr<C2Work> &work,
-    const std::shared_ptr<C2GraphicBlock> &block) {
-    std::shared_ptr<C2Buffer> buffer =
-        createGraphicBuffer(block, C2Rect(mWidth, mHeight));
-    {
-        IntfImpl::Lock lock = mIntf->lock();
-        if (mIsVp9) {
-            buffer->setInfo(mIntf->getColorAspects_l());
-        } else {
-            std::shared_ptr<C2StreamColorAspectsInfo::output> tColorAspects =
-                std::make_shared<C2StreamColorAspectsInfo::output>
-                (C2StreamColorAspectsInfo::output(0u, m_range,
-                    m_primaries, m_transfer,
-                    m_matrix));
-            DDD("%s %d setting to index %d range %d primaries %d transfer %d",
-                    __func__, __LINE__, (int)index,
-                    (int)tColorAspects->range,
-                    (int)tColorAspects->primaries,
-                    (int)tColorAspects->transfer);
-            buffer->setInfo(tColorAspects);
-        }
-    }
-
-    auto fillWork = [buffer, index,
-                     intf = this->mIntf](const std::unique_ptr<C2Work> &work) {
-        uint32_t flags = 0;
-        if ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) &&
-            (c2_cntr64_t(index) == work->input.ordinal.frameIndex)) {
-            flags |= C2FrameData::FLAG_END_OF_STREAM;
-            DDD("signalling eos");
-        }
-        work->worklets.front()->output.flags = (C2FrameData::flags_t)flags;
-        work->worklets.front()->output.buffers.clear();
-        work->worklets.front()->output.buffers.push_back(buffer);
-        work->worklets.front()->output.ordinal = work->input.ordinal;
-        work->workletsProcessed = 1u;
-
-        for (const std::unique_ptr<C2Param> &param : work->input.configUpdate) {
-            if (param) {
-                C2StreamHdr10PlusInfo::input *hdr10PlusInfo =
-                    C2StreamHdr10PlusInfo::input::From(param.get());
-
-                if (hdr10PlusInfo != nullptr) {
-                    std::vector<std::unique_ptr<C2SettingResult>> failures;
-                    std::unique_ptr<C2Param> outParam = C2Param::CopyAsStream(
-                        *param.get(), true /*output*/, param->stream());
-                    c2_status_t err =
-                        intf->config({outParam.get()}, C2_MAY_BLOCK, &failures);
-                    if (err == C2_OK) {
-                        work->worklets.front()->output.configUpdate.push_back(
-                            C2Param::Copy(*outParam.get()));
-                    } else {
-                        ALOGE("finishWork: Config update size failed");
-                    }
-                    break;
-                }
+    c2_status_t onFlush_sm() override {
+        if (mFrameParallelMode) {
+            // Flush decoder by passing nullptr data ptr and 0 size.
+            // Ideally, this should never fail.
+            if (mCtx->flush()) {
+                ALOGE("Failed to flush on2 decoder.");
+                return C2_CORRUPTED;
             }
         }
-    };
-    if (work && c2_cntr64_t(index) == work->input.ordinal.frameIndex) {
-        fillWork(work);
-    } else {
-        finish(index, fillWork);
-    }
-}
 
-void C2GoldfishVpxDec::process(const std::unique_ptr<C2Work> &work,
-                                            const std::shared_ptr<C2BlockPool> &pool) {
-    DDD("%s %d doing work now", __func__, __LINE__);
-    // Initialize output work
-    work->result = C2_OK;
-    work->workletsProcessed = 0u;
-    work->worklets.front()->output.configUpdate.clear();
-    work->worklets.front()->output.flags = work->input.flags;
+        // Drop all the decoded frames in decoder.
+        if (mCtx) {
+            setup_ctx_parameters();
+            while (mCtx->getFrame()) {}
+        }
 
-    if (mSignalledError || mSignalledOutputEos) {
-        work->result = C2_BAD_VALUE;
-        return;
+        mSignalledError = false;
+        mSignalledOutputEos = false;
+        return C2_OK;
     }
 
-    size_t inOffset = 0u;
-    size_t inSize = 0u;
-    C2ReadView rView = mDummyReadView;
-    if (!work->input.buffers.empty()) {
-        rView =
-            work->input.buffers[0]->data().linearBlocks().front().map().get();
-        inSize = rView.capacity();
-        if (inSize && rView.error()) {
-            ALOGE("read view map failed %d", rView.error());
-            work->result = C2_CORRUPTED;
+    void process(const std::unique_ptr<C2Work> &work,
+                 const std::shared_ptr<C2BlockPool> &pool) override {
+        DDD("%s %d doing work now", __func__, __LINE__);
+        // Initialize output work
+        work->result = C2_OK;
+        work->workletsProcessed = 0u;
+        work->worklets.front()->output.configUpdate.clear();
+        work->worklets.front()->output.flags = work->input.flags;
+
+        if (mSignalledError || mSignalledOutputEos) {
+            work->result = C2_BAD_VALUE;
             return;
         }
-    }
 
-    checkContext(pool);
-
-    bool codecConfig =
-        ((work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) != 0);
-    bool eos = ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) != 0);
-
-    DDD("in buffer attr. size %zu timestamp %d frameindex %d, flags %x", inSize,
-        (int)work->input.ordinal.timestamp.peeku(),
-        (int)work->input.ordinal.frameIndex.peeku(), work->input.flags);
-
-    if (!mIsVp9) {
-        constexpr uint64_t ONE_SECOND_IN_MICRO_SECOND = 1000 * 1000;
-        // bug: 349159609
-        // note, vp8 does not have the FLAG_CODEC_CONFIG and the test
-        // android.mediav2.cts.DecoderDynamicColorAspectTest test still
-        // expects vp8 to pass. so this hack is to check the time stamp
-        // change to update the color aspect: too early or too late is
-        // a problem as it can cause mismatch of frame and coloraspect
-        DDD("%s %d vp8 last pts is %d current pts is %d",
-                __func__, __LINE__, mLastPts, (int) work->input.ordinal.timestamp.peeku());
-        if (mLastPts + ONE_SECOND_IN_MICRO_SECOND <= work->input.ordinal.timestamp.peeku()) {
-            codecConfig = true;
-            DDD("%s %d updated codecConfig to true", __func__, __LINE__);
-        } else {
-            DDD("%s %d keep codecConfig to false", __func__, __LINE__);
+        size_t inOffset = 0u;
+        size_t inSize = 0u;
+        C2ReadView rView = mDummyReadView;
+        if (!work->input.buffers.empty()) {
+            rView =
+                work->input.buffers[0]->data().linearBlocks().front().map().get();
+            inSize = rView.capacity();
+            if (inSize && rView.error()) {
+                ALOGE("read view map failed %d", rView.error());
+                work->result = C2_CORRUPTED;
+                return;
+            }
         }
-        mLastPts = work->input.ordinal.timestamp.peeku();
-        if (mLastPts == 0) {
-            codecConfig = true;
+
+        checkContext(pool);
+
+        bool codecConfig =
+            ((work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) != 0);
+        bool eos = ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) != 0);
+
+        DDD("in buffer attr. size %zu timestamp %d frameindex %d, flags %x", inSize,
+            (int)work->input.ordinal.timestamp.peeku(),
+            (int)work->input.ordinal.frameIndex.peeku(), work->input.flags);
+
+        if (!mIsVp9) {
+            constexpr uint64_t ONE_SECOND_IN_MICRO_SECOND = 1000 * 1000;
+            // bug: 349159609
+            // note, vp8 does not have the FLAG_CODEC_CONFIG and the test
+            // android.mediav2.cts.DecoderDynamicColorAspectTest test still
+            // expects vp8 to pass. so this hack is to check the time stamp
+            // change to update the color aspect: too early or too late is
+            // a problem as it can cause mismatch of frame and coloraspect
+            DDD("%s %d vp8 last pts is %d current pts is %d",
+                    __func__, __LINE__, mLastPts, (int) work->input.ordinal.timestamp.peeku());
+            if (mLastPts + ONE_SECOND_IN_MICRO_SECOND <= work->input.ordinal.timestamp.peeku()) {
+                codecConfig = true;
+                DDD("%s %d updated codecConfig to true", __func__, __LINE__);
+            } else {
+                DDD("%s %d keep codecConfig to false", __func__, __LINE__);
+            }
+            mLastPts = work->input.ordinal.timestamp.peeku();
+            if (mLastPts == 0) {
+                codecConfig = true;
+            }
+            if (codecConfig) {
+                C2BaseParams::Lock lock = mParams->lock();
+                std::shared_ptr<C2StreamColorAspectsTuning::output> defaultColorAspects =
+                mParams->getDefaultColorAspects_l();
+                m_primaries = defaultColorAspects->primaries;
+                m_range = defaultColorAspects->range;
+                m_transfer = defaultColorAspects->transfer;
+                m_matrix = defaultColorAspects->matrix;
+            }
         }
+
         if (codecConfig) {
-            IntfImpl::Lock lock = mIntf->lock();
-            std::shared_ptr<C2StreamColorAspectsTuning::output> defaultColorAspects =
-            mIntf->getDefaultColorAspects_l();
-            m_primaries = defaultColorAspects->primaries;
-            m_range = defaultColorAspects->range;
-            m_transfer = defaultColorAspects->transfer;
-            m_matrix = defaultColorAspects->matrix;
-        }
-    }
+            {
+                C2BaseParams::Lock lock = mParams->lock();
+                std::shared_ptr<C2StreamColorAspectsTuning::output> defaultColorAspects =
+                    mParams->getDefaultColorAspects_l();
+                lock.unlock();
+                C2StreamColorAspectsInfo::input codedAspects(0u, defaultColorAspects->range,
+                    defaultColorAspects->primaries, defaultColorAspects->transfer,
+                    defaultColorAspects->matrix);
+                std::vector<std::unique_ptr<C2SettingResult>> failures;
+                (void)mParams->config({&codedAspects}, C2_MAY_BLOCK, &failures);
+            }
 
-    if (codecConfig) {
-        {
-            IntfImpl::Lock lock = mIntf->lock();
-            std::shared_ptr<C2StreamColorAspectsTuning::output> defaultColorAspects =
-                mIntf->getDefaultColorAspects_l();
-            lock.unlock();
-            C2StreamColorAspectsInfo::input codedAspects(0u, defaultColorAspects->range,
-                defaultColorAspects->primaries, defaultColorAspects->transfer,
-                defaultColorAspects->matrix);
-            std::vector<std::unique_ptr<C2SettingResult>> failures;
-            (void)mIntf->config({&codedAspects}, C2_MAY_BLOCK, &failures);
+            DDD("%s %d updated coloraspect due to codec config", __func__, __LINE__);
+
+            if (mIsVp9) {
+                fillEmptyWork(work);
+                return;
+            }
         }
 
-        DDD("%s %d updated coloraspect due to codec config", __func__, __LINE__);
+        sendMetadata();
 
-        if (mIsVp9) {
-            fillEmptyWork(work);
-            return;
+        if (inSize) {
+            uint8_t *bitstream = const_cast<uint8_t *>(rView.data() + inOffset);
+            vpx_codec_err_t err = mCtx->decode(bitstream, inSize,
+                                            &work->input.ordinal.frameIndex, 0);
+            if (err != 0) {
+                ALOGE("on2 decoder failed to decode frame. err: ");
+                mSignalledError = true;
+                work->workletsProcessed = 1u;
+                work->result = C2_CORRUPTED;
+                return;
+            }
         }
-    }
 
-    sendMetadata();
-
-    if (inSize) {
-        uint8_t *bitstream = const_cast<uint8_t *>(rView.data() + inOffset);
-        vpx_codec_err_t err = mCtx->decode(bitstream, inSize,
-                                           &work->input.ordinal.frameIndex, 0);
-        if (err != 0) {
-            ALOGE("on2 decoder failed to decode frame. err: ");
-            mSignalledError = true;
-            work->workletsProcessed = 1u;
-            work->result = C2_CORRUPTED;
-            return;
-        }
-    }
-
-    status_t err = outputBuffer(pool, work);
-    if (err == android::NOT_ENOUGH_DATA) {
-        if (inSize > 0) {
-            DDD("Maybe non-display frame at %lld.",
-                work->input.ordinal.frameIndex.peekll());
-            // send the work back with empty buffer.
+        status_t err = outputBuffer(pool, work);
+        if (err == android::NOT_ENOUGH_DATA) {
+            if (inSize > 0) {
+                DDD("Maybe non-display frame at %lld.",
+                    work->input.ordinal.frameIndex.peekll());
+                // send the work back with empty buffer.
+                inSize = 0;
+            }
+        } else if (err != android::OK) {
+            ALOGD("Error while getting the output frame out");
+            // work->result would be already filled; do fillEmptyWork() below to
+            // send the work back.
             inSize = 0;
         }
-    } else if (err != android::OK) {
-        ALOGD("Error while getting the output frame out");
-        // work->result would be already filled; do fillEmptyWork() below to
-        // send the work back.
-        inSize = 0;
-    }
 
-    if (eos) {
-        drainInternal(DRAIN_COMPONENT_WITH_EOS, pool, work);
-        mSignalledOutputEos = true;
-    } else if (!inSize) {
-        fillEmptyWork(work);
-    }
-}
-
-void C2GoldfishVpxDec::setup_ctx_parameters(const int hostColorBufferId) {
-    mCtx->setupParameters(mWidth, mHeight, hostColorBufferId, mWidth, mHeight, 1);
-}
-
-status_t C2GoldfishVpxDec::outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
-                                                     const std::unique_ptr<C2Work> &work) {
-    if (!(work && pool))
-        return android::BAD_VALUE;
-
-    // now get the block
-    std::shared_ptr<C2GraphicBlock> block;
-    uint32_t format = HAL_PIXEL_FORMAT_YCBCR_420_888;
-    const C2MemoryUsage usage = {(uint64_t)(BufferUsage::VIDEO_DECODER),
-                                 C2MemoryUsage::CPU_WRITE | C2MemoryUsage::CPU_READ};
-
-    c2_status_t err = pool->fetchGraphicBlock(align(mWidth, 2), mHeight, format,
-                                              usage, &block);
-    if (err != C2_OK) {
-        ALOGE("fetchGraphicBlock for Output failed with status %d", err);
-        work->result = err;
-        return android::UNKNOWN_ERROR;
-    }
-
-    int hostColorBufferId = -1;
-    const bool decodingToHostColorBuffer = mEnableAndroidNativeBuffers;
-    if(decodingToHostColorBuffer){
-        auto c2Handle = block->handle();
-        native_handle_t *grallocHandle =
-            UnwrapNativeCodec2GrallocHandle(c2Handle);
-        hostColorBufferId = getColorBufferHandle(grallocHandle);
-        if (hostColorBufferId > 0) {
-            DDD("found handle %d", hostColorBufferId);
-        } else {
-            DDD("decode to buffer, because handle %d is invalid",
-                hostColorBufferId);
-            // change to -1 so host knows it is definitely invalid
-            // 0 is a bit confusing
-            hostColorBufferId = -1;
+        if (eos) {
+            drainInternal(DRAIN_COMPONENT_WITH_EOS, pool, work);
+            mSignalledOutputEos = true;
+        } else if (!inSize) {
+            fillEmptyWork(work);
         }
     }
-    setup_ctx_parameters(hostColorBufferId);
 
-    const vpx_image_t *img = mCtx->getFrame();
-    if (!img)
-        return android::NOT_ENOUGH_DATA;
+    c2_status_t drain(uint32_t drainMode,
+                      const std::shared_ptr<C2BlockPool> &pool) override {
+        return drainInternal(drainMode, pool, nullptr);
+    }
 
-    if (img->d_w != mWidth || img->d_h != mHeight) {
-        DDD("updating w %d h %d to w %d h %d", mWidth, mHeight, img->d_w,
-            img->d_h);
-        mWidth = img->d_w;
-        mHeight = img->d_h;
+  private:
+    // create context that talks to host decoder: it needs to use
+    // pool to decide whether decoding to host color buffer ot
+    // decode to guest bytebuffer when pool cannot fetch valid host
+    // color buffer id
+    void checkContext(const std::shared_ptr<C2BlockPool> &pool) {
+        if (mCtx)
+            return;
 
-        // need to re-allocate since size changed, especially for byte buffer
-        // mode
-        if (true) {
-            c2_status_t err = pool->fetchGraphicBlock(align(mWidth, 2), mHeight,
-                                                      format, usage, &block);
-            if (err != C2_OK) {
-                ALOGE("fetchGraphicBlock for Output failed with status %d",
-                      err);
-                work->result = err;
+        mWidth = mParams->width();
+        mHeight = mParams->height();
+        ALOGI("created decoder context w %d h %d", mWidth, mHeight);
+
+        const bool isGraphic = (pool->getAllocatorId() & C2Allocator::GRAPHIC);
+        DDD("buffer pool allocator id %x",  (int)(pool->getAllocatorId()));
+        if (isGraphic) {
+            uint64_t client_usage = getClientUsage(*pool);
+            DDD("client has usage as 0x%llx", client_usage);
+            if (client_usage & static_cast<uint32_t>(BufferUsage::CPU_READ_MASK)) {
+                DDD("decoding to guest byte buffer as client has read usage");
+                mEnableAndroidNativeBuffers = false;
+            } else {
+                DDD("decoding to host color buffer");
+                mEnableAndroidNativeBuffers = true;
+            }
+        } else {
+            DDD("decoding to guest byte buffer");
+            mEnableAndroidNativeBuffers = false;
+        }
+
+        const uint8_t vpVersion = mIsVp9 ? 9 : 8;
+        auto ctx = std::make_unique<VpxCodecCtx>(vpVersion, mEnableAndroidNativeBuffers ? 200 : 100);
+        if (const int err = ctx->init()) {
+            ALOGE("vpx decoder failed to initialize. (%d)", err);
+        } else {
+            mCtx = std::move(ctx);
+        }
+    }
+
+    void setup_ctx_parameters(int hostColorBufferId = -1) {
+        mCtx->setupParameters(mWidth, mHeight, hostColorBufferId, mWidth, mHeight, 1);
+    }
+
+    status_t initDecoder() {
+        ALOGI("calling init GoldfishVPX");
+        mWidth = 320;
+        mHeight = 240;
+        mFrameParallelMode = false;
+        mSignalledOutputEos = false;
+        mSignalledError = false;
+
+        return android::OK;
+    }
+
+    status_t destroyDecoder() {
+        mCtx.reset();
+        return android::OK;
+    }
+
+    void finishWork(uint64_t index, const std::unique_ptr<C2Work> &work,
+                    const std::shared_ptr<C2GraphicBlock> &block) {
+        std::shared_ptr<C2Buffer> buffer =
+            createGraphicBuffer(block, C2Rect(mWidth, mHeight));
+        {
+            C2BaseParams::Lock lock = mParams->lock();
+            if (mIsVp9) {
+                buffer->setInfo(mParams->getColorAspects_l());
+            } else {
+                std::shared_ptr<C2StreamColorAspectsInfo::output> tColorAspects =
+                    std::make_shared<C2StreamColorAspectsInfo::output>
+                    (C2StreamColorAspectsInfo::output(0u, m_range,
+                        m_primaries, m_transfer,
+                        m_matrix));
+                DDD("%s %d setting to index %d range %d primaries %d transfer %d",
+                        __func__, __LINE__, (int)index,
+                        (int)tColorAspects->range,
+                        (int)tColorAspects->primaries,
+                        (int)tColorAspects->transfer);
+                buffer->setInfo(tColorAspects);
+            }
+        }
+
+        auto fillWork = [buffer, index,
+                        params = this->mParams](const std::unique_ptr<C2Work> &work) {
+            uint32_t flags = 0;
+            if ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) &&
+                (c2_cntr64_t(index) == work->input.ordinal.frameIndex)) {
+                flags |= C2FrameData::FLAG_END_OF_STREAM;
+                DDD("signalling eos");
+            }
+            work->worklets.front()->output.flags = (C2FrameData::flags_t)flags;
+            work->worklets.front()->output.buffers.clear();
+            work->worklets.front()->output.buffers.push_back(buffer);
+            work->worklets.front()->output.ordinal = work->input.ordinal;
+            work->workletsProcessed = 1u;
+
+            for (const std::unique_ptr<C2Param> &param : work->input.configUpdate) {
+                if (param) {
+                    C2StreamHdr10PlusInfo::input *hdr10PlusInfo =
+                        C2StreamHdr10PlusInfo::input::From(param.get());
+
+                    if (hdr10PlusInfo != nullptr) {
+                        std::vector<std::unique_ptr<C2SettingResult>> failures;
+                        std::unique_ptr<C2Param> outParam = C2Param::CopyAsStream(
+                            *param.get(), true /*output*/, param->stream());
+                        c2_status_t err =
+                            params->config({outParam.get()}, C2_MAY_BLOCK, &failures);
+                        if (err == C2_OK) {
+                            work->worklets.front()->output.configUpdate.push_back(
+                                C2Param::Copy(*outParam.get()));
+                        } else {
+                            ALOGE("finishWork: Config update size failed");
+                        }
+                        break;
+                    }
+                }
+            }
+        };
+        if (work && c2_cntr64_t(index) == work->input.ordinal.frameIndex) {
+            fillWork(work);
+        } else {
+            finish(index, fillWork);
+        }
+    }
+
+    status_t outputBuffer(const std::shared_ptr<C2BlockPool> &pool,
+                          const std::unique_ptr<C2Work> &work) {
+        if (!(work && pool))
+            return android::BAD_VALUE;
+
+        // now get the block
+        std::shared_ptr<C2GraphicBlock> block;
+        uint32_t format = HAL_PIXEL_FORMAT_YCBCR_420_888;
+        const C2MemoryUsage usage = {(uint64_t)(BufferUsage::VIDEO_DECODER),
+                                    C2MemoryUsage::CPU_WRITE | C2MemoryUsage::CPU_READ};
+
+        c2_status_t err = pool->fetchGraphicBlock(align(mWidth, 2), mHeight, format,
+                                                usage, &block);
+        if (err != C2_OK) {
+            ALOGE("fetchGraphicBlock for Output failed with status %d", err);
+            work->result = err;
+            return android::UNKNOWN_ERROR;
+        }
+
+        int hostColorBufferId = -1;
+        const bool decodingToHostColorBuffer = mEnableAndroidNativeBuffers;
+        if(decodingToHostColorBuffer){
+            auto c2Handle = block->handle();
+            native_handle_t *grallocHandle =
+                UnwrapNativeCodec2GrallocHandle(c2Handle);
+            hostColorBufferId = getColorBufferHandle(grallocHandle);
+            if (hostColorBufferId > 0) {
+                DDD("found handle %d", hostColorBufferId);
+            } else {
+                DDD("decode to buffer, because handle %d is invalid",
+                    hostColorBufferId);
+                // change to -1 so host knows it is definitely invalid
+                // 0 is a bit confusing
+                hostColorBufferId = -1;
+            }
+        }
+        setup_ctx_parameters(hostColorBufferId);
+
+        const vpx_image_t *img = mCtx->getFrame();
+        if (!img)
+            return android::NOT_ENOUGH_DATA;
+
+        if (img->d_w != mWidth || img->d_h != mHeight) {
+            DDD("updating w %d h %d to w %d h %d", mWidth, mHeight, img->d_w,
+                img->d_h);
+            mWidth = img->d_w;
+            mHeight = img->d_h;
+
+            // need to re-allocate since size changed, especially for byte buffer
+            // mode
+            if (true) {
+                c2_status_t err = pool->fetchGraphicBlock(align(mWidth, 2), mHeight,
+                                                        format, usage, &block);
+                if (err != C2_OK) {
+                    ALOGE("fetchGraphicBlock for Output failed with status %d",
+                        err);
+                    work->result = err;
+                    return android::UNKNOWN_ERROR;
+                }
+            }
+
+            C2StreamPictureSizeInfo::output size(0u, mWidth, mHeight);
+            std::vector<std::unique_ptr<C2SettingResult>> failures;
+            c2_status_t err = mParams->config({&size}, C2_MAY_BLOCK, &failures);
+            if (err == C2_OK) {
+                work->worklets.front()->output.configUpdate.push_back(
+                    C2Param::Copy(size));
+            } else {
+                ALOGE("Config update size failed");
+                mSignalledError = true;
+                work->workletsProcessed = 1u;
+                work->result = C2_CORRUPTED;
                 return android::UNKNOWN_ERROR;
             }
         }
-
-        C2StreamPictureSizeInfo::output size(0u, mWidth, mHeight);
-        std::vector<std::unique_ptr<C2SettingResult>> failures;
-        c2_status_t err = mIntf->config({&size}, C2_MAY_BLOCK, &failures);
-        if (err == C2_OK) {
-            work->worklets.front()->output.configUpdate.push_back(
-                C2Param::Copy(size));
-        } else {
-            ALOGE("Config update size failed");
+        if (img->fmt != VPX_IMG_FMT_I420 && img->fmt != VPX_IMG_FMT_I42016) {
+            ALOGE("img->fmt %d not supported", img->fmt);
             mSignalledError = true;
             work->workletsProcessed = 1u;
             work->result = C2_CORRUPTED;
-            return android::UNKNOWN_ERROR;
-        }
-    }
-    if (img->fmt != VPX_IMG_FMT_I420 && img->fmt != VPX_IMG_FMT_I42016) {
-        ALOGE("img->fmt %d not supported", img->fmt);
-        mSignalledError = true;
-        work->workletsProcessed = 1u;
-        work->result = C2_CORRUPTED;
-        return false;
-    }
-
-    if (img->fmt == VPX_IMG_FMT_I42016) {
-        IntfImpl::Lock lock = mIntf->lock();
-        std::shared_ptr<C2StreamColorAspectsTuning::output>
-            defaultColorAspects = mIntf->getDefaultColorAspects_l();
-
-        if (defaultColorAspects->primaries == C2Color::PRIMARIES_BT2020 &&
-            defaultColorAspects->matrix == C2Color::MATRIX_BT2020 &&
-            defaultColorAspects->transfer == C2Color::TRANSFER_ST2084) {
-            format = HAL_PIXEL_FORMAT_RGBA_1010102;
-        }
-    }
-
-    if (!decodingToHostColorBuffer) {
-
-        C2GraphicView wView = block->map().get();
-        if (wView.error()) {
-            ALOGE("graphic view map failed %d", wView.error());
-            work->result = C2_CORRUPTED;
-            return android::UNKNOWN_ERROR;
+            return false;
         }
 
+        if (img->fmt == VPX_IMG_FMT_I42016) {
+            C2BaseParams::Lock lock = mParams->lock();
+            std::shared_ptr<C2StreamColorAspectsTuning::output>
+                defaultColorAspects = mParams->getDefaultColorAspects_l();
+
+            if (defaultColorAspects->primaries == C2Color::PRIMARIES_BT2020 &&
+                defaultColorAspects->matrix == C2Color::MATRIX_BT2020 &&
+                defaultColorAspects->transfer == C2Color::TRANSFER_ST2084) {
+                format = HAL_PIXEL_FORMAT_RGBA_1010102;
+            }
+        }
+
+        if (!decodingToHostColorBuffer) {
+
+            C2GraphicView wView = block->map().get();
+            if (wView.error()) {
+                ALOGE("graphic view map failed %d", wView.error());
+                work->result = C2_CORRUPTED;
+                return android::UNKNOWN_ERROR;
+            }
+
+            DDD("provided (%dx%d) required (%dx%d), out frameindex %lld",
+                block->width(), block->height(), mWidth, mHeight,
+                ((c2_cntr64_t *)img->user_priv)->peekll());
+
+            uint8_t *dst =
+                const_cast<uint8_t *>(wView.data()[C2PlanarLayout::PLANE_Y]);
+            size_t srcYStride = mWidth;
+            size_t srcUStride = mWidth / 2;
+            size_t srcVStride = mWidth / 2;
+            C2PlanarLayout layout = wView.layout();
+            size_t dstYStride = layout.planes[C2PlanarLayout::PLANE_Y].rowInc;
+            size_t dstUVStride = layout.planes[C2PlanarLayout::PLANE_U].rowInc;
+
+            if (img->fmt == VPX_IMG_FMT_I42016) {
+                ALOGW("WARNING: not I42016 is not supported !!!");
+            } else if (1) {
+                const uint8_t *srcY = mCtx->getDst();
+                const uint8_t *srcV = srcY + mWidth * mHeight;
+                const uint8_t *srcU = srcV + mWidth * mHeight / 4;
+                // TODO: the following crashes
+                copyOutputBufferToYuvPlanarFrame(dst, srcY, srcU, srcV, srcYStride,
+                                                srcUStride, srcVStride, dstYStride,
+                                                dstUVStride, mWidth, mHeight);
+                // memcpy(dst, srcY, mWidth * mHeight / 2);
+            }
+        }
         DDD("provided (%dx%d) required (%dx%d), out frameindex %lld",
             block->width(), block->height(), mWidth, mHeight,
             ((c2_cntr64_t *)img->user_priv)->peekll());
 
-        uint8_t *dst =
-            const_cast<uint8_t *>(wView.data()[C2PlanarLayout::PLANE_Y]);
-        size_t srcYStride = mWidth;
-        size_t srcUStride = mWidth / 2;
-        size_t srcVStride = mWidth / 2;
-        C2PlanarLayout layout = wView.layout();
-        size_t dstYStride = layout.planes[C2PlanarLayout::PLANE_Y].rowInc;
-        size_t dstUVStride = layout.planes[C2PlanarLayout::PLANE_U].rowInc;
-
-        if (img->fmt == VPX_IMG_FMT_I42016) {
-            ALOGW("WARNING: not I42016 is not supported !!!");
-        } else if (1) {
-            const uint8_t *srcY = mCtx->getDst();
-            const uint8_t *srcV = srcY + mWidth * mHeight;
-            const uint8_t *srcU = srcV + mWidth * mHeight / 4;
-            // TODO: the following crashes
-            copyOutputBufferToYuvPlanarFrame(dst, srcY, srcU, srcV, srcYStride,
-                                             srcUStride, srcVStride, dstYStride,
-                                             dstUVStride, mWidth, mHeight);
-            // memcpy(dst, srcY, mWidth * mHeight / 2);
-        }
+        finishWork(((c2_cntr64_t *)img->user_priv)->peekull(), work,
+                std::move(block));
+        return android::OK;
     }
-    DDD("provided (%dx%d) required (%dx%d), out frameindex %lld",
-        block->width(), block->height(), mWidth, mHeight,
-        ((c2_cntr64_t *)img->user_priv)->peekll());
 
-    finishWork(((c2_cntr64_t *)img->user_priv)->peekull(), work,
-               std::move(block));
-    return android::OK;
-}
+    c2_status_t drainInternal(uint32_t drainMode,
+                              const std::shared_ptr<C2BlockPool> &pool,
+                              const std::unique_ptr<C2Work> &work) {
+        if (drainMode == NO_DRAIN) {
+            ALOGW("drain with NO_DRAIN: no-op");
+            return C2_OK;
+        }
+        if (drainMode == DRAIN_CHAIN) {
+            ALOGW("DRAIN_CHAIN not supported");
+            return C2_OMITTED;
+        }
 
-c2_status_t C2GoldfishVpxDec::drainInternal(uint32_t drainMode,
-                                                         const std::shared_ptr<C2BlockPool> &pool,
-                                                         const std::unique_ptr<C2Work> &work) {
-    if (drainMode == NO_DRAIN) {
-        ALOGW("drain with NO_DRAIN: no-op");
+        while (outputBuffer(pool, work) == android::OK) {
+        }
+
+        if (drainMode == DRAIN_COMPONENT_WITH_EOS && work &&
+            work->workletsProcessed == 0u) {
+            fillEmptyWork(work);
+        }
+
         return C2_OK;
     }
-    if (drainMode == DRAIN_CHAIN) {
-        ALOGW("DRAIN_CHAIN not supported");
-        return C2_OMITTED;
-    }
 
-    while (outputBuffer(pool, work) == android::OK) {
-    }
+    void sendMetadata() {
+        // compare and send if changed
+        MetaDataColorAspects currentMetaData = {1, 0, 0, 0};
+        currentMetaData.primaries = mParams->primaries();
+        currentMetaData.range = mParams->range();
+        currentMetaData.transfer = mParams->transfer();
 
-    if (drainMode == DRAIN_COMPONENT_WITH_EOS && work &&
-        work->workletsProcessed == 0u) {
-        fillEmptyWork(work);
-    }
+        DDD("metadata primaries %d range %d transfer %d",
+                (int)(currentMetaData.primaries),
+                (int)(currentMetaData.range),
+                (int)(currentMetaData.transfer)
+        );
 
-    return C2_OK;
-}
-
-c2_status_t C2GoldfishVpxDec::drain(uint32_t drainMode,
-                                                 const std::shared_ptr<C2BlockPool> &pool) {
-    return drainInternal(drainMode, pool, nullptr);
-}
-
-namespace {
-
-struct ImplFactory : public IComponentFactory {
-    explicit ImplFactory(bool isVp9) : mIsVp9(isVp9) {}
-
-    std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
-            const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
-        const char* name = mIsVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8;
-        return {C2_OK, std::make_shared<C2GoldfishVpxDec>(
-                    name, 0, std::make_shared<C2GoldfishVpxDec::IntfImpl>(reflector, mIsVp9), mIsVp9)};
-    }
-
-    std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
-            const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
-        const char* name = mIsVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8;
-        return {C2_OK, std::make_shared<SimpleC2Interface<C2GoldfishVpxDec::IntfImpl>>(
-                    name, 0, std::make_shared<C2GoldfishVpxDec::IntfImpl>(reflector, mIsVp9))};
-    }
-
-    std::string_view getName() const override {
-        using namespace std::literals::string_view_literals;
-        if (mIsVp9) {
-            return "vp9dec"sv;
-        } else {
-            return "vp8dec"sv;
+        if (mSentMetadata.primaries == currentMetaData.primaries &&
+            mSentMetadata.range == currentMetaData.range &&
+            mSentMetadata.transfer == currentMetaData.transfer) {
+            DDD("metadata is the same, no need to update");
+            return;
         }
+        std::swap(mSentMetadata, currentMetaData);
+
+        mCtx->sendMetadata(mSentMetadata);
     }
 
-private:
-    const bool mIsVp9;
+    std::shared_ptr<C2StreamColorAspectsTuning::output> mColorAspects;
+    std::shared_ptr<C2BaseParams> mParams;
+    std::unique_ptr<VpxCodecCtx> mCtx;
+
+    uint64_t mLastPts { 0 };
+    C2Color::range_t m_range;
+    C2Color::primaries_t m_primaries;
+    C2Color::transfer_t m_transfer;
+    C2Color::matrix_t m_matrix;
+
+    MetaDataColorAspects mSentMetadata = {1, 0, 0, 0};
+
+    uint32_t mWidth{0};
+    uint32_t mHeight{0};
+    bool mEnableAndroidNativeBuffers{true};
+    bool mSignalledOutputEos{false};
+    bool mSignalledError{false};
+    bool mFrameParallelMode{false}; // Frame parallel is only supported by VP9 decoder.
+
+    bool mIsVp9;
+
+    C2_DO_NOT_COPY(C2GoldfishVpxDec);
 };
 
-} // namespace
+}  // namespace
 
 std::shared_ptr<const IComponentFactory> getC2GoldfishVpxDecFactory(bool isVp9) {
+    struct ImplFactory : public IComponentFactory {
+        struct VpxParams : public C2BaseParams {
+            VpxParams(const std::shared_ptr<C2ReflectorHelper> &helper, bool isVp9)
+                : C2BaseParams(helper, isVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8,
+                            C2Component::KIND_DECODER, C2Component::DOMAIN_VIDEO,
+                            isVp9 ? MEDIA_MIMETYPE_VIDEO_VP9 : MEDIA_MIMETYPE_VIDEO_VP8) {
+                if (isVp9) {
+                    // TODO: Add C2Config::PROFILE_VP9_2HDR ??
+                    addParameter(
+                        DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
+                            .withDefault(std::make_shared<C2StreamProfileLevelInfo::input>(
+                                0u, C2Config::PROFILE_VP9_0, C2Config::LEVEL_VP9_5))
+                            .withFields({C2F(mProfileLevel, profile)
+                                            .oneOf({C2Config::PROFILE_VP9_0,
+                                                    C2Config::PROFILE_VP9_2}),
+                                        C2F(mProfileLevel, level)
+                                            .oneOf({
+                                                C2Config::LEVEL_VP9_1,
+                                                C2Config::LEVEL_VP9_1_1,
+                                                C2Config::LEVEL_VP9_2,
+                                                C2Config::LEVEL_VP9_2_1,
+                                                C2Config::LEVEL_VP9_3,
+                                                C2Config::LEVEL_VP9_3_1,
+                                                C2Config::LEVEL_VP9_4,
+                                                C2Config::LEVEL_VP9_4_1,
+                                                C2Config::LEVEL_VP9_5,
+                                            })})
+                            .withSetter(ProfileLevelSetter, mSize)
+                            .build());
+                } else {
+                    addParameter(
+                        DefineParam(mProfileLevel, C2_PARAMKEY_PROFILE_LEVEL)
+                            .withConstValue(std::make_shared<C2StreamProfileLevelInfo::input>(
+                                0u, C2Config::PROFILE_UNUSED, C2Config::LEVEL_UNUSED))
+                            .build());
+                }
+            }
+        };
+
+        explicit ImplFactory(bool isVp9) : mIsVp9(isVp9) {}
+
+        static std::shared_ptr<C2BaseParams> createVpxParams(
+                const std::shared_ptr<C2ReflectorHelper>& reflector, bool isVp9) {
+            return std::make_shared<VpxParams>(reflector, isVp9);
+        }
+
+        std::pair<c2_status_t, std::shared_ptr<C2Component>> createComponent(
+                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+            const char* name = mIsVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8;
+            return {C2_OK, std::make_shared<C2GoldfishVpxDec>(
+                        name, 0, createVpxParams(reflector, mIsVp9), mIsVp9)};
+        }
+
+        std::pair<c2_status_t, std::shared_ptr<C2ComponentInterface>> createInterface(
+                const std::shared_ptr<C2ReflectorHelper>& reflector) const override {
+            const char* name = mIsVp9 ? COMPONENT_NAME_VP9 : COMPONENT_NAME_VP8;
+            return {C2_OK, std::make_shared<SimpleC2Interface<C2BaseParams>>(
+                        name, 0, createVpxParams(reflector, mIsVp9))};
+        }
+
+        std::string_view getName() const override {
+            using namespace std::literals::string_view_literals;
+            if (mIsVp9) {
+                return "vp9dec"sv;
+            } else {
+                return "vp8dec"sv;
+            }
+        }
+
+    private:
+        const bool mIsVp9;
+    };
+
     return std::make_shared<ImplFactory>(isVp9);
 }
 
