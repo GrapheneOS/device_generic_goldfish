@@ -32,13 +32,109 @@ using ::android::GetCodec2PoolMask;
 using ::android::GetPreferredLinearAllocatorId;
 
 namespace {
-C2R SubscribedParamIndicesSetter(
-        bool mayBlock, C2InterfaceHelper::C2P<C2SubscribedParamIndicesTuning> &me) {
-    (void)mayBlock;
-    (void)me;
+template<typename T> using C2P = C2BaseParams::C2P<T>;
+
+constexpr uint32_t kDefaultOutputDelay = 8;
+constexpr uint32_t kMaxOutputDelay = 16;
+constexpr size_t kMinInputBufferSize = 6 * 1024 * 1024;
+
+C2R SubscribedParamIndicesSetter(bool /*mayBlock*/,
+                                 C2InterfaceHelper::C2P<C2SubscribedParamIndicesTuning>& /*me*/) {
+    return C2R::Ok();
+}
+
+C2R SizeSetter(bool /*mayBlock*/,
+               const C2BaseParams::C2P<C2StreamPictureSizeInfo::output>& oldMe,
+               C2BaseParams::C2P<C2StreamPictureSizeInfo::output>& me) {
+    C2R res = C2R::Ok();
+    if (!me.F(me.v.width).supportsAtAll(me.v.width)) {
+        ALOGW("w %d is not supported, using old one %d", me.v.width, oldMe.v.width);
+        res = res.plus(C2SettingResultBuilder::BadValue(me.F(me.v.width)));
+        me.set().width = oldMe.v.width;
+    }
+
+    if (!me.F(me.v.height).supportsAtAll(me.v.height)) {
+        ALOGW("h %d is not supported, using old one %d", me.v.height, oldMe.v.height);
+        res = res.plus(C2SettingResultBuilder::BadValue(me.F(me.v.height)));
+        me.set().height = oldMe.v.height;
+    }
+
+    return res;
+}
+
+C2R MaxPictureSizeSetter(bool /*mayBlock*/,
+                         C2P<C2StreamMaxPictureSizeTuning::output> &me,
+                         const C2P<C2StreamPictureSizeInfo::output> &size) {
+    me.set().width = c2_min(c2_max(me.v.width, size.v.width), 4096u);
+    me.set().height = c2_min(c2_max(me.v.height, size.v.height), 4096u);
+    return C2R::Ok();
+}
+
+C2R MaxInputSizeSetter(bool /*mayBlock*/,
+                       C2P<C2StreamMaxBufferSizeInfo::input> &me,
+                       const C2P<C2StreamMaxPictureSizeTuning::output> &maxSize) {
+    // assume compression ratio of 2
+    me.set().value = c2_max((((maxSize.v.width + 15) / 16) *
+                                ((maxSize.v.height + 15) / 16) * 192),
+                            kMinInputBufferSize);
+    return C2R::Ok();
+}
+
+C2R DefaultColorAspectsSetter(bool /*mayBlock*/,
+                              C2P<C2StreamColorAspectsTuning::output> &me) {
+    if (me.v.range > C2Color::RANGE_OTHER) {
+        me.set().range = C2Color::RANGE_OTHER;
+    }
+    if (me.v.primaries > C2Color::PRIMARIES_OTHER) {
+        me.set().primaries = C2Color::PRIMARIES_OTHER;
+    }
+    if (me.v.transfer > C2Color::TRANSFER_OTHER) {
+        me.set().transfer = C2Color::TRANSFER_OTHER;
+    }
+    if (me.v.matrix > C2Color::MATRIX_OTHER) {
+        me.set().matrix = C2Color::MATRIX_OTHER;
+    }
 
     return C2R::Ok();
 }
+
+C2R CodedColorAspectsSetter(bool /*mayBlock*/,
+                            C2P<C2StreamColorAspectsInfo::input> &me) {
+    if (me.v.range > C2Color::RANGE_OTHER) {
+        me.set().range = C2Color::RANGE_OTHER;
+    }
+    if (me.v.primaries > C2Color::PRIMARIES_OTHER) {
+        me.set().primaries = C2Color::PRIMARIES_OTHER;
+    }
+    if (me.v.transfer > C2Color::TRANSFER_OTHER) {
+        me.set().transfer = C2Color::TRANSFER_OTHER;
+    }
+    if (me.v.matrix > C2Color::MATRIX_OTHER) {
+        me.set().matrix = C2Color::MATRIX_OTHER;
+    }
+
+    return C2R::Ok();
+}
+
+C2R ColorAspectsSetter(bool /*mayBlock*/,
+                       C2P<C2StreamColorAspectsInfo::output> &me,
+                       const C2P<C2StreamColorAspectsTuning::output> &def,
+                       const C2P<C2StreamColorAspectsInfo::input> &coded) {
+    // take default values for all unspecified fields, and coded values for
+    // specified ones
+
+    me.set().range = coded.v.range == RANGE_UNSPECIFIED ? def.v.range : coded.v.range;
+    me.set().primaries = coded.v.primaries == PRIMARIES_UNSPECIFIED
+                                ? def.v.primaries
+                                : coded.v.primaries;
+    me.set().transfer = coded.v.transfer == TRANSFER_UNSPECIFIED
+                            ? def.v.transfer
+                            : coded.v.transfer;
+    me.set().matrix = coded.v.matrix == MATRIX_UNSPECIFIED ? def.v.matrix
+                                                            : coded.v.matrix;
+    return C2R::Ok();
+}
+
 }  // namespace
 
 C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
@@ -51,8 +147,7 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
     setDerivedInstance(this);
 
     addParameter(DefineParam(mName, C2_PARAMKEY_COMPONENT_NAME)
-                     .withConstValue(AllocSharedString<C2ComponentNameSetting>(
-                         name.c_str()))
+                     .withConstValue(AllocSharedString<C2ComponentNameSetting>(name))
                      .build());
 
     if (aliases.size()) {
@@ -65,8 +160,7 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
         }
         addParameter(
             DefineParam(mAliases, C2_PARAMKEY_COMPONENT_ALIASES)
-                .withConstValue(AllocSharedString<C2ComponentAliasesSetting>(
-                    joined.c_str()))
+                .withConstValue(AllocSharedString<C2ComponentAliasesSetting>(joined))
                 .build());
     }
 
@@ -88,7 +182,175 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
             .withConstValue(std::make_shared<C2PortStreamCountTuning::output>(1))
             .build());
 
-    // set up buffer formats and allocators
+    addParameter(
+        DefineParam(mRequestedInputDelay, C2_PARAMKEY_INPUT_DELAY_REQUEST)
+            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mActualInputDelay, C2_PARAMKEY_INPUT_DELAY)
+            .withConstValue(std::make_shared<C2PortActualDelayTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxInputReferenceAge, C2_PARAMKEY_INPUT_MAX_REFERENCE_AGE)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxInputReferenceCount, C2_PARAMKEY_INPUT_MAX_REFERENCE_COUNT)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::input>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxOutputReferenceAge, C2_PARAMKEY_OUTPUT_MAX_REFERENCE_AGE)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::output>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxOutputReferenceCount, C2_PARAMKEY_OUTPUT_MAX_REFERENCE_COUNT)
+            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::output>(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mPrivateAllocators, C2_PARAMKEY_PRIVATE_ALLOCATORS)
+            .withConstValue(C2PrivateAllocatorsTuning::AllocShared(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mMaxPrivateBufferCount, C2_PARAMKEY_MAX_PRIVATE_BUFFER_COUNT)
+            .withConstValue(C2MaxPrivateBufferCountTuning::AllocShared(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mPrivatePoolIds, C2_PARAMKEY_PRIVATE_BLOCK_POOLS)
+            .withConstValue(C2PrivateBlockPoolsTuning::AllocShared(0u))
+            .build());
+
+    addParameter(
+        DefineParam(mTimeStretch, C2_PARAMKEY_TIME_STRETCH)
+            .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
+            .build());
+
+    addParameter(
+        DefineParam(mActualOutputDelay, C2_PARAMKEY_OUTPUT_DELAY)
+            .withDefault(std::make_shared<C2PortActualDelayTuning::output>(kDefaultOutputDelay))
+            .withFields({C2F(mActualOutputDelay, value).inRange(0, kMaxOutputDelay)})
+            .withSetter(Setter<decltype(*mActualOutputDelay)>::StrictValueWithNoDeps)
+            .build());
+
+    addParameter(
+        DefineParam(mAttrib, C2_PARAMKEY_COMPONENT_ATTRIBUTES)
+            .withConstValue(
+                std::make_shared<C2ComponentAttributesSetting>(C2Component::ATTRIB_IS_TEMPORAL))
+            .build());
+
+    addParameter(
+        DefineParam(mSize, C2_PARAMKEY_PICTURE_SIZE)
+            .withDefault(std::make_shared<C2StreamPictureSizeInfo::output>(0u, 320, 240))
+            .withFields({
+                C2F(mSize, width).inRange(2, 4096, 2),
+                C2F(mSize, height).inRange(2, 4096, 2),
+            })
+            .withSetter(SizeSetter)
+            .build());
+
+    addParameter(
+        DefineParam(mMaxSize, C2_PARAMKEY_MAX_PICTURE_SIZE)
+            .withDefault(std::make_shared<C2StreamMaxPictureSizeTuning::output>(0u, 320, 240))
+            .withFields({
+                C2F(mSize, width).inRange(2, 4096, 2),
+                C2F(mSize, height).inRange(2, 4096, 2),
+            })
+            .withSetter(MaxPictureSizeSetter, mSize)
+            .build());
+
+    addParameter(
+        DefineParam(mMaxInputSize, C2_PARAMKEY_INPUT_MAX_BUFFER_SIZE)
+            .withDefault(std::make_shared<C2StreamMaxBufferSizeInfo::input>(0u, kMinInputBufferSize))
+            .withFields({ C2F(mMaxInputSize, value).any(), })
+            .calculatedAs(MaxInputSizeSetter, mMaxSize)
+            .build());
+
+    addParameter(
+        DefineParam(mDefaultColorAspects, C2_PARAMKEY_DEFAULT_COLOR_ASPECTS)
+            .withDefault(std::make_shared<C2StreamColorAspectsTuning::output>(
+                0u,
+                C2Color::RANGE_UNSPECIFIED,
+                C2Color::PRIMARIES_UNSPECIFIED,
+                C2Color::TRANSFER_UNSPECIFIED,
+                C2Color::MATRIX_UNSPECIFIED))
+            .withFields({
+                C2F(mDefaultColorAspects, range)
+                    .inRange(C2Color::RANGE_UNSPECIFIED, C2Color::RANGE_OTHER),
+                C2F(mDefaultColorAspects, primaries)
+                    .inRange(C2Color::PRIMARIES_UNSPECIFIED, C2Color::PRIMARIES_OTHER),
+                C2F(mDefaultColorAspects, transfer)
+                    .inRange(C2Color::TRANSFER_UNSPECIFIED, C2Color::TRANSFER_OTHER),
+                C2F(mDefaultColorAspects, matrix)
+                    .inRange(C2Color::MATRIX_UNSPECIFIED, C2Color::MATRIX_OTHER)
+            })
+            .withSetter(DefaultColorAspectsSetter)
+            .build());
+
+    addParameter(
+        DefineParam(mCodedColorAspects, C2_PARAMKEY_VUI_COLOR_ASPECTS)
+            .withDefault(std::make_shared<C2StreamColorAspectsInfo::input>(
+                0u,
+                C2Color::RANGE_LIMITED,
+                C2Color::PRIMARIES_UNSPECIFIED,
+                C2Color::TRANSFER_UNSPECIFIED,
+                C2Color::MATRIX_UNSPECIFIED))
+            .withFields({
+                C2F(mCodedColorAspects, range)
+                    .inRange(C2Color::RANGE_UNSPECIFIED, C2Color::RANGE_OTHER),
+                C2F(mCodedColorAspects, primaries)
+                    .inRange(C2Color::PRIMARIES_UNSPECIFIED, C2Color::PRIMARIES_OTHER),
+                C2F(mCodedColorAspects, transfer)
+                    .inRange(C2Color::TRANSFER_UNSPECIFIED, C2Color::TRANSFER_OTHER),
+                C2F(mCodedColorAspects, matrix)
+                    .inRange(C2Color::MATRIX_UNSPECIFIED, C2Color::MATRIX_OTHER),
+            })
+            .withSetter(CodedColorAspectsSetter)
+            .build());
+
+    addParameter(
+        DefineParam(mColorAspects, C2_PARAMKEY_COLOR_ASPECTS)
+            .withDefault(std::make_shared<C2StreamColorAspectsInfo::output>(
+                0u, C2Color::RANGE_UNSPECIFIED,
+                C2Color::PRIMARIES_UNSPECIFIED,
+                C2Color::TRANSFER_UNSPECIFIED, C2Color::MATRIX_UNSPECIFIED))
+            .withFields({
+                C2F(mColorAspects, range)
+                    .inRange(C2Color::RANGE_UNSPECIFIED, C2Color::RANGE_OTHER),
+                C2F(mColorAspects, primaries)
+                    .inRange(C2Color::PRIMARIES_UNSPECIFIED, C2Color::PRIMARIES_OTHER),
+                C2F(mColorAspects, transfer)
+                    .inRange(C2Color::TRANSFER_UNSPECIFIED, C2Color::TRANSFER_OTHER),
+                C2F(mColorAspects, matrix)
+                    .inRange(C2Color::MATRIX_UNSPECIFIED, C2Color::MATRIX_OTHER)
+            })
+            .withSetter(ColorAspectsSetter, mDefaultColorAspects, mCodedColorAspects)
+            .build());
+
+    addParameter(
+        DefineParam(mPixelFormat, C2_PARAMKEY_PIXEL_FORMAT)
+            .withConstValue(std::make_shared<C2StreamPixelFormatInfo::output>(
+                0u,
+                HAL_PIXEL_FORMAT_YCBCR_420_888))
+            .build());
+
+    reflector->addStructDescriptors<C2ChromaOffsetStruct>();
+
+    addParameter(
+        DefineParam(mColorInfo, C2_PARAMKEY_CODED_COLOR_INFO)
+            .withConstValue(
+                C2StreamColorInfo::output::AllocShared(
+                    {C2ChromaOffsetStruct::ITU_YUV_420_0()},
+                    0u,
+                    8u /* bitDepth */,
+                    C2Color::YUV_420))
+            .build());
 
     // default to linear buffers and no media type
     C2BufferData::type_t rawBufferType = C2BufferData::LINEAR;
@@ -203,66 +465,6 @@ C2BaseParams::C2BaseParams(const std::shared_ptr<C2ReflectorHelper> &reflector,
                          C2F(mSubscribedParamIndices, m.values).any()})
             .withSetter(SubscribedParamIndicesSetter)
             .build());
-}
-
-void C2BaseParams::noInputLatency() {
-    addParameter(
-        DefineParam(mRequestedInputDelay, C2_PARAMKEY_INPUT_DELAY_REQUEST)
-            .withConstValue(std::make_shared<C2PortRequestedDelayTuning::input>(0u))
-            .build());
-
-    addParameter(DefineParam(mActualInputDelay, C2_PARAMKEY_INPUT_DELAY)
-                     .withConstValue(std::make_shared<C2PortActualDelayTuning::input>(0u))
-                     .build());
-}
-
-void C2BaseParams::noPrivateBuffers() {
-    addParameter(DefineParam(mPrivateAllocators, C2_PARAMKEY_PRIVATE_ALLOCATORS)
-                     .withConstValue(C2PrivateAllocatorsTuning::AllocShared(0u))
-                     .build());
-
-    addParameter(
-        DefineParam(mMaxPrivateBufferCount,
-                    C2_PARAMKEY_MAX_PRIVATE_BUFFER_COUNT)
-            .withConstValue(C2MaxPrivateBufferCountTuning::AllocShared(0u))
-            .build());
-
-    addParameter(DefineParam(mPrivatePoolIds, C2_PARAMKEY_PRIVATE_BLOCK_POOLS)
-                     .withConstValue(C2PrivateBlockPoolsTuning::AllocShared(0u))
-                     .build());
-}
-
-void C2BaseParams::noInputReferences() {
-    addParameter(
-        DefineParam(mMaxInputReferenceAge, C2_PARAMKEY_INPUT_MAX_REFERENCE_AGE)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::input>(0u))
-            .build());
-
-    addParameter(
-        DefineParam(mMaxInputReferenceCount,
-                    C2_PARAMKEY_INPUT_MAX_REFERENCE_COUNT)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::input>(0u))
-            .build());
-}
-
-void C2BaseParams::noOutputReferences() {
-    addParameter(
-        DefineParam(mMaxOutputReferenceAge,
-                    C2_PARAMKEY_OUTPUT_MAX_REFERENCE_AGE)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceAgeTuning::output>(0u))
-            .build());
-
-    addParameter(
-        DefineParam(mMaxOutputReferenceCount,
-                    C2_PARAMKEY_OUTPUT_MAX_REFERENCE_COUNT)
-            .withConstValue(std::make_shared<C2StreamMaxReferenceCountTuning::output>(0u))
-            .build());
-}
-
-void C2BaseParams::noTimeStretch() {
-    addParameter(DefineParam(mTimeStretch, C2_PARAMKEY_TIME_STRETCH)
-                     .withConstValue(std::make_shared<C2ComponentTimeStretchTuning>(1.f))
-                     .build());
 }
 
 }  // namespace goldfish::media::c2

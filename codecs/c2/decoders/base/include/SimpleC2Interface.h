@@ -83,38 +83,29 @@ struct C2BaseParams : public C2InterfaceHelper {
                  const C2String& mediaType,
                  const std::vector<C2String>& aliases = {});
 
-    /// Marks that this component has no input latency. Otherwise, component
-    /// must add support for C2PortRequestedDelayTuning::input and
-    /// C2PortActualDelayTuning::input.
-    void noInputLatency();
+    std::shared_ptr<C2StreamColorAspectsTuning::output> getDefaultColorAspects_l() {
+        return mDefaultColorAspects;
+    }
 
-    /// Marks that this component has no need for private buffers.
-    /// Otherwise, component must add support for
-    /// C2MaxPrivateBufferCountTuning, C2PrivateAllocatorsTuning and
-    /// C2PrivateBlockPoolsTuning.
-    void noPrivateBuffers();
+    std::shared_ptr<C2StreamColorAspectsInfo::output> getColorAspects_l() {
+        return mColorAspects;
+    }
 
-    /// Marks that this component holds no references to input buffers.
-    /// Otherwise, component must add support for
-    /// C2StreamMaxReferenceAgeTuning::input and
-    /// C2StreamMaxReferenceCountTuning::input.
-    void noInputReferences();
+    int width() const { return mSize->width; }
+    int height() const { return mSize->height; }
+    int primaries() const { return mColorAspects->primaries; }
+    int range() const { return mColorAspects->range; }
+    int transfer() const { return mColorAspects->transfer; }
 
-    /// Marks that this component holds no references to output buffers.
-    /// Otherwise, component must add support for
-    /// C2StreamMaxReferenceAgeTuning::output and
-    /// C2StreamMaxReferenceCountTuning::output.
-    void noOutputReferences();
+    static C2R
+    ProfileLevelSetter(bool /*mayBlock*/,
+                       C2P<C2StreamProfileLevelInfo::input>& /*me*/,
+                       const C2P<C2StreamPictureSizeInfo::output>& /*size*/) {
+        return C2R::Ok();
+    }
 
-    /// Marks that this component does not stretch time. Otherwise,
-    /// component must add support for C2ComponentTimeStretchTuning.
-    void noTimeStretch();
-
-    std::shared_ptr<C2ApiLevelSetting> mApiLevel;
-    std::shared_ptr<C2ApiFeaturesSetting> mApiFeatures;
-
-    std::shared_ptr<C2PlatformLevelSetting> mPlatformLevel;
-    std::shared_ptr<C2PlatformFeaturesSetting> mPlatformFeatures;
+    // The codec specific part
+    std::shared_ptr<C2StreamProfileLevelInfo::input> mProfileLevel;
 
     std::shared_ptr<C2ComponentNameSetting> mName;
     std::shared_ptr<C2ComponentAliasesSetting> mAliases;
@@ -128,9 +119,18 @@ struct C2BaseParams : public C2InterfaceHelper {
     std::shared_ptr<C2StreamBufferTypeSetting::input> mInputFormat;
     std::shared_ptr<C2StreamBufferTypeSetting::output> mOutputFormat;
 
+    std::shared_ptr<C2StreamColorInfo::output> mColorInfo;
+    std::shared_ptr<C2StreamColorAspectsInfo::input> mCodedColorAspects;
+    std::shared_ptr<C2StreamColorAspectsTuning::output> mDefaultColorAspects;
+    std::shared_ptr<C2StreamColorAspectsInfo::output> mColorAspects;
+    std::shared_ptr<C2StreamPixelFormatInfo::output> mPixelFormat;
+
+    std::shared_ptr<C2StreamPictureSizeInfo::output> mSize;
+    std::shared_ptr<C2StreamMaxPictureSizeTuning::output> mMaxSize;
+    std::shared_ptr<C2StreamMaxBufferSizeInfo::input> mMaxInputSize;
+
     std::shared_ptr<C2PortRequestedDelayTuning::input> mRequestedInputDelay;
-    std::shared_ptr<C2PortRequestedDelayTuning::output>
-        mRequestedOutputDelay;
+    std::shared_ptr<C2PortRequestedDelayTuning::output> mRequestedOutputDelay;
     std::shared_ptr<C2RequestedPipelineDelayTuning> mRequestedPipelineDelay;
 
     std::shared_ptr<C2PortActualDelayTuning::input> mActualInputDelay;
@@ -151,29 +151,12 @@ struct C2BaseParams : public C2InterfaceHelper {
     std::shared_ptr<C2PortStreamCountTuning::output> mOutputStreamCount;
 
     std::shared_ptr<C2SubscribedParamIndicesTuning> mSubscribedParamIndices;
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::input>
-        mSuggestedInputBufferCount;
-    std::shared_ptr<C2PortSuggestedBufferCountTuning::output>
-        mSuggestedOutputBufferCount;
-
-    std::shared_ptr<C2CurrentWorkTuning> mCurrentWorkOrdinal;
-    std::shared_ptr<C2LastWorkQueuedTuning::input>
-        mLastInputQueuedWorkOrdinal;
-    std::shared_ptr<C2LastWorkQueuedTuning::output>
-        mLastOutputQueuedWorkOrdinal;
 
     std::shared_ptr<C2PortAllocatorsTuning::input> mInputAllocators;
     std::shared_ptr<C2PortAllocatorsTuning::output> mOutputAllocators;
     std::shared_ptr<C2PrivateAllocatorsTuning> mPrivateAllocators;
     std::shared_ptr<C2PortBlockPoolsTuning::output> mOutputPoolIds;
     std::shared_ptr<C2PrivateBlockPoolsTuning> mPrivatePoolIds;
-
-    std::shared_ptr<C2TrippedTuning> mTripped;
-    std::shared_ptr<C2OutOfMemoryTuning> mOutOfMemory;
-
-    std::shared_ptr<C2PortConfigCounterTuning::input> mInputConfigCounter;
-    std::shared_ptr<C2PortConfigCounterTuning::output> mOutputConfigCounter;
-    std::shared_ptr<C2ConfigCounterTuning> mDirectConfigCounter;
 };
 
 
