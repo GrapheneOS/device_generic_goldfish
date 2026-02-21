@@ -91,17 +91,6 @@ void fillEmptyWork(const std::unique_ptr<C2Work> &work) {
     work->workletsProcessed = 1u;
 }
 
-static void *ivd_aligned_malloc(void *ctxt, uint32_t alignment, uint32_t size) {
-    (void)ctxt;
-    return memalign(alignment, size);
-}
-
-static void ivd_aligned_free(void *ctxt, void *mem) {
-    (void)ctxt;
-    free(mem);
-}
-
-
 struct C2GoldfishAvcDec : public SimpleC2Component {
     C2GoldfishAvcDec(const char *name, c2_node_id_t id,
                      const std::shared_ptr<C2BaseParams> &params)
@@ -147,14 +136,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             return C2_OK;
         }
 
-        uint32_t bufferSize = mStride * mHeight * 3 / 2;
-        mOutBufferFlush = (uint8_t *)ivd_aligned_malloc(nullptr, 128, bufferSize);
-        if (!mOutBufferFlush) {
-            ALOGE("could not allocate tmp output buffer (for flush) of size %u ",
-                bufferSize);
-            return C2_NO_MEMORY;
-        }
-
         while (true) {
             mPts = 0;
             constexpr bool hasPicture = false;
@@ -164,11 +145,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                 resetPlugin();
                 break;
             }
-        }
-
-        if (mOutBufferFlush) {
-            ivd_aligned_free(nullptr, mOutBufferFlush);
-            mOutBufferFlush = nullptr;
         }
 
         deleteContext();
@@ -770,7 +746,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     std::vector<uint8_t> mCsd0;
     std::vector<uint8_t> mCsd1;
 
-    uint8_t *mOutBufferFlush{nullptr};
     uint8_t *mInPBuffer{nullptr};
 
     std::atomic_uint64_t mOutIndex {0};
