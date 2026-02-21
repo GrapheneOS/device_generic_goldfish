@@ -170,7 +170,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             decodeHeaderAfterFlush();
         }
 
-        size_t inOffset = 0u;
         size_t inSize = 0u;
         uint32_t workIndex = work->input.ordinal.frameIndex.peeku() & 0xFFFFFFFF;
         mPts = work->input.ordinal.timestamp.peeku();
@@ -204,7 +203,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
                     hasPicture = false;
                 }
-                if (!setDecodeArgs(&rView, nullptr, inOffset + inPos,
+                if (!setDecodeArgs(&rView, nullptr, inPos,
                                 inSize - inPos, workIndex, hasPicture)) {
                     mSignalledError = true;
                     work->workletsProcessed = 1u;
@@ -385,7 +384,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             //= tsMarker;
             mInPBuffer = const_cast<uint8_t *>(inBuffer->data() + inOffset);
             mInPBufferSize = inSize;
-            mInTsMarker = tsMarker;
             if (hasPicture) {
                 insertPts(tsMarker, mPts);
             }
@@ -479,11 +477,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             // frames remaining
             if (eos) {
                 if (buffer) {
-                    mOutIndex = index;
                     C2WorkOrdinalStruct outOrdinal = work->input.ordinal;
                     DDD("%s %d: cloneAndSend ", __func__, __LINE__);
                     cloneAndSend(
-                        mOutIndex, work,
+                        index, work,
                         FillWork(C2FrameData::FLAG_INCOMPLETE, outOrdinal, buffer));
                     buffer.reset();
                 }
@@ -748,7 +745,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     uint8_t *mInPBuffer{nullptr};
 
-    std::atomic_uint64_t mOutIndex {0};
     uint64_t  mPts {0};
 
     GfImage mImg{};
@@ -757,7 +753,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     uint32_t mConsumedBytes{0};
     uint32_t mInPBufferSize{0};
-    uint32_t mInTsMarker{0};
 
     uint32_t mWidth{0};
     uint32_t mHeight{0};
