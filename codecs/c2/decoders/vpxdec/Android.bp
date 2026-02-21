@@ -8,20 +8,6 @@ package {
 }
 
 cc_library {
-    name: "goldfish_vpx_impl",
-    vendor: true,
-    srcs: [
-        "goldfish_vpx_impl.cpp",
-    ],
-    whole_static_libs: [
-        "libcodec2_goldfish_common",
-    ],
-    shared_libs: [
-        "liblog",
-    ],
-}
-
-cc_library {
     name: "libcodec2_goldfish_vpxdec",
     defaults: [
         "android.hardware.graphics.common-ndk_static",
@@ -30,6 +16,7 @@ cc_library {
     vendor: true,
     srcs: [
         "C2GoldfishVpxDec.cpp",
+        "goldfish_vpx_impl.cpp",
     ],
     export_include_dirs: ["include"],
     header_libs: [
@@ -37,7 +24,6 @@ cc_library {
         "libgralloc_cb.ranchu",
     ],
     whole_static_libs: [
-        "goldfish_vpx_impl",
         "libcodec2_goldfish_common",
     ],
     shared_libs: [
