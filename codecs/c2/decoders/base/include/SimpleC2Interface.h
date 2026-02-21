@@ -157,8 +157,10 @@ struct C2BaseParams : public C2InterfaceHelper {
     std::shared_ptr<C2PrivateAllocatorsTuning> mPrivateAllocators;
     std::shared_ptr<C2PortBlockPoolsTuning::output> mOutputPoolIds;
     std::shared_ptr<C2PrivateBlockPoolsTuning> mPrivatePoolIds;
-};
 
+    std::shared_ptr<C2StreamHdr10PlusInfo::input> mHdr10PlusInfoInput;
+    std::shared_ptr<C2StreamHdr10PlusInfo::output> mHdr10PlusInfoOutput;
+};
 
 template <typename T, typename... Args>
 std::shared_ptr<T> AllocSharedString(const Args(&...args), const char *str) {
