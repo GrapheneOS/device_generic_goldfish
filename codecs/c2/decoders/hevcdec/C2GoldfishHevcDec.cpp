@@ -199,12 +199,7 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
                     hasPicture = false;
                 }
 
-                if (!setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture)) {
-                    mSignalledError = true;
-                    work->workletsProcessed = 1u;
-                    work->result = C2_CORRUPTED;
-                    return;
-                }
+                setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture);
 
                 DDD("flag is %x", work->input.flags);
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
@@ -353,7 +348,7 @@ private:
         return ::android::OK;
     }
 
-    bool setDecodeArgs(C2ReadView *inBuffer, size_t inOffset, size_t inSize,
+    void setDecodeArgs(C2ReadView *inBuffer, size_t inOffset, size_t inSize,
                        uint32_t tsMarker, bool hasPicture) {
         if (inBuffer) {
             mInPBuffer = const_cast<uint8_t *>(inBuffer->data() + inOffset);
@@ -362,8 +357,6 @@ private:
                 insertPts(tsMarker, mPts);
             }
         }
-
-        return true;
     }
 
     c2_status_t ensureDecoderState(const std::shared_ptr<C2BlockPool> &pool) {

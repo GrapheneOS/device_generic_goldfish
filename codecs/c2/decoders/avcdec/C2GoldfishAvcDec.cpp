@@ -203,12 +203,8 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
                     hasPicture = false;
                 }
-                if (!setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture)) {
-                    mSignalledError = true;
-                    work->workletsProcessed = 1u;
-                    work->result = C2_CORRUPTED;
-                    return;
-                }
+
+                setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture);
 
                 DDD("flag is %x", work->input.flags);
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
@@ -361,7 +357,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     }
 
 
-    bool setDecodeArgs(C2ReadView *inBuffer,
+    void setDecodeArgs(C2ReadView *inBuffer,
                        size_t inOffset,
                        size_t inSize,
                        uint32_t tsMarker,
@@ -373,8 +369,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                 insertPts(tsMarker, mPts);
             }
         }
-
-        return true;
     }
 
 
