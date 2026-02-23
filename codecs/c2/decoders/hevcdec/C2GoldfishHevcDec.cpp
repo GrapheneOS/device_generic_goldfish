@@ -132,9 +132,6 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
         }
 
         while (true) {
-            mPts = 0;
-            constexpr bool hasPicture = false;
-            setDecodeArgs(nullptr, 0, 0, 0, hasPicture);
             mImg = mContext->getImage();
             if (mImg.data == nullptr) {
                 resetPlugin();
@@ -166,8 +163,8 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
         }
 
         size_t inSize = 0u;
-        uint32_t workIndex = work->input.ordinal.frameIndex.peeku() & 0xFFFFFFFF;
-        mPts = work->input.ordinal.timestamp.peeku();
+        const uint32_t frameIndex = work->input.ordinal.frameIndex.peeku() & 0xFFFFFFFF;
+        const uint64_t timestamp = work->input.ordinal.timestamp.peeku();
         C2ReadView rView = mDummyReadView;
         if (!work->input.buffers.empty()) {
             rView =
@@ -185,6 +182,7 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
         DDD("in buffer attr. size %zu timestamp %d frameindex %d, flags %x", inSize,
             (int)work->input.ordinal.timestamp.peeku(),
             (int)work->input.ordinal.frameIndex.peeku(), work->input.flags);
+
         size_t inPos = 0;
         while (inPos < inSize) {
             if (C2_OK != ensureDecoderState(pool)) {
@@ -199,22 +197,27 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
                     hasPicture = false;
                 }
 
-                setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture);
+                uint8_t* inPBuffer = const_cast<uint8_t *>(rView.data()) + inPos;
+                uint32_t inPBufferSize = inSize - inPos;
+
+                if (hasPicture) {
+                    insertPts(frameIndex, timestamp);
+                }
 
                 DDD("flag is %x", work->input.flags);
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
                     if (mCsd0.empty()) {
-                        mCsd0.assign(mInPBuffer, mInPBuffer + mInPBufferSize);
-                        DDD("assign to csd0 with %d bytpes", mInPBufferSize);
+                        mCsd0.assign(inPBuffer, inPBuffer + inPBufferSize);
+                        DDD("assign to csd0 with %d bytpes", inPBufferSize);
                     }
                 }
 
                 bool whChanged = false;
-                if (GoldfishHevcHelper::isKeyFrame(mInPBuffer, mInPBufferSize)) {
+                if (GoldfishHevcHelper::isKeyFrame(inPBuffer, inPBufferSize)) {
                     mHevcHelper = std::make_unique<GoldfishHevcHelper>(mWidth, mHeight);
                     bool headerStatus = true;
                     whChanged = mHevcHelper->decodeHeader(
-                        mInPBuffer, mInPBufferSize, headerStatus);
+                        inPBuffer, inPBufferSize, headerStatus);
                     if (!headerStatus) {
                         mSignalledError = true;
                         work->workletsProcessed = 1u;
@@ -260,9 +263,10 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
                 sendMetadata();
 
                 DDD("decoding");
-                GfResult hevcRes = mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
-                mConsumedBytes = hevcRes.bytesProcessed;
-                DDD("decoding consumed %d", (int)mConsumedBytes);
+                GfResult hevcRes = mContext->decodeFrame(inPBuffer, inPBufferSize, timestamp);
+                const uint32_t consumedBytes = hevcRes.bytesProcessed;
+                DDD("decoding consumed %u", consumedBytes);
+                inPos += consumedBytes;
 
                 if (mHostColorBufferId > 0) {
                     mImg = mContext->renderOnHostAndReturnImageMetadata(
@@ -280,8 +284,6 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
             } else {
                 work->workletsProcessed = 0u;
             }
-
-            inPos += mConsumedBytes;
         }
         if (eos) {
             DDD("drain because of eos");
@@ -346,17 +348,6 @@ private:
         resetPlugin();
 
         return ::android::OK;
-    }
-
-    void setDecodeArgs(C2ReadView *inBuffer, size_t inOffset, size_t inSize,
-                       uint32_t tsMarker, bool hasPicture) {
-        if (inBuffer) {
-            mInPBuffer = const_cast<uint8_t *>(inBuffer->data() + inOffset);
-            mInPBufferSize = inSize;
-            if (hasPicture) {
-                insertPts(tsMarker, mPts);
-            }
-        }
     }
 
     c2_status_t ensureDecoderState(const std::shared_ptr<C2BlockPool> &pool) {
@@ -691,16 +682,9 @@ private:
     std::map<uint64_t, uint64_t> mPts2Index;
     std::map<uint64_t, uint64_t> mIndex2Pts;
 
-    uint8_t *mInPBuffer{nullptr};
-
     GfImage mImg{};
     VuiColorAspects mBitstreamColorAspects;
     MetaDataColorAspects mSentMetadata = {1, 0, 0, 0};
-
-    uint64_t  mPts {0};
-
-    uint32_t mConsumedBytes{0};
-    uint32_t mInPBufferSize = 0;
 
     uint32_t mWidth = 0;
     uint32_t mHeight = 0;
