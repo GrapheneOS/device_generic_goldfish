@@ -139,7 +139,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         while (true) {
             mPts = 0;
             constexpr bool hasPicture = false;
-            setDecodeArgs(nullptr, nullptr, 0, 0, 0, hasPicture);
+            setDecodeArgs(nullptr, 0, 0, 0, hasPicture);
             mImg = mContext->getImage();
             if (mImg.data == nullptr) {
                 resetPlugin();
@@ -203,8 +203,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
                     hasPicture = false;
                 }
-                if (!setDecodeArgs(&rView, nullptr, inPos,
-                                inSize - inPos, workIndex, hasPicture)) {
+                if (!setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture)) {
                     mSignalledError = true;
                     work->workletsProcessed = 1u;
                     work->result = C2_CORRUPTED;
@@ -363,36 +362,16 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
 
     bool setDecodeArgs(C2ReadView *inBuffer,
-                       C2GraphicView *outBuffer,
                        size_t inOffset,
                        size_t inSize,
                        uint32_t tsMarker,
                        bool hasPicture) {
-        uint32_t displayStride = mStride;
-        (void)inBuffer;
-        (void)inOffset;
-        (void)inSize;
-        (void)tsMarker;
-
-        if (outBuffer) {
-            C2PlanarLayout layout;
-            layout = outBuffer->layout();
-            displayStride = layout.planes[C2PlanarLayout::PLANE_Y].rowInc;
-        }
-
         if (inBuffer) {
-            //= tsMarker;
             mInPBuffer = const_cast<uint8_t *>(inBuffer->data() + inOffset);
             mInPBufferSize = inSize;
             if (hasPicture) {
                 insertPts(tsMarker, mPts);
             }
-        }
-
-        if (mStride != displayStride) {
-            mStride = displayStride;
-            if (::android::OK != setParams(mStride))
-                return false;
         }
 
         return true;
