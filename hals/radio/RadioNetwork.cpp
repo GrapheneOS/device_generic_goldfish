@@ -1398,6 +1398,37 @@ void RadioNetwork::atResponseSink(const AtResponsePtr& response) {
     mAtConversation.send(response);
 }
 
+void RadioNetwork::sendCellInfoList() {
+    std::vector<network::CellInfo> cellInfos;
+    {
+        std::lock_guard<std::mutex> lock(mMtx);
+        if (mRadioState != modem::RadioState::ON) return;
+
+        if (mCurrentOperator && mCurrentModemTech) {
+            CellIdentity cellIdentity;
+            RadioError status;
+            std::tie(status, cellIdentity) =
+                getCellIdentityImpl(toOperatorInfo(mCurrentOperator.value()),
+                                    mCurrentModemTech.value(),
+                                    mCreg.areaCode, mCreg.cellId, nullptr);
+
+            if (status == RadioError::NONE) {
+                network::CellInfo cellinfo;
+                const bool registered = (mCreg.state == network::RegState::REG_HOME);
+                std::tie(status, cellinfo) = buildCellInfo(registered, cellIdentity, mCsq.toSignalStrength());
+                if (status == RadioError::NONE) {
+                    cellInfos.push_back(std::move(cellinfo));
+                }
+            }
+        }
+    }
+
+    if (!cellInfos.empty() && mRadioNetworkIndication) {
+        mRadioNetworkIndication->cellInfoList(
+            RadioIndicationType::UNSOLICITED, std::move(cellInfos));
+    }
+}
+
 void RadioNetwork::handleUnsolicited(const AtResponse::CFUN& cfun) {
     bool changed;
 
@@ -1428,6 +1459,7 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CREG& creg) {
     if (changed && mRadioNetworkIndication) {
         mRadioNetworkIndication->networkStateChanged(RadioIndicationType::UNSOLICITED);
         mRadioNetworkIndication->imsNetworkStateChanged(RadioIndicationType::UNSOLICITED);
+        sendCellInfoList();
     }
 }
 
@@ -1438,7 +1470,6 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CGREG& cgreg) {
 
 void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
     SignalStrength signalStrength;
-    std::vector<CellInfo> cellInfos;
 
     CellIdentity cellIdentity;
     bool poweredOn;
@@ -1453,24 +1484,13 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
         if (poweredOn) {
             signalStrength = csq.toSignalStrength();
 
-            if (mCurrentOperator && mCurrentModemTech) {
+             if (barringInfoChanged && mCurrentOperator && mCurrentModemTech) {
                 RadioError status;
                 std::tie(status, cellIdentity) =
                     getCellIdentityImpl(toOperatorInfo(mCurrentOperator.value()),
                                         mCurrentModemTech.value(),
                                         mCreg.areaCode, mCreg.cellId,
                                         nullptr);
-                if (status == RadioError::NONE) {
-                    const bool registered =
-                        (mCreg.state == network::RegState::REG_HOME);
-
-                    CellInfo cellinfo;
-                    std::tie(status, cellinfo) =
-                        buildCellInfo(registered, cellIdentity, signalStrength);
-                    if (status == RadioError::NONE) {
-                        cellInfos.push_back(std::move(cellinfo));
-                    }
-                }
             }
         }
     }
@@ -1478,11 +1498,6 @@ void RadioNetwork::handleUnsolicited(const AtResponse::CSQ& csq) {
     if (poweredOn && mRadioNetworkIndication) {
         mRadioNetworkIndication->currentSignalStrength(
             RadioIndicationType::UNSOLICITED, std::move(signalStrength));
-
-        if (!cellInfos.empty()) {
-            mRadioNetworkIndication->cellInfoList(
-                RadioIndicationType::UNSOLICITED, std::move(cellInfos));
-        }
 
         if (barringInfoChanged) {
             mRadioNetworkIndication->barringInfoChanged(

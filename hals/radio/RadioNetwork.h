@@ -125,6 +125,7 @@ private:
     static RadioError validateSignalStrengthReportingCriteria(
             const std::vector<network::SignalThresholdInfo>& signalThresholdInfos);
     static RadioError validateNetworkScanRequest(const network::NetworkScanRequest&);
+    void sendCellInfoList();
 
     const std::shared_ptr<AtChannel> mAtChannel;
     AtChannel::Conversation mAtConversation;
