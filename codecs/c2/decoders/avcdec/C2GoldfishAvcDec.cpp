@@ -139,7 +139,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         while (true) {
             mPts = 0;
             constexpr bool hasPicture = false;
-            setDecodeArgs(nullptr, nullptr, 0, 0, 0, hasPicture);
+            setDecodeArgs(nullptr, 0, 0, 0, hasPicture);
             mImg = mContext->getImage();
             if (mImg.data == nullptr) {
                 resetPlugin();
@@ -170,7 +170,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             decodeHeaderAfterFlush();
         }
 
-        size_t inOffset = 0u;
         size_t inSize = 0u;
         uint32_t workIndex = work->input.ordinal.frameIndex.peeku() & 0xFFFFFFFF;
         mPts = work->input.ordinal.timestamp.peeku();
@@ -204,13 +203,8 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
                     hasPicture = false;
                 }
-                if (!setDecodeArgs(&rView, nullptr, inOffset + inPos,
-                                inSize - inPos, workIndex, hasPicture)) {
-                    mSignalledError = true;
-                    work->workletsProcessed = 1u;
-                    work->result = C2_CORRUPTED;
-                    return;
-                }
+
+                setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture);
 
                 DDD("flag is %x", work->input.flags);
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
@@ -363,41 +357,18 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     }
 
 
-    bool setDecodeArgs(C2ReadView *inBuffer,
-                       C2GraphicView *outBuffer,
+    void setDecodeArgs(C2ReadView *inBuffer,
                        size_t inOffset,
                        size_t inSize,
                        uint32_t tsMarker,
                        bool hasPicture) {
-        uint32_t displayStride = mStride;
-        (void)inBuffer;
-        (void)inOffset;
-        (void)inSize;
-        (void)tsMarker;
-
-        if (outBuffer) {
-            C2PlanarLayout layout;
-            layout = outBuffer->layout();
-            displayStride = layout.planes[C2PlanarLayout::PLANE_Y].rowInc;
-        }
-
         if (inBuffer) {
-            //= tsMarker;
             mInPBuffer = const_cast<uint8_t *>(inBuffer->data() + inOffset);
             mInPBufferSize = inSize;
-            mInTsMarker = tsMarker;
             if (hasPicture) {
                 insertPts(tsMarker, mPts);
             }
         }
-
-        if (mStride != displayStride) {
-            mStride = displayStride;
-            if (::android::OK != setParams(mStride))
-                return false;
-        }
-
-        return true;
     }
 
 
@@ -479,11 +450,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             // frames remaining
             if (eos) {
                 if (buffer) {
-                    mOutIndex = index;
                     C2WorkOrdinalStruct outOrdinal = work->input.ordinal;
                     DDD("%s %d: cloneAndSend ", __func__, __LINE__);
                     cloneAndSend(
-                        mOutIndex, work,
+                        index, work,
                         FillWork(C2FrameData::FLAG_INCOMPLETE, outOrdinal, buffer));
                     buffer.reset();
                 }
@@ -748,7 +718,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     uint8_t *mInPBuffer{nullptr};
 
-    std::atomic_uint64_t mOutIndex {0};
     uint64_t  mPts {0};
 
     GfImage mImg{};
@@ -757,7 +726,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     uint32_t mConsumedBytes{0};
     uint32_t mInPBufferSize{0};
-    uint32_t mInTsMarker{0};
 
     uint32_t mWidth{0};
     uint32_t mHeight{0};
