@@ -137,9 +137,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         }
 
         while (true) {
-            mPts = 0;
-            constexpr bool hasPicture = false;
-            setDecodeArgs(nullptr, 0, 0, 0, hasPicture);
             mImg = mContext->getImage();
             if (mImg.data == nullptr) {
                 resetPlugin();
@@ -171,8 +168,8 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         }
 
         size_t inSize = 0u;
-        uint32_t workIndex = work->input.ordinal.frameIndex.peeku() & 0xFFFFFFFF;
-        mPts = work->input.ordinal.timestamp.peeku();
+        const uint32_t frameIndex = work->input.ordinal.frameIndex.peeku() & 0xFFFFFFFF;
+        const uint64_t timestamp = work->input.ordinal.timestamp.peeku();
         C2ReadView rView = mDummyReadView;
         if (!work->input.buffers.empty()) {
             rView =
@@ -190,6 +187,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         DDD("in buffer attr. size %zu timestamp %d frameindex %d, flags %x", inSize,
             (int)work->input.ordinal.timestamp.peeku(),
             (int)work->input.ordinal.frameIndex.peeku(), work->input.flags);
+
         size_t inPos = 0;
         while (inPos < inSize && inSize - inPos >= kMinInputBytes) {
             if (C2_OK != ensureDecoderState(pool)) {
@@ -204,24 +202,29 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                     hasPicture = false;
                 }
 
-                setDecodeArgs(&rView, inPos, inSize - inPos, workIndex, hasPicture);
+                uint8_t* inPBuffer = const_cast<uint8_t *>(rView.data()) + inPos;
+                uint32_t inPBufferSize = inSize - inPos;
+
+                if (hasPicture) {
+                    insertPts(frameIndex, timestamp);
+                }
 
                 DDD("flag is %x", work->input.flags);
                 if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
                     if (mCsd0.empty()) {
-                        mCsd0.assign(mInPBuffer, mInPBuffer + mInPBufferSize);
-                        DDD("assign to csd0 with %d bytpes", mInPBufferSize);
+                        mCsd0.assign(inPBuffer, inPBuffer + inPBufferSize);
+                        DDD("assign to csd0 with %d bytpes", inPBufferSize);
                     } else if (mCsd1.empty()) {
-                        mCsd1.assign(mInPBuffer, mInPBuffer + mInPBufferSize);
-                        DDD("assign to csd1 with %d bytpes", mInPBufferSize);
+                        mCsd1.assign(inPBuffer, inPBuffer + inPBufferSize);
+                        DDD("assign to csd1 with %d bytpes", inPBufferSize);
                     }
                 }
 
                 bool whChanged = false;
-                if (GoldfishH264Helper::isKeyFrame(mInPBuffer, mInPBufferSize)) {
+                if (GoldfishH264Helper::isKeyFrame(inPBuffer, inPBufferSize)) {
                     mH264Helper = std::make_unique<GoldfishH264Helper>(mWidth, mHeight);
                     bool headerStatus = true;
-                    whChanged = mH264Helper->decodeHeader(mInPBuffer, mInPBufferSize, headerStatus);
+                    whChanged = mH264Helper->decodeHeader(inPBuffer, inPBufferSize, headerStatus);
                     if (!headerStatus) {
                         mSignalledError = true;
                         work->workletsProcessed = 1u;
@@ -268,9 +271,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
                 //(void) ivdec_api_function(mDecHandle, &s_decode_ip, &s_decode_op);
                 DDD("decoding");
-                GfResult h264Res = mContext->decodeFrame(mInPBuffer, mInPBufferSize, mPts);
-                mConsumedBytes = h264Res.bytesProcessed;
-                DDD("decoding consumed %d", (int)mConsumedBytes);
+                GfResult h264Res = mContext->decodeFrame(inPBuffer, inPBufferSize, timestamp);
+                const uint32_t consumedBytes = h264Res.bytesProcessed;
+                DDD("decoding consumed %u", consumedBytes);
+                inPos += consumedBytes;
 
                 if (mHostColorBufferId > 0) {
                     mImg = mContext->renderOnHostAndReturnImageMetadata(
@@ -289,8 +293,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             } else {
                 work->workletsProcessed = 0u;
             }
-
-            inPos += mConsumedBytes;
         }
         if (eos) {
             DDD("drain because of eos");
@@ -355,22 +357,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
         return ::android::OK;
     }
-
-
-    void setDecodeArgs(C2ReadView *inBuffer,
-                       size_t inOffset,
-                       size_t inSize,
-                       uint32_t tsMarker,
-                       bool hasPicture) {
-        if (inBuffer) {
-            mInPBuffer = const_cast<uint8_t *>(inBuffer->data() + inOffset);
-            mInPBufferSize = inSize;
-            if (hasPicture) {
-                insertPts(tsMarker, mPts);
-            }
-        }
-    }
-
 
     c2_status_t ensureDecoderState(const std::shared_ptr<C2BlockPool> &pool) {
         if (mOutBlock && (mOutBlock->width() != ALIGN2(mWidth) ||
@@ -716,16 +702,9 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     std::vector<uint8_t> mCsd0;
     std::vector<uint8_t> mCsd1;
 
-    uint8_t *mInPBuffer{nullptr};
-
-    uint64_t  mPts {0};
-
     GfImage mImg{};
     VuiColorAspects mBitstreamColorAspects;
     MetaDataColorAspects mSentMetadata = {1, 0, 0, 0};
-
-    uint32_t mConsumedBytes{0};
-    uint32_t mInPBufferSize{0};
 
     uint32_t mWidth{0};
     uint32_t mHeight{0};
