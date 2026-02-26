@@ -284,7 +284,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
             if (mImg.data != nullptr) {
                 DDD("got data %" PRIu64 " with pts %" PRIu64,  getWorkIndex(mImg.pts), mImg.pts);
-                mHeaderDecoded = true;
                 copyImageData(mImg);
                 finishWork(getWorkIndex(mImg.pts), work);
                 removePts(mImg.pts);
@@ -455,7 +454,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         if (mContext) {
             mContext->flush();
         }
-        mHeaderDecoded = false;
         return ::android::OK;
     }
 
@@ -507,7 +505,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     status_t resetDecoder() {
         mStride = 0;
         mSignalledError = false;
-        mHeaderDecoded = false;
         deleteContext();
         return ::android::OK;
     }
@@ -713,7 +710,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     bool mEnableAndroidNativeBuffers{true};
     bool mSignalledOutputEos{false};
     bool mSignalledError{false};
-    bool mHeaderDecoded{false};
 
     C2_DO_NOT_COPY(C2GoldfishAvcDec);
 };

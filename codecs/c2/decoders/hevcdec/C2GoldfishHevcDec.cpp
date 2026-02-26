@@ -275,7 +275,6 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
             }
             if (mImg.data != nullptr) {
                 DDD("got data %" PRIu64 " with pts %" PRIu64,  getWorkIndex(mImg.pts), mImg.pts);
-                mHeaderDecoded = true;
                 copyImageData(mImg);
                 finishWork(getWorkIndex(mImg.pts), work);
                 removePts(mImg.pts);
@@ -445,7 +444,6 @@ private:
         if (mContext) {
             mContext->flush();
         }
-        mHeaderDecoded = false;
         return ::android::OK;
     }
 
@@ -495,7 +493,6 @@ private:
     status_t resetDecoder() {
         mStride = 0;
         mSignalledError = false;
-        mHeaderDecoded = false;
         deleteContext();
         return ::android::OK;
     }
@@ -674,7 +671,6 @@ private:
     std::shared_ptr<C2GraphicBlock> mOutBlock;
 
     std::vector<uint8_t> mCsd0;
-    std::vector<uint8_t> mCsd1;
 
     std::map<uint64_t, uint64_t> mOldPts2Index;
     std::map<uint64_t, uint64_t> mPts2Index;
@@ -693,7 +689,6 @@ private:
     bool mEnableAndroidNativeBuffers{true};
     bool mSignalledOutputEos{false};
     bool mSignalledError{false};
-    bool mHeaderDecoded{false};
 
     C2_DO_NOT_COPY(C2GoldfishHevcDec);
 };
