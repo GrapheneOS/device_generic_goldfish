@@ -342,11 +342,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         return ::android::OK;
     }
 
-    status_t setParams(size_t stride) {
-        (void)stride;
-        return ::android::OK;
-    }
-
     status_t initDecoder() {
         mStride = ALIGN2(mWidth);
         mSignalledError = false;
