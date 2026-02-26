@@ -176,8 +176,10 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
                 return;
             }
         }
-        bool eos = ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) != 0);
-        bool hasPicture = (inSize > 0);
+
+        const bool eos = ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) != 0);
+        const bool hasPicture = (inSize > 0) &&
+                !(work->input.flags & C2FrameData::FLAG_CODEC_CONFIG);
 
         DDD("in buffer attr. size %zu timestamp %d frameindex %d, flags %x", inSize,
             (int)work->input.ordinal.timestamp.peeku(),
@@ -193,10 +195,6 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
             }
 
             {
-                if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
-                    hasPicture = false;
-                }
-
                 uint8_t* inPBuffer = const_cast<uint8_t *>(rView.data()) + inPos;
                 uint32_t inPBufferSize = inSize - inPos;
 
