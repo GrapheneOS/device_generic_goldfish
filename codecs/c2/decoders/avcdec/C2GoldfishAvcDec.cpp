@@ -104,13 +104,12 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     c2_status_t onInit() override {
         ALOGD("calling onInit");
-        status_t err = initDecoder();
-        return err == ::android::OK ? C2_OK : C2_CORRUPTED;
+        initDecoder();
+        return C2_OK;
     }
 
     c2_status_t onStop() override {
-        if (::android::OK != resetDecoder())
-            return C2_CORRUPTED;
+        resetDecoder();
         resetPlugin();
         return C2_OK;
     }
@@ -128,8 +127,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     }
 
     c2_status_t onFlush_sm() override {
-        if (::android::OK != setFlushMode())
-            return C2_CORRUPTED;
+        setFlushMode();
 
         if (!mContext) {
             // just ignore if context is not even created
@@ -331,7 +329,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         }
     }
 
-    status_t createDecoder() {
+    void createDecoder() {
         DDD("creating avc context now w %d h %d", mWidth, mHeight);
         mContext = std::make_unique<MediaH264Decoder>(
                 mEnableAndroidNativeBuffers ?
@@ -339,15 +337,12 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
         mContext->initH264Context(mWidth, mHeight, mWidth, mHeight,
                                 MediaH264Decoder::PixelFormat::YUV420P);
-        return ::android::OK;
     }
 
-    status_t initDecoder() {
+    void initDecoder() {
         mStride = ALIGN2(mWidth);
         mSignalledError = false;
         resetPlugin();
-
-        return ::android::OK;
     }
 
     c2_status_t ensureDecoderState(const std::shared_ptr<C2BlockPool> &pool) {
@@ -445,11 +440,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         }
     }
 
-    status_t setFlushMode() {
+    void setFlushMode() {
         if (mContext) {
             mContext->flush();
         }
-        return ::android::OK;
     }
 
     c2_status_t drainInternal(uint32_t drainMode,
@@ -464,8 +458,8 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             return C2_OMITTED;
         }
 
-        if (::android::OK != setFlushMode())
-            return C2_CORRUPTED;
+        setFlushMode();
+
         while (true) {
             if (C2_OK != ensureDecoderState(pool)) {
                 mSignalledError = true;
@@ -497,11 +491,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         return C2_OK;
     }
 
-    status_t resetDecoder() {
+    void resetDecoder() {
         mStride = 0;
         mSignalledError = false;
         deleteContext();
-        return ::android::OK;
     }
 
     void resetPlugin() {
