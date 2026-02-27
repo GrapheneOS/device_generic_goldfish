@@ -100,13 +100,12 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
     virtual ~C2GoldfishHevcDec() { onRelease(); }
 
     c2_status_t onInit() override {
-        status_t err = initDecoder();
-        return err == ::android::OK ? C2_OK : C2_CORRUPTED;
+        initDecoder();
+        return C2_OK;
     }
 
     c2_status_t onStop() override {
-        if (::android::OK != resetDecoder())
-            return C2_CORRUPTED;
+        resetDecoder();
         resetPlugin();
         return C2_OK;
     }
@@ -123,8 +122,7 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
     }
 
     c2_status_t onFlush_sm() override {
-        if (::android::OK != setFlushMode())
-            return C2_CORRUPTED;
+        setFlushMode();
 
         if (!mContext) {
             // just ignore if context is not even created
@@ -275,7 +273,6 @@ struct C2GoldfishHevcDec : public SimpleC2Component {
             }
             if (mImg.data != nullptr) {
                 DDD("got data %" PRIu64 " with pts %" PRIu64,  getWorkIndex(mImg.pts), mImg.pts);
-                mHeaderDecoded = true;
                 copyImageData(mImg);
                 finishWork(getWorkIndex(mImg.pts), work);
                 removePts(mImg.pts);
@@ -324,7 +321,7 @@ private:
         }
     }
 
-    status_t createDecoder() {
+    void createDecoder() {
         DDD("creating hevc context now w %d h %d", mWidth, mHeight);
         mContext = std::make_unique<MediaHevcDecoder>(
                 mEnableAndroidNativeBuffers ?
@@ -332,20 +329,12 @@ private:
 
         mContext->initHevcContext(mWidth, mHeight, mWidth, mHeight,
                                 MediaHevcDecoder::PixelFormat::YUV420P);
-        return ::android::OK;
     }
 
-    status_t setParams(size_t stride) {
-        (void)stride;
-        return ::android::OK;
-    }
-
-    status_t initDecoder() {
+    void initDecoder() {
         mStride = ALIGN2(mWidth);
         mSignalledError = false;
         resetPlugin();
-
-        return ::android::OK;
     }
 
     c2_status_t ensureDecoderState(const std::shared_ptr<C2BlockPool> &pool) {
@@ -441,12 +430,10 @@ private:
         }
     }
 
-    status_t setFlushMode() {
+    void setFlushMode() {
         if (mContext) {
             mContext->flush();
         }
-        mHeaderDecoded = false;
-        return ::android::OK;
     }
 
     c2_status_t drainInternal(uint32_t drainMode,
@@ -461,8 +448,8 @@ private:
             return C2_OMITTED;
         }
 
-        if (::android::OK != setFlushMode())
-            return C2_CORRUPTED;
+        setFlushMode();
+
         while (true) {
             if (C2_OK != ensureDecoderState(pool)) {
                 mSignalledError = true;
@@ -492,12 +479,10 @@ private:
         return C2_OK;
     }
 
-    status_t resetDecoder() {
+    void resetDecoder() {
         mStride = 0;
         mSignalledError = false;
-        mHeaderDecoded = false;
         deleteContext();
-        return ::android::OK;
     }
 
     void resetPlugin() {
@@ -674,7 +659,6 @@ private:
     std::shared_ptr<C2GraphicBlock> mOutBlock;
 
     std::vector<uint8_t> mCsd0;
-    std::vector<uint8_t> mCsd1;
 
     std::map<uint64_t, uint64_t> mOldPts2Index;
     std::map<uint64_t, uint64_t> mPts2Index;
@@ -693,7 +677,6 @@ private:
     bool mEnableAndroidNativeBuffers{true};
     bool mSignalledOutputEos{false};
     bool mSignalledError{false};
-    bool mHeaderDecoded{false};
 
     C2_DO_NOT_COPY(C2GoldfishHevcDec);
 };
