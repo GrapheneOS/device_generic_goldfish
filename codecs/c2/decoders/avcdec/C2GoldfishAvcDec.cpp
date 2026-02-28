@@ -104,13 +104,12 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
     c2_status_t onInit() override {
         ALOGD("calling onInit");
-        status_t err = initDecoder();
-        return err == ::android::OK ? C2_OK : C2_CORRUPTED;
+        initDecoder();
+        return C2_OK;
     }
 
     c2_status_t onStop() override {
-        if (::android::OK != resetDecoder())
-            return C2_CORRUPTED;
+        resetDecoder();
         resetPlugin();
         return C2_OK;
     }
@@ -128,8 +127,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     }
 
     c2_status_t onFlush_sm() override {
-        if (::android::OK != setFlushMode())
-            return C2_CORRUPTED;
+        setFlushMode();
 
         if (!mContext) {
             // just ignore if context is not even created
@@ -181,8 +179,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
                 return;
             }
         }
-        bool eos = ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) != 0);
-        bool hasPicture = (inSize > 0);
+
+        const bool eos = ((work->input.flags & C2FrameData::FLAG_END_OF_STREAM) != 0);
+        const bool hasPicture = (inSize > 0) &&
+                !(work->input.flags & C2FrameData::FLAG_CODEC_CONFIG);
 
         DDD("in buffer attr. size %zu timestamp %d frameindex %d, flags %x", inSize,
             (int)work->input.ordinal.timestamp.peeku(),
@@ -198,10 +198,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             }
 
             {
-                if (work->input.flags & C2FrameData::FLAG_CODEC_CONFIG) {
-                    hasPicture = false;
-                }
-
                 uint8_t* inPBuffer = const_cast<uint8_t *>(rView.data()) + inPos;
                 uint32_t inPBufferSize = inSize - inPos;
 
@@ -286,7 +282,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
             if (mImg.data != nullptr) {
                 DDD("got data %" PRIu64 " with pts %" PRIu64,  getWorkIndex(mImg.pts), mImg.pts);
-                mHeaderDecoded = true;
                 copyImageData(mImg);
                 finishWork(getWorkIndex(mImg.pts), work);
                 removePts(mImg.pts);
@@ -334,7 +329,7 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         }
     }
 
-    status_t createDecoder() {
+    void createDecoder() {
         DDD("creating avc context now w %d h %d", mWidth, mHeight);
         mContext = std::make_unique<MediaH264Decoder>(
                 mEnableAndroidNativeBuffers ?
@@ -342,20 +337,12 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
 
         mContext->initH264Context(mWidth, mHeight, mWidth, mHeight,
                                 MediaH264Decoder::PixelFormat::YUV420P);
-        return ::android::OK;
     }
 
-    status_t setParams(size_t stride) {
-        (void)stride;
-        return ::android::OK;
-    }
-
-    status_t initDecoder() {
+    void initDecoder() {
         mStride = ALIGN2(mWidth);
         mSignalledError = false;
         resetPlugin();
-
-        return ::android::OK;
     }
 
     c2_status_t ensureDecoderState(const std::shared_ptr<C2BlockPool> &pool) {
@@ -453,12 +440,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         }
     }
 
-    status_t setFlushMode() {
+    void setFlushMode() {
         if (mContext) {
             mContext->flush();
         }
-        mHeaderDecoded = false;
-        return ::android::OK;
     }
 
     c2_status_t drainInternal(uint32_t drainMode,
@@ -473,8 +458,8 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
             return C2_OMITTED;
         }
 
-        if (::android::OK != setFlushMode())
-            return C2_CORRUPTED;
+        setFlushMode();
+
         while (true) {
             if (C2_OK != ensureDecoderState(pool)) {
                 mSignalledError = true;
@@ -506,12 +491,10 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
         return C2_OK;
     }
 
-    status_t resetDecoder() {
+    void resetDecoder() {
         mStride = 0;
         mSignalledError = false;
-        mHeaderDecoded = false;
         deleteContext();
-        return ::android::OK;
     }
 
     void resetPlugin() {
@@ -715,7 +698,6 @@ struct C2GoldfishAvcDec : public SimpleC2Component {
     bool mEnableAndroidNativeBuffers{true};
     bool mSignalledOutputEos{false};
     bool mSignalledError{false};
-    bool mHeaderDecoded{false};
 
     C2_DO_NOT_COPY(C2GoldfishAvcDec);
 };

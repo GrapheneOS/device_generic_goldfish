@@ -686,9 +686,20 @@ ndk::ScopedAStatus ComposerClient::startHdcpNegotiation(int64_t displayId,
     const aidl::android::hardware::drm::HdcpLevels& /*levels*/) {
     DEBUG_LOG("%s", __FUNCTION__);
 
-    GET_DISPLAY_OR_RETURN_ERROR();
+    ndk::ScopedAStatus status;
+    std::shared_ptr<Display> display = getDisplay(displayId);                \
+    if (display == nullptr) {                                                \
+        ALOGE("%s failed to get display:%" PRIu64, __FUNCTION__, displayId); \
+        status = ToBinderStatus(HWC3::Error::BadDisplay);                      \
+    } else {
+        status = ToBinderStatus(HWC3::Error::Unsupported);
+    }
 
-    return ToBinderStatus(HWC3::Error::Unsupported);
+    // async call must report error via callback
+    constexpr drm::HdcpLevels kErrorHdcp = {.connectedLevel = drm::HdcpLevel::HDCP_UNKNOWN,
+                                            .maxLevel = drm::HdcpLevel::HDCP_UNKNOWN};
+    mCallbacks->onHdcpLevelsChanged(displayId, kErrorHdcp);
+    return status;
 }
 
 ndk::ScopedAStatus ComposerClient::getLuts(int64_t displayId,
