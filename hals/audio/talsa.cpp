@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cstdio>
 #include <mutex>
 #include <cutils/properties.h>
 #include <log/log.h>
