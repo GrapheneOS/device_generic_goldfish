@@ -1,0 +1,15 @@
+{
+  "context": {
+    "fileName": [
+      "GEMINI.md"
+    ],
+    "includeDirectories": [
+      "../lib/qemud",
+      "../../../../../hardware/interfaces/biometrics/common/aidl/android/hardware/biometrics/common",
+      "../../../../../hardware/interfaces/biometrics/fingerprint/aidl/android/hardware/biometrics/fingerprint"
+    ],
+    "fileFiltering": {
+      "respectGitIgnore": true
+    }
+  }
+}
