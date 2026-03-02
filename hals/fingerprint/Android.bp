@@ -28,7 +28,7 @@ cc_binary {
     init_rc: ["android.hardware.biometrics.fingerprint-service.ranchu.rc"],
     vintf_fragments: ["android.hardware.biometrics.fingerprint-service.ranchu.xml"],
     srcs: [
-        "hal.cpp",
+        "fingerprint_hal.cpp",
         "session.cpp",
         "storage.cpp",
         "main.cpp",
