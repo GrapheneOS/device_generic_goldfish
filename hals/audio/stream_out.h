@@ -16,6 +16,7 @@
 
 #pragma once
 #include <atomic>
+#include <cmath>
 #include PATH(android/hardware/audio/FILE_VERSION/IStreamOut.h)
 #include PATH(android/hardware/audio/FILE_VERSION/IDevice.h)
 #include "stream_common.h"
