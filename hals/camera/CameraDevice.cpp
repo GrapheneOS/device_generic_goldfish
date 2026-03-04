@@ -16,6 +16,7 @@
 
 #define FAILURE_DEBUG_PREFIX "CameraDevice"
 
+#include <algorithm>
 #include <string_view>
 
 #include <system/camera_metadata.h>

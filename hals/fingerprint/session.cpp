@@ -360,7 +360,7 @@ int64_t Session::generateInt64() {
     return distrib(mRandom);
 }
 
-void Session::onSensorEventOn(const int32_t enrollmentId) {
+void Session::onSensorEventOn(const int32_t fpHash) {
     std::lock_guard<std::mutex> lock(mMutex);
     switch (mState) {
     case State::ENROLLING_START:
@@ -371,20 +371,16 @@ void Session::onSensorEventOn(const int32_t enrollmentId) {
 
             const int left = int(State::ENROLLING_END) - int(mState);
             if (left > 0) {
-                SESSION_DEBUG("onEnrollmentProgress(enrollmentId=%d, left=%d)",
-                              enrollmentId, left);
-                mSessionCb->onEnrollmentProgress(enrollmentId, left);
+                SESSION_DEBUG("onEnrollmentProgress(fpHash=%d, left=%d)", fpHash, left);
+                mSessionCb->onEnrollmentProgress(fpHash, left);
                 mState = State(int(mState) + 1);
-            } else if (mStorage.enroll(enrollmentId, mEnrollingSecUserId, generateInt64())) {
-                SESSION_DEBUG("onEnrollmentProgress(enrollmentId=%d, left=%d)",
-                              enrollmentId, left);
-                mSessionCb->onEnrollmentProgress(enrollmentId, left);
+            } else if (mStorage.enroll(fpHash, mEnrollingSecUserId, generateInt64())) {
+                SESSION_DEBUG("onEnrollmentProgress(fpHash=%d, left=%d)", fpHash, left);
+                mSessionCb->onEnrollmentProgress(fpHash, left);
                 mState = State::IDLE;
             } else {
-                SESSION_ERR("onError(UNABLE_TO_PROCESS, %d): enrollmentId=%d, "
-                            "secureIserId=%" PRId64 ,
-                            int(ErrorCode::E_ENROLL_FAILED),
-                            enrollmentId, mEnrollingSecUserId);
+                SESSION_ERR("onError(UNABLE_TO_PROCESS, %d): fpHash=%d, secureIserId=%" PRId64,
+                            int(ErrorCode::E_ENROLL_FAILED), fpHash, mEnrollingSecUserId);
                 mSessionCb->onError(Error::UNABLE_TO_PROCESS,
                                     int(ErrorCode::E_ENROLL_FAILED));
                 mState = State::IDLE;
@@ -394,8 +390,7 @@ void Session::onSensorEventOn(const int32_t enrollmentId) {
 
     case State::AUTHENTICATING:
         {
-            const auto [res, lockoutDurationMillis, tok] =
-                mStorage.authenticate(enrollmentId);
+            const auto [res, lockoutDurationMillis, tok] = mStorage.authenticate(fpHash);
             if (res != Storage::AuthResult::LOCKED_OUT_PERMANENT) {
                 SESSION_DEBUG("onAcquired(GOOD, %d)", 0);
                 mSessionCb->onAcquired(AcquiredInfo::GOOD, 0);
@@ -403,11 +398,10 @@ void Session::onSensorEventOn(const int32_t enrollmentId) {
 
             switch (res) {
             case Storage::AuthResult::OK: {
-                    SESSION_DEBUG("onAuthenticationSucceeded(enrollmentId=%d, "
+                    SESSION_DEBUG("onAuthenticationSucceeded(fpHash=%d, "
                                   "hat={ .challenge=%" PRId64 ", .userId=%" PRId64 ", "
                                   ".authenticatorId=%" PRId64 " })",
-                                  enrollmentId, mAuthChallenge,
-                                  tok.userId, tok.authenticatorId);
+                                  fpHash, mAuthChallenge, tok.userId, tok.authenticatorId);
 
                     keymaster::HardwareAuthToken hat;
                     hat.challenge = mAuthChallenge;
@@ -415,25 +409,25 @@ void Session::onSensorEventOn(const int32_t enrollmentId) {
                     hat.authenticatorId = tok.authenticatorId;
                     hat.authenticatorType = keymaster::HardwareAuthenticatorType::FINGERPRINT;
                     hat.timestamp.milliSeconds = ns2ms(systemTime(SYSTEM_TIME_BOOTTIME));
-                    mSessionCb->onAuthenticationSucceeded(enrollmentId, hat);
+                    mSessionCb->onAuthenticationSucceeded(fpHash, hat);
                     mState = State::IDLE;
                 }
                 break;
 
             case Storage::AuthResult::FAILED:
-                SESSION_ERR("onAuthenticationFailed: enrollmentId=%d", enrollmentId);
+                SESSION_ERR("onAuthenticationFailed: fpHash=%d", fpHash);
                 mSessionCb->onAuthenticationFailed();
                 break;
 
             case Storage::AuthResult::LOCKED_OUT_TIMED:
-                SESSION_ERR("onLockoutTimed(durationMillis=%d): enrollmentId=%d",
-                            lockoutDurationMillis, enrollmentId);
+                SESSION_ERR("onLockoutTimed(durationMillis=%d): fpHash=%d",
+                            lockoutDurationMillis, fpHash);
                 mSessionCb->onLockoutTimed(lockoutDurationMillis);
                 mState = State::IDLE;
                 break;
 
             case Storage::AuthResult::LOCKED_OUT_PERMANENT:
-                SESSION_ERR("onLockoutPermanent: enrollmentId=%d", enrollmentId);
+                SESSION_ERR("onLockoutPermanent: fpHash=%d", fpHash);
                 mSessionCb->onLockoutPermanent();
                 mState = State::IDLE;
                 break;
@@ -541,12 +535,12 @@ bool Session::sensorListenerFuncImpl() {
                 int n = qemud_channel_recv(fd, buf, sizeof(buf) - 1);
                 if (n > 0) {
                     buf[n] = 0;
-                    int32_t fid;
-                    if (sscanf(buf, "on:%d", &fid) == 1) {
-                        if (fid > 0) {
-                            onSensorEventOn(fid);
+                    int32_t fpHash;
+                    if (sscanf(buf, "on:%d", &fpHash) == 1) {
+                        if (fpHash > 0) {
+                            onSensorEventOn(fpHash);
                         } else {
-                            SESSION_ERR("incorrect fingerprint: %d", fid);
+                            SESSION_ERR("incorrect fingerprint hash: %d", fpHash);
                         }
                     } else if (!strcmp(buf, "off")) {
                         onSensorEventOff();
