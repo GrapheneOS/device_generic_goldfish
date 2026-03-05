@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hal.h"
+#include "fingerprint_hal.h"
 #include "session.h"
 #include "storage.h"
 
@@ -27,7 +27,7 @@ constexpr char SERIAL_NUMBER[] = "00000001";
 constexpr char SW_COMPONENT_ID[] = "matchingAlgorithm";
 } // namespace
 
-ndk::ScopedAStatus Hal::getSensorProps(std::vector<SensorProps>* out) {
+ndk::ScopedAStatus FingerprintHal::getSensorProps(std::vector<SensorProps>* out) {
     std::vector<common::ComponentInfo> componentInfo = {
         {
             HW_COMPONENT_ID,
@@ -72,10 +72,10 @@ ndk::ScopedAStatus Hal::getSensorProps(std::vector<SensorProps>* out) {
     return ndk::ScopedAStatus::ok();
 }
 
-ndk::ScopedAStatus Hal::createSession(const int32_t sensorId,
-                                      const int32_t userId,
-                                      const std::shared_ptr<ISessionCallback>& cb,
-                                      std::shared_ptr<ISession>* out) {
+ndk::ScopedAStatus FingerprintHal::createSession(const int32_t sensorId,
+                                                 const int32_t userId,
+                                                 const std::shared_ptr<ISessionCallback>& cb,
+                                                 std::shared_ptr<ISession>* out) {
     *out = SharedRefBase::make<Session>(sensorId, userId, cb);
     return ndk::ScopedAStatus::ok();
 }

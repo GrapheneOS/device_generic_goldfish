@@ -19,7 +19,7 @@
 
 namespace aidl::android::hardware::biometrics::fingerprint {
 
-struct Hal : public BnFingerprint {
+struct FingerprintHal : public BnFingerprint {
     ndk::ScopedAStatus getSensorProps(std::vector<SensorProps>* out) override;
 
     ndk::ScopedAStatus createSession(const int32_t sensorId,
