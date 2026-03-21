@@ -51,10 +51,33 @@ HWC3::Error findGoldfishPrimaryDisplay(std::vector<DisplayMultiConfigs>* outDisp
     const int32_t vsyncPeriodNanos = HertzToPeriodNanos(getVsyncHzFromProperty());
     DisplayMultiConfigs display;
     display.displayId = 0;
-    if (rcEnc->hasHWCMultiConfigs()) {
+
+    const std::string configsProp =
+            ::android::base::GetProperty("ro.boot.qemu.display.0.configs", "");
+    if (!configsProp.empty()) {
+        const std::vector<std::string> configs = ::android::base::Split(configsProp, ";");
+        for (const auto& configStr : configs) {
+            const std::vector<std::string> parts = ::android::base::Split(configStr, ":");
+            if (parts.size() == 5) {
+                int32_t id, w, h, xdpi, ydpi;
+                if (::android::base::ParseInt(parts[0], &id) &&
+                    ::android::base::ParseInt(parts[1], &w) &&
+                    ::android::base::ParseInt(parts[2], &h) &&
+                    ::android::base::ParseInt(parts[3], &xdpi) &&
+                    ::android::base::ParseInt(parts[4], &ydpi)) {
+                    display.configs.push_back(DisplayConfig(id, w, h, xdpi, ydpi, vsyncPeriodNanos));
+                }
+            }
+        }
+    }
+
+    if (!display.configs.empty()) {
+        display.activeConfigId = 0;
+    } else if (rcEnc->hasHWCMultiConfigs()) {
         int count = rcEnc->rcGetFBDisplayConfigsCount(rcEnc);
         if (count <= 0) {
             ALOGE("%s failed to allocate primary display, config count %d", __func__, count);
+            hostCon->unlock();
             return HWC3::Error::NoResources;
         }
         display.activeConfigId = rcEnc->rcGetFBDisplayActiveConfig(rcEnc);
@@ -79,6 +102,10 @@ HWC3::Error findGoldfishPrimaryDisplay(std::vector<DisplayMultiConfigs>* outDisp
                                                 ));
     }
     hostCon->unlock();
+
+    for (const auto& config : display.configs) {
+        ALOGI("%s: primary display config: %s", __FUNCTION__, config.toString().c_str());
+    }
 
     outDisplays->push_back(display);
 

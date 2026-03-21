@@ -164,6 +164,12 @@ DrmHotplugChange DrmDisplay::checkAndHandleHotplug(::android::base::borrowed_fd 
     const bool newConnected = mConnector->isConnected();
 
     if (oldConnected == newConnected) {
+        if (!onDisconnect(drmFd)) {
+            ALOGE("%s: display:%" PRIu32 " failed to disconnect.", __FUNCTION__, mId);
+        }
+        if (!onConnect(drmFd)) {
+            ALOGE("%s: display:%" PRIu32 " failed to connect.", __FUNCTION__, mId);
+        }
         return DrmHotplugChange::kNoChange;
     }
 
